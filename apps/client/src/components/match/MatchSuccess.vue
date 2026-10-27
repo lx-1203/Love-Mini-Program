@@ -77,7 +77,12 @@ function getScoreIcon(index: number): string {
       <image class="match-success__float-heart match-success__float-heart--4" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
       <image class="match-success__float-heart match-success__float-heart--5" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
       <view class="match-success__title-row">
-        <image class="match-success__title-heart match-success__title-heart--left" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
+        <!-- 2026-10-26 对齐理想图（匹配成功页面.png）：标题左侧为「粉色大爱心+紧贴绿色小爱心」双心组合
+             （原仅一颗粉心），右侧仍为绿心 -->
+        <view class="match-success__title-heart-group">
+          <image class="match-success__title-heart match-success__title-heart--left" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
+          <image class="match-success__title-heart-mini" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
+        </view>
         <text class="match-success__title">{{ t('matchSuccess.title') }}</text>
         <image class="match-success__title-heart match-success__title-heart--right" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED" mode="aspectFit" alt="" />
       </view>
@@ -253,6 +258,23 @@ function getScoreIcon(index: number): string {
 
 .match-success__title-heart--left {
   color: var(--c-romance-500, #FF6B81);
+}
+
+/* 2026-10-26：左侧双心组合容器（粉大心 + 右下角绿色小心） */
+.match-success__title-heart-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.match-success__title-heart-mini {
+  width: 24rpx;
+  height: 24rpx;
+  margin-left: -8rpx;
+  margin-top: 16rpx;
+  /* 同 --right 的绿心做法：heart-filled.svg 烘焙 fill=#FF6B81，<image> 不响应 color，
+     用 filter 转绿（与 .match-success__title-heart--right 同链） */
+  filter: hue-rotate(170deg) saturate(1.25) brightness(0.9);
 }
 
 .match-success__title-heart--right {

@@ -1,0 +1,67 @@
+{
+  "schema": "design-board-shoot/v1",
+  "board": "village-history.html",
+  "dsf": 2.273,
+  "results": [
+    {
+      "id": "F01",
+      "title": "加载态",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\village-history\\F01.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F02",
+      "title": "有记录 · 到底",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\village-history\\F02.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F03",
+      "title": "有记录 · 加载更多中",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\village-history\\F03.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F04",
+      "title": "空态 · EmptyState",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\village-history\\F04.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F05",
+      "title": "清空确认弹窗",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\village-history\\F05.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F06",
+      "title": "清空执行中",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\village-history\\F06.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    }
+  ]
+}

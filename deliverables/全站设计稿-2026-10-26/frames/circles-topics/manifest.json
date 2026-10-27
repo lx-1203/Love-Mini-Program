@@ -1,0 +1,97 @@
+{
+  "schema": "design-board-shoot/v1",
+  "board": "circles-topics.html",
+  "dsf": 2.273,
+  "results": [
+    {
+      "id": "F01",
+      "title": "回流 · 无 circleId",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\circles-topics\\F01.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F02",
+      "title": "加载中",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\circles-topics\\F02.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F03",
+      "title": "错误态",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\circles-topics\\F03.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F04",
+      "title": "动态 · 有内容",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\circles-topics\\F04.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F05",
+      "title": "作品墙",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\circles-topics\\F05.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F06",
+      "title": "成员",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\circles-topics\\F06.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F07",
+      "title": "活动",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\circles-topics\\F07.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F08",
+      "title": "空态",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\circles-topics\\F08.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F09",
+      "title": "动态 · 深滚吸顶",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\circles-topics\\F09.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    }
+  ]
+}

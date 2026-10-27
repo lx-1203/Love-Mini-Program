@@ -417,7 +417,7 @@ function switchScope(next: "nearby" | "city") {
   margin-top: 8rpx;
   padding: 14rpx 48rpx;
   border-radius: var(--r-full, 9999rpx);
-  border: 2rpx solid var(--c-line-strong, #DCE5E2);
+  border: 2rpx solid var(--c-border-default);
 }
 
 .people-state__retry-text {

@@ -172,7 +172,11 @@ function onIdentityChange(value: UserIdentity): void {
   lightHaptic();
 }
 
-/** 按身份分流：学生 → 校园认证（步骤 2/4）；非学生 → 时间安排（跳过校园认证） */
+/**
+ * 按身份分流（真实链序，见 SetupProgress 的五步/四步表）：
+ * - 学生 → 校园认证（链序第 2/5 步）
+ * - 非学生 → 时间安排（跳过校园认证，链序第 2/4 步）
+ */
 function getNextSetupPath(): string {
   // P0-35：非学生跳过校园认证进入时间安排（完成度 30+20=50）；学生流程 30+30+20=80
   return identity.value === "non_student"
@@ -748,7 +752,9 @@ async function save() {
 
     <!-- 表单卡：骑压插图 64rpx（32px），卡片阴影 -->
     <view class="card">
-      <!-- 注册向导进度（仅 wizard 模式；edit 模式下「第 n 步」无意义） -->
+      <!-- 注册向导进度（仅 wizard 模式；edit 模式下「第 n 步」无意义）。
+           传真实链序第 1 步：学生读数「第 1/5 步 · 基本信息」、非学生「第 1/4 步 · 基本信息」
+           （总步数由 variant 的步骤表长度决定：学生 5、非学生 4，与圆点数同源）。 -->
       <view v-if="entryMode === 'wizard'" class="card__progress">
         <SetupProgress :current-step="1" :variant="identity === 'non_student' ? 'non-student' : 'student'" />
       </view>

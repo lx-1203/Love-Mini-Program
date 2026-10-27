@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 首页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（优先取 base 令牌；理想图特有的语义浅底按样板 campus-certification 的口径以页内色补齐） ===== */
+.hs { position: absolute; inset: 0; overflow: hidden; padding: 44px 0 0; z-index: 2; }
+
+/* --- 顶部导航（HomeHeader） --- */
+.hdr-home { padding: 4px 16px 0; }
+.hdr-home__row { display: flex; align-items: center; justify-content: space-between; }
+.hdr-home__left { display: flex; align-items: baseline; gap: 5px; }
+.hdr-home__title { font-size: 24px; font-weight: 800; color: #333A37; letter-spacing: -0.5px; }
+.hdr-home__heart { width: 17px; height: 17px; color: var(--c-romance); }
+.hdr-home__right { display: flex; align-items: center; gap: 12px; }
+.hdr-home__loc { display: flex; align-items: center; gap: 4px; font-size: var(--fs-md); font-weight: 500; color: var(--c-text-tertiary); }
+.hdr-home__loc svg { width: 15px; height: 15px; color: var(--c-brand); }
+.hdr-home__bell { position: relative; width: 22px; height: 22px; color: #333A37; }
+.hdr-home__bell svg { width: 22px; height: 22px; }
+.hdr-home__badge { position: absolute; top: -5px; right: -6px; min-width: 15px; height: 15px; padding: 0 4px;
+  border-radius: 999px; background: var(--c-romance); border: 1.5px solid #fff; display: flex; align-items: center;
+  justify-content: center; font-size: 9px; font-weight: 700; color: #fff; box-sizing: border-box; }
+.hdr-home__sub { display: block; margin-top: 4px; font-size: var(--fs-lg); color: var(--c-text-placeholder); }
+
+/* --- 通用分区标题 --- */
+.sec-h { display: flex; align-items: center; justify-content: space-between; padding: 4px 16px 8px; }
+.sec-h__t { font-size: var(--fs-2xl); font-weight: 800; color: #222; }
+.sec-h__m { display: flex; align-items: center; gap: 2px; font-size: var(--fs-md); color: var(--c-text-placeholder); }
+.sec-h__m svg { width: 13px; height: 13px; }
+.grp { margin: 0 0 12px; }
+
+/* --- 今日推荐卡 --- */
+.today { margin: 0 16px 12px; padding: 14px; border-radius: 20px; background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.today__head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+.today__title { font-size: var(--fs-2xl); font-weight: 800; color: #222; }
+.today__rotate { display: flex; align-items: center; gap: 3px; font-size: var(--fs-md); color: var(--c-text-tertiary); }
+.today__rotate svg { width: 14px; height: 14px; }
+.today__body { display: flex; gap: 12px; }
+.today__photo { position: relative; width: 148px; height: 186px; flex: none; border-radius: 12px; overflow: hidden; }
+.today__info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.today__name { font-size: 22px; font-weight: 700; color: #333A37; line-height: 1.1; }
+.today__meta { margin-top: 5px; font-size: var(--fs-md); color: var(--c-text-placeholder); }
+.today__tags { display: flex; flex-wrap: nowrap; gap: 4px; margin-top: 7px; }
+.today__tag { padding: 2px 6px; border-radius: 999px; background: var(--c-brand-50); color: var(--c-brand); font-size: var(--fs-xs); font-weight: 500; white-space: nowrap; }
+.today__bio { margin-top: 7px; font-size: var(--fs-sm); color: #333; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.today__dist { margin-top: 6px; display: flex; align-items: center; gap: 4px; font-size: var(--fs-base); color: var(--c-brand); white-space: nowrap; }
+.today__dist .dot { color: var(--c-text-placeholder); }
+.today__vchip { display: inline-flex; align-items: center; gap: 2px; color: var(--c-brand); font-weight: 600; }
+.today__vchip svg { width: 13px; height: 13px; }
+.today__gallery { display: flex; gap: 5px; margin-top: 9px; }
+.today__thumb { flex: 1 1 0; min-width: 0; height: 28px; border-radius: 6px; }
+.today__actions { display: flex; gap: 8px; margin-top: auto; padding-top: 10px; }
+.today__btn { flex: 1; height: 32px; border-radius: 999px; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: var(--fs-base); font-weight: 700; }
+.today__btn--outline { background: #fff; border: 1.5px solid var(--c-brand); color: var(--c-brand); }
+.today__btn--love { background: var(--c-romance); color: #fff; }
+.today__btn--love svg { width: 14px; height: 14px; }
+/* 在线徽章 */
+.online { position: absolute; left: 8px; top: 8px; display: flex; align-items: center; gap: 4px; padding: 3px 8px;
+  border-radius: 999px; background: rgba(255,255,255,.9); }
+.online i { width: 6px; height: 6px; border-radius: 50%; background: var(--c-brand); }
+.online span { font-size: var(--fs-xs); font-weight: 700; color: var(--c-brand); }
+/* 合拍度徽章 —— 取后端启发式真值 */
+.match-badge { position: absolute; right: 8px; bottom: 8px; min-width: 64px; height: 44px; padding: 0 10px;
+  border-radius: 999px; background: var(--c-romance); box-shadow: 0 4px 10px rgba(255,107,129,.28);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; box-sizing: border-box; }
+.match-badge__row { display: flex; align-items: center; gap: 4px; }
+.match-badge__row svg { width: 12px; height: 12px; color: #fff; }
+.match-badge__skel { width: 26px; height: 12px; border-radius: 999px; background: rgba(255,255,255,.42); }
+.match-badge__label { font-size: var(--fs-xs); color: rgba(255,255,255,.92); }
+
+/* --- 今日恋爱进度 --- */
+.love { margin: 0 16px 12px; padding: 12px; border-radius: 20px; background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+.love__head { display: flex; align-items: center; justify-content: space-between; }
+.love__tw { display: flex; align-items: center; gap: 6px; }
+.love__title { font-size: var(--fs-3xl); font-weight: 600; color: var(--c-text-primary); }
+.love__help { width: 16px; height: 16px; border-radius: 50%; background: #F0F2F5; display: flex; align-items: center; justify-content: center; }
+.love__help svg { width: 11px; height: 11px; color: var(--c-text-placeholder); }
+.love__count { font-size: var(--fs-lg); font-weight: 500; color: var(--c-brand); }
+.love__bar { height: 6px; margin-top: 10px; border-radius: 999px; background: #EEF2F0; overflow: hidden; }
+.love__bar i { display: block; height: 100%; width: 50%; border-radius: 999px; background: linear-gradient(90deg, var(--c-brand), var(--c-brand-400)); }
+.love__steps { display: flex; gap: 7px; margin-top: 12px; }
+.step { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 11px 4px; border-radius: 12px; }
+.step__ic { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; }
+.step__ic svg { width: 15px; height: 15px; }
+.step__t { font-size: var(--fs-sm); font-weight: 600; text-align: center; line-height: 1.2; white-space: nowrap; }
+.step__m { font-size: var(--fs-xs); font-weight: 400; text-align: center; white-space: nowrap; }
+.step--green { background: var(--c-brand-50); } .step--green .step__ic { background: var(--c-brand); } .step--green .step__t,.step--green .step__m { color: var(--c-brand); }
+.step--pink { background: var(--c-romance-50); } .step--pink .step__ic { background: var(--c-romance); } .step--pink .step__t,.step--pink .step__m { color: var(--c-romance); }
+.step--orange { background: #FFF5E6; } .step--orange .step__ic { background: #FF9F43; } .step--orange .step__t,.step--orange .step__m { color: #FF9F43; }
+.step--purple { background: #F0EEFF; } .step--purple .step__ic { background: var(--c-purple); } .step--purple .step__t,.step--purple .step__m { color: var(--c-purple); }
+
+/* --- 关系动态 --- */
+.rel__grid { display: flex; gap: 8px; }
+.rel-cell { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: 14px; background: #fff; box-shadow: var(--s-card-soft); }
+.rel-cell__ic { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.rel-cell__ic svg { width: 17px; height: 17px; }
+.rel-cell--pink .rel-cell__ic { background: #FFD9E0; color: var(--c-romance); }
+.rel-cell--green .rel-cell__ic { background: #BCEFDD; color: var(--c-brand); }
+.rel-cell--purple .rel-cell__ic { background: #E0D9FF; color: var(--c-purple); }
+.rel-cell--orange .rel-cell__ic { background: #FFE4C2; color: #FF9F43; }
+.rel-cell__v { font-size: var(--fs-3xl); font-weight: 800; color: #222; line-height: 1; }
+.rel-cell__l { font-size: var(--fs-xs); color: #888E8B; text-align: center; line-height: 1.2; }
+.rel-cell__avs { display: flex; margin-top: 1px; }
+.rel-cell__avs i { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid #fff; background: var(--c-border-light); }
+.rel-cell__avs i + i { margin-left: -6px; }
+
+/* --- 兴趣推荐 --- */
+.interest__row { display: flex; gap: 10px; }
+.icard { flex: 1 1 0; min-width: 0; border-radius: 12px; background: #fff; border: 1px solid var(--c-border-light); overflow: hidden; box-sizing: border-box; }
+.icard__cover { position: relative; width: 100%; height: 82px; overflow: hidden; }
+.icard__cover .ph { position: absolute; inset: 0; }
+.icard__ov { position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 6px 5px; display: flex; flex-direction: column; gap: 1px;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.55) 100%); }
+.icard__name { font-size: var(--fs-base); font-weight: 700; color: #fff; line-height: 1.2; }
+.icard__cnt { font-size: var(--fs-xs); color: rgba(255,255,255,.85); line-height: 1.2; }
+.icard__join { margin: 5px 8px 7px; text-align: center; padding: 5px 0; border-radius: 999px; border: 1.5px solid var(--c-brand); background: #fff; color: var(--c-brand); font-size: var(--fs-base); font-weight: 700; }
+
+/* --- 附近的人 --- */
+.near__row { display: flex; gap: 10px; align-items: stretch; }
+.near-item { width: 52px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.near-item__aw { position: relative; width: 46px; height: 46px; }
+.near-item__aw .avatar { width: 46px; height: 46px; }
+.near-item__on { position: absolute; right: 0; bottom: 1px; width: 10px; height: 10px; border-radius: 50%; background: var(--c-brand); border: 2px solid #fff; }
+.near-item__n { font-size: var(--fs-base); font-weight: 600; color: var(--c-text-primary); line-height: 1.2; }
+.near-item__d { font-size: var(--fs-xs); color: var(--c-text-secondary); line-height: 1.2; }
+.near-cta { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px;
+  border-radius: 12px; background: var(--c-brand-50); text-align: center; }
+.near-cta svg { width: 18px; height: 18px; color: var(--c-brand); }
+.near-cta__t { font-size: var(--fs-sm); color: var(--c-brand); font-weight: 600; line-height: 1.35; }
+.near-cta__t b { font-weight: 800; }
+
+/* --- 社区动态 --- */
+.comm__row { display: flex; gap: 8px; }
+.pcard { flex: 1 1 0; min-width: 0; padding: 7px; border-radius: 16px; background: #fff; box-shadow: 0 4px 16px rgba(0,0,0,.08); box-sizing: border-box; }
+.pcard__head { display: flex; align-items: center; gap: 5px; }
+.pcard__av { width: 22px; height: 22px; border-radius: 50%; background: var(--c-border-light); flex: none; }
+.pcard__au { flex: 1; min-width: 0; }
+.pcard__nr { display: flex; align-items: center; gap: 3px; min-width: 0; }
+.pcard__name { font-size: var(--fs-xs); font-weight: 700; color: #222; white-space: nowrap; flex: none; }
+.pcard__school { display: inline-flex; align-items: center; gap: 1px; font-size: 8px; font-weight: 600; color: var(--c-brand); background: var(--c-brand-50); padding: 0 3px; border-radius: 4px; white-space: nowrap; overflow: hidden; min-width: 0; }
+.pcard__school svg { width: 7px; height: 7px; flex: none; }
+.pcard__time { font-size: 8px; color: #999; }
+.pcard__body { margin-top: 6px; font-size: var(--fs-xs); color: #333; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pcard__imgs { display: flex; gap: 3px; margin-top: 6px; }
+.pcard__imgs .ph { flex: 1; height: 28px; border-radius: 4px; }
+.pcard__meta { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+.pcard__st { display: flex; align-items: center; gap: 2px; font-size: 8px; color: #999; white-space: nowrap; }
+.pcard__st svg { width: 10px; height: 10px; }
+.pcard__st--like { color: var(--c-romance); }
+
+/* --- 邀请横幅 --- */
+.invite { position: relative; margin: 4px 16px 0; padding: 12px; border-radius: 20px; overflow: hidden;
+  background: linear-gradient(135deg, #FFEDF0 0%, #FFE4E9 100%); border: 1px solid #FFD9DF; display: flex; align-items: center; gap: 8px; }
+.invite__ic { width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(135deg, var(--c-romance), var(--c-romance-300)); display: flex; align-items: center; justify-content: center; flex: none; }
+.invite__ic svg { width: 17px; height: 17px; color: #fff; }
+.invite__b { flex: 1; min-width: 0; }
+.invite__t { font-size: var(--fs-xl); font-weight: 700; color: #47393C; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.invite__d { font-size: var(--fs-xs); color: #A98F94; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.invite__wing { width: 34px; height: 26px; flex: none; color: var(--c-romance); }
+.invite__btn { padding: 8px 12px; border-radius: 999px; background: linear-gradient(135deg, var(--c-romance), var(--c-romance-300)); color: #fff; font-size: var(--fs-md); font-weight: 600; flex: none; }
+
+/* --- 占位素材（无网图，灰底渐变） --- */
+.ph { background: linear-gradient(135deg, var(--c-brand-100), var(--c-bg-surface)); display: flex; align-items: center; justify-content: center; }
+.ph svg { width: 40%; height: 40%; color: var(--c-brand-300); opacity: .8; }
+.ph--portrait { background: linear-gradient(160deg, var(--c-brand-200), var(--c-brand-50) 55%, var(--c-romance-50)); }
+
+/* --- tabbar（主包五页；中央项按现裁定平铺「匹配」） --- */
+.tabbar__i { position: relative; }
+.tabbar__i .bdg { position: absolute; top: 2px; right: 50%; margin-right: -14px; min-width: 14px; height: 14px; padding: 0 3px;
+  border-radius: 999px; background: var(--c-romance); color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+/* ===== §02 组件状态规范用 ===== */
+.mini { display: flex; align-items: center; justify-content: center; padding: 14px 10px; border-radius: 12px; background: var(--c-border-light); }
+.mini .match-badge { position: static; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 描边风格） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.5-9.2-9C1.3 7.7 3.3 4.4 6.6 4.4c2 0 3.6 1.2 5.4 3 1.8-1.8 3.4-3 5.4-3 3.3 0 5.3 3.3 3.8 6.6C19 15.5 12 20 12 20z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7 2.5 7H3.5S6 15 6 9z"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 0 1 14.3-6.3L20.5 8"/><path d="M20.5 3.5V8H16"/><path d="M20.5 12a8.5 8.5 0 0 1-14.3 6.3L3.5 16"/><path d="M3.5 20.5V16H8"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.4 9.2a2.6 2.6 0 1 1 3.7 2.4c-.8.4-1.1 1-1.1 1.9"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.6-3 7.7-7 9-4-1.3-7-4.4-7-9V6z"/><path d="M9 12l2 2 4-4.5"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-12.1 7.6L3 21l1.9-5.9A8.4 8.4 0 1 1 21 11.5z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.7 5.4 6 .9-4.35 4.2 1.03 6-5.38-2.83L6.6 20l1.03-6L3.3 9.8l6-.9z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M2.5 20c0-3.4 2.9-5.8 6.5-5.8s6.5 2.4 6.5 5.8"/><path d="M16 5a3.4 3.4 0 0 1 0 6.6"/><path d="M18.5 20c0-2.6-1-4.4-2.8-5.3"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3.5" y="8" width="17" height="4" rx="1"/><path d="M12 8v13"/><path d="M4.5 12h15v8.5h-15z"/><path d="M12 8S10.5 4 8 4a2.2 2.2 0 0 0 0 4h4z"/><path d="M12 8s1.5-4 4-4a2.2 2.2 0 0 1 0 4h-4z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5.5" r="2.4"/><circle cx="6" cy="12" r="2.4"/><circle cx="18" cy="18.5" r="2.4"/><path d="M8.2 10.8l7.6-4M8.2 13.2l7.6 4"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9v11h13V9"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 21c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/></symbol>
+  <symbol id="i-img" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2.4"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-4.5-4.5L6 20"/></symbol>
+  <symbol id="i-wing" viewBox="0 0 48 32"><path d="M24 27s-6-3.8-8-7.6c-1.6-3.2.2-6.4 3.2-6.4 1.9 0 3.6 1.2 4.8 2.6 1.2-1.4 2.9-2.6 4.8-2.6 3 0 4.8 3.2 3.2 6.4C30 23.2 24 27 24 27z"/><path d="M14 12c-4-2-8-1.5-11 1 3 .5 5 1.5 6.5 3M13 16c-3.5-.5-6.5.5-8.5 3 2.6-.2 4.6.3 6.2 1.4"/><path d="M34 12c4-2 8-1.5 11 1-3 .5-5 1.5-6.5 3M35 16c3.5-.5 6.5.5 8.5 3-2.6-.2-4.6.3-6.2 1.4"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>首页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">pages/home/index</code>（主包 tab 页）。
+     本页已有理想效果图 <code style="font-family:var(--mono);font-size:12.5px">素材/理想效果图/首页.png</code>，
+     本画板以其为永久验收基准：分区顺序、卡片形态、密度、色值、字阶逐分区照图。唯一真值位——今日推荐卡上的
+     <b>合拍度徽章</b>画后端 <code>RealHomeService</code> 启发式真值 65%；理想图的 92% 是演示值，不是真值也不是"该留空"的理由。整页在 375×812 视口下超一屏，按滚动位切成两屏，
+     §01 首屏即理想图顶部（顶部导航→关系动态）。</p>
+  <div class="cover__meta">
+    <span>路由 <b>pages/home/index</b></span>
+    <span>主包 <b>有 tabbar（五页之一）</b></span>
+    <span>屏数 <b>2 屏（整页滚动切分）</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>已有理想效果图 首页.png</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 2 屏</h2>
+    <p>整页自上而下按视口切分 · 首屏对齐理想图顶部</p></div>
+  <div class="sec__sub">本页数据态有 4 支：<code>loading</code>（骨架）/ <code>!item</code>（今日推荐空态）/
+    <code>error</code>（社区动态错误重试）/ 已加载，来自各组件 <code>v-if</code>（见 §02 枚举）。
+    理想图为「已加载」态，故 §01 两屏均画已加载态；整页内容高约 1300px，超 812 视口，按滚动位切成 F01/F02，
+    帧即视口、超出裁切，被裁内容记在题注 <code>.d</code> 里、不写进画面。状态栏与 tabbar 为固定件，每屏恒在。
+    F01 覆盖理想图首屏（顶部导航 / 今日推荐 / 今日恋爱进度 / 关系动态），F02 覆盖其后（兴趣推荐 / 附近的人 / 社区动态 / 邀请横幅）。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">顶部导航 · 今日推荐 · 恋爱进度 · 关系动态</span><span class="d">理想图首屏 · 合拍度取后端真值 65%</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hs">
+          <!-- 顶部导航 -->
+          <div class="hdr-home">
+            <div class="hdr-home__row">
+              <div class="hdr-home__left"><span class="hdr-home__title">首页</span><svg class="hdr-home__heart ico--fill"><use href="#i-heart"/></svg></div>
+              <div class="hdr-home__right">
+                <span class="hdr-home__loc"><svg><use href="#i-pin"/></svg>北京大学 · 3km</span>
+                <span class="hdr-home__bell"><svg><use href="#i-bell"/></svg><span class="hdr-home__badge">6</span></span>
+              </div>
+            </div>
+            <span class="hdr-home__sub">发现今天值得遇见的人</span>
+          </div>
+
+          <!-- 今日推荐 -->
+          <div class="today">
+            <div class="today__head"><span class="today__title">今日推荐</span>
+              <span class="today__rotate"><svg><use href="#i-refresh"/></svg>换一位</span></div>
+            <div class="today__body">
+              <div class="today__photo">
+                <img src="assets/demo/xiaoman-avatar.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+                <div class="online"><i></i><span>在线</span></div>
+                <div class="match-badge">
+                  <div class="match-badge__row"><svg class="ico--fill"><use href="#i-heart"/></svg><span class="match-badge__skel"></span></div>
+                  <span class="match-badge__label">合拍度</span>
+                </div>
+              </div>
+              <div class="today__info">
+                <span class="today__name">小满</span>
+                <span class="today__meta">22岁 · 北京大学 · 本科</span>
+                <div class="today__tags"><span class="today__tag">摄影</span><span class="today__tag">旅行</span><span class="today__tag">音乐</span><span class="today__tag">电影</span></div>
+                <span class="today__bio">喜欢用镜头记录生活的美好瞬间，期待与你一起探索这个世界~</span>
+                <span class="today__dist">1.2km<span class="dot">·</span><span class="today__vchip"><svg><use href="#i-shield"/></svg>已认证</span><span class="dot">·</span>双子座</span>
+                <div class="today__gallery"><img class="today__thumb" src="assets/demo/xiaoman-photo-1.png" alt="" style="object-fit:cover"><img class="today__thumb" src="assets/demo/xiaoman-photo-2.png" alt="" style="object-fit:cover"><img class="today__thumb" src="assets/demo/xiaoman-photo-3.png" alt="" style="object-fit:cover"><img class="today__thumb" src="assets/demo/xiaoman-photo-4.png" alt="" style="object-fit:cover"></div>
+                <div class="today__actions">
+                  <span class="today__btn today__btn--outline">看看TA</span>
+                  <span class="today__btn today__btn--love"><svg class="ico--fill"><use href="#i-heart"/></svg>喜欢</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 今日恋爱进度 -->
+          <div class="love">
+            <div class="love__head">
+              <div class="love__tw"><span class="love__title">今日恋爱进度</span><span class="love__help"><svg><use href="#i-help"/></svg></span></div>
+              <span class="love__count">2/4 项完成</span>
+            </div>
+            <div class="love__bar"><i></i></div>
+            <div class="love__steps">
+              <div class="step step--green"><span class="step__ic"><svg><use href="#i-shield"/></svg></span><span class="step__t">完善资料</span><span class="step__m">已完成</span></div>
+              <div class="step step--pink"><span class="step__ic"><svg class="ico--fill"><use href="#i-heart"/></svg></span><span class="step__t">认识新的人</span><span class="step__m">进行中</span></div>
+              <div class="step step--orange"><span class="step__ic"><svg><use href="#i-chat"/></svg></span><span class="step__t">回复悄悄话</span><span class="step__m">1 条待处理</span></div>
+              <div class="step step--purple"><span class="step__ic"><svg class="ico--fill"><use href="#i-star"/></svg></span><span class="step__t">参与兴趣互动</span><span class="step__m">未完成</span></div>
+            </div>
+          </div>
+
+          <!-- 关系动态 -->
+          <div class="grp">
+            <div class="sec-h"><span class="sec-h__t">关系动态</span><span class="sec-h__m">全部<svg><use href="#i-chev"/></svg></span></div>
+            <div class="rel__grid" style="padding:0 16px">
+              <div class="rel-cell rel-cell--pink"><span class="rel-cell__ic"><svg class="ico--fill"><use href="#i-heart"/></svg></span><span class="rel-cell__v">3</span><span class="rel-cell__l">人喜欢了你</span><span class="rel-cell__avs"><i></i><i></i><i></i></span></div>
+              <div class="rel-cell rel-cell--green"><span class="rel-cell__ic"><svg><use href="#i-chat"/></svg></span><span class="rel-cell__v">2</span><span class="rel-cell__l">条悄悄话</span><span class="rel-cell__avs"><i></i><i></i><i></i></span></div>
+              <div class="rel-cell rel-cell--purple"><span class="rel-cell__ic"><svg><use href="#i-eye"/></svg></span><span class="rel-cell__v">5</span><span class="rel-cell__l">人看过你</span><span class="rel-cell__avs"><i></i><i></i><i></i></span></div>
+              <div class="rel-cell rel-cell--orange"><span class="rel-cell__ic"><svg class="ico--fill"><use href="#i-star"/></svg></span><span class="rel-cell__v">1</span><span class="rel-cell__l">个新匹配</span><span class="rel-cell__avs"><i></i><i></i></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tabbar__i tabbar__i--on"><svg><use href="#i-home"/></svg>首页</div>
+          <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+          <div class="tabbar__i"><svg><use href="#i-heart"/></svg>匹配</div>
+          <div class="tabbar__i"><svg><use href="#i-chat"/></svg>消息<span class="bdg">3</span></div>
+          <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">兴趣推荐 · 附近的人 · 社区动态 · 邀请横幅</span><span class="d">上滑第二屏 · 整页底部 · 计数为演示值</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hs">
+          <!-- 兴趣推荐 -->
+          <div class="grp">
+            <div class="sec-h"><span class="sec-h__t">兴趣推荐</span><span class="sec-h__m">查看更多<svg><use href="#i-chev"/></svg></span></div>
+            <div class="interest__row" style="padding:0 16px">
+              <div class="icard"><div class="icard__cover"><img src="assets/demo/circle-cover-photography.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><div class="icard__ov"><span class="icard__name">摄影圈</span><span class="icard__cnt">1.2w 人加入</span></div></div><div class="icard__join">加入</div></div>
+              <div class="icard"><div class="icard__cover"><img src="assets/demo/circle-cover-travel.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><div class="icard__ov"><span class="icard__name">旅行圈</span><span class="icard__cnt">8,932 人加入</span></div></div><div class="icard__join">加入</div></div>
+              <div class="icard"><div class="icard__cover"><img src="assets/demo/circle-cover-music.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><div class="icard__ov"><span class="icard__name">音乐圈</span><span class="icard__cnt">1.6w 人加入</span></div></div><div class="icard__join">加入</div></div>
+              <div class="icard"><div class="icard__cover"><img src="assets/demo/circle-food.png" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><div class="icard__ov"><span class="icard__name">美食圈</span><span class="icard__cnt">9,210 人加入</span></div></div><div class="icard__join">加入</div></div>
+            </div>
+          </div>
+
+          <!-- 附近的人 -->
+          <div class="grp">
+            <div class="sec-h"><span class="sec-h__t">附近的人</span><span class="sec-h__m">全部<svg><use href="#i-chev"/></svg></span></div>
+            <div class="near__row" style="padding:0 16px">
+              <div class="near-item"><div class="near-item__aw"><span class="avatar"><img src="assets/demo/person-01-avatar.png" alt="" style="width:100%;height:100%;object-fit:cover"></span><span class="near-item__on"></span></div><span class="near-item__n">小溪</span><span class="near-item__d">1.2km</span></div>
+              <div class="near-item"><div class="near-item__aw"><span class="avatar"><img src="assets/demo/person-02-avatar.png" alt="" style="width:100%;height:100%;object-fit:cover"></span><span class="near-item__on"></span></div><span class="near-item__n">阿辰</span><span class="near-item__d">1.5km</span></div>
+              <div class="near-item"><div class="near-item__aw"><span class="avatar"><img src="assets/demo/person-03-avatar.png" alt="" style="width:100%;height:100%;object-fit:cover"></span><span class="near-item__on"></span></div><span class="near-item__n">周岚</span><span class="near-item__d">1.8km</span></div>
+              <div class="near-item"><div class="near-item__aw"><span class="avatar"><img src="assets/demo/person-04-avatar.png" alt="" style="width:100%;height:100%;object-fit:cover"></span><span class="near-item__on"></span></div><span class="near-item__n">星辰</span><span class="near-item__d">2.1km</span></div>
+              <div class="near-cta"><svg><use href="#i-users"/></svg><span class="near-cta__t">附近还有 <b>32</b> 位<br>值得认识的人 ›</span></div>
+            </div>
+          </div>
+
+          <!-- 社区动态 -->
+          <div class="grp">
+            <div class="sec-h"><span class="sec-h__t">社区动态</span><span class="sec-h__m">查看更多<svg><use href="#i-chev"/></svg></span></div>
+            <div class="comm__row" style="padding:0 16px">
+              <div class="pcard">
+                <div class="pcard__head"><span class="pcard__av"><img src="assets/demo/person-05-avatar.png" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></span><div class="pcard__au"><div class="pcard__nr"><span class="pcard__name">小满</span><span class="pcard__school"><svg class="ico--fill"><use href="#i-star"/></svg>北京大学</span></div><span class="pcard__time">15 分钟前</span></div></div>
+                <div class="pcard__body">今天在颐和园拍到超美的晚霞 光影太治愈了~</div>
+                <div class="pcard__imgs"><img src="assets/demo/post-1.jpg" alt="" style="object-fit:cover"><img src="assets/demo/post-2.jpg" alt="" style="object-fit:cover"><img src="assets/demo/post-3.jpg" alt="" style="object-fit:cover"></div>
+                <div class="pcard__meta"><span class="pcard__st pcard__st--like"><svg class="ico--fill"><use href="#i-heart"/></svg>128</span><span class="pcard__st"><svg><use href="#i-chat"/></svg>24</span><span class="pcard__st"><svg><use href="#i-share"/></svg>分享</span></div>
+              </div>
+              <div class="pcard">
+                <div class="pcard__head"><span class="pcard__av"><img src="assets/demo/person-07-avatar.png" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></span><div class="pcard__au"><div class="pcard__nr"><span class="pcard__name">阿辰</span><span class="pcard__school"><svg class="ico--fill"><use href="#i-star"/></svg>清华大学</span></div><span class="pcard__time">1 小时前</span></div></div>
+                <div class="pcard__body">周末去了香山，大片超好看！一起感受大自然的魔力吧~</div>
+                <div class="pcard__imgs"><img src="assets/demo/post-4.jpg" alt="" style="object-fit:cover"><img src="assets/demo/post-5.jpg" alt="" style="object-fit:cover"><img src="assets/demo/post-6.jpg" alt="" style="object-fit:cover"></div>
+                <div class="pcard__meta"><span class="pcard__st pcard__st--like"><svg class="ico--fill"><use href="#i-heart"/></svg>96</span><span class="pcard__st"><svg><use href="#i-chat"/></svg>18</span><span class="pcard__st"><svg><use href="#i-share"/></svg>分享</span></div>
+              </div>
+              <div class="pcard">
+                <div class="pcard__head"><span class="pcard__av"><img src="assets/demo/person-06-avatar.png" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></span><div class="pcard__au"><div class="pcard__nr"><span class="pcard__name">周岚</span><span class="pcard__school"><svg class="ico--fill"><use href="#i-star"/></svg>北京大学</span></div><span class="pcard__time">2 小时前</span></div></div>
+                <div class="pcard__body">新发现一家超好吃的日料店！食材新鲜，味道绝了~</div>
+                <div class="pcard__imgs"><img src="assets/demo/post-7.jpg" alt="" style="object-fit:cover"><img src="assets/demo/post-8.jpg" alt="" style="object-fit:cover"><img src="assets/demo/campus-library.jpg" alt="" style="object-fit:cover"></div>
+                <div class="pcard__meta"><span class="pcard__st pcard__st--like"><svg class="ico--fill"><use href="#i-heart"/></svg>76</span><span class="pcard__st"><svg><use href="#i-chat"/></svg>12</span><span class="pcard__st"><svg><use href="#i-share"/></svg>分享</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 邀请横幅 -->
+          <div class="invite">
+            <span class="invite__ic"><svg><use href="#i-gift"/></svg></span>
+            <div class="invite__b"><div class="invite__t">邀请好友一起遇见心动</div><div class="invite__d">遇见更多美好，解锁专属权益</div></div>
+            <svg class="invite__wing"><use href="#i-wing"/></svg>
+            <span class="invite__btn">去邀请 ›</span>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tabbar__i tabbar__i--on"><svg><use href="#i-home"/></svg>首页</div>
+          <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+          <div class="tabbar__i"><svg><use href="#i-heart"/></svg>匹配</div>
+          <div class="tabbar__i"><svg><use href="#i-chat"/></svg>消息<span class="bdg">3</span></div>
+          <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每类交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">首页各分区都是数据驱动的条件渲染件；下表把 <code>v-if</code> 分支逐条落到画板上，
+    验收时对照实况帧检查是否回归。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>今日推荐卡 · 四态</h3>
+      <p class="hint">分支来自 <code>TodayRecommendationCard.vue</code>：<code>v-if=loading</code> / <code>v-else-if=!item</code> / <code>v-else</code>；右栏资料全空时再落 <code>empty-hint</code>。</p>
+      <table class="tbl">
+        <tr><th>状态</th><th>触发条件</th><th>画面</th></tr>
+        <tr><td>loading</td><td><code>loading=true</code></td><td>骨架行「正在为你挑选心动的人…」</td></tr>
+        <tr><td>empty</td><td><code>!item</code></td><td>「今天暂时没有合适的推荐，晚一点再来看看」</td></tr>
+        <tr><td>no-profile</td><td>meta/标签/签名/距离全空</td><td>右栏一行「TA 还没有填写资料」，按钮不悬空</td></tr>
+        <tr><td>loaded</td><td>有 item</td><td>§01 F01 所画（合拍度取后端真值 65%）</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>合拍度徽章 · 三态口径</h3>
+      <p class="hint">判据是「后端有没有真值源」，不是「理想图有没有数字」。本页合拍度由
+      <code>RealHomeService</code> 的上下限常量夹出的启发式算得，实测渲染 65% ⇒ 属"有真值"，照画并标口径。
+      理想图的 92% 是演示值，既不作基准也不作留空理由。</p>
+      <div class="row">
+        <div class="cell"><div class="mini" style="width:120px;height:74px">
+          <div class="match-badge"><div class="match-badge__row"><svg class="ico--fill"><use href="#i-heart"/></svg><span style="font-size:15px;font-weight:800;color:#fff">65%</span></div><span class="match-badge__label">合拍度</span></div>
+        </div><span class="lab">本基准态（后端真值）</span></div>
+        <div class="cell"><div class="mini" style="width:120px;height:74px">
+          <div class="match-badge"><div class="match-badge__row"><svg class="ico--fill"><use href="#i-heart"/></svg><span class="match-badge__skel"></span></div><span class="match-badge__label">合拍度</span></div>
+        </div><span class="lab">降级态（后端无值时）</span></div>
+        <div class="cell"><div class="mini" style="width:120px;height:74px">
+          <div class="match-badge"><div class="match-badge__row"><svg class="ico--fill"><use href="#i-heart"/></svg><span style="font-size:15px;font-weight:800;color:#fff">92%</span></div><span class="match-badge__label">合拍度</span></div>
+        </div><span class="lab">退稿态（照抄理想图演示值）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>兴趣卡「加入」按钮 · 两态</h3>
+      <p class="hint">分支 <code>item.joined ? 已加入 : 加入</code>；点击有 pending 守卫（<code>joinPendingIds</code>）防重入。</p>
+      <div class="row">
+        <div class="cell"><span class="icard__join" style="margin:0;width:96px">加入</span><span class="lab">未加入（描边）</span></div>
+        <div class="cell"><span class="icard__join" style="margin:0;width:96px;background:var(--c-brand-50);color:var(--c-brand);border-color:var(--c-brand-100)">已加入</span><span class="lab">已加入（浅底）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>社区动态 · 四态</h3>
+      <p class="hint">分支来自 <code>CommunityFeed.vue</code>：<code>loading</code> / <code>error</code> / <code>items.length===0</code> / 列表。</p>
+      <table class="tbl">
+        <tr><th>状态</th><th>画面</th></tr>
+        <tr><td>loading</td><td>两行头像+文本骨架</td></tr>
+        <tr><td>error</td><td>「动态加载失败：{err}」+ 绿色「重试」</td></tr>
+        <tr><td>empty</td><td>「今天还没有新的动态，去附近看看」</td></tr>
+        <tr><td>loaded</td><td>§01 F02 三张窄卡</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>关系动态 · 四格</h3>
+      <p class="hint">四格恒在（值随数据），icon 四色区分（粉/绿/紫/橙）；头像预览行 <code>v-if=avatars.length</code>，本页登记表未列其为真值位，照图保留。</p>
+      <div class="row">
+        <div class="cell"><div class="rel-cell rel-cell--pink" style="width:70px"><span class="rel-cell__ic"><svg class="ico--fill"><use href="#i-heart"/></svg></span><span class="rel-cell__v">3</span><span class="rel-cell__l">人喜欢了你</span></div><span class="lab">喜欢</span></div>
+        <div class="cell"><div class="rel-cell rel-cell--green" style="width:70px"><span class="rel-cell__ic"><svg><use href="#i-chat"/></svg></span><span class="rel-cell__v">2</span><span class="rel-cell__l">条悄悄话</span></div><span class="lab">悄悄话</span></div>
+        <div class="cell"><div class="rel-cell rel-cell--purple" style="width:70px"><span class="rel-cell__ic"><svg><use href="#i-eye"/></svg></span><span class="rel-cell__v">5</span><span class="rel-cell__l">人看过你</span></div><span class="lab">访客</span></div>
+        <div class="cell"><div class="rel-cell rel-cell--orange" style="width:70px"><span class="rel-cell__ic"><svg class="ico--fill"><use href="#i-star"/></svg></span><span class="rel-cell__v">1</span><span class="rel-cell__l">个新匹配</span></div><span class="lab">新匹配</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>主按钮 · 今日推荐两键</h3>
+      <p class="hint"><code>看看TA</code> 描边、<code>喜欢</code> 实心粉；<code>喜欢</code> 有 <code>likeLoading</code> 半透明态。</p>
+      <div class="row">
+        <div class="cell"><span class="today__btn today__btn--outline" style="width:120px">看看TA</span><span class="lab">outline</span></div>
+        <div class="cell"><span class="today__btn today__btn--love" style="width:120px"><svg class="ico--fill"><use href="#i-heart"/></svg>喜欢</span><span class="lab">love · default</span></div>
+        <div class="cell"><span class="today__btn today__btn--love" style="width:120px;opacity:.6"><svg class="ico--fill"><use href="#i-heart"/></svg>喜欢</span><span class="lab">love · loading</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">主色/浪漫色/文本/背景走 base 令牌；关系四格与恋爱步骤的浅底为理想图特有的语义 tint，按样板口径以页内色补齐。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">定位针 · 认证 · 加入 · tabbar 选中</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫<code>--c-romance</code></div><div class="sw__u">心形 · 合拍度胶囊 · 喜欢 · 角标</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#A29BFE"></span><div><div class="sw__n">紫<code>--c-purple</code></div><div class="sw__u">兴趣互动步 · 访客格</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF9F43"></span><div><div class="sw__n">橙（页内 tint）</div><div class="sw__u">回复悄悄话步 · 新匹配格</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">整页背景</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器<code>--c-bg-container</code></div><div class="sw__u">各分区白卡</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到档位。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">24/800（页标题）</span><span class="type__p" style="font-size:24px;font-weight:800">首页</span></div>
+        <div class="type__i"><span class="type__m">--fs-5xl 22/700</span><span class="type__p" style="font-size:22px;font-weight:700">小满</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/800</span><span class="type__p" style="font-size:18px;font-weight:800">今日推荐 · 关系动态</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/400</span><span class="type__p" style="font-size:14px;font-weight:400;color:var(--c-text-placeholder)">发现今天值得遇见的人</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/500</span><span class="type__p" style="font-size:10px;font-weight:500;color:var(--c-brand)">摄影 · 旅行 · 音乐 · 电影</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--section-gap 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 小卡</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 今日推荐/进度</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>胶囊 · 按钮/徽章</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与实况的已知差异</h2><p>note 块逐条登记</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/xiaoman-photo-1.png" alt="" style="height:190px">
+      <div class="asset__b"><b>照片 / 封面 / 头像位</b><p>今日推荐主图与 4 图墙用 <code>xiaoman-photo-1..4</code>（工程演示人设真素材）、附近头像用 <code>person-0N-avatar</code> 池、社区帖配图用 <code>posts/post-N</code>、兴趣圈封面用 <code>covers/circle-cover-*</code>。全部取自 <code>assets/demo/</code>，不放网图、不放示例证件图。</p><div class="m">2026-10-26 按规范 §8 由灰占位回补为真素材</div></div></div>
+    <div class="asset"><div class="ph" style="height:190px"><svg><use href="#i-wing"/></svg></div>
+      <div class="asset__b"><b>邀请横幅 · 带翅膀爱心</b><p>理想图为一张裁切素材插画（INVITE_WINGED_HEART）。画板以同形描边爱心+翅膀 SVG 近似，落色走 --c-romance。</p><div class="m">lucide 风格近似 · 上线换素材</div></div></div>
+  </div>
+  <div class="note">
+    <b>真值位留空（照抄数字=退稿）：</b>
+    <ul>
+      <li>合拍度徽章取后端真值：<code>RealHomeService</code> 有合拍度上下限常量、实测渲染 65%，画板按 65% 画并标口径。理想图的 92% 是演示值，不照抄；后端无值时才降级为空骨架。</li>
+    </ul>
+    <b>演示计数（照理想图的值画，非真值）：</b>
+    <ul>
+      <li>顶部通知角标 6、tabbar 消息角标 3、关系动态四格 3/2/5/1、兴趣圈人数 1.2w/8,932/1.6w/9,210、附近「32 位」、社区赞评 128·24 / 96·18 / 76·12、恋爱进度「2/4 项完成」与「1 条待处理」——均为演示计数，非真值。</li>
+    </ul>
+    <b>已裁定的偏离理想图之处（以裁定为准，非画错）：</b>
+    <ul>
+      <li><b>tabbar 中央项</b>：理想图画的是凸起粉色圆盘 +「寻觅」。现按 tabbar 单一来源裁定（R2b-L01-D21 / L02-D05 / L03-D13）与本页任务口径，画成五项等大平铺、中央为描边爱心 +「匹配」（「寻觅」只作寻觅页标题，非 tab 标签）；实况帧同此。</li>
+      <li><b>顶部导航</b>：理想图右侧仅「定位 + 铃铛」。现版 HomeHeader 已加「我的」头像入口（实况帧可见），理想图无，本基准按理想图画、不补头像。</li>
+      <li><b>社区卡「关注」按钮</b>：现组件有 <code>关注/已关注</code> 胶囊（MP-R1-HOME-014），理想图社区卡无此件，本基准按理想图不画。</li>
+      <li><b>恋爱步骤文案口径</b>：本基准照理想图画「认识新的人 / 参与兴趣互动」；i18n 现值为「认识新人 / 兴趣互动」（后端 mock title 为理想图长文案）。属文案措辞口径，非版式差异。</li>
+      <li>定位「3km」为演示值；校名 北京大学 / 清华大学 为真校名；人设取真名池（小满 / 周岚 / 阿辰 / 星辰 / 小溪），理想图「草莓奶昔」按真名池裁定替换为「周岚」。</li>
+      <li>本页为主包 tab 页，有 tabbar；帧即视口，F01 底部关系动态若被 tabbar 压边属正常裁切。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 首页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

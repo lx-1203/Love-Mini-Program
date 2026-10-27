@@ -1,0 +1,57 @@
+{
+  "schema": "design-board-shoot/v1",
+  "board": "setup-schedule.html",
+  "dsf": 2.273,
+  "results": [
+    {
+      "id": "F01",
+      "title": "空态 · 首次进入",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\setup-schedule\\F01.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F02",
+      "title": "已填 · 3 行时段（删除钮出现）",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\setup-schedule\\F02.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F03",
+      "title": "保存校验 · 缺常去区域",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\setup-schedule\\F03.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F04",
+      "title": "保存校验 · 缺空闲时段",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\setup-schedule\\F04.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F05",
+      "title": "保存失败 · 接口异常",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\setup-schedule\\F05.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    }
+  ]
+}

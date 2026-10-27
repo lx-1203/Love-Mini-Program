@@ -15,7 +15,7 @@ describe("SetupProgress component - 引导流程进度条组件", () => {
   /**
    * 挂载辅助函数：stub uni-app 原生组件（view/text）以便在 jsdom 中渲染
    */
-  function mountProgress(props?: { currentStep: number; totalSteps?: number }) {
+  function mountProgress(props?: { currentStep: number; variant?: "full" | "student" | "non-student" }) {
     return mount(SetupProgress, {
       props: props ?? { currentStep: 1 },
       global: {
@@ -50,9 +50,9 @@ describe("SetupProgress component - 引导流程进度条组件", () => {
   });
 
   // ------------------------------------------------------------------
-  // 渲染：默认 totalSteps=5 渲染 5 个步骤
+  // 渲染：默认 variant=full 的步骤表有 5 项 ⇒ 渲染 5 个步骤
   // ------------------------------------------------------------------
-  it("默认 totalSteps=5 渲染 5 个 step-wrap", () => {
+  it("默认渲染 5 个 step-wrap", () => {
     const wrapper = mountProgress({ currentStep: 1 });
     expect(wrapper.findAll(".setup-progress__step-wrap").length).toBe(5);
   });
@@ -138,7 +138,7 @@ describe("SetupProgress component - 引导流程进度条组件", () => {
     expect(dots[0].classes()).toContain("setup-progress__dot--current");
   });
 
-  it("currentStep>totalSteps 时 clamp 到 totalSteps", () => {
+  it("currentStep 超出步骤数时 clamp 到末步", () => {
     const wrapper = mountProgress({ currentStep: 99 });
     const dots = wrapper.findAll(".setup-progress__dot");
     expect(dots[4].classes()).toContain("setup-progress__dot--current");
@@ -165,5 +165,34 @@ describe("SetupProgress component - 引导流程进度条组件", () => {
     const label = wrapper.find(".setup-progress__label").text();
     expect(label).toBeTruthy();
     expect(label.length).toBeGreaterThan(0);
+  });
+
+  // ------------------------------------------------------------------
+  // 2026-10-27 契约收敛：调用方传真实链序位置，组件内不再有 LEGACY_STEP_MAP
+  // 旧尺子从不传 variant ⇒ 下面三条是这条契约唯一的钉据（缺了就会静默退回旧语义）
+  // ------------------------------------------------------------------
+  const labelOf = (key: string) => (i18n.global as unknown as { t: (k: string) => string }).t(key);
+
+  it("非学生分支：4 个圆点，第 2 屏（时间安排）为当前，分母取本分支步骤数 4", () => {
+    const wrapper = mountProgress({ currentStep: 2, variant: "non-student" });
+    const dots = wrapper.findAll(".setup-progress__dot");
+    expect(dots.length).toBe(4);
+    expect(dots[1].classes()).toContain("setup-progress__dot--current");
+    expect(dots[0].classes()).toContain("setup-progress__dot--completed");
+    expect(dots[2].classes()).not.toContain("setup-progress__dot--completed");
+    const text = wrapper.find(".setup-progress__current").text();
+    expect(text).toContain("2");
+    expect(text).toContain("4");
+  });
+
+  it("学生分支第 3 屏读作「时间安排」——旧表值域不含 3，这条只有删表后才成立", () => {
+    const wrapper = mountProgress({ currentStep: 3, variant: "student" });
+    expect(wrapper.find(".setup-progress__label").text()).toBe(labelOf("setup.schedule.pageTitle"));
+  });
+
+  it("学生分支第 4 屏读作「推荐偏好」且前三屏已完成（recommend-pref 的新传值）", () => {
+    const wrapper = mountProgress({ currentStep: 4, variant: "student" });
+    expect(wrapper.find(".setup-progress__label").text()).toBe(labelOf("setupProgress.stepRecommend"));
+    expect(wrapper.findAll(".setup-progress__dot--completed").length).toBe(3);
   });
 });

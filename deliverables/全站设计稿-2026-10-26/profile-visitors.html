@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 谁看过我 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，不写私有色值） ===== */
+.phone--vst { background: var(--c-gradient-page); }
+
+/* 页头：sticky 薄荷行（白圆返回 + 标题紧随左轨 + 右端计数，右侧 96px 留给微信胶囊） */
+.vst-head { position: absolute; top: 44px; left: 0; width: 100%; height: 56px; z-index: 6;
+  display: flex; align-items: center; padding: 0 96px 0 16px; box-sizing: border-box;
+  background: var(--c-bg-page); }
+.vst-back { width: 32px; height: 32px; border-radius: var(--r-full); flex: none;
+  background: var(--c-bg-container); border: var(--c-border-card);
+  display: flex; align-items: center; justify-content: center; }
+.vst-back svg { width: 20px; height: 20px; color: var(--c-text-placeholder); }
+.vst-title { font-size: var(--fs-5xl); font-weight: 700; color: var(--c-text-primary); margin-left: var(--sp-4); }
+.vst-count { margin-left: auto; font-size: var(--fs-md); color: var(--c-text-tertiary);
+  font-variant-numeric: tabular-nums; }
+
+.vst-body { position: absolute; top: 100px; left: 0; width: 100%; padding: 0 16px;
+  box-sizing: border-box; z-index: 2; }
+
+/* 骨架（SkeletonBlock variant="list" rows=4） */
+.vst-shim { background: linear-gradient(90deg, var(--c-border-light) 25%, var(--c-border-default) 50%, var(--c-border-light) 75%); }
+.vst-sk { display: flex; flex-direction: column; gap: var(--section-gap); padding: 36px 0 0; }
+.vst-sk__card { display: flex; align-items: center; gap: var(--sp-5); padding: var(--sp-7);
+  background: var(--c-bg-container); border-radius: var(--r-xl); box-shadow: var(--s-card-soft); }
+.vst-sk__av { width: 44px; height: 44px; border-radius: 50%; flex: none; }
+.vst-sk__ls { flex: 1; display: flex; flex-direction: column; gap: var(--sp-3); }
+.vst-sk__l { height: 12px; border-radius: var(--r-md); }
+.w40 { width: 40%; } .w90 { width: 90%; } .w70 { width: 70%; }
+.vst-sk__label { text-align: center; font-size: var(--fs-lg); color: var(--c-text-tertiary); margin-top: var(--sp-6); }
+
+/* 错误卡 */
+.vst-err { display: flex; flex-direction: column; align-items: center; gap: var(--sp-5);
+  padding: 36px; margin-top: 10px; background: var(--c-bg-container); border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft); }
+.vst-err__t { font-size: var(--fs-md); color: var(--c-text-secondary); text-align: center; }
+.vst-err__b { padding: 6px var(--sp-6); background: var(--c-brand); border-radius: var(--r-full); }
+.vst-err__b span { color: var(--c-text-inverse); font-size: var(--fs-md); font-weight: 600; }
+
+/* 空态：宿主槽吃掉头部以下剩余视口并两轴居中（R8-L09-D24） */
+.vst-eslot { position: absolute; top: 100px; left: 0; right: 0; bottom: 0; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 16px;
+  box-sizing: border-box; }
+.vst-empty { width: 100%; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;
+  gap: var(--sp-5); padding: 36px; background: var(--c-bg-container); border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft); }
+.vst-empty > svg { width: 60px; height: 60px; color: var(--c-text-placeholder); }
+.vst-empty__t { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); }
+.vst-empty__d { font-size: var(--fs-md); color: var(--c-text-tertiary); text-align: center; }
+.vst-empty__btn { min-height: 44px; box-sizing: border-box; margin-top: 6px; padding: 6px var(--sp-8);
+  background: var(--c-bg-container); border: 1px solid var(--c-brand); border-radius: var(--r-full);
+  display: flex; align-items: center; justify-content: center; }
+.vst-empty__btn span { font-size: var(--fs-lg); font-weight: 600; color: var(--c-brand-800); }
+
+/* 列表（按时间分组） */
+.vst-list { display: flex; flex-direction: column; gap: var(--section-gap); }
+.vst-grp { display: flex; flex-direction: column; gap: var(--sp-3); }
+.vst-grp__t { font-size: var(--fs-md); font-weight: 600; color: var(--c-text-tertiary); padding-left: var(--sp-1); }
+.vst-items { display: flex; flex-direction: column; gap: var(--sp-3); }
+.vst-card { display: flex; align-items: center; gap: var(--sp-5); padding: var(--sp-5) var(--sp-6);
+  background: var(--c-bg-container); border-radius: var(--r-xl); box-shadow: var(--s-card-soft); }
+.vst-av { width: 48px; height: 48px; border-radius: var(--r-full); overflow: hidden; flex: none;
+  background: var(--c-bg-page); }
+.vst-av img { width: 100%; height: 100%; object-fit: cover; }
+.vst-av--ph { background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand-100));
+  display: flex; align-items: center; justify-content: center; }
+.vst-av--ph span { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-brand); }
+.vst-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--sp-1); }
+.vst-name { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); }
+.vst-campus { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.vst-time { font-size: var(--fs-sm); color: var(--c-text-tertiary); font-variant-numeric: tabular-nums; flex: none; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格，与工程 SVG 体系一致） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-visitor" viewBox="0 0 24 24"><circle cx="12" cy="8.2" r="3.6"/><path d="M5.4 20c.6-3.5 3.4-5.6 6.6-5.6s6 2.1 6.6 5.6"/><path d="M19.4 4.6a5.4 5.4 0 0 1 0 7.2"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.8v4.8"/><path d="M12 16.2h.01"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>谁看过我 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/profile-extra/profile/visitors</code>。
+     个人页「我的互动 · 谁看过我」的下钻页，数据源是 likes store 的 <code>/matches/visitors</code>（与「喜欢与访客」同源）。
+     页面形态 = sticky 薄荷页头（白圆返回 + 标题 + 右端计数）+ 单一 v-if 链的四种正文形态，列表按「今日 / 昨日 / 更早」分组。
+     本页状态机有 4 态，本页此前无理想效果图，版式按源码实况。</p>
+  <div class="cover__meta">
+    <span>路由 <b>profile-extra/visitors</b></span>
+    <span>分包 <b>profile-extra</b>（无 tabbar）</span>
+    <span>状态 <b>4 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 4 屏</h2>
+    <p>加载中（骨架） / 错误 / 空 / 有访客·按时间分组</p></div>
+  <div class="sec__sub">本页状态机有 4 态，来自模板里唯一一条 v-if 链：
+    <code>loading &amp;&amp; visitors.length === 0</code>（骨架）、<code>v-else-if="errorMessage"</code>（错误）、
+    <code>v-else-if="visitors.length === 0"</code>（空态）、<code>v-else</code>（分组列表）。
+    页头恒定渲染，只有计数节点带 <code>v-if="visitors.length &gt; 0"</code>，故前三屏页头无「访客记录 · N」。
+    帧即视口：超出 812px 的内容裁掉，裁切说明只写在题注里。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">加载中 · 全页骨架</span><span class="d">无计数 · 4 行 list 骨架</span></figcaption>
+      <div class="phone phone--vst">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="vst-head">
+          <span class="vst-back"><svg><use href="#i-back"/></svg></span>
+          <span class="vst-title">谁看过我</span>
+        </div>
+        <div class="vst-body">
+          <div class="vst-sk">
+            <div class="vst-sk__card"><span class="vst-sk__av vst-shim"></span><div class="vst-sk__ls"><span class="vst-sk__l vst-shim w40"></span><span class="vst-sk__l vst-shim w90"></span><span class="vst-sk__l vst-shim w70"></span></div></div>
+            <div class="vst-sk__card"><span class="vst-sk__av vst-shim"></span><div class="vst-sk__ls"><span class="vst-sk__l vst-shim w40"></span><span class="vst-sk__l vst-shim w90"></span><span class="vst-sk__l vst-shim w70"></span></div></div>
+            <div class="vst-sk__card"><span class="vst-sk__av vst-shim"></span><div class="vst-sk__ls"><span class="vst-sk__l vst-shim w40"></span><span class="vst-sk__l vst-shim w90"></span><span class="vst-sk__l vst-shim w70"></span></div></div>
+            <div class="vst-sk__card"><span class="vst-sk__av vst-shim"></span><div class="vst-sk__ls"><span class="vst-sk__l vst-shim w40"></span><span class="vst-sk__l vst-shim w90"></span><span class="vst-sk__l vst-shim w70"></span></div></div>
+          </div>
+          <div class="vst-sk__label">加载中...</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">错误 · 首拉失败</span><span class="d">errorMessage 非空 · 无计数</span></figcaption>
+      <div class="phone phone--vst">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="vst-head">
+          <span class="vst-back"><svg><use href="#i-back"/></svg></span>
+          <span class="vst-title">谁看过我</span>
+        </div>
+        <div class="vst-body">
+          <div class="vst-err" role="alert">
+            <span class="vst-err__t">网络错误</span>
+            <span class="vst-err__b"><span>重试</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">空 · 无访客记录</span><span class="d">卡片居中于剩余视口 · 无计数</span></figcaption>
+      <div class="phone phone--vst">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="vst-head">
+          <span class="vst-back"><svg><use href="#i-back"/></svg></span>
+          <span class="vst-title">谁看过我</span>
+        </div>
+        <div class="vst-eslot">
+          <div class="vst-empty">
+            <svg><use href="#i-visitor"/></svg>
+            <span class="vst-empty__t">暂无访客记录</span>
+            <span class="vst-empty__d">完善资料，让更多人发现你</span>
+            <span class="vst-empty__btn"><span>编辑资料</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">有访客 · 三组齐全</span><span class="d">计数「访客记录 · 5」· 一屏装下</span></figcaption>
+      <div class="phone phone--vst">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="vst-head">
+          <span class="vst-back"><svg><use href="#i-back"/></svg></span>
+          <span class="vst-title">谁看过我</span>
+          <span class="vst-count">访客记录 · 5</span>
+        </div>
+        <div class="vst-body">
+          <div class="vst-list">
+            <div class="vst-grp">
+              <span class="vst-grp__t">今日</span>
+              <div class="vst-items">
+                <div class="vst-card"><span class="vst-av"><img src="assets/demo/person-01-avatar.png" alt=""></span><div class="vst-info"><span class="vst-name">小满</span><span class="vst-campus">北京大学</span></div><span class="vst-time">14:32</span></div>
+                <div class="vst-card"><span class="vst-av"><img src="assets/demo/person-03-avatar.png" alt=""></span><div class="vst-info"><span class="vst-name">阿辰</span></div><span class="vst-time">09:12</span></div>
+              </div>
+            </div>
+            <div class="vst-grp">
+              <span class="vst-grp__t">昨日</span>
+              <div class="vst-items">
+                <div class="vst-card"><span class="vst-av"><img src="assets/demo/person-02-avatar.png" alt=""></span><div class="vst-info"><span class="vst-name">周岚</span><span class="vst-campus">清华大学</span></div><span class="vst-time">昨日 21:05</span></div>
+                <div class="vst-card"><span class="vst-av"><img src="assets/demo/person-04-avatar.png" alt=""></span><div class="vst-info"><span class="vst-name">星辰</span><span class="vst-campus">武汉大学</span></div><span class="vst-time">昨日 08:40</span></div>
+              </div>
+            </div>
+            <div class="vst-grp">
+              <span class="vst-grp__t">更早</span>
+              <div class="vst-items">
+                <div class="vst-card"><span class="vst-av vst-av--ph"><span>小</span></span><div class="vst-info"><span class="vst-name">小溪</span><span class="vst-campus">南京大学</span></div><span class="vst-time">10-19 16:48</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页交互件不多，但每一枚都挂在 v-if 分支上——枚举缺一格，回归就拍不出来。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>访客行 · 四变体（同一行的 v-if 交叉）</h3>
+      <p class="hint">头像位 <code>item.avatarUrl</code> 有/无决定「真图」与「首字渐变占位」；校区位 <code>item.campusName</code> 有无决定第二行去留。昵称缺失时回退 <code>common.noData</code>「暂无数据」。</p>
+      <div class="row">
+        <div class="cell" style="width:220px">
+          <div class="vst-card"><span class="vst-av"><img src="assets/demo/person-01-avatar.png" alt=""></span><div class="vst-info"><span class="vst-name">小满</span><span class="vst-campus">北京大学</span></div><span class="vst-time">14:32</span></div>
+          <span class="lab">真头像 + 有校区</span>
+        </div>
+        <div class="cell" style="width:220px">
+          <div class="vst-card"><span class="vst-av vst-av--ph"><span>小</span></span><div class="vst-info"><span class="vst-name">小溪</span></div><span class="vst-time">10-19 16:48</span></div>
+          <span class="lab">首字占位 + 无校区</span>
+        </div>
+        <div class="cell" style="width:220px">
+          <div class="vst-card"><span class="vst-av"><img src="assets/demo/person-03-avatar.png" alt=""></span><div class="vst-info"><span class="vst-name">暂无数据</span><span class="vst-campus">南京大学</span></div><span class="vst-time">昨日 08:40</span></div>
+          <span class="lab">昵称缺失 → common.noData</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>分组标题与时间格式 · 三档同源</h3>
+      <p class="hint">分组由 <code>getGroup(visitedAt)</code> 推导，空组被 <code>result.filter(g =&gt; g.items.length &gt; 0)</code> 剔除——只有两组的月份不出现分组行。时间格式与分组必须同档。</p>
+      <table class="tbl">
+        <tr><th>group</th><th>标题（i18n）</th><th>formatTime 输出</th></tr>
+        <tr><td>today</td><td>今日 <code>profile.visitorToday</code></td><td>HH:mm（如 14:32）</td></tr>
+        <tr><td>yesterday</td><td>昨日 <code>profile.visitorYesterday</code></td><td>昨日 HH:mm</td></tr>
+        <tr><td>earlier</td><td>更早 <code>profile.visitorEarlier</code></td><td>MM-DD HH:mm</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>页头计数节点 · 两支</h3>
+      <p class="hint"><code>v-if="visitors.length &gt; 0"</code>；<code>profile.visitors</code> 真值是「访客记录」不是「访客」。节点存在时靠 <code>margin-left:auto</code> 顶到右端，左侧恒留 96px 胶囊安全距。</p>
+      <div class="row">
+        <div class="cell" style="width:220px"><div class="vst-head" style="position:static;height:44px;width:100%"><span class="vst-title" style="margin-left:0">谁看过我</span><span class="vst-count">访客记录 · 5</span></div><span class="lab">有访客（F04）</span></div>
+        <div class="cell" style="width:220px"><div class="vst-head" style="position:static;height:44px;width:100%"><span class="vst-title" style="margin-left:0">谁看过我</span></div><span class="lab">无访客 / 加载 / 错误</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>重试按钮 / 空态次级按钮 · 各两支</h3>
+      <p class="hint">两枚按钮配方不同：重试是 <code>--c-brand</code> 实底胶囊（.visitors-error__retry），空态「编辑资料」是白底 + 品牌绿描边 + <code>--c-brand-800</code> 文字（R10-L09-D10 补 min-height 88rpx=44px 热区）。</p>
+      <div class="row">
+        <div class="cell"><span class="vst-err__b"><span>重试</span></span><span class="lab">重试 default</span></div>
+        <div class="cell"><span class="vst-err__b" style="opacity:.72"><span>重试</span></span><span class="lab">重试 press</span></div>
+        <div class="cell"><span class="vst-empty__btn"><span>编辑资料</span></span><span class="lab">空态次级 default</span></div>
+        <div class="cell"><span class="vst-empty__btn" style="opacity:.72"><span>编辑资料</span></span><span class="lab">空态次级 press</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用八档，未引入任何页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#DFF3EA"></span><div><div class="sw__n">页底渐变<code>--c-gradient-page</code></div><div class="sw__u">.visitors-page 底 · 180deg #DFF3EA→#EEF7F2</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">sticky 页头实底（承接滚动内容）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">重试实底 · 描边 · 首字占位文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">「编辑资料」描边按钮文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">主文字<code>--c-text-primary</code></div><div class="sw__u">页头标题 · 访客昵称</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">三级文字<code>--c-text-tertiary</code></div><div class="sw__u">分组标题 · 校区 · 时间 · 计数</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#9AA39F"></span><div><div class="sw__n">占位文字<code>--c-text-placeholder</code></div><div class="sw__u">返回键字形（见 §04 差异登记）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#DCE5E2"></span><div><div class="sw__n">浅描边<code>--c-border-default</code></div><div class="sw__u">骨架 shimmer 中段</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到六档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/700</span><span class="type__p" style="font-size:22px;font-weight:700">谁看过我</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">暂无访客记录</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">编辑资料 · 小满</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/600</span><span class="type__p" style="font-size:13px;font-weight:600">今日 · 访客记录 · 5</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;color:var(--c-text-tertiary)">北京大学 · 14:32</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-text-secondary)">完善资料，让更多人发现你</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-1 2rpx</b><i style="width:1px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-8 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--sp-10 72rpx</b><i style="width:36px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>12rpx · 骨架行</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 卡片</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>胶囊 · 头像 · 按钮</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>头像位全部走 assets/demo 真素材</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/person-01-avatar.png" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>person-01-avatar.png</b><p>访客行头像（96rpx=48px 圆，<code>mode="aspectFill"</code>）。真机该位是 <code>resolveMediaUrl(item.avatarUrl)</code> 的用户头像，画板按 §8 用演示池真素材，不许灰块。</p><div class="m">48px · 圆形裁切</div></div></div>
+    <div class="asset"><img src="assets/demo/person-02-avatar.png" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>person-02-avatar.png … person-07-avatar.png</b><p>同位轮换，保证每行头像不同像素，供封面裁切与密度比对。</p><div class="m">48px · aspectFill</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-avatar.png" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>xiaoman-avatar.png</b><p>演示人设「小满」的登记头像，与 §01 内其它真名池人设同源。</p><div class="m">48px</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>返回键素材档位</b>：本页 <code>.visitors-header__back-icon</code> 仍绑 <code>IMAGE_PATHS.ICONS_COMMON.BACK</code>（common/back.svg 的栅格图，描边写死 #94A3B8 蓝灰）。该色值未登记进 board-base.css，画板就近取 <code>--c-text-placeholder</code>；同域 location / album / favorites / tasks 四页已按 R7/R8/R14 改成「‹」深色字形，本页与 privacy 仍在旧口径。已回报 BASE_PROBLEM。</li>
+      <li><b>空态图标</b>：<code>ICONS_SOCIAL.VISITOR</code>（assets/icons/social/visitor.svg，#94A3B8 描边、120rpx=60px）。该 SVG 在工程 <code>/static</code> 树内、不属演示素材池，画板按 §4 以同形态 lucide 描边 symbol 复刻，尺寸与色档一致。</li>
+      <li><b>错误文案</b>：<code>errorMessage</code> 实值优先取 <code>error.message</code>，仅兜底才是 i18n 的 <code>common.networkError</code>「网络错误」。画板取逐字真值「网络错误」，真机文案可能随异常体不同而变化，不作为断言项。</li>
+      <li><b>本页在 profile-extra 分包，无 tabbar、无原生导航栏</b>——画板若出现 tabbar 即为错；页头是页面自己画的 sticky 薄荷行。</li>
+      <li><b>无分数类真值位</b>：本页不显示合拍度/匹配度/共同点，无需留空骨架。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 谁看过我页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 恋爱中心·恋爱咨询课程 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，不写私有色值） ===== */
+/* AppShell 页头（本页 R10-P2-014 由绿实心渐变头改为全站统一 AppShell） */
+.sh { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 0 var(--page-padding);
+  background: var(--c-bg-page); overflow: hidden; }
+.sh__inner { padding-top: 54px; }
+.sh__back { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; min-width: 44px;
+  padding: 10px 12px 10px 8px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: 0.5px solid var(--c-border-light); box-shadow: var(--s-sm); }
+.sh__back svg { width: 16px; height: 16px; color: var(--c-brand-800); }
+.sh__back span { font-size: var(--fs-base); color: var(--c-brand-800); font-weight: 500; }
+.sh__title { display: block; font-size: var(--fs-7xl); font-weight: 700; color: var(--c-text-primary);
+  margin-top: 8px; line-height: 1.25; letter-spacing: -0.3px; }
+
+/* 区块（.content-section：margin 10px 0，水平 gutter 归零交回 AppShell —— R8-L09-D01） */
+.cs { margin: 10px 0; }
+.cs__t { display: block; font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); margin-bottom: 8px; }
+.cs__hint { display: block; font-size: var(--fs-lg); color: var(--c-text-secondary); line-height: 1.6; }
+
+/* 封存卡（.consult-sealed） */
+.sealed { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  margin: 12px 0; padding: 24px 10px; border-radius: var(--card-radius); background: var(--c-bg-container);
+  box-shadow: var(--card-shadow); }
+.sealed__ic { width: 48px; height: 48px; color: var(--c-text-tertiary); margin-bottom: 2px; }
+.sealed__t { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.sealed__d { font-size: var(--fs-sm); color: var(--c-text-secondary); text-align: center; line-height: 1.6; }
+.sealed__act { display: flex; align-items: center; justify-content: center; min-height: 44px; margin-top: 6px;
+  padding: 0 12px; border-radius: var(--r-full); border: 1px solid var(--c-brand-500); }
+.sealed__act span { font-size: var(--fs-lg); font-weight: 600; color: var(--c-brand-700); }
+.sealed__act--pressed { background: var(--c-brand-50); opacity: 0.85; }
+
+/* web-view 态 */
+.web { position: absolute; inset: 0; background: var(--c-bg-container); }
+
+/* 已撤除位的空骨架登记（画板上不出现价格/课程行，只在 §02 说明） */
+.ghost { display: flex; flex-direction: column; gap: 6px; }
+.ghost__i { height: 62px; border-radius: var(--card-radius); border: 1px dashed var(--c-border-default);
+  background: var(--c-bg-surface); display: flex; align-items: center; justify-content: center;
+  font-size: 11.5px; color: var(--c-text-placeholder); }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 6.5 9 12l5.5 5.5"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="11" rx="2.4"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>恋爱中心 · 恋爱咨询课程 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/tools/love-center/consulting</code>。
+     本页有两个入口：hub 快捷入口第 2 行「恋爱咨询课程」（仅商业化开启档出现，跳转序号 2），
+     以及 hub 宫格里的「恋爱课程」「社交课程」两卡（未封存时，跳转序号 4）。
+     它是五页里唯一<b>主动撤除过内容</b>的一页：R11-L09-D01 把三档价目、三条课程、三位讲师与「报名」控件整段删掉，
+     因为页面从不请求课程接口、这些行全是前端常量。本画板把「撤除后应该长什么样」钉成基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>tools/love-center/consulting</b></span>
+    <span>分包 <b>tools</b>（无 tabbar）</span>
+    <span>状态 <b>3 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 3 屏</h2>
+    <p>封存态（现网默认） / 未封存 · 未配 H5 / 未封存 · web-view 接管</p></div>
+  <div class="sec__sub">本页状态机有 <b>3 态</b>，来自模板一条三分链：
+    <code>&lt;web-view v-if="!commerceSealed &amp;&amp; webUrl"&gt;</code>（:71）→
+    <code>&lt;AppShell v-else-if="commerceSealed"&gt;</code> 封存卡（:74）→
+    <code>&lt;AppShell v-else&gt;</code> 本地弱态（:107）。
+    两个判据：<code>commerceSealed = !appConfig.isCommerceOn("consult")</code>（:39，缺省即封存）、
+    <code>webUrl = contentPageUrls.consultingUrl ?? ""</code>（:42，现值为空）。
+    <b>闸门优先级高于 URL</b>：封存态即使配了 H5 也不下发外部付费内容。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">封存态 · commerce.consult=false</span><span class="d">现网默认 · 唯一出口是「帮助与客服」</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">恋爱咨询课程</span>
+            <div class="sealed">
+              <svg class="sealed__ic"><use href="#i-lock"/></svg>
+              <span class="sealed__t">功能封存中</span>
+              <span class="sealed__d">该功能暂未开放，开放时间将另行通知</span>
+              <div class="sealed__act"><span>帮助与客服</span></div>
+            </div>
+            <div class="cs">
+              <span class="cs__t">精选课程，助你提升恋爱能力</span>
+              <span class="cs__hint">咨询/课程内容筹备中，敬请期待</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">未封存 · 未配 H5</span><span class="d">无封存卡 · 只剩一句弱态文案</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">恋爱咨询课程</span>
+            <div class="cs" style="margin-top:14px">
+              <span class="cs__t">精选课程，助你提升恋爱能力</span>
+              <span class="cs__hint">咨询/课程内容筹备中，敬请期待</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">未封存 · 已配 H5 · web-view 接管</span><span class="d">AppShell 不渲染 · 内容非本仓真值域</span></figcaption>
+      <div class="phone">
+        <div class="web"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+
+  <div class="note" style="margin-top:24px">
+    <b>本页的两个入口（与 hub 画板对得上）：</b>
+    <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">
+      <div class="jump" style="display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.6"><span style="flex:none;width:20px;height:20px;border-radius:50%;background:var(--c-brand-50);color:var(--c-brand-700);font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center">2</span><span>hub 快捷入口第 2 行「恋爱咨询课程」→ <code>ROUTES.LOVE_CENTER.CONSULTING</code>（index.vue:53，<b>仅 <code>isCommerceOn("course")=true</code> 时该行才存在</b>）</span></div>
+      <div class="jump" style="display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.6"><span style="flex:none;width:20px;height:20px;border-radius:50%;background:var(--c-brand-50);color:var(--c-brand-700);font-weight:800;font-size:11px;display:flex;align-items:center;justify-content:center">4</span><span>hub 宫格「恋爱课程」/「社交课程」→ <code>onBoardTap()</code> 未封存分支跳 <code>ROUTES.LOVE_CENTER.CONSULTING</code>（index.vue:95）；封存时不跳，只弹「功能封存中，暂不可用」</span></div>
+    </div>
+    <ul>
+      <li>hub 的「恋爱咨询」「社交咨询」两卡<b>不到本页</b>，它们跳 <code>ROUTES.HELP</code>（帮助与客服）——见 hub 画板跳转序号 3。</li>
+      <li>本页封存卡里的「帮助与客服」按钮 → <code>ROUTES.HELP</code> = <code>/subpackages/tools/help/index</code>（:62-65，R6-L10-D16 补的次级出口，消死端）。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页可交互件只有两枚（AppShell 返回、封存卡内「帮助与客服」）；
+    真正需要枚举的是<b>「哪些内容位必须缺席」</b>。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>三态判定表 · 闸门优先于 URL</h3>
+      <p class="hint"><code>commerce.enabled</code> 与 <code>commerce.consult</code> 必须<b>同时为 true</b> 才算未封存（app-config.ts:64-77），
+        缺省（后端未下发）即封存。</p>
+      <table class="tbl">
+        <tr><th>commerce.consult</th><th>consultingUrl</th><th>渲染</th><th>对应屏</th></tr>
+        <tr><td>false（现网默认）</td><td>任意</td><td>AppShell + 封存卡 + 弱态文案</td><td>F01</td></tr>
+        <tr><td>true</td><td>空（现值）</td><td>AppShell + 弱态文案（<b>无</b>封存卡）</td><td>F02</td></tr>
+        <tr><td>true</td><td>非空</td><td><code>&lt;web-view&gt;</code> 全屏接管</td><td>F03</td></tr>
+      </table>
+      <p class="hint" style="margin-top:12px">F01 与 F02 的差别<b>只有那张封存卡</b>；
+        两屏的「精选课程…」区块完全相同。把 F02 画成带锁卡 = 错，把 F01 画成无卡 = 错。</p>
+    </div>
+
+    <div class="panel">
+      <h3>封存卡 · 三态</h3>
+      <p class="hint">锁图标在工程侧是位图 <code>ICONS_COMMON.LOCK_SVG</code>，源码用
+        <code>filter: saturate(0) brightness(0.71)</code> 把它压到 <code>--c-text-tertiary</code> 档（R8-L09-D04：原描边 #94A3B8 压白底只有 2.3:1）。</p>
+      <div class="row">
+        <div class="cell" style="width:250px"><div class="sealed" style="margin:0"><svg class="sealed__ic"><use href="#i-lock"/></svg><span class="sealed__t">功能封存中</span><span class="sealed__d">该功能暂未开放，开放时间将另行通知</span><div class="sealed__act"><span>帮助与客服</span></div></div><span class="lab">default</span></div>
+        <div class="cell" style="width:250px"><div class="sealed" style="margin:0"><svg class="sealed__ic"><use href="#i-lock"/></svg><span class="sealed__t">功能封存中</span><span class="sealed__d">该功能暂未开放，开放时间将另行通知</span><div class="sealed__act sealed__act--pressed"><span>帮助与客服</span></div></div><span class="lab">次级出口按压</span></div>
+      </div>
+      <p class="hint" style="margin-top:12px">卡内三行 + 一枚描边钮，<b>没有</b>「开放提醒订阅」（源码注释点名属需新建，未实现）。
+        钮热区下限 44px（<code>min-height:88rpx</code>），描边 1px <code>--c-brand-500</code>，文字 14px/600 <code>--c-brand-700</code>。</p>
+    </div>
+
+    <div class="panel">
+      <h3>课程区 · 已撤除位的缺席枚举（本页主要判点）</h3>
+      <p class="hint">R11-L09-D01（P0）整段撤除，理由是「页面从不请求课程接口，课程与价格均无后端真相源」。
+        下面这些行<b>不得出现在任何一屏</b>；右图是「曾经的形态」空骨架登记，仅存在于本节，不进画框。</p>
+      <table class="tbl">
+        <tr><th>缺席位</th><th>曾经的值</th><th>真值源</th></tr>
+        <tr><td>课程名 ×3</td><td class="plain">恋爱沟通课 / 脱单攻略课 / 亲密关系修复课（i18n <code>consulting.course1..3.title</code>，仍在档但无消费者）</td><td><b>无</b></td></tr>
+        <tr><td>讲师 ×3</td><td class="plain">林老师 / 陈老师 / …</td><td><b>无</b></td></tr>
+        <tr><td>价目 ×3 档</td><td class="plain">¥99 / ¥129 / ¥159（<code>COURSE_PRICES</code> 常量，已删）</td><td><b>无</b></td></tr>
+        <tr><td>「报名」控件</td><td class="plain"><code>handleSignup()</code> 只弹 toast，不产生订单（已删）</td><td><b>无</b></td></tr>
+      </table>
+      <div class="ghost" style="margin-top:14px">
+        <div class="ghost__i">已撤除 · 不回填（登记用，不在画框内）</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>AppShell 页头 · 与 hub / security 同件</h3>
+      <p class="hint">本页标题传 <code>contentPages.consulting.title</code> =「恋爱咨询课程」，
+        <b>不传 subtitle</b>（AppShell 的 subtitle 槽在本页为空 ⇒ 页头下没有第二行小字）。
+        R10-P2-014 之前这里是绿实心渐变头 + 右上角返回，与全站不一致，已归口。</p>
+      <div class="row">
+        <div class="cell"><span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span><span class="lab">返回胶囊</span></div>
+        <div class="cell"><span class="sh__title">恋爱咨询课程</span><span class="lab">28px/700 · 无副标题</span></div>
+      </div>
+      <p class="hint" style="margin-top:12px">水平 gutter 单一来源 = AppShell 的 16px；
+        <code>.content-section</code> 的左右外边距已归零（R8-L09-D01：曾叠成 32px 双重页边距，整列右移 15px）。</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>与 design-variables.scss 一一对应，可直接抄进 SCSS</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用这些档，未引入页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">.content-page（R11-L09-D05 由 slate 私值归口）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器<code>--c-bg-container</code></div><div class="sw__u">封存卡 · 返回胶囊</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">品牌 500<code>--c-brand-500</code></div><div class="sw__u">次级出口钮描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1F8D6A"></span><div><div class="sw__n">品牌 700<code>--c-brand-700</code></div><div class="sw__u">次级出口钮文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">品牌 800<code>--c-brand-800</code></div><div class="sw__u">返回胶囊文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">主文字<code>--c-text-primary</code></div><div class="sw__u">页头标题 · 区块标题 · 封存卡标题</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#4A524E"></span><div><div class="sw__n">次文字<code>--c-text-secondary</code></div><div class="sw__u">弱态文案 · 封存卡说明</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">三级文字<code>--c-text-tertiary</code></div><div class="sw__u">锁图标压暗后的目标档</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页五档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 56/700</span><span class="type__p" style="font-size:28px;font-weight:700">恋爱咨询课程</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 36/700</span><span class="type__p" style="font-size:18px;font-weight:700">精选课程，助你提升恋爱能力</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 34/700</span><span class="type__p" style="font-size:15px;font-weight:700">功能封存中</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 28/600</span><span class="type__p" style="font-size:14px;font-weight:600">帮助与客服 · 咨询/课程内容筹备中，敬请期待</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 26/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-secondary)">该功能暂未开放，开放时间将另行通知</span></div>
+      </div>
+      <p class="hint" style="margin-top:12px">源码兜底字面量与令牌真值不符的两处（<code>--fs-xl</code> 写 34rpx、<code>--fs-sm</code> 写 26rpx，真值分别 30/22rpx）
+        已在 R11-L09-D05 登记；画板按<b>令牌真值</b>画（15px / 11px），不照兜底字面量画。</p>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:20px"></b>--card-radius<br>40rpx · 封存卡（R6-L10-D17）</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>次级出口钮</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 本页未用，仅对照</div>
+      </div>
+      <p class="hint" style="margin-top:12px">页底 <code>.content-footer-space</code> 高 <code>calc(120rpx + env(safe-area-inset-bottom))</code>
+        （60px 起）——本页<b>保留</b>该留白件，与 hub 已删（R6-L09-D07①）不同，两页口径不一致已登记 §04。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>1 枚锁图标，无照片位、无素材缺口</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_COMMON.LOCK_SVG</b><p>封存卡主图标（<code>consulting.vue:76</code>，48px = 96rpx）。
+        工程侧是位图，CSS <code>color</code> 注不进去，降级只能靠 <code>filter: saturate(0) brightness(0.71)</code>（R8-L09-D04）。
+        画板按 §4 用描边符号 <code>#i-lock</code> + <code>--c-text-tertiary</code> 表达压暗后的最终观感。</p>
+        <div class="m">48px · 居中 · margin-bottom 2px</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>演示素材引用 · 0 件</b><p>本页没有任何头像 / 封面 / 课程配图位（课程卡整体撤除后，
+        连「讲师头像」这个槽都不存在了），故规范 §8 的照片位条件在本页不触发，不引用 <code>assets/demo/*</code>。</p>
+        <div class="m">无 NEED_ASSET</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li>本页在 <code>subpackages/tools</code> 分包，<b>无 tabbar</b>、无原生导航栏；画板出现 tabbar 即为错。</li>
+      <li><b>分数/价目位留空口径（规范 §7 通用规则第 0 条）：</b>课程名、讲师、¥99/¥129/¥159、「报名」四处
+        在源码里<b>已被整段删除</b>，删除理由写在 consulting.vue:45-60——「页面从不请求课程接口，没有任何一门课、
+        任何一个价格有后端真相源」。所以画板上这些位<b>不是留空骨架，而是根本不存在</b>：
+        补回任何一行课程或一个 ¥ 数字 = 把伪造写进永久基准 = 退稿。</li>
+      <li>区块标题「精选课程，助你提升恋爱能力」与内容<b>互相矛盾</b>（标题承诺课程，正文只有一句「筹备中」）。
+        这是 R11-L09-D01 撤除后留下的既有 i18n 键（<code>contentPages.consulting.subtitle</code>），
+        画板按源码照画并在本条登记为源码问题，不在画板层改文案。</li>
+      <li>F03 的空白同 MBTI 页 F05 的理由：<code>contentPageUrls.consultingUrl</code> 现值为空（R4-00243），
+        该态是潜伏态；配置一旦下发，画面由外部 H5 决定，不在本仓真值域内，画板不伪造。</li>
+      <li>封存态（F01）下 <code>&lt;web-view&gt;</code> 被 <code>!commerceSealed</code> 挡在门外——
+        即「配了 URL 也不加载」，判点写在 §02 三态判定表第一行。</li>
+      <li>页底留白件两页口径不一：hub 已删固定 spacer，本页仍留 <code>120rpx + safe-area</code>。
+        因 F01/F02 内容都不满一屏，本画板未把它画进视口（内容止于弱态文案），真机底部会多出这 60px。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 恋爱中心·恋爱咨询课程高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（画框 375 × 812，2.273×）
+</footer>
+
+</div>
+</body>
+</html>

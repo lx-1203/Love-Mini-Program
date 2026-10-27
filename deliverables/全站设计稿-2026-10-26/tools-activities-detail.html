@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 活动详情页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌；rpx ÷ 2 = px） ===== */
+/* 页头：子包页无原生导航栏，页面自绘绿带（源 .detail-header：padding calc(--sp-4+statusbar) --sp-4 --sp-3） */
+.adx-hdr { position: absolute; top: 0; left: 0; width: 100%; z-index: 4; display: flex; align-items: center;
+  gap: var(--sp-3); padding: 52px var(--sp-4) var(--sp-3);
+  background: linear-gradient(135deg, var(--c-brand-500) 0%, var(--c-brand-400) 100%); }
+.adx-hdr__back { width: 44px; height: 44px; min-width: 44px; min-height: 44px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center; background: var(--c-text-inverse); color: var(--c-brand-800); }
+.adx-hdr__back svg { width: 20px; height: 20px; }
+.adx-hdr__title { flex: 1; text-align: center; font-size: var(--fs-5xl); font-weight: 700; color: var(--c-brand-800); }
+.adx-hdr__spacer { width: 44px; flex: none; }
+
+/* 内容滚动区（页头高 52+44+6 = 102px 起算） */
+.adx-body { position: absolute; top: 102px; left: 0; width: 100%; bottom: 0; overflow: hidden; }
+
+/* 封面（源 .detail-cover：640rpx=320px，兜底渐变 brand-200→300） */
+.adx-cover { position: relative; width: 100%; height: 320px; background: linear-gradient(135deg, var(--c-brand-200), var(--c-brand-300)); }
+.adx-cover__badge { position: absolute; top: var(--sp-4); left: var(--sp-4); padding: 3px var(--sp-3);
+  border-radius: var(--r-full); background: var(--c-text-primary); color: var(--c-text-inverse);
+  font-size: var(--fs-xs); font-weight: 500; }
+
+/* 白卡（源 .detail-section：margin --sp-5 --page-padding · padding --card-padding · radius 40rpx） */
+.adx-card { margin: var(--sp-5) var(--page-padding); padding: var(--card-padding); background: var(--c-bg-container);
+  border-radius: var(--r-card); }
+.adx-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3); }
+.adx-title { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); line-height: 1.35; }
+.adx-tag { flex: none; align-self: center; padding: 2px var(--sp-5); border-radius: var(--r-full);
+  font-size: var(--fs-xs); color: var(--c-brand); background: var(--c-brand-50); }
+.adx-status { flex: none; align-self: center; padding: 3px var(--sp-3); border-radius: var(--r-full); background: var(--c-brand-50); }
+.adx-status__t { font-size: var(--fs-base); font-weight: 600; color: var(--c-brand-800); }
+.adx-sample { margin-top: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--c-bg-surface); }
+.adx-sample__t { display: block; font-size: var(--fs-base); font-weight: 600; color: var(--c-text-secondary); }
+.adx-cap { display: flex; align-items: center; gap: var(--sp-3); margin-top: var(--sp-3); }
+.adx-cap__n { font-size: var(--fs-base); font-weight: 600; color: var(--c-text-secondary); }
+.adx-cap__d { font-size: var(--fs-base); color: var(--c-text-tertiary); }
+.adx-meta { display: flex; flex-direction: column; gap: var(--sp-3); margin-top: var(--sp-5); padding-top: var(--sp-4);
+  border-top: 0.5px solid var(--c-border-light); }
+.adx-meta__i { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-base); }
+.adx-meta__ic { width: 15px; height: 15px; flex: none; color: var(--c-brand-500); }
+.adx-meta__l { flex: none; color: var(--c-text-tertiary); margin-right: var(--sp-3); }
+.adx-meta__v { color: var(--c-text-primary); font-weight: 500; }
+.adx-sec__t { display: block; font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); margin-bottom: var(--sp-3); }
+.adx-intro { display: block; font-size: var(--fs-xl); color: var(--c-text-secondary); line-height: 1.7; }
+.adx-intro--empty { color: var(--c-text-tertiary); }
+
+/* 底部操作栏（源 .detail-action-bar：按钮 88rpx=44px，--r-full） */
+.adx-bar { position: absolute; bottom: 0; left: 0; width: 100%; display: flex; gap: var(--sp-3); padding: var(--sp-4);
+  background: var(--c-bg-container); border-top: 0.5px solid var(--c-border-light); z-index: 7; }
+.adx-share { flex: none; display: flex; align-items: center; justify-content: center; height: 44px; padding: 0 var(--sp-6);
+  border-radius: var(--r-full); background: var(--c-bg-surface); border: 0.5px solid var(--c-border-strong); }
+.adx-share__t { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-secondary); }
+.adx-signup { flex: 1; display: flex; align-items: center; justify-content: center; height: 44px;
+  border-radius: var(--r-full); background: var(--c-brand-800); }
+.adx-signup__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-inverse); }
+.adx-quit { flex: 1; display: flex; align-items: center; justify-content: center; height: 44px; border-radius: var(--r-full);
+  background: var(--c-bg-surface); border: 0.5px solid var(--c-border-strong); }
+.adx-quit__t { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-tertiary); }
+.adx-share--hov { background: var(--c-brand-50); border-color: var(--c-brand-300); }
+.adx-signup--press { opacity: 0.72; }
+
+/* 加载 / 错误共用的居中槽（源 .detail-loading：flex:1 居中；此时操作栏不渲染） */
+.adx-state { position: absolute; top: 102px; left: 0; width: 100%; bottom: 0; display: flex; align-items: center;
+  justify-content: center; padding: 0 var(--page-padding); }
+.adx-err { display: flex; flex-direction: column; align-items: center; gap: var(--sp-4); }
+.adx-err__t { font-size: var(--fs-base); color: var(--c-text-tertiary); text-align: center; }
+.adx-err__retry { display: flex; padding: var(--sp-2) var(--sp-6); border-radius: var(--r-full); background: var(--c-brand-50); }
+.adx-err__rt { font-size: var(--fs-base); font-weight: 600; color: var(--c-brand-700); }
+
+/* 骨架（SkeletonBlock variant="profile"：卡=大圆 140rpx+两行 24rpx，再两块 160rpx） */
+.skl { width: 100%; padding: var(--sp-5) var(--page-padding); }
+.skl__card { display: flex; gap: var(--sp-5); padding: var(--sp-5); margin-bottom: var(--sp-5); border-radius: var(--r-xl);
+  background: var(--c-bg-container); }
+.skl__av { width: 70px; height: 70px; border-radius: 50%; flex: none; background: var(--c-bg-surface); }
+.skl__lines { flex: 1; display: flex; flex-direction: column; gap: var(--sp-4); }
+.skl__ln { height: 12px; border-radius: var(--r-md); background: var(--c-bg-surface); }
+.skl__bl { height: 80px; border-radius: var(--r-xl); margin-bottom: var(--sp-5); background: var(--c-bg-surface); }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格，与工程 SVG 体系一致） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5.5 8.5 12l6.5 6.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.4V12l3.4 2"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21.2c4-4.4 6.2-7.5 6.2-10.4A6.2 6.2 0 0 0 5.8 10.8c0 2.9 2.2 6 6.2 10.4z"/><circle cx="12" cy="10.6" r="2.4"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15.5V4.2"/><path d="M8.4 7.8 12 4.2l3.6 3.6"/><path d="M5.5 13.5v5.3a1.7 1.7 0 0 0 1.7 1.7h9.6a1.7 1.7 0 0 0 1.7-1.7v-5.3"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4.2v4.4h-4.4"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>活动详情页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/tools/activities/detail</code>。
+     该页由分享链接、官方助手卡片、活动列表三处入口直达，是「报名 / 退出报名」的唯一操作面。
+     本页状态机有 3 个互斥大态（<code>activity</code> / <code>notFound || loadError</code> / 骨架），
+     内容态内又按 <code>isSample</code>、<code>isSignedUp</code>、<code>description</code> 分叉——本画板把 7 屏画全，作为该页的永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>tools/activities/detail</b></span>
+    <span>分包 <b>tools</b>（无 tabbar）</span>
+    <span>状态 <b>7 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1845</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 7 屏</h2>
+    <p>骨架 / 两成因错误 / 真实活动两态 / 示例活动 / 已结束+空介绍</p></div>
+  <div class="sec__sub">本页状态机有 3 态，来自 <code>v-if="activity"</code> → <code>v-else-if="notFound || loadError"</code> →
+    <code>v-else</code>（<code>detail.vue:434 / 500 / 510</code>）；内容态内再按 <code>v-if="isSample"</code>（:438/:463）、
+    <code>v-if="statusText"</code>（:451）、<code>v-if="showEnrollCount"</code>（:469，= <code>!isSample &amp;&amp; !!activity</code>）、
+    <code>v-if="activity.category"</code>（:448）、<code>v-if="!isSignedUp"</code> / <code>v-else</code>（:527/:537）分叉。
+    帧即视口：超出 812px 的部分裁掉，裁切内容写在题注 <code>.d</code> 里，不写进画面。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">加载骨架 · SkeletonBlock profile</span><span class="d">无 activity · 操作栏不渲染</span></figcaption>
+      <div class="phone">
+        <div class="adx-hdr"><span class="adx-hdr__back"><svg><use href="#i-back"/></svg></span><span class="adx-hdr__title">活动详情</span><span class="adx-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="adx-state">
+          <div class="skl">
+            <div class="skl__card"><span class="skl__av"></span>
+              <div class="skl__lines"><span class="skl__ln" style="width:50%"></span><span class="skl__ln" style="width:30%"></span></div>
+            </div>
+            <div class="skl__bl"></div>
+            <div class="skl__bl"></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">错误 · 列表拉取失败</span><span class="d">loadError=true · notFound=false</span></figcaption>
+      <div class="phone">
+        <div class="adx-hdr"><span class="adx-hdr__back"><svg><use href="#i-back"/></svg></span><span class="adx-hdr__title">活动详情</span><span class="adx-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="adx-state">
+          <div class="adx-err">
+            <span class="adx-err__t">加载活动失败</span>
+            <span class="adx-err__retry"><span class="adx-err__rt">重试</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">错误 · 该 id 取不到活动</span><span class="d">notFound=true · 同一槽换文案</span></figcaption>
+      <div class="phone">
+        <div class="adx-hdr"><span class="adx-hdr__back"><svg><use href="#i-back"/></svg></span><span class="adx-hdr__title">活动详情</span><span class="adx-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="adx-state">
+          <div class="adx-err">
+            <span class="adx-err__t">获取活动详情失败</span>
+            <span class="adx-err__retry"><span class="adx-err__rt">重试</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">真实活动 · 未报名</span><span class="d">activity &amp; !isSample &amp; !isSignedUp · ↓裁切至介绍第 5 行</span></figcaption>
+      <div class="phone">
+        <div class="adx-hdr"><span class="adx-hdr__back"><svg><use href="#i-back"/></svg></span><span class="adx-hdr__title">活动详情</span><span class="adx-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="adx-body">
+          <div class="adx-cover"></div>
+          <div class="adx-card">
+            <div class="adx-title-row"><span class="adx-title">校园歌手大赛 · 决赛之夜</span><span class="adx-tag">音乐</span><span class="adx-status"><span class="adx-status__t">报名中</span></span></div>
+            <div class="adx-cap"><span class="adx-cap__n">58人已报名</span><span class="adx-cap__d">11月8日</span></div>
+            <div class="adx-meta">
+              <div class="adx-meta__i"><svg class="adx-meta__ic"><use href="#i-clock"/></svg><span class="adx-meta__l">时间</span><span class="adx-meta__v">11月8日 19:00-21:30</span></div>
+              <div class="adx-meta__i"><svg class="adx-meta__ic"><use href="#i-pin"/></svg><span class="adx-meta__l">地点</span><span class="adx-meta__v">北京大学 百周年纪念讲堂</span></div>
+            </div>
+          </div>
+          <div class="adx-card">
+            <span class="adx-sec__t">活动介绍</span>
+            <span class="adx-intro">北京大学第十九届校园歌手大赛决赛之夜，十位从三轮预选中晋级的选手登台演唱，评委由音乐学院教师与往届冠军共同组成，现场设有亲友应援区、评委提问环节与实时投票大屏。入场需向工作人员出示报名码，座位先到先得，演出中途不设插队入场。迟到者请从中场休息时由侧门进场，建议提前十分钟到场，现场提供饮用水与应援手幅。</span>
+          </div>
+        </div>
+        <div class="adx-bar"><span class="adx-share"><span class="adx-share__t">分享</span></span><span class="adx-signup"><span class="adx-signup__t">立即报名</span></span></div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">真实活动 · 已报名</span><span class="d">isSignedUp=true · 与 F04 仅右按钮不同 · ↓裁切至介绍第 5 行</span></figcaption>
+      <div class="phone">
+        <div class="adx-hdr"><span class="adx-hdr__back"><svg><use href="#i-back"/></svg></span><span class="adx-hdr__title">活动详情</span><span class="adx-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="adx-body">
+          <div class="adx-cover"></div>
+          <div class="adx-card">
+            <div class="adx-title-row"><span class="adx-title">校园歌手大赛 · 决赛之夜</span><span class="adx-tag">音乐</span><span class="adx-status"><span class="adx-status__t">报名中</span></span></div>
+            <div class="adx-cap"><span class="adx-cap__n">58人已报名</span><span class="adx-cap__d">11月8日</span></div>
+            <div class="adx-meta">
+              <div class="adx-meta__i"><svg class="adx-meta__ic"><use href="#i-clock"/></svg><span class="adx-meta__l">时间</span><span class="adx-meta__v">11月8日 19:00-21:30</span></div>
+              <div class="adx-meta__i"><svg class="adx-meta__ic"><use href="#i-pin"/></svg><span class="adx-meta__l">地点</span><span class="adx-meta__v">北京大学 百周年纪念讲堂</span></div>
+            </div>
+          </div>
+          <div class="adx-card">
+            <span class="adx-sec__t">活动介绍</span>
+            <span class="adx-intro">北京大学第十九届校园歌手大赛决赛之夜，十位从三轮预选中晋级的选手登台演唱，评委由音乐学院教师与往届冠军共同组成，现场设有亲友应援区、评委提问环节与实时投票大屏。入场需向工作人员出示报名码，座位先到先得，演出中途不设插队入场。迟到者请从中场休息时由侧门进场，建议提前十分钟到场，现场提供饮用水与应援手幅。</span>
+          </div>
+        </div>
+        <div class="adx-bar"><span class="adx-share"><span class="adx-share__t">分享</span></span><span class="adx-quit"><span class="adx-quit__t">退出报名</span></span></div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">示例活动 · 内置示例 id 命中</span><span class="d">isSample=true · 无状态胶囊 / 无人数行 / 无分类</span></figcaption>
+      <div class="phone">
+        <div class="adx-hdr"><span class="adx-hdr__back"><svg><use href="#i-back"/></svg></span><span class="adx-hdr__title">活动详情</span><span class="adx-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="adx-body">
+          <div class="adx-cover"><span class="adx-cover__badge">示例活动</span></div>
+          <div class="adx-card">
+            <div class="adx-title-row"><span class="adx-title">新人礼遇</span></div>
+            <div class="adx-sample"><span class="adx-sample__t">示例活动</span></div>
+            <div class="adx-meta">
+              <div class="adx-meta__i"><svg class="adx-meta__ic"><use href="#i-clock"/></svg><span class="adx-meta__l">时间</span><span class="adx-meta__v">每日 18:00-20:00</span></div>
+              <div class="adx-meta__i"><svg class="adx-meta__ic"><use href="#i-pin"/></svg><span class="adx-meta__l">地点</span><span class="adx-meta__v">校园咖啡角</span></div>
+            </div>
+          </div>
+          <div class="adx-card">
+            <span class="adx-sec__t">活动介绍</span>
+            <span class="adx-intro">为首次注册的新同学准备的一场轻松见面会，和同校的朋友一起喝杯咖啡，聊聊校园生活。</span>
+          </div>
+        </div>
+        <div class="adx-bar"><span class="adx-share"><span class="adx-share__t">分享</span></span><span class="adx-signup"><span class="adx-signup__t">立即报名</span></span></div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">真实活动 · 已结束 + 介绍为空</span><span class="d">description 假值 → introEmpty</span></figcaption>
+      <div class="phone">
+        <div class="adx-hdr"><span class="adx-hdr__back"><svg><use href="#i-back"/></svg></span><span class="adx-hdr__title">活动详情</span><span class="adx-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="adx-body">
+          <div class="adx-cover"></div>
+          <div class="adx-card">
+            <div class="adx-title-row"><span class="adx-title">社团纳新联合展演</span><span class="adx-tag">综合</span><span class="adx-status"><span class="adx-status__t">已结束</span></span></div>
+            <div class="adx-cap"><span class="adx-cap__n">86人已报名</span><span class="adx-cap__d">10月18日</span></div>
+            <div class="adx-meta">
+              <div class="adx-meta__i"><svg class="adx-meta__ic"><use href="#i-clock"/></svg><span class="adx-meta__l">时间</span><span class="adx-meta__v">10月18日 14:00-17:00</span></div>
+              <div class="adx-meta__i"><svg class="adx-meta__ic"><use href="#i-pin"/></svg><span class="adx-meta__l">地点</span><span class="adx-meta__v">北京大学 邱德拔体育馆</span></div>
+            </div>
+          </div>
+          <div class="adx-card">
+            <span class="adx-sec__t">活动介绍</span>
+            <span class="adx-intro adx-intro--empty">暂无活动介绍</span>
+          </div>
+        </div>
+        <div class="adx-bar"><span class="adx-share"><span class="adx-share__t">分享</span></span><span class="adx-signup"><span class="adx-signup__t">立即报名</span></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页可交互件只有四组：返回、分享、报名/退出、重试。其余（状态胶囊、分类标签、人数行）都是纯展示，
+    但它们的<strong>缺席</strong>同样是硬约束——示例活动必须无胶囊、无人数。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>底部操作栏 · 两态（<code>v-if="activity"</code> 才出现）</h3>
+      <p class="hint">右位由 <code>v-if="!isSignedUp"</code> / <code>v-else</code> 二选一，左位「分享」恒在；<code>activity</code> 为空时整条栏不渲染（F01/F02/F03）。</p>
+      <div class="row">
+        <div class="cell" style="width:250px"><div class="adx-bar" style="position:static"><span class="adx-share"><span class="adx-share__t">分享</span></span><span class="adx-signup"><span class="adx-signup__t">立即报名</span></span></div><span class="lab">未报名 · isSignedUp=false</span></div>
+        <div class="cell" style="width:250px"><div class="adx-bar" style="position:static"><span class="adx-share"><span class="adx-share__t">分享</span></span><span class="adx-quit"><span class="adx-quit__t">退出报名</span></span></div><span class="lab">已报名 · isSignedUp=true</span></div>
+        <div class="cell" style="width:250px"><div class="adx-bar" style="position:static"><span class="adx-share adx-share--hov"><span class="adx-share__t">分享</span></span><span class="adx-signup adx-signup--press"><span class="adx-signup__t">立即报名</span></span></div><span class="lab">按压态 · hover-class</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>状态胶囊 · <code>v-if="statusText"</code></h3>
+      <p class="hint">示例活动与「后端未下发 status」的真活动都取空串 ⇒ 胶囊缺席是结构事实，不是漏画（<code>statusText</code>，detail.vue:254）。</p>
+      <div class="row" style="margin-bottom:14px">
+        <div class="cell"><span class="adx-status"><span class="adx-status__t">报名中</span></span><span class="lab">open</span></div>
+        <div class="cell"><span class="adx-status"><span class="adx-status__t">进行中</span></span><span class="lab">ongoing</span></div>
+        <div class="cell"><span class="adx-status"><span class="adx-status__t">已结束</span></span><span class="lab">ended / closed</span></div>
+        <div class="cell"><span class="adx-status"><span class="adx-status__t">预告</span></span><span class="lab">upcoming</span></div>
+        <div class="cell"><span class="lab">无胶囊（示例 / 缺 status）</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>枚举</th><th>文案 key</th><th>真值</th></tr>
+        <tr><td>open</td><td><code>activities.statusOpen</code></td><td>报名中</td></tr>
+        <tr><td>ongoing</td><td><code>activities.statusOngoing</code></td><td>进行中</td></tr>
+        <tr><td>ended / closed</td><td><code>home.activityStatusClosed</code></td><td>已结束</td></tr>
+        <tr><td>upcoming</td><td><code>activities.statusUpcoming</code></td><td>预告</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>分类标签 · 八档全枚举（<code>v-if="activity.category"</code>）</h3>
+      <p class="hint">文案键 <code>activities.category.&lt;key&gt;</code>；缺 category 时该标签不渲染（F06 示例活动即无分类）。</p>
+      <div class="row">
+        <div class="cell"><span class="adx-tag">联谊</span><span class="lab">social</span></div>
+        <div class="cell"><span class="adx-tag">运动</span><span class="lab">sports</span></div>
+        <div class="cell"><span class="adx-tag">桌游</span><span class="lab">game</span></div>
+        <div class="cell"><span class="adx-tag">学习</span><span class="lab">study</span></div>
+        <div class="cell"><span class="adx-tag">志愿</span><span class="lab">volunteer</span></div>
+        <div class="cell"><span class="adx-tag">美食</span><span class="lab">food</span></div>
+        <div class="cell"><span class="adx-tag">音乐</span><span class="lab">music</span></div>
+        <div class="cell"><span class="adx-tag">综合</span><span class="lab">other</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>错误槽 · 两成因共用一个 <code>v-else-if</code></h3>
+      <p class="hint"><code>notFound || loadError</code> 命中同一片 <code>.detail-loading</code>，只有 <code>errorText</code> 不同；重试按钮为 <code>press-feedback</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="adx-err" style="padding:14px 0"><span class="adx-err__t">加载活动失败</span><span class="adx-err__retry"><span class="adx-err__rt">重试</span></span></div><span class="lab">loadError（列表接口失败）</span></div>
+        <div class="cell" style="width:186px"><div class="adx-err" style="padding:14px 0"><span class="adx-err__t">获取活动详情失败</span><span class="adx-err__retry"><span class="adx-err__rt">重试</span></span></div><span class="lab">notFound（该 id 取不到）</span></div>
+        <div class="cell" style="width:186px"><div class="adx-err" style="padding:14px 0"><span class="adx-err__t">获取活动详情失败</span><span class="adx-err__retry" style="background:var(--c-brand-100)"><span class="adx-err__rt">重试</span></span></div><span class="lab">重试按压（press-feedback--active）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>返回按钮 · 常态 / 按压</h3>
+      <p class="hint"><code>aria-label</code> 取 <code>common.backAria</code>「返回上一页」，画面无文字；命中 <code>press-feedback</code>。</p>
+      <div class="row">
+        <div class="cell"><span class="adx-hdr__back" style="position:static"><svg><use href="#i-back"/></svg></span><span class="lab">default</span></div>
+        <div class="cell"><span class="adx-hdr__back" style="position:static;opacity:.72"><svg><use href="#i-back"/></svg></span><span class="lab">press</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>示例内容披露 · 两处同键</h3>
+      <p class="hint"><code>isSample</code> 命中时，封面左上角 <code>--fs-xs</code> 徽标与标题下方正文级披露行同时出现，二者都读 <code>activities.sampleBadge</code>；且此态必须无状态胶囊、无人数行。</p>
+      <div class="row">
+        <div class="cell"><span class="adx-cover__badge" style="position:static;display:inline-block">示例活动</span><span class="lab">封面徽标 10px</span></div>
+        <div class="cell" style="width:186px"><div class="adx-sample"><span class="adx-sample__t">示例活动</span></div><span class="lab">标题下披露行 12px</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用下列档位；源页私有色值已换成最近令牌，逐条见 §04 note。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色 500<code>--c-brand-500</code></div><div class="sw__u">页头渐变起点 · 时间/地点图标</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#55D5A7"></span><div><div class="sw__n">主色 400<code>--c-brand-400</code></div><div class="sw__u">页头渐变终点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">页头标题 · 立即报名底 · 状态文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#A3EBCF"></span><div><div class="sw__n">主色 200<code>--c-brand-200</code></div><div class="sw__u">封面兜底渐变起</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#75E1B7"></span><div><div class="sw__n">主色 300<code>--c-brand-300</code></div><div class="sw__u">封面兜底渐变终</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">状态胶囊 · 分类标签 · 重试底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">.detail-page 根底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">面底<code>--c-bg-surface</code></div><div class="sw__u">分享/退出按钮 · 骨架 · 披露行</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#C2CAC6"></span><div><div class="sw__n">强边框<code>--c-border-strong</code></div><div class="sw__u">分享/退出按钮描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">主文字<code>--c-text-primary</code></div><div class="sw__u">标题 · 地点值 · 封面徽标底</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到六档（rpx ÷ 2 = px）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/700</span><span class="type__p" style="font-size:22px;font-weight:700">活动详情</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">校园歌手大赛 · 决赛之夜</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600</span><span class="type__p" style="font-size:15px;font-weight:600">立即报名</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/700</span><span class="type__p" style="font-size:14px;font-weight:700">活动介绍</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500">时间 · 北京大学 百周年纪念讲堂</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/500</span><span class="type__p" style="font-size:10px;font-weight:500;color:var(--c-text-tertiary)">示例活动 · 音乐</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px；本页只用六档间距。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>12rpx · 披露行</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 骨架块</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 内容白卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>胶囊 · 徽标 · 按钮</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与实况的已知差异</h2><p>本页全部走工程既有图标体系，无新素材缺口</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:linear-gradient(135deg,var(--c-brand-200),var(--c-brand-300))">
+      <div class="asset__b"><b>IMAGE_PATHS.ACTIVITIES.*</b><p>封面位（源 <code>coverImage</code>，detail.vue:242）。真实封面来自后端 <code>coverImage</code> 字段，示例活动复用 IMAGE_PATHS 占位图。画板按源码自身的兜底形态画成 <code>--c-brand-200 → --c-brand-300</code> 渐变，不放网图、不生成假海报。</p><div class="m">320px 高 · 满宽 · aspectFill</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>icons.back / schedule / location</b><p>页头返回箭头与「时间 / 地点」两枚图标（源为 <code>&lt;image&gt;</code> 资源位，30rpx=15px，色 <code>--c-brand-500</code>）。画板用 lucide 描边等价件 <code>#i-back</code> / <code>#i-clock</code> / <code>#i-pin</code>。</p><div class="m">返回 20px · 元信息 15px</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>示意值，非真值：</b>F04「<code>58</code> 人已报名」、F07「<code>86</code> 人已报名」是为撑出 <code>v-if="showEnrollCount"</code> 行位而填的示意数。
+        真值源是后端 <code>ActivityDetailView.enrollmentCount</code>，画板不接真值；示例活动屏（F06）该整行不渲染，符合 <code>!isSample</code> 约束。</li>
+      <li><b>示意值，非真值：</b>各屏的活动名、时间串、地点串、日期胶囊「11月8日」与介绍正文均为演示数据（真值来自后端字段），
+        只有胶囊文案「报名中 / 已结束 / 音乐 / 综合 / 人已报名 / 活动介绍 / 立即报名 / 退出报名 / 分享 / 重试 / 示例活动 / 暂无活动介绍 / 活动详情」逐字取自 <code>zh-CN.ts</code>；
+        F06 的新人礼遇标题/时间/地点/介绍四串逐字取自 <code>activities.sample.newUserGift.*</code>。</li>
+      <li>源页私有色值已改最近登记令牌：<code>--c-brand-900 #0B4A38</code>（页头标题）→ <code>--c-brand-800</code>；
+        <code>--c-bg-brand #e8f8f0</code>（状态胶囊 / 重试底）→ <code>--c-brand-50</code>；
+        <code>--c-badge-on-image-bg rgba(15,23,42,.7)</code> → <code>--c-text-primary</code> 实底；
+        <code>--c-overlay-white-bg-tint rgba(255,255,255,.2)</code>（返回圆底）→ <code>--c-text-inverse</code>；
+        <code>--c-primary</code> 与 <code>color-mix(brand 12%)</code>（分类标签）→ <code>--c-brand</code> / <code>--c-brand-50</code>；
+        <code>--c-black-shadow-sm</code>（操作栏上投影）→ base 壳层 <code>.tabbar</code> 同口径的 <code>--c-border-light</code> 0.5px 顶边；
+        <code>--card-radius 40rpx</code> → <code>--r-card</code>。base 内无可用的「图上深底胶囊」档，故封面徽标用 <code>--c-text-primary</code> 实底 + <code>--c-text-inverse</code> 字。</li>
+      <li><code>SkeletonBlock</code> 的 <code>profile</code> 变体里 <code>.skeleton__cover</code> 在本仓<strong>没有任何样式规则</strong>（只有 <code>.shimmer</code>），实际高度为 0 ⇒
+        F01 按实况不画封面骨架，只有「大圆 + 两行」卡和两块 80px 块。<code>label</code> 走 <code>aria-label</code>，画面不出现「加载中...」文字。</li>
+      <li>页头无原生导航栏（子包页），由页面自绘绿带 + 44px 圆形返回；<code>menuStyleVars</code> 会把状态栏高度灌进 <code>--statusbar</code>，画板按 44px 计。</li>
+      <li>本页在 <b>tools</b> 分包，<strong>不得出现 tabbar</strong>——画板若出现 tabbar 即为错。</li>
+      <li>源码已登记 <b>NEEDS-DATA</b>：卡上「报名截止」列后端不下发（<code>activityDate</code> 是活动当天日期），故 F04/F07 的人数行只有日期胶囊、无截止日，画板不补。
+        日期胶囊文案取 <code>activities.dateLabel</code>「{month}月{day}日」，<code>activityDateLabel</code> 正则不匹配时整枚不渲染。</li>
+      <li>F07 活动状态为「已结束」，底部右位仍画「立即报名」——源模板 <code>detail.vue:527</code> 的右按钮只按 <code>!isSignedUp</code> 分叉，
+        <strong>不按 status 收敛</strong>，报名已截止的活动仍可点。这是结构事实，画板照画、不修，留待产品裁定。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 活动详情页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1845（面积 1,571,940 px，对齐 素材/理想效果图 语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

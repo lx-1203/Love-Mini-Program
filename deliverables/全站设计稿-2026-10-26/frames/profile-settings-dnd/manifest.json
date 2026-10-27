@@ -1,0 +1,77 @@
+{
+  "schema": "design-board-shoot/v1",
+  "board": "profile-settings-dnd.html",
+  "dsf": 2.273,
+  "results": [
+    {
+      "id": "F01",
+      "title": "加载中",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\profile-settings-dnd\\F01.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F02",
+      "title": "加载失败 · 可重试",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\profile-settings-dnd\\F02.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F03",
+      "title": "内容 · 总开关关闭",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\profile-settings-dnd\\F03.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F04",
+      "title": "内容 · 总开关开启",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\profile-settings-dnd\\F04.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F05",
+      "title": "内容 · 重复方式=自定义",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\profile-settings-dnd\\F05.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F06",
+      "title": "内容 · 保存中",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\profile-settings-dnd\\F06.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F07",
+      "title": "内容 · 校验拦截（自定义未选星期）",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\profile-settings-dnd\\F07.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    }
+  ]
+}

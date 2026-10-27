@@ -18,6 +18,7 @@ import { useSessionStore } from "../../../stores/session";
 import { openAppPath } from "../../../utils/navigation";
 import { ROUTES } from "../../../constants/routes";
 import { SCHOOLS } from "../../../config/schools";
+import { loadCampuses } from "../../../services/config";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { IMAGE_PATHS } from "../../../config/images";
 // 第五轮 QA（补做）：校园圈卡片统一浅绿背景 + 学校名字，移除每校一色渐变与首字徽标。
@@ -74,14 +75,54 @@ const schools = SCHOOLS.map((s) => ({
   coverUrl: CAMPUS_COVER[s.id] || s.coverUrl || IMAGE_PATHS.CIRCLE_COVERS.CAMPUS,
 }));
 
-/** R11-L04-D15（P0 · 假计数，按 §12.4 合法形态之二处置）：
- *  学校卡原先的「3.2k 位同学 · 2.8w 条动态」「等 342 位同学」是按校 id 硬编码的字面量表
- *  （11 校 + 一组对所有表外学校共用的 fallback 常量），不是后端读数；列表超过 11 所即出现
- *  多卡同数。后端 /config/campuses 的 CampusView 只有 id/name/city
- *  （services/config.ts:36-43），没有成员数/动态数/好友数列。
- *  没有真值支撑的数字连同成员头像预览整块撤下——不换一组新常量、不挪写死表、不按 id 造数；
- *  后端补列后再按接口数据渲染。
- *  R11-L04-D19（k/w 混档）与 D15 同源：该行不再渲染，读者不会再在同一列看到两档缩写。 */
+/** R11-L04-D15（P0 · 假计数）撤下学校卡数字行的条件是「后端补列后按接口数据渲染」——
+ *  该条件现已满足：/config/campuses 的 CampusView 增下发 memberCount / postCount
+ *  （后端按 user_campus_profile.campus_name 分组统计，见 RealConfigService#campusMemberCounts）。
+ *  好友头像预览行仍不做：后端只有 estimateFriendJoinedCount 这种按成员数推算的估算值，
+ *  不是真好友关系，画上去等于重新造一类无真相源的数字。
+ *  R11-L04-D19（k/w 混档）：两个读数走同一个格式化函数，同排不会出现两档缩写。 */
+const campusStats = ref(new Map<string, { memberCount: number | null; postCount: number | null }>());
+
+async function loadCampusStats(): Promise<void> {
+  try {
+    const campuses = await loadCampuses();
+    const next = new Map<string, { memberCount: number | null; postCount: number | null }>();
+    for (const c of campuses) {
+      if (typeof c.memberCount === "number" || typeof c.postCount === "number") {
+        next.set(c.name, {
+          memberCount: typeof c.memberCount === "number" ? c.memberCount : null,
+          postCount: typeof c.postCount === "number" ? c.postCount : null,
+        });
+      }
+    }
+    campusStats.value = next;
+  } catch (e) {
+    // 取不到读数就不渲染该行（不是补 0）；请求错误已由 http 层统一通道处理
+  }
+}
+
+/** 计数缩写口径与附近页/圈子页一致（R8-L02-D02：≥1w 折「w」，千位段裸数字，不引入 k 档） */
+function formatCampusCount(count: number): string {
+  if (count >= 10000) return `${(count / 10000).toFixed(1)}w`;
+  return String(count);
+}
+
+/**
+ * 学校卡统计行文案。两个读数各自可缺：后端只在整条统计失败时下发 null，
+ * 「该校确实 0 条」下发的是 0，所以这里缺哪段就省哪段，两段都缺才整行不渲染。
+ */
+function schoolStatsText(schoolName: string): string {
+  const stats = campusStats.value.get(schoolName);
+  if (!stats) return "";
+  const parts: string[] = [];
+  if (stats.memberCount !== null) {
+    parts.push(t("campus.hub.schoolStatsMembers", { n: formatCampusCount(stats.memberCount) }));
+  }
+  if (stats.postCount !== null) {
+    parts.push(t("campus.hub.schoolStatsPosts", { n: formatCampusCount(stats.postCount) }));
+  }
+  return parts.join(" · ");
+}
 
 /** R2b-L05-D11：理想图卡片标题为「北京大学圈 / 清华大学圈」带「圈」后缀，
  *  而数据源（config/schools.ts SCHOOLS[].name）是校名本体「北京大学」——后缀属展示层，
@@ -200,6 +241,7 @@ async function refreshCertification(): Promise<void> {
 }
 onShow(() => {
   void refreshCertification();
+  void loadCampusStats();
 });
 
 function goSchool(schoolName: string) {
@@ -348,7 +390,8 @@ function goBack() {
             <text class="campus-school-card__badge-text">{{ joinedBadge.text }}</text>
           </view>
         </view>
-        <!-- R11-L04-D15：在位同学/动态数/好友数无后端列，整块不渲染（原先的字面量表已删除） -->
+        <!-- 后端未下发读数（统计降级/校区名对不上）时整行缺席，不留空行也不补 0 -->
+        <text v-if="schoolStatsText(school.name)" class="campus-school-card__stats">{{ schoolStatsText(school.name) }}</text>
       </view>
 
       <!-- 操作按钮（描边样式） -->
@@ -857,45 +900,6 @@ function goBack() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.campus-school-card__members {
-  display: flex;
-  align-items: center;
-  gap: 8rpx;
-  margin-top: 8rpx;
-}
-
-.campus-school-card__avatar-stack {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.campus-school-card__avatar {
-  width: 36rpx;
-  height: 36rpx;
-  border-radius: 50%;
-  border: 2rpx solid var(--c-neutral-0, #FFFFFF);
-  display: block;
-}
-
-.campus-school-card__avatar--2 {
-  border-radius: var(--r-full);
-
-  margin-left: -10rpx;
-}
-
-.campus-school-card__avatar--3 {
-  border-radius: var(--r-full);
-
-  margin-left: -10rpx;
-}
-
-.campus-school-card__peers {
-  /* R1-L05-D20：22rpx 与徽标同样偏小、帧内糊成灰点 ⇒ 提到 26rpx */
-  font-size: var(--fs-md, 26rpx);
-  color: var(--c-text-tertiary, #9AA39F);
 }
 
 /* ===== CTA (Green Filled) ===== */

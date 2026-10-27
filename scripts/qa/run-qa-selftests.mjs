@@ -89,6 +89,11 @@ const GATE_SELFTESTS = [
   // data-hygiene 的 --self-test 原版注入后直接落 FAIL 分支 exit 1 ⇒ 永远进不了本清单（这里要求
   // 退出码 0 + 自报 PASS 行才判承重）。已改成自己判"红得起来没有"，真件读数另印 HYGIENE_REAL 不发判决。
   { name: "verify-data-hygiene", cmd: ["scripts/qa/verify-data-hygiene.mjs", "--self-test"], want: /HYGIENE_SELFTEST PASS cases=1 bad=0/ },
+  // check-token-refs（2026-10-27）：R6 只查写死色值且 warn-only，抓不到 var() 指向未登记令牌
+  // ——无兜底时整条声明在 computed-value 阶段作废（边框/阴影直接没了），有兜底时悄悄渲染字面量。
+  // 夹具 5 行不读磁盘：2 条必须红（无兜底=ERROR/有兜底=WARN）、3 条必须放行（已登记/注入位/注释通配），
+  // 另加一条反向负例（把已登记令牌从生产者集合抽掉必须立刻变红），证扫描集不是空的。
+  { name: "check-token-refs", cmd: ["apps/client/scripts/check-token-refs.mjs", "--self-test"], want: /TOKENREFS_SELFTEST=PASS cases=(\d+) 负例可红=是/ },
 ];
 let gateRan = 0, gateFailed = 0;
 for (const g of GATE_SELFTESTS) {

@@ -194,10 +194,12 @@ function handleScreenshot() {
 
 <template>
   <view class="success-page" :style="menuStyleVars">
-    <!-- 2026-08-25 P0：顶部 nav（左返回 + 右相机/分享） -->
+    <!-- 2026-08-25 P0：顶部 nav（左返回 + 右相机/分享）
+         2026-10-26 对齐理想图（匹配成功页面.png）：返回键为无底色纯黑 chevron（撤白圆底+阴影）；
+         右上图标为取景框/扫描式字形（原相机图标形态用错），白圆底保留 -->
     <view class="success-nav">
       <view
-        class="success-nav__btn press-feedback"
+        class="success-nav__btn success-nav__btn--bare press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
@@ -218,7 +220,7 @@ function handleScreenshot() {
           <image
             v-if="!navIconFailed"
             class="success-nav__icon-img"
-            :src="IMAGE_PATHS.ICONS_EMOJI.CAMERA_ICON"
+            :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCAN_VIEWFINDER_SVG)"
             mode="aspectFit"
             alt=""
             @error="onNavIconError"
@@ -285,6 +287,12 @@ function handleScreenshot() {
   justify-content: center;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
   pointer-events: auto;
+}
+
+/* 2026-10-26 对齐理想图：返回键无底色（白圆底/阴影仅保留给右上图标钮） */
+.success-nav__btn--bare {
+  background: transparent;
+  box-shadow: none;
 }
 
 .success-nav__right {

@@ -1,0 +1,77 @@
+{
+  "schema": "design-board-shoot/v1",
+  "board": "likes-visitors.html",
+  "dsf": 2.273,
+  "results": [
+    {
+      "id": "F01",
+      "title": "已登录 · 喜欢我的 · 全已解锁",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\likes-visitors\\F01.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F02",
+      "title": "已登录 · 我的访客 · 全已解锁",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\likes-visitors\\F02.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F03",
+      "title": "未解锁项 + 解锁条",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\likes-visitors\\F03.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F04",
+      "title": "游客态 · 列表区登录引导",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\likes-visitors\\F04.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F05",
+      "title": "加载中",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\likes-visitors\\F05.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F06",
+      "title": "加载失败",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\likes-visitors\\F06.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F07",
+      "title": "空态 · 喜欢我的",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\likes-visitors\\F07.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    }
+  ]
+}

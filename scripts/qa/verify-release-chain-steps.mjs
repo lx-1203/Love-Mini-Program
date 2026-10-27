@@ -74,6 +74,7 @@ const stepText = dryLines.join("\n");
 const REQUIRED = [
   "check-band-outdir-collision.mjs",
   "check-mp-image-styles.mjs",
+  "check-token-refs.mjs",
   "check-statusbar-offset.mjs",
   "check-tabbar-consistency.mjs",
   "check-project-rules.mjs",

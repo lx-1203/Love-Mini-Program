@@ -1,0 +1,27 @@
+{
+  "schema": "design-board-shoot/v1",
+  "board": "village-publish.html",
+  "dsf": 2.273,
+  "results": [
+    {
+      "id": "F01",
+      "title": "个人动态 · 默认态",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\village-publish\\F01.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F02",
+      "title": "摄影圈 · 圈内成员可见",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\village-publish\\F02.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    }
+  ]
+}

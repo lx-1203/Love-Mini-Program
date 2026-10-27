@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 实名认证填写页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌；rpx÷2=px） ===== */
+/* 页面壳：无吸顶容器（real-name.vue:437-445 safe-top + nav-bar 随页滚动），头部透明压在渐变页底上 */
+.rn-bg { position: absolute; inset: 0; background: linear-gradient(180deg, var(--c-bg-page) 0%, var(--c-brand-50) 100%); }
+.rn-doc { position: absolute; top: 0; left: 0; width: 100%; padding-bottom: 12px; }
+.rn-doc--up { transform: translateY(var(--up, 0px)); }
+.rn-navrow { margin-top: 44px; height: 44px; display: flex; align-items: center;
+  justify-content: space-between; padding: 0 16px; }
+.rn-nav__back { width: 32px; font-size: var(--fs-7xl); color: var(--c-text-primary);
+  display: flex; align-items: center; justify-content: center; }
+.rn-nav__title { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); }
+.rn-nav__ph { width: 32px; flex: none; }
+
+/* 状态卡（real-name.vue:705-760 .status-card；四态色表见 :85-131 statusInfo） */
+.vcard { margin: 12px 16px; padding: 24px 16px; border-radius: var(--r-xl); display: flex;
+  flex-direction: column; align-items: center;
+  box-shadow: 0 2px 8px var(--c-neutral-shadow-md, rgba(15,23,42,0.06)); } /* BASE_PROBLEM：--c-neutral-shadow-md 未登记，fallback 为 design-variables.scss:891 真值 */
+.vcard--unverified { background: var(--c-tint-blue-soft); }
+.vcard--pending { background: var(--c-tint-amber-50, #FFF8E1); } /* BASE_PROBLEM：--c-tint-amber-50 未登记，fallback 为 design-variables.scss:827 真值 */
+.vcard--verified { background: var(--c-brand-50); }
+.vcard--rejected { background: var(--c-tint-pink-soft); }
+.vcard__wrap { width: 60px; height: 60px; border-radius: 50%; background: var(--c-bg-container);
+  display: flex; align-items: center; justify-content: center; margin-bottom: 10px;
+  box-shadow: 0 2px 6px var(--c-black-shadow-sm); }
+.vcard__wrap svg { width: 36px; height: 36px; }
+.vcard__t { font-size: var(--fs-3xl); font-weight: 700; margin-bottom: 6px; }
+.vcard__d { font-size: var(--fs-base); color: var(--c-text-secondary); text-align: center; line-height: 1.6; }
+.vcard--unverified .vcard__t { color: var(--c-brand-800); }   /* R9-L09-D07 压深档 5.78:1 */
+.vcard--verified .vcard__t { color: var(--c-brand-800); }     /* R9-L09-D07 压深档 5.96:1 */
+.vcard--pending .vcard__t { color: var(--c-warning); }
+.vcard--rejected .vcard__t { color: var(--c-error); }
+
+/* 骨架屏（SkeletonBlock variant=list rows=2，real-name.vue:448-450） */
+.sk { width: 60px; height: 60px; border-radius: 50%; background: var(--c-neutral-100); margin-bottom: 10px; }
+.sk__row { height: 12px; border-radius: 6px; background: var(--c-neutral-100); margin-top: 10px; }
+
+/* 未成年人保护横幅（real-name.vue:461-463/:751-768，仅 !isAdult） */
+.minor { margin: 0 16px; padding: 12px 14px; border-radius: var(--r-lg);
+  background: var(--c-tint-amber-50, #FFF8E1); border: 0.5px solid var(--c-warning-border-tint); }
+.minor__t { font-size: var(--fs-base); color: var(--c-warning); line-height: 1.6; }
+
+/* 分组（real-name.vue:770-786） */
+.sec-b { margin: 12px 16px 0; }
+.sec-b__t { padding: 0 6px 6px; font-size: var(--fs-base); color: var(--c-text-secondary); font-weight: 500; }
+
+/* 表单卡（real-name.vue:787-830，行式 label 80px + 输入；--disabled 整卡 opacity .6） */
+.fcard { background: var(--c-bg-container); border-radius: var(--r-xl); padding: 0 14px; overflow: hidden;
+  box-shadow: 0 1px 8px var(--c-neutral-shadow-xs), 0 0.5px 2px var(--c-neutral-shadow-xs); }
+.fcard--dis { opacity: 0.6; }
+.fitem { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 0.5px solid var(--c-border-light); }
+.fitem:last-child { border-bottom: none; }
+.fitem__l { width: 80px; flex: none; font-size: var(--fs-lg); font-weight: 500; color: var(--c-text-primary); }
+.fitem__i { flex: 1; font-size: var(--fs-lg); color: var(--c-text-primary); }
+.fitem__i--ph { color: var(--c-text-tertiary); }
+
+/* 身份证正反面并排上传（real-name.vue:832-884 upload-row；空态无虚线盒，与恋爱认证页不同型） */
+.urow { display: flex; gap: 8px; }
+.ucard { flex: 1; background: var(--c-bg-container); border-radius: var(--r-xl); overflow: hidden;
+  box-shadow: 0 1px 8px var(--c-neutral-shadow-xs), 0 0.5px 2px var(--c-neutral-shadow-xs); }
+.ucard__empty { padding: 24px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ucard__t { font-size: var(--fs-base); font-weight: 500; color: var(--c-text-primary); text-align: center; }
+.ucard__h { font-size: var(--fs-sm); color: var(--c-text-tertiary); text-align: center; }
+.ucard__prev { position: relative; width: 100%; height: 140px; }
+.ucard__prev img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ucard__chg { position: absolute; right: 8px; bottom: 8px; padding: 4px 10px;
+  background: var(--c-gradient-mask-strong); border-radius: var(--r-full);
+  font-size: var(--fs-sm); color: var(--c-text-inverse); }
+
+/* 隐私说明（real-name.vue:896-906） */
+.pnote { background: var(--c-bg-container); border-radius: var(--r-lg); padding: 10px 12px; }
+.pnote__t { font-size: var(--fs-sm); color: var(--c-text-tertiary); line-height: 1.6; }
+
+/* 审核中卡（real-name.vue:908-931） */
+.pdc { background: var(--c-bg-container); border-radius: var(--r-xl); padding: 24px 16px;
+  display: flex; flex-direction: column; align-items: center;
+  box-shadow: 0 1px 8px var(--c-neutral-shadow-xs), 0 0.5px 2px var(--c-neutral-shadow-xs); }
+.pdc__t { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-warning); margin-bottom: 6px; }
+.pdc__d { font-size: var(--fs-base); color: var(--c-text-secondary); text-align: center; line-height: 1.6; }
+
+/* 已认证回显卡（real-name.vue:933-972；脱敏号前6后4，接口注释 :47-48） */
+.vdcard { background: var(--c-bg-container); border-radius: var(--r-xl); padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  box-shadow: 0 1px 8px var(--c-neutral-shadow-xs), 0 0.5px 2px var(--c-neutral-shadow-xs); }
+.vdcard__row { display: flex; align-items: center; justify-content: space-between; }
+.vdcard__l { font-size: var(--fs-md); color: var(--c-text-tertiary); }
+.vdcard__v { font-size: var(--fs-xl); font-weight: 500; color: var(--c-text-primary); }
+.vdcard__div { height: 0.5px; background: var(--c-border-light); }
+
+/* 主按钮（real-name.vue:974-1010 深绿渐变，与恋爱认证页同口径 R9-L09-D06 同根） */
+.act { margin: 16px 16px 0; padding: 14px; border-radius: var(--r-xl); text-align: center;
+  background: linear-gradient(135deg, var(--c-brand-900) 0%, var(--c-brand-800) 100%);
+  box-shadow: 0 2px 8px var(--c-brand-border-tint-stronger);
+  font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-inverse); }
+.act--dis { opacity: 0.6; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 描边风格，对应工程 IMAGE_PATHS.ICONS_EMOJI.*） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-check-c" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.2 12.4l2.6 2.6 5-5.6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.4V12l3.4 2"/></symbol>
+  <symbol id="i-x-c" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>实名认证填写页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/profile-extra/verification/real-name</code>。
+     本页填真实姓名 + 身份证号 + 身份证正反面照片，POST /real-name-certification 人工审核；
+     通过后后端置位 <b>idCardVerified</b>——它就是
+     <a href="campus-certification.html" style="color:var(--c-brand-700)">校园认证页</a>门槛横幅的<b>前置闸真值</b>
+     （校园认证 F01「请先完成实名认证」即此门未过）。链路：
+     校园认证页门槛横幅「去实名认证」（campus/certification.vue:305-308）→ :220 navigateTo 本页；
+     本页 APPROVED 后无事件回传，校园页 <code style="font-family:var(--mono);font-size:11.5px">onShow → loadRealNameGate()</code>
+     重拉 GET /profile/basic 自动解锁（certification.vue:262-265 MP-R1-CERT-101）；
+     本页已认证态另有「恋爱认证」出口跳
+     <a href="verification-index.html" style="color:var(--c-brand-700)">认证首页</a>（real-name.vue:482-491 → :428-431）。
+     状态机四态 + 首拉骨架 + 未成年人保护横轴，逐屏画全，作为该页永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>verification/real-name</b></span>
+    <span>分包 <b>profile-extra</b>（无 tabbar）</span>
+    <span>状态 <b>7 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 7 屏</h2>
+    <p>首拉骨架 / 未认证 / 填写完成 / 审核中 / 未通过 / 未成年保护 / 已认证</p></div>
+  <div class="sec__sub">本页状态机有 4 态，来自 <code style="font-family:var(--mono);font-size:11.5px">status: RealNameStatus =
+    "unverified" | "pending" | "verified" | "rejected"</code>（real-name.vue:36），
+    叠加两条独立轴：<code style="font-family:var(--mono);font-size:11.5px">v-if="statusLoading"</code>（:448 首拉骨架）与
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="!isAdult"</code>（:461 未成年人保护，:79/:342-352 由 birthDate 判定）。
+    页头无吸顶容器、透明压在渐变页底上（与认证首页的白底吸顶不同型）；返回「‹」箭头字符（:441）。
+    帧即视口：本页整页高 ≤812px，七屏均无裁切，若出图出现裁切即为回归。</div>
+
+  <div class="frames">
+
+    <!-- F01 首拉骨架 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">real 首拉 · 状态骨架</span><span class="d">statusLoading · 正文照常按未认证渲染 · 无裁切</span></figcaption>
+      <div class="phone">
+        <div class="rn-bg"></div>
+        <div class="rn-doc">
+          <div class="rn-navrow"><span class="rn-nav__back">‹</span><span class="rn-nav__title">实名认证</span><span class="rn-nav__ph"></span></div>
+          <div class="vcard">
+            <div class="sk"></div>
+            <div class="sk__row" style="width:56%"></div>
+            <div class="sk__row" style="width:44%"></div>
+          </div>
+          <div class="sec-b"><div class="sec-b__t">填写实名信息</div>
+            <div class="fcard">
+              <div class="fitem"><span class="fitem__l">真实姓名</span><span class="fitem__i fitem__i--ph">请输入与身份证一致的姓名</span></div>
+              <div class="fitem"><span class="fitem__l">身份证号</span><span class="fitem__i fitem__i--ph">请输入 18 位身份证号</span></div>
+            </div>
+          </div>
+          <div class="sec-b"><div class="sec-b__t">上传身份证照片</div>
+            <div class="urow">
+              <div class="ucard"><div class="ucard__empty"><span class="ucard__t">身份证正面</span><span class="ucard__h">点击上传</span></div></div>
+              <div class="ucard"><div class="ucard__empty"><span class="ucard__t">身份证背面</span><span class="ucard__h">点击上传</span></div></div>
+            </div>
+          </div>
+          <div class="sec-b"><div class="pnote"><span class="pnote__t">身份证信息仅用于身份核验，后端加密存储，审核人员仅能看到脱敏号码</span></div></div>
+          <div class="act">提交认证申请</div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F02 未认证 · 空表单 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">未认证 · 空表单</span><span class="d">status=unverified · 无裁切 · 校验失败走 toast 不出红框</span></figcaption>
+      <div class="phone">
+        <div class="rn-bg"></div>
+        <div class="rn-doc">
+          <div class="rn-navrow"><span class="rn-nav__back">‹</span><span class="rn-nav__title">实名认证</span><span class="rn-nav__ph"></span></div>
+          <div class="vcard vcard--unverified">
+            <span class="vcard__wrap"><svg style="color:var(--c-brand-800)"><use href="#i-check-c"/></svg></span>
+            <div class="vcard__t">未实名认证</div>
+            <div class="vcard__d">完成实名认证<br>解锁校园认证与信任标识</div>
+          </div>
+          <div class="sec-b"><div class="sec-b__t">填写实名信息</div>
+            <div class="fcard">
+              <div class="fitem"><span class="fitem__l">真实姓名</span><span class="fitem__i fitem__i--ph">请输入与身份证一致的姓名</span></div>
+              <div class="fitem"><span class="fitem__l">身份证号</span><span class="fitem__i fitem__i--ph">请输入 18 位身份证号</span></div>
+            </div>
+          </div>
+          <div class="sec-b"><div class="sec-b__t">上传身份证照片</div>
+            <div class="urow">
+              <div class="ucard"><div class="ucard__empty"><span class="ucard__t">身份证正面</span><span class="ucard__h">点击上传</span></div></div>
+              <div class="ucard"><div class="ucard__empty"><span class="ucard__t">身份证背面</span><span class="ucard__h">点击上传</span></div></div>
+            </div>
+          </div>
+          <div class="sec-b"><div class="pnote"><span class="pnote__t">身份证信息仅用于身份核验，后端加密存储，审核人员仅能看到脱敏号码</span></div></div>
+          <div class="act">提交认证申请</div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F03 填写完成 · 正反面已上传 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">填写完成 · 正反面已上传</span><span class="d">两预览位 + 胶囊压图 · 无裁切</span></figcaption>
+      <div class="phone">
+        <div class="rn-bg"></div>
+        <div class="rn-doc">
+          <div class="rn-navrow"><span class="rn-nav__back">‹</span><span class="rn-nav__title">实名认证</span><span class="rn-nav__ph"></span></div>
+          <div class="vcard vcard--unverified">
+            <span class="vcard__wrap"><svg style="color:var(--c-brand-800)"><use href="#i-check-c"/></svg></span>
+            <div class="vcard__t">未实名认证</div>
+            <div class="vcard__d">完成实名认证<br>解锁校园认证与信任标识</div>
+          </div>
+          <div class="sec-b"><div class="sec-b__t">填写实名信息</div>
+            <div class="fcard">
+              <div class="fitem"><span class="fitem__l">真实姓名</span><span class="fitem__i">小满</span></div>
+              <div class="fitem"><span class="fitem__l">身份证号</span><span class="fitem__i">110101200201180012</span></div>
+            </div>
+          </div>
+          <div class="sec-b"><div class="sec-b__t">上传身份证照片</div>
+            <div class="urow">
+              <div class="ucard"><div class="ucard__prev"><img src="assets/demo/xiaoman-photo-1.png" alt=""><span class="ucard__chg">点击更换</span></div></div>
+              <div class="ucard"><div class="ucard__prev"><img src="assets/demo/xiaoman-photo-2.png" alt=""><span class="ucard__chg">点击更换</span></div></div>
+            </div>
+          </div>
+          <div class="sec-b"><div class="pnote"><span class="pnote__t">身份证信息仅用于身份核验，后端加密存储，审核人员仅能看到脱敏号码</span></div></div>
+          <div class="act">提交认证申请</div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F04 审核中 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">审核中 · 30s 轮询</span><span class="d">status=pending · 表单整块消失 · 无裁切</span></figcaption>
+      <div class="phone">
+        <div class="rn-bg"></div>
+        <div class="rn-doc">
+          <div class="rn-navrow"><span class="rn-nav__back">‹</span><span class="rn-nav__title">实名认证</span><span class="rn-nav__ph"></span></div>
+          <div class="vcard vcard--pending">
+            <span class="vcard__wrap"><svg style="color:var(--c-warning)"><use href="#i-clock"/></svg></span>
+            <div class="vcard__t">审核中</div>
+            <div class="vcard__d">您的实名认证申请已提交<br>预计 1-3 个工作日内完成审核</div>
+          </div>
+          <div class="sec-b">
+            <div class="pdc">
+              <div class="pdc__t">审核中</div>
+              <div class="pdc__d">您的实名认证申请已提交<br>预计 1-3 个工作日内完成审核<br>审核结果将通过消息通知您</div>
+            </div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F05 未通过 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">未通过 · 驳回原因回显</span><span class="d">status=rejected · 表单预填可重交 · 无裁切</span></figcaption>
+      <div class="phone">
+        <div class="rn-bg"></div>
+        <div class="rn-doc">
+          <div class="rn-navrow"><span class="rn-nav__back">‹</span><span class="rn-nav__title">实名认证</span><span class="rn-nav__ph"></span></div>
+          <div class="vcard vcard--rejected">
+            <span class="vcard__wrap"><svg style="color:var(--c-error)"><use href="#i-x-c"/></svg></span>
+            <div class="vcard__t">认证未通过</div>
+            <div class="vcard__d">您提交的认证信息未通过审核<br>请核对后重新提交<br>驳回原因：身份证照片国徽面模糊</div>
+          </div>
+          <div class="sec-b"><div class="sec-b__t">填写实名信息</div>
+            <div class="fcard">
+              <div class="fitem"><span class="fitem__l">真实姓名</span><span class="fitem__i">小满</span></div>
+              <div class="fitem"><span class="fitem__l">身份证号</span><span class="fitem__i">110101200201180012</span></div>
+            </div>
+          </div>
+          <div class="sec-b"><div class="sec-b__t">上传身份证照片</div>
+            <div class="urow">
+              <div class="ucard"><div class="ucard__prev"><img src="assets/demo/xiaoman-photo-1.png" alt=""><span class="ucard__chg">点击更换</span></div></div>
+              <div class="ucard"><div class="ucard__prev"><img src="assets/demo/xiaoman-photo-2.png" alt=""><span class="ucard__chg">点击更换</span></div></div>
+            </div>
+          </div>
+          <div class="sec-b"><div class="pnote"><span class="pnote__t">身份证信息仅用于身份核验，后端加密存储，审核人员仅能看到脱敏号码</span></div></div>
+          <div class="act">提交认证申请</div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F06 未成年人保护 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">未成年人保护 · 表单禁用</span><span class="d">!isAdult · 提示横幅出现 + 卡 .6 透明 · 无裁切</span></figcaption>
+      <div class="phone">
+        <div class="rn-bg"></div>
+        <div class="rn-doc">
+          <div class="rn-navrow"><span class="rn-nav__back">‹</span><span class="rn-nav__title">实名认证</span><span class="rn-nav__ph"></span></div>
+          <div class="vcard vcard--unverified">
+            <span class="vcard__wrap"><svg style="color:var(--c-brand-800)"><use href="#i-check-c"/></svg></span>
+            <div class="vcard__t">未实名认证</div>
+            <div class="vcard__d">完成实名认证<br>解锁校园认证与信任标识</div>
+          </div>
+          <div class="minor"><span class="minor__t">未满 18 周岁暂不支持实名认证（未成年人保护）</span></div>
+          <div class="sec-b"><div class="sec-b__t">填写实名信息</div>
+            <div class="fcard fcard--dis">
+              <div class="fitem"><span class="fitem__l">真实姓名</span><span class="fitem__i fitem__i--ph">请输入与身份证一致的姓名</span></div>
+              <div class="fitem"><span class="fitem__l">身份证号</span><span class="fitem__i fitem__i--ph">请输入 18 位身份证号</span></div>
+            </div>
+          </div>
+          <div class="sec-b"><div class="sec-b__t">上传身份证照片</div>
+            <div class="urow">
+              <div class="ucard"><div class="ucard__empty"><span class="ucard__t">身份证正面</span><span class="ucard__h">点击上传</span></div></div>
+              <div class="ucard"><div class="ucard__empty"><span class="ucard__t">身份证背面</span><span class="ucard__h">点击上传</span></div></div>
+            </div>
+          </div>
+          <div class="sec-b"><div class="pnote"><span class="pnote__t">身份证信息仅用于身份核验，后端加密存储，审核人员仅能看到脱敏号码</span></div></div>
+          <div class="act act--dis">提交认证申请</div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F07 已认证 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">已实名认证 · 出口「恋爱认证」</span><span class="d">status=verified · 脱敏回显 · 无裁切</span></figcaption>
+      <div class="phone">
+        <div class="rn-bg"></div>
+        <div class="rn-doc">
+          <div class="rn-navrow"><span class="rn-nav__back">‹</span><span class="rn-nav__title">实名认证</span><span class="rn-nav__ph"></span></div>
+          <div class="vcard vcard--verified">
+            <span class="vcard__wrap"><svg style="color:var(--c-brand-800)"><use href="#i-check-c"/></svg></span>
+            <div class="vcard__t">已实名认证</div>
+            <div class="vcard__d">您的实名认证已通过<br>可进行校园认证（学历认证）</div>
+          </div>
+          <div class="sec-b">
+            <div class="vdcard">
+              <div class="vdcard__row"><span class="vdcard__l">真实姓名</span><span class="vdcard__v">小满</span></div>
+              <div class="vdcard__div"></div>
+              <div class="vdcard__row"><span class="vdcard__l">身份证号</span><span class="vdcard__v">110101********0012</span></div>
+            </div>
+          </div>
+          <div class="act">恋爱认证</div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页交互件五类：状态卡（含骨架）、输入行、身份证上传位（×2 同型）、提交按钮、已认证回显卡。
+    未成年保护是横跨轴：只改状态卡下方与两处禁用态，不改状态机本身。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>状态卡 · 五档（4 态 + 骨架）</h3>
+      <p class="hint">底与字色同源（real-name.vue:85-131 statusInfo）。注意：未认证与已认证<b>共用 check-circle 图标</b>
+        （:122 源码如此，非画板笔误），分家靠卡底与文案。R9-L09-D07 把两态字色都压到 brand-800（5.78/5.96:1 过 AA）。</p>
+      <table class="tbl">
+        <tr><th>档</th><th>标题字色</th><th>卡底</th><th>图标</th></tr>
+        <tr><td>statusLoading</td><td>—（骨架两行）</td><td>无底（:style 只挂非骨架分支 :448-450）</td><td>SkeletonBlock list rows=2</td></tr>
+        <tr><td>unverified</td><td><code>--c-brand-800</code></td><td><code>--c-tint-blue-soft</code></td><td>check-circle</td></tr>
+        <tr><td>pending</td><td><code>--c-warning</code></td><td><code>--c-tint-amber-50</code></td><td>pending（时钟）</td></tr>
+        <tr><td>verified</td><td><code>--c-brand-800</code></td><td><code>--c-brand-50</code></td><td>check-circle</td></tr>
+        <tr><td>rejected</td><td><code>--c-error</code></td><td><code>--c-tint-pink-soft</code></td><td>check-fail</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>输入行 · 五态</h3>
+      <p class="hint">行式布局（label 80px + 无边框输入，real-name.vue:795-814），校验失败走 toast 不出红框
+        （:195-202：姓名必填 / 身份证 15 或 18 位、末位可 X，正则 :183）。disabled 仅未成年（:523/:540）。</p>
+      <div class="row">
+        <div class="cell" style="width:170px"><div class="fitem" style="border:none;background:var(--c-bg-surface);border-radius:var(--r-md);padding:10px"><span class="fitem__l">姓名</span><span class="fitem__i fitem__i--ph">请输入</span></div><span class="lab">placeholder</span></div>
+        <div class="cell" style="width:170px"><div class="fitem" style="border:none;background:var(--c-bg-surface);border-radius:var(--r-md);padding:10px"><span class="fitem__l">姓名</span><span class="fitem__i">小满</span></div><span class="lab">已填</span></div>
+        <div class="cell" style="width:170px"><div class="fitem" style="border:none;background:#fff;border:1.5px solid var(--c-brand);border-radius:var(--r-md);padding:10px"><span class="fitem__l">姓名</span><span class="fitem__i">小满</span></div><span class="lab">focus（原生键盘态）</span></div>
+        <div class="cell" style="width:170px"><div class="fitem fcard--dis" style="border:none;background:var(--c-bg-surface);border-radius:var(--r-md);padding:10px"><span class="fitem__l">姓名</span><span class="fitem__i fitem__i--ph">请输入</span></div><span class="lab">disabled（!isAdult，整卡 .6）</span></div>
+        <div class="cell" style="width:170px"><div class="err" style="margin:0"><svg><use href="#i-x-c"/></svg>请输入正确的身份证号</div><span class="lab">toast 文案示意（实际为 uni.showToast 系统件）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>身份证上传位 · 空态 / 预览态（正面=人像面 · 背面=国徽面）</h3>
+      <p class="hint">两卡并排各占一半（upload-row gap 8px，real-name.vue:832-884）。空态是<b>裸白卡两行字、无虚线盒</b>——
+        与恋爱认证页学生证上传位不同型（那页 R8-L09-D16 补了虚线+相机图标，这页模板没有图标节点，画板不得自行补）。
+        选图走统一封装 chooseImages（隐私授权 + 5MB 校验，:157-180）；上传后 category=ID_CARD 隔离存储（:245-246 合规接线）。</p>
+      <div class="row">
+        <div class="cell" style="width:160px"><div class="ucard" style="box-shadow:none;border:1px solid var(--c-border-light)"><div class="ucard__empty"><span class="ucard__t">身份证正面</span><span class="ucard__h">点击上传</span></div></div><span class="lab">空态 !idCardFrontPath</span></div>
+        <div class="cell" style="width:160px"><div class="ucard" style="box-shadow:none;border:1px solid var(--c-border-light)"><div class="ucard__prev" style="height:120px"><img src="assets/demo/xiaoman-photo-1.png" alt=""><span class="ucard__chg">点击更换</span></div></div><span class="lab">预览态（演示素材占位，非证件图，见 §04）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>提交按钮 · 三态</h3>
+      <p class="hint">禁用条件 <code>submitting || !isAdult</code>（real-name.vue:615）→ opacity .6；
+        submitting 时文案换「提交中...」（:620），防重入守卫 + showLoading mask（:188/:213）。</p>
+      <div class="row">
+        <div class="cell"><div class="btn" style="width:180px;background:linear-gradient(135deg,var(--c-brand-900),var(--c-brand-800))">提交认证申请</div><span class="lab">default</span></div>
+        <div class="cell"><div class="btn act--dis" style="width:180px;background:linear-gradient(135deg,var(--c-brand-900),var(--c-brand-800))">提交中...</div><span class="lab">submitting</span></div>
+        <div class="cell"><div class="btn act--dis" style="width:180px;background:linear-gradient(135deg,var(--c-brand-900),var(--c-brand-800))">提交认证申请</div><span class="lab">disabled（未成年）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>已认证回显卡 + 链路出口</h3>
+      <p class="hint">姓名 + 脱敏身份证号（前 6 后 4，接口注释 :47-48；AES-GCM 存储，视图永不回全号）。
+        主按钮文案 = verification.navTitle「恋爱认证」，<code>goVerificationCenter → navigateTo(ROUTES.VERIFICATION)</code>
+        （:482-491/:428-431，R11-L09-D18 补的出口——状态卡 desc 承诺的「可进行校园认证」由此可达认证中心，再进校园认证页）。</p>
+      <div class="row">
+        <div class="cell" style="width:230px"><div class="vdcard" style="box-shadow:none;border:1px solid var(--c-border-light)">
+          <div class="vdcard__row"><span class="vdcard__l">真实姓名</span><span class="vdcard__v">小满</span></div>
+          <div class="vdcard__div"></div>
+          <div class="vdcard__row"><span class="vdcard__l">身份证号</span><span class="vdcard__v">110101********0012</span></div>
+        </div><span class="lab">回显卡（行 label 13 / value 15/500）</span></div>
+        <div class="cell"><div class="btn" style="width:180px;background:linear-gradient(135deg,var(--c-brand-900),var(--c-brand-800))">恋爱认证</div><span class="lab">出口按钮 → verification/index</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>认证链路 · 与校园认证页的衔接（源码锚）</h3>
+      <table class="tbl">
+        <tr><th>方向</th><th>触发件</th><th>实现</th><th>源码锚</th></tr>
+        <tr><td>校园认证 → 本页</td><td>门槛横幅「去实名认证」</td><td><code>goRealNameCertification → navigateTo('/subpackages/profile-extra/verification/real-name')</code>；横幅条件 <code>!gateLoading &amp;&amp; !idCardVerified</code>；同页提交键禁用 <code>isSubmitting || !idCardVerified</code>，强点 toast</td><td>campus/certification.vue:305-308/:220/:438/:145-146</td></tr>
+        <tr><td>本页 → 校园认证（状态回传）</td><td>无事件回传，靠重拉</td><td>本页 POST /real-name-certification（:254-266）→ 审核 APPROVED 后服务端置位 idCardVerified；校园页实例不销毁，<code>onShow → loadRealNameGate()</code> 重拉 GET /profile/basic 取 <code>idCardVerified === true</code> → 横幅消失、表单解禁</td><td>real-name.vue:241-293 + certification.vue:68-82/:260-265（MP-R1-CERT-101）</td></tr>
+        <tr><td>本页 pending 自动过闸</td><td>30s 轮询</td><td>pending 态每 30s 重拉 GET /real-name-certification（:361-390），审核结果自动反映，无需手动刷新</td><td>real-name.vue:361-390</td></tr>
+        <tr><td>互动门控（旁路入口）</td><td><code>ensureCertified('realname')</code> 弹窗「去认证」</td><td>喜欢/打招呼/发帖被拦时弹窗 → <code>openAppPath(ROUTES.REAL_NAME_CERTIFICATION)</code> 直达本页</td><td>guards/campus-gate.ts:73-95 + routes.ts:176</td></tr>
+        <tr><td>本页 → 认证首页</td><td>已认证态「恋爱认证」按钮 / 返回兜底</td><td>goVerificationCenter（:428-431）；深链直达栈=1 时返回键也 navigateTo 认证首页（:406-414）</td><td>real-name.vue:482-491/:406-414</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">两档未登记进 board-base.css，画板以 var()+真值 fallback 引用并登记 BASE_PROBLEM（§04）。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#0B4A38"></span><div><div class="sw__n">主色 900<code>--c-brand-900</code></div><div class="sw__u">CTA 渐变起点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">CTA 渐变终点 · 未认证/已认证标题</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3;border:1px solid #DDE3E0"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">已认证卡底 · 页底渐变终点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8F4FD;border:1px solid #DDE3E0"></span><div><div class="sw__n">蓝软底<code>--c-tint-blue-soft</code></div><div class="sw__u">未认证卡底（令牌真值 #E8F4FD，源码 fallback #E8F4FF 为笔误值）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFF8E1;border:1px solid #DDE3E0"></span><div><div class="sw__n">琥珀 50<code>--c-tint-amber-50</code></div><div class="sw__u">审核中卡底 · 未成年横幅底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F59E0B"></span><div><div class="sw__n">警告<code>--c-warning</code></div><div class="sw__u">审核中字色 · 未成年提示字色</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFF0F5;border:1px solid #DDE3E0"></span><div><div class="sw__n">粉软底<code>--c-tint-pink-soft</code></div><div class="sw__u">未通过卡底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">未通过字色</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到七档（rpx÷2）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/400</span><span class="type__p" style="font-size:28px;font-weight:400">‹</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px">未实名认证</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px">实名认证 · 审核中</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/500-600</span><span class="type__p" style="font-size:15px;font-weight:600">提交认证申请 · 110101********0012</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/500</span><span class="type__p" style="font-size:14px;font-weight:500">真实姓名 · 请输入与身份证一致的姓名</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-text-tertiary)">真实姓名（回显卡标签档）</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px;font-weight:400;color:var(--c-text-secondary)">您的实名认证已通过</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-tertiary)">点击上传 · 隐私说明</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。水平外缘统一 --page-padding 32rpx=16px（R11-L09-D16 归口，与认证首页同轨）。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 未成年横幅/隐私条</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 状态卡/表单卡/上传卡/CTA</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>胶囊 · 点击更换</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材与差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与实况的已知差异</h2><p>证件照片位按规范 §8 例外条款处理</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/xiaoman-photo-2.png" alt="" style="height:150px;object-fit:cover">
+      <div class="asset__b"><b>assets/demo/xiaoman-photo-1 / -2.png · 身份证正/反面预览位占位</b>
+        <p>§8 主规则要求照片位用真素材（判裁切/密度/蒙层压图），但证件位放「证件样式图」会诱导用户上传网图并涉他人身份信息
+        （§3.5 禁令）。按 §8 例外条款取折中：<b>用演示人设真照片占位、明确不是证件样式图</b>。
+        预览位 280rpx=140px 高、object-fit:cover、「点击更换」胶囊压图关系照常可被像素比对。</p>
+        <div class="m">无真实证件素材可用，非素材缺口 · NEED_ASSET 无</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_EMOJI 池（check-circle / pending / check-fail）</b>
+        <p>状态卡三枚图标走工程 ICONS_EMOJI 本地 SVG（images.ts:840-847），画板以 lucide 描边 symbol 复刻。
+        本页上传空态<b>没有图标节点</b>（模板 :563-566/:587-590 只有两行文字），与恋爱认证页不同型，不得补挂。</p>
+        <div class="m">36px · 状态色同源</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异与登记（画板不修）：</b>
+    <ul>
+      <li><b>BASE_PROBLEM：</b><code>--c-tint-amber-50</code>（design-variables.scss:827，#FFF8E1）与 <code>--c-neutral-shadow-md</code>（:891，rgba(15,23,42,.06)）未登记进 board-base.css，画板以 var()+真值 fallback 引用，请主控统一补登记（与认证首页画板同一条）。</li>
+      <li>本页<b>无恒 false 死分支</b>：模板 v-if 仅 statusLoading / !isAdult / status 四态 / 两上传位路径判空，均在 real 档可达。未成年轴在 mock 档恒不出现（loadAdultGate 在 mock 直接 return，:343，isAdult 保持初值 true）——F06 是 real-only 屏。</li>
+      <li>演示身份证号 <code>110101200201180012</code> 为合成占位（姓名/生日对齐演示人设「小满」，2002-01-18 成年），F07 脱敏行按接口注释「前 6 后 4 中间掩码」（:47-48）画成 <code>110101********0012</code>；上线真值由服务端返回，画板不携带任何真实证件号。</li>
+      <li>F05 驳回原因为演示占位（后端 reviewComment 真值字段，:114-116 拼进 desc 第三行起）。</li>
+      <li>源码 :128 的 fallback <code>#E8F4FF</code> 与令牌真值 <code>#E8F4FD</code> 差一尾数——运行时令牌生效，画板按真值 #E8F4FD 画。</li>
+      <li>骨架分支 .status-card 无背景（背景 :style 绑定只挂非骨架分支，:448-451），F01 如实画成无底浮影；statusLoading 期间正文照常按 unverified 全量渲染（status 初值 unverified，:57）。</li>
+      <li>本页在 profile-extra 分包，无 tabbar、无原生导航栏（页头自绘、透明压渐变底，非吸顶）——画 tabbar 或画成白底吸顶即为错（那是认证首页的型）。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 实名认证填写页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846
+</footer>
+
+</div>
+</body>
+</html>

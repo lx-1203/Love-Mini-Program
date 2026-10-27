@@ -27,15 +27,10 @@ export const SetupProgressStory: StoryObj<typeof SetupProgress> = {
   argTypes: {
     currentStep: {
       control: 'number',
-      description: '当前步骤（1-based，1~totalSteps），越界自动 clamp',
-    },
-    totalSteps: {
-      control: 'number',
-      description: '总步骤数（默认 5）',
+      description: '当前步骤（1-based，取真实链序位置），越界自动 clamp 到本分支步骤数',
     },
   },
   args: {
     currentStep: 3,
-    totalSteps: 5,
   },
 };

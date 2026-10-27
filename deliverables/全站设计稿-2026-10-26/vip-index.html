@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · VIP 开通页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 未登记令牌：按 design-variables.scss 真值 1:1 落地（base 缺档，已回报 BASE_PROBLEM） ===== */
+:root{
+  --c-neutral-800: #1A1F26;                      /* scss :98/:359 · 本页页底与底栏 */
+  --c-accent-400: #F97316;                       /* scss :33/:292 · 金渐变终点 */
+  --c-accent-bg-tint: rgba(249, 115, 22, 0.75);  /* scss :946 · 主钮/角标投影 */
+  --c-gold-true: #FFD700;                        /* scss :814 与 styles/tokens.scss:347 逐字同值；
+                                                    base 的 --c-gold 登记成 #C9A36A（那是 --c-vip-from）⇒ BASE_PROBLEM */
+  --c-text-vip-dark: #5D4E37;                    /* scss :815 · 金底按钮字 */
+  --c-vip-border-tint: rgba(201, 163, 106, 0.35);/* scss :869 · 选中卡投影 */
+  --c-overlay-text-secondary: rgba(255, 255, 255, 0.85); /* scss :750 */
+  --c-overlay-text-tertiary: rgba(255, 255, 255, 0.6);   /* scss :751 */
+  --c-overlay-text-quaternary: rgba(255, 255, 255, 0.5); /* scss :752 */
+  --c-overlay-text-placeholder: rgba(255, 255, 255, 0.4);/* scss :753 */
+  --c-overlay-white-text-mid: rgba(255, 255, 255, 0.7);  /* scss :921 */
+  --c-overlay-white-bg-tint: rgba(255, 255, 255, 0.08);  /* scss :914 · 卡底 */
+  --c-overlay-white-bg-tint-mid: rgba(255, 255, 255, 0.1);/* scss :915 · 卡描边 */
+}
+
+/* ===== 本页专属组件（暗底金主题） ===== */
+.vpage { position: absolute; inset: 0; background: var(--c-neutral-800); overflow: hidden; }
+.vnav { position: absolute; top: 44px; left: 0; width: 100%; height: 44px; z-index: 4;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 12px; }
+.vnav__back { width: 32px; height: 32px; border-radius: var(--r-full); display: flex; align-items: center;
+  justify-content: center; color: var(--c-text-inverse); font-size: var(--fs-7xl); font-weight: 300; line-height: 1; }
+.vnav__title { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-inverse); }
+.vnav__ph { width: 32px; height: 32px; flex: none; }
+
+.vhero { display: flex; flex-direction: column; align-items: center; padding: 12px 16px 24px; }
+.vhero__crown { width: 72px; height: 72px; border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-gold-true) 0%, var(--c-accent-400) 100%);
+  box-shadow: 0 4px 16px var(--c-vip-border-tint);
+  display: flex; align-items: center; justify-content: center; color: var(--c-warning); margin-bottom: 10px; }
+.vhero__crown svg { width: 36px; height: 36px; }
+.vhero__t { font-size: var(--fs-5xl); font-weight: 800; color: var(--c-gold-true); letter-spacing: 1px; margin-bottom: 4px; }
+.vhero__s { font-size: var(--fs-base); color: var(--c-overlay-white-text-mid); }
+
+.vsec { margin: 12px 12px 0; }
+.vsec__t { padding: 0 6px 6px; font-size: var(--fs-md); font-weight: 600; color: var(--c-overlay-text-secondary); }
+
+/* 权益网格 */
+.bgrid { display: flex; flex-wrap: wrap; gap: 8px; }
+.bitem { flex: 1 1 calc(50% - 4px); min-width: 140px; box-sizing: border-box;
+  background: var(--c-overlay-white-bg-tint);
+  border: 1px solid var(--c-vip-border-light); border-radius: var(--r-lg); padding: 10px;
+  display: flex; align-items: center; gap: 8px; }
+.bitem__ic { width: 28px; height: 28px; flex: none; border-radius: 7px;
+  background: linear-gradient(135deg, var(--c-vip-border-light) 0%, var(--c-accent-bg-tint) 100%);
+  display: flex; align-items: center; justify-content: center; color: var(--c-gold-true); }
+.bitem__ic svg { width: 16px; height: 16px; }
+.bitem__c { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.bitem__t { font-size: var(--fs-md); font-weight: 600; color: var(--c-gold-true); }
+.bitem__d { font-size: var(--fs-xs); color: var(--c-overlay-text-tertiary); line-height: 1.4;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 套餐卡 */
+.pgrid { display: flex; gap: 8px; }
+.pcard { flex: 1; position: relative; background: var(--c-overlay-white-bg-tint);
+  border: 1px solid var(--c-overlay-white-bg-tint-mid); border-radius: var(--r-lg);
+  padding: 16px 8px 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.pcard--sel { background: linear-gradient(135deg, var(--c-vip-border-light) 0%, var(--c-accent-bg-tint) 100%);
+  border-color: var(--c-gold-true); box-shadow: 0 2px 8px var(--c-vip-border-tint); }
+.pcard--pop { border-color: var(--c-vip-border-tint); }
+.pcard--dis { opacity: 0.45; }
+.pcard__badge { position: absolute; top: 0; left: 50%; transform: translateX(-50%); padding: 2px 8px;
+  background: linear-gradient(135deg, var(--c-gold-true) 0%, var(--c-accent-400) 100%);
+  border-radius: 0 0 6px 6px; box-shadow: 0 1px 4px var(--c-accent-bg-tint); }
+.pcard__badge span { font-size: var(--fs-xs); line-height: 1.2; color: var(--c-text-vip-dark); font-weight: 700; }
+.pcard__check { position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; border-radius: var(--r-full);
+  background: var(--c-gold-true); display: flex; align-items: center; justify-content: center; color: var(--c-text-vip-dark); }
+.pcard__check svg { width: 11px; height: 11px; }
+.pcard__name { font-size: var(--fs-lg); color: var(--c-text-inverse); font-weight: 600; }
+.pcard__pr { display: flex; align-items: baseline; gap: 1px; margin-top: 2px; }
+.pcard__cur { font-size: var(--fs-sm); color: var(--c-gold-true); font-weight: 600; }
+.pcard__price { font-size: var(--fs-6xl); color: var(--c-gold-true); font-weight: 800; line-height: 1; }
+/* 选中态只换底/描边/投影，不改任何文字色（源码 .plan-card--selected 仅三条声明）⇒
+   金压橙底是本页在册的低对比点，画板按实况保留，见 §04。 */
+.pcard__oprice { font-size: var(--fs-xs); color: var(--c-overlay-text-placeholder); text-decoration: line-through; }
+.pcard__period { font-size: var(--fs-sm); color: var(--c-overlay-white-text-mid); margin-top: 2px; }
+.pcard__per-day { font-size: var(--fs-xs); color: var(--c-gold-true); margin-top: 1px; }
+
+/* 协议行 */
+.vagree { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 2px; padding: 16px 12px 8px; }
+.vagree__t { font-size: var(--fs-sm); color: var(--c-overlay-text-quaternary); }
+.vagree__l { font-size: var(--fs-sm); color: var(--c-gold-true); }
+
+/* 自动续费 */
+.renew { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.renew__i { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.renew__t { font-size: var(--fs-lg); font-weight: 600; color: var(--c-gold-true); }
+.renew__d { font-size: var(--fs-sm); color: var(--c-overlay-text-tertiary); line-height: 1.4; }
+.sw { width: 46px; height: 26px; border-radius: var(--r-full); flex: none; position: relative;
+  background: var(--c-overlay-white-bg-tint-mid); border: 1px solid var(--c-overlay-white-bg-tint-mid); }
+.sw i { position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: var(--r-full);
+  background: var(--c-neutral-0); box-shadow: var(--s-sm); }
+.sw--on { background: var(--c-gold-true); border-color: var(--c-gold-true); }
+.sw--on i { left: 22px; }
+.sw--dis { opacity: 0.45; }
+
+/* 功能入口 */
+.elist { display: flex; flex-direction: column; gap: 4px; }
+.eitem { display: flex; align-items: center; padding: 10px 4px; border-radius: var(--r-lg); }
+.eitem__ic { width: 20px; height: 20px; margin-right: 8px; flex: none; color: var(--c-brand-500); }
+.eitem__ic svg { width: 20px; height: 20px; }
+.eitem__l { flex: 1; font-size: var(--fs-lg); color: var(--c-overlay-white-text-mid); font-weight: 500; }
+.eitem__a { font-size: var(--fs-2xl); color: var(--c-overlay-text-tertiary); }
+
+/* 底部固定开通栏 */
+.vfooter { position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; background: var(--c-neutral-800);
+  border-top: 1px solid var(--c-vip-border-light); padding: 8px 12px 20px;
+  display: flex; align-items: center; justify-content: space-between; }
+.vfooter__pr { display: flex; align-items: baseline; gap: 1px; }
+.vfooter__l { font-size: var(--fs-base); color: var(--c-overlay-white-text-mid); }
+.vfooter__cur { font-size: var(--fs-base); color: var(--c-gold-true); font-weight: 600; }
+.vfooter__p { font-size: var(--fs-5xl); color: var(--c-gold-true); font-weight: 800; line-height: 1; }
+.vfooter__o { font-size: var(--fs-sm); color: var(--c-overlay-text-placeholder); text-decoration: line-through; margin-left: 4px; }
+.vfooter__btn { padding: 12px 28px; border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-gold-true) 0%, var(--c-accent-400) 100%);
+  box-shadow: 0 2px 8px var(--c-accent-bg-tint); display: flex; align-items: center; gap: 6px; }
+.vfooter__btn--dis { opacity: 0.6; box-shadow: none; }
+.vfooter__btn span { font-size: var(--fs-xl); color: var(--c-text-vip-dark); font-weight: 700; }
+.spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(93,78,55,.35);
+  border-top-color: var(--c-text-vip-dark); flex: none; }
+
+.toast { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 20;
+  max-width: 300px; padding: 11px 18px; border-radius: var(--r-lg); background: var(--c-overlay-strong);
+  color: var(--c-text-inverse); font-size: var(--fs-md); line-height: 1.4; text-align: center; white-space: nowrap; }
+/* uni.showModal（开通成功回执）：与全站其它画板同一套模态几何 */
+.vmask { position: absolute; inset: 0; background: var(--c-bg-overlay); z-index: 18; }
+.vmodal { position: absolute; left: 37px; top: 300px; width: 300px; border-radius: var(--r-xxl);
+  overflow: hidden; background: var(--c-bg-container); box-shadow: var(--s-modal); z-index: 19; }
+.vmodal__hd { padding: 20px 20px 8px; text-align: center; font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.vmodal__bd { padding: 0 20px 16px; text-align: center; font-size: var(--fs-md); line-height: 1.6; color: var(--c-text-secondary); }
+.vmodal__row { display: flex; border-top: 0.5px solid var(--c-border-light); }
+.vmodal__b { flex: 1; height: 44px; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-lg); font-weight: 600; color: var(--c-brand-700); }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-crown" viewBox="0 0 24 24"><path d="M3.5 17.5h17"/><path d="M4 15.5 3 7.5l5 3.5 4-6 4 6 5-3.5-1 8z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.8l4.4 4.4L19 7.6"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 6.5 12 6.5 21.5 12 21.5 12 18 17.5 12 17.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.2l-1.5-1.4C5.6 14.3 2.8 11.8 2.8 8.7A4.4 4.4 0 0 1 7.2 4.3c1.4 0 2.8.7 3.6 1.8l1.2 1.6 1.2-1.6a4.4 4.4 0 0 1 7.2 3.2c0 3.1-2.8 5.6-7.7 10.1z"/></symbol>
+  <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M13.5 4.5c3.4-2 6.5-1.5 6.5-1.5s.5 3.1-1.5 6.5l-4 5.5-6-6z"/><path d="M9 15l-3.5 3.5M6 12l-2 1 2 3M12 18l1 2 3-2"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 2-1 1.6-2.1-.5-1.3.4-2.4 1.7-2.4h1.6a3.6 3.6 0 0 0 3.6-3.9 8.6 8.6 0 0 0-8.5-8.6z"/><circle cx="8" cy="11" r="1"/><circle cx="11" cy="7.6" r="1"/><circle cx="15" cy="8.6" r="1"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4.5 5.5h15a1.6 1.6 0 0 1 1.6 1.6v8a1.6 1.6 0 0 1-1.6 1.6H9.5L5 20.4v-3.7h-.5A1.6 1.6 0 0 1 2.9 15.1v-8a1.6 1.6 0 0 1 1.6-1.6z"/></symbol>
+  <symbol id="i-badge" viewBox="0 0 24 24"><circle cx="12" cy="9.5" r="5.5"/><path d="M8.6 14.2 7 21l5-2.4L17 21l-1.6-6.8"/></symbol>
+  <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3.5 7.5A1.6 1.6 0 0 1 5.1 5.9h13.8a1.6 1.6 0 0 1 1.6 1.6v1.9a2.1 2.1 0 0 0 0 4.2v1.9a1.6 1.6 0 0 1-1.6 1.6H5.1a1.6 1.6 0 0 1-1.6-1.6v-1.9a2.1 2.1 0 0 0 0-4.2z"/><path d="M13 6v12"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="16" rx="2.4"/><path d="M9 4.5V3.4A1.4 1.4 0 0 1 10.4 2h3.2A1.4 1.4 0 0 1 15 3.4v1.1z"/><path d="M8.6 10.5h6.8M8.6 14h6.8M8.6 17.2h4"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>VIP 开通页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/vip/index</code>。
+     <strong>前提先说清：今天这页不可达。</strong>三张 VIP 页在 <code>onLoad</code> 就被
+     <code>featureFlags.membershipEnabled</code>（<code>config/feature-flags.ts:40</code> 硬编码 <code>false</code>）拦走——
+     toast「会员功能暂未开放」后 <code>navigateBack</code>，无栈时 <code>switchTab</code> 到「我的」。
+     本页模板<strong>没有</strong>封存分支（不像 market 三页有白卡），所以画板记录的是
+     <code>membershipEnabled=true</code> 时的真实版式（F01–F04），另用 F05 记录 flag=false 时"重定向前的那一帧"长什么样。</p>
+  <div class="cover__meta">
+    <span>路由 <b>vip/index</b></span>
+    <span>分包 <b>vip</b>（无 tabbar）</span>
+    <span>状态 <b>5 屏</b></span>
+    <span>闸门 <b>featureFlags.membershipEnabled（前端常量，非后端开关）</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 5 屏</h2>
+    <p>月卡选中 / 年卡选中 / 开通成功回执 / 支付处理中 / flag=false 禁用帧</p></div>
+  <div class="sec__sub">本页模板（<code>:530-710</code>）<strong>无 v-if 状态链</strong>，整页恒渲染；
+    可枚举的状态来自三类条件绑定：<code>plan.id===selectedPlanId</code> / <code>plan.popular</code> /
+    <code>plan.badge||badgeKey</code> / <code>plan.originalPrice</code> / <code>plan.perDay||perDayKey</code>（<code>:589-624</code>）、
+    <code>autoRenewEnabled</code>（<code>:646-648</code>）、<code>processing || membershipDisabled</code>（<code>:698</code>）。
+    默认选中项 = <code>DEFAULT_PLAN_ID = VIP_PLANS[0].id = "monthly"</code>（<code>:129</code>）。
+    页头自绘（<code>‹</code> 文字箭头 + 标题），暗底金主题，无 tabbar。F01–F04 需 <code>membershipEnabled=true</code>；自动续费开关（<code>autoRenewEnabled</code> 两态 + <code>disabled</code>）落在视口外，按 §3.6「不画滚动后的内容」不设专屏，三态在 §02 枚举；
+    F05 是默认 flag 下的实况帧。整页内容 946px &gt; 812px，末屏按视口裁切。</div>
+
+  <div class="frames">
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">开关开启 · 默认（月卡选中 / 续费关）</span><span class="d">↓ 续费开关与入口两分组在视口外（固定底栏压位）</span></figcaption>
+      <div class="phone">
+        <div class="vpage">
+          <div class="vnav"><span class="vnav__back">‹</span><span class="vnav__title">开通 VIP</span><span class="vnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="vhero">
+              <span class="vhero__crown"><svg><use href="#i-crown"/></svg></span>
+              <span class="vhero__t">校园恋爱 VIP</span>
+              <span class="vhero__s">解锁专属权益 · 遇见更多可能</span>
+            </div>
+            <div class="vsec"><div class="vsec__t">会员权益</div>
+              <div class="bgrid">
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-eye"/></svg></span><div class="bitem__c"><span class="bitem__t">查看谁喜欢我</span><span class="bitem__d">无限次查看喜欢我的用户列表</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-heart"/></svg></span><div class="bitem__c"><span class="bitem__t">无限喜欢</span><span class="bitem__d">每日喜欢次数无上限</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-badge"/></svg></span><div class="bitem__c"><span class="bitem__t">专属标识</span><span class="bitem__d">个人主页 VIP 皇冠徽章</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-rocket"/></svg></span><div class="bitem__c"><span class="bitem__t">匹配加权</span><span class="bitem__d">匹配概率提升 2 倍</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-palette"/></svg></span><div class="bitem__c"><span class="bitem__t">专属主题</span><span class="bitem__d">解锁 5 套 VIP 专属主题</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-chat"/></svg></span><div class="bitem__c"><span class="bitem__t">超级喜欢</span><span class="bitem__d">每日 3 次超级喜欢机会</span></div></div>
+              </div>
+            </div>
+            <div class="vsec"><div class="vsec__t">选择套餐</div>
+              <div class="pgrid">
+                <div class="pcard pcard--sel"><span class="pcard__check"><svg><use href="#i-check"/></svg></span><span class="pcard__name">月卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">18</span></div><span class="pcard__oprice">¥28</span><span class="pcard__period">30 天</span><span class="pcard__per-day">0.6 元/天</span></div>
+                <div class="pcard pcard--pop"><span class="pcard__badge"><span>超值</span></span><span class="pcard__name">季卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">48</span></div><span class="pcard__oprice">¥84</span><span class="pcard__period">90 天</span><span class="pcard__per-day">0.53 元/天</span></div>
+                <div class="pcard"><span class="pcard__badge"><span>最划算</span></span><span class="pcard__name">年卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">158</span></div><span class="pcard__oprice">¥336</span><span class="pcard__period">365 天</span><span class="pcard__per-day">0.43 元/天</span></div>
+              </div>
+            </div>
+            <div class="vagree"><span class="vagree__t">开通即表示同意</span><span class="vagree__l">《VIP 服务协议》</span><span class="vagree__t">·</span><span class="vagree__l">《自动续费协议》</span></div>
+            <div class="vsec"><div class="renew">
+              <div class="renew__i"><span class="renew__t">自动续费</span><span class="renew__d">关闭后，到期将不再自动扣费</span></div>
+              <span class="sw"><i></i></span>
+            </div></div>
+            <div class="vsec"><div class="elist">
+              <div class="eitem"><span class="eitem__ic"><svg><use href="#i-ticket"/></svg></span><span class="eitem__l">优惠码</span><span class="eitem__a">›</span></div>
+              <div class="eitem"><span class="eitem__ic"><svg><use href="#i-clipboard"/></svg></span><span class="eitem__l">账单记录</span><span class="eitem__a">›</span></div>
+            </div></div>
+          </div>
+          <div class="vfooter">
+            <div class="vfooter__pr"><span class="vfooter__l">应付：</span><span class="vfooter__cur">¥</span><span class="vfooter__p">18</span><span class="vfooter__o">¥28</span></div>
+            <div class="vfooter__btn"><span>立即开通</span></div>
+          </div>
+        </div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">开关开启 · 选中年卡</span><span class="d">应付随选项联动 ¥158 · ↓ 同 F01 裁切</span></figcaption>
+      <div class="phone">
+        <div class="vpage">
+          <div class="vnav"><span class="vnav__back">‹</span><span class="vnav__title">开通 VIP</span><span class="vnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="vhero">
+              <span class="vhero__crown"><svg><use href="#i-crown"/></svg></span>
+              <span class="vhero__t">校园恋爱 VIP</span>
+              <span class="vhero__s">解锁专属权益 · 遇见更多可能</span>
+            </div>
+            <div class="vsec"><div class="vsec__t">会员权益</div>
+              <div class="bgrid">
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-eye"/></svg></span><div class="bitem__c"><span class="bitem__t">查看谁喜欢我</span><span class="bitem__d">无限次查看喜欢我的用户列表</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-heart"/></svg></span><div class="bitem__c"><span class="bitem__t">无限喜欢</span><span class="bitem__d">每日喜欢次数无上限</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-badge"/></svg></span><div class="bitem__c"><span class="bitem__t">专属标识</span><span class="bitem__d">个人主页 VIP 皇冠徽章</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-rocket"/></svg></span><div class="bitem__c"><span class="bitem__t">匹配加权</span><span class="bitem__d">匹配概率提升 2 倍</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-palette"/></svg></span><div class="bitem__c"><span class="bitem__t">专属主题</span><span class="bitem__d">解锁 5 套 VIP 专属主题</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-chat"/></svg></span><div class="bitem__c"><span class="bitem__t">超级喜欢</span><span class="bitem__d">每日 3 次超级喜欢机会</span></div></div>
+              </div>
+            </div>
+            <div class="vsec"><div class="vsec__t">选择套餐</div>
+              <div class="pgrid">
+                <div class="pcard"><span class="pcard__name">月卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">18</span></div><span class="pcard__oprice">¥28</span><span class="pcard__period">30 天</span><span class="pcard__per-day">0.6 元/天</span></div>
+                <div class="pcard pcard--pop"><span class="pcard__badge"><span>超值</span></span><span class="pcard__name">季卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">48</span></div><span class="pcard__oprice">¥84</span><span class="pcard__period">90 天</span><span class="pcard__per-day">0.53 元/天</span></div>
+                <div class="pcard pcard--sel"><span class="pcard__badge"><span>最划算</span></span><span class="pcard__check"><svg><use href="#i-check"/></svg></span><span class="pcard__name">年卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">158</span></div><span class="pcard__oprice">¥336</span><span class="pcard__period">365 天</span><span class="pcard__per-day">0.43 元/天</span></div>
+              </div>
+            </div>
+            <div class="vagree"><span class="vagree__t">开通即表示同意</span><span class="vagree__l">《VIP 服务协议》</span><span class="vagree__t">·</span><span class="vagree__l">《自动续费协议》</span></div>
+            <div class="vsec"><div class="renew">
+              <div class="renew__i"><span class="renew__t">自动续费</span><span class="renew__d">关闭后，到期将不再自动扣费</span></div>
+              <span class="sw"><i></i></span>
+            </div></div>
+            <div class="vsec"><div class="elist">
+              <div class="eitem"><span class="eitem__ic"><svg><use href="#i-ticket"/></svg></span><span class="eitem__l">优惠码</span><span class="eitem__a">›</span></div>
+              <div class="eitem"><span class="eitem__ic"><svg><use href="#i-clipboard"/></svg></span><span class="eitem__l">账单记录</span><span class="eitem__a">›</span></div>
+            </div></div>
+          </div>
+          <div class="vfooter">
+            <div class="vfooter__pr"><span class="vfooter__l">应付：</span><span class="vfooter__cur">¥</span><span class="vfooter__p">158</span><span class="vfooter__o">¥336</span></div>
+            <div class="vfooter__btn"><span>立即开通</span></div>
+          </div>
+        </div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">开关开启 · 开通成功回执</span><span class="d">uni.showModal 单按钮 · ↓ 同 F01 裁切</span></figcaption>
+      <div class="phone">
+        <div class="vpage">
+          <div class="vnav"><span class="vnav__back">‹</span><span class="vnav__title">开通 VIP</span><span class="vnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="vhero">
+              <span class="vhero__crown"><svg><use href="#i-crown"/></svg></span>
+              <span class="vhero__t">校园恋爱 VIP</span>
+              <span class="vhero__s">解锁专属权益 · 遇见更多可能</span>
+            </div>
+            <div class="vsec"><div class="vsec__t">会员权益</div>
+              <div class="bgrid">
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-eye"/></svg></span><div class="bitem__c"><span class="bitem__t">查看谁喜欢我</span><span class="bitem__d">无限次查看喜欢我的用户列表</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-heart"/></svg></span><div class="bitem__c"><span class="bitem__t">无限喜欢</span><span class="bitem__d">每日喜欢次数无上限</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-badge"/></svg></span><div class="bitem__c"><span class="bitem__t">专属标识</span><span class="bitem__d">个人主页 VIP 皇冠徽章</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-rocket"/></svg></span><div class="bitem__c"><span class="bitem__t">匹配加权</span><span class="bitem__d">匹配概率提升 2 倍</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-palette"/></svg></span><div class="bitem__c"><span class="bitem__t">专属主题</span><span class="bitem__d">解锁 5 套 VIP 专属主题</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-chat"/></svg></span><div class="bitem__c"><span class="bitem__t">超级喜欢</span><span class="bitem__d">每日 3 次超级喜欢机会</span></div></div>
+              </div>
+            </div>
+            <div class="vsec"><div class="vsec__t">选择套餐</div>
+              <div class="pgrid">
+                <div class="pcard pcard--sel"><span class="pcard__check"><svg><use href="#i-check"/></svg></span><span class="pcard__name">月卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">18</span></div><span class="pcard__oprice">¥28</span><span class="pcard__period">30 天</span><span class="pcard__per-day">0.6 元/天</span></div>
+                <div class="pcard pcard--pop"><span class="pcard__badge"><span>超值</span></span><span class="pcard__name">季卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">48</span></div><span class="pcard__oprice">¥84</span><span class="pcard__period">90 天</span><span class="pcard__per-day">0.53 元/天</span></div>
+                <div class="pcard"><span class="pcard__badge"><span>最划算</span></span><span class="pcard__name">年卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">158</span></div><span class="pcard__oprice">¥336</span><span class="pcard__period">365 天</span><span class="pcard__per-day">0.43 元/天</span></div>
+              </div>
+            </div>
+            <div class="vagree"><span class="vagree__t">开通即表示同意</span><span class="vagree__l">《VIP 服务协议》</span><span class="vagree__t">·</span><span class="vagree__l">《自动续费协议》</span></div>
+            <div class="vsec"><div class="renew">
+              <div class="renew__i"><span class="renew__t">自动续费</span><span class="renew__d">关闭后，到期将不再自动扣费</span></div>
+              <span class="sw"><i></i></span>
+            </div></div>
+            <div class="vsec"><div class="elist">
+              <div class="eitem"><span class="eitem__ic"><svg><use href="#i-ticket"/></svg></span><span class="eitem__l">优惠码</span><span class="eitem__a">›</span></div>
+              <div class="eitem"><span class="eitem__ic"><svg><use href="#i-clipboard"/></svg></span><span class="eitem__l">账单记录</span><span class="eitem__a">›</span></div>
+            </div></div>
+          </div>
+          <div class="vfooter">
+            <div class="vfooter__pr"><span class="vfooter__l">应付：</span><span class="vfooter__cur">¥</span><span class="vfooter__p">18</span><span class="vfooter__o">¥28</span></div>
+            <div class="vfooter__btn"><span>立即开通</span></div>
+          </div>
+          <div class="vmask"></div>
+          <div class="vmodal">
+            <div class="vmodal__hd">开通成功</div>
+            <div class="vmodal__bd">已成功开通 VIP 月卡<br>有效期：30 天</div>
+            <div class="vmodal__row"><span class="vmodal__b">知道了</span></div>
+          </div>
+        </div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">开关开启 · 支付处理中</span><span class="d">processing → 钮禁用 + 转圈 · ↓ 同 F01 裁切</span></figcaption>
+      <div class="phone">
+        <div class="vpage">
+          <div class="vnav"><span class="vnav__back">‹</span><span class="vnav__title">开通 VIP</span><span class="vnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="vhero">
+              <span class="vhero__crown"><svg><use href="#i-crown"/></svg></span>
+              <span class="vhero__t">校园恋爱 VIP</span>
+              <span class="vhero__s">解锁专属权益 · 遇见更多可能</span>
+            </div>
+            <div class="vsec"><div class="vsec__t">会员权益</div>
+              <div class="bgrid">
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-eye"/></svg></span><div class="bitem__c"><span class="bitem__t">查看谁喜欢我</span><span class="bitem__d">无限次查看喜欢我的用户列表</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-heart"/></svg></span><div class="bitem__c"><span class="bitem__t">无限喜欢</span><span class="bitem__d">每日喜欢次数无上限</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-badge"/></svg></span><div class="bitem__c"><span class="bitem__t">专属标识</span><span class="bitem__d">个人主页 VIP 皇冠徽章</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-rocket"/></svg></span><div class="bitem__c"><span class="bitem__t">匹配加权</span><span class="bitem__d">匹配概率提升 2 倍</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-palette"/></svg></span><div class="bitem__c"><span class="bitem__t">专属主题</span><span class="bitem__d">解锁 5 套 VIP 专属主题</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-chat"/></svg></span><div class="bitem__c"><span class="bitem__t">超级喜欢</span><span class="bitem__d">每日 3 次超级喜欢机会</span></div></div>
+              </div>
+            </div>
+            <div class="vsec"><div class="vsec__t">选择套餐</div>
+              <div class="pgrid">
+                <div class="pcard pcard--sel"><span class="pcard__check"><svg><use href="#i-check"/></svg></span><span class="pcard__name">月卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">18</span></div><span class="pcard__oprice">¥28</span><span class="pcard__period">30 天</span><span class="pcard__per-day">0.6 元/天</span></div>
+                <div class="pcard pcard--pop"><span class="pcard__badge"><span>超值</span></span><span class="pcard__name">季卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">48</span></div><span class="pcard__oprice">¥84</span><span class="pcard__period">90 天</span><span class="pcard__per-day">0.53 元/天</span></div>
+                <div class="pcard"><span class="pcard__badge"><span>最划算</span></span><span class="pcard__name">年卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">158</span></div><span class="pcard__oprice">¥336</span><span class="pcard__period">365 天</span><span class="pcard__per-day">0.43 元/天</span></div>
+              </div>
+            </div>
+            <div class="vagree"><span class="vagree__t">开通即表示同意</span><span class="vagree__l">《VIP 服务协议》</span><span class="vagree__t">·</span><span class="vagree__l">《自动续费协议》</span></div>
+            <div class="vsec"><div class="renew">
+              <div class="renew__i"><span class="renew__t">自动续费</span><span class="renew__d">关闭后，到期将不再自动扣费</span></div>
+              <span class="sw"><i></i></span>
+            </div></div>
+            <div class="vsec"><div class="elist">
+              <div class="eitem"><span class="eitem__ic"><svg><use href="#i-ticket"/></svg></span><span class="eitem__l">优惠码</span><span class="eitem__a">›</span></div>
+              <div class="eitem"><span class="eitem__ic"><svg><use href="#i-clipboard"/></svg></span><span class="eitem__l">账单记录</span><span class="eitem__a">›</span></div>
+            </div></div>
+          </div>
+          <div class="vfooter">
+            <div class="vfooter__pr"><span class="vfooter__l">应付：</span><span class="vfooter__cur">¥</span><span class="vfooter__p">18</span><span class="vfooter__o">¥28</span></div>
+            <div class="vfooter__btn vfooter__btn--dis"><span class="spin"></span><span>处理中...</span></div>
+          </div>
+        </div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">当前默认 flag=false · 重定向前的禁用帧</span><span class="d">实况只闪一帧即离开本页 · ↓ 同 F01 裁切</span></figcaption>
+      <div class="phone">
+        <div class="vpage">
+          <div class="vnav"><span class="vnav__back">‹</span><span class="vnav__title">开通 VIP</span><span class="vnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="vhero">
+              <span class="vhero__crown"><svg><use href="#i-crown"/></svg></span>
+              <span class="vhero__t">校园恋爱 VIP</span>
+              <span class="vhero__s">解锁专属权益 · 遇见更多可能</span>
+            </div>
+            <div class="vsec"><div class="vsec__t">会员权益</div>
+              <div class="bgrid">
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-eye"/></svg></span><div class="bitem__c"><span class="bitem__t">查看谁喜欢我</span><span class="bitem__d">无限次查看喜欢我的用户列表</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-heart"/></svg></span><div class="bitem__c"><span class="bitem__t">无限喜欢</span><span class="bitem__d">每日喜欢次数无上限</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-badge"/></svg></span><div class="bitem__c"><span class="bitem__t">专属标识</span><span class="bitem__d">个人主页 VIP 皇冠徽章</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-rocket"/></svg></span><div class="bitem__c"><span class="bitem__t">匹配加权</span><span class="bitem__d">匹配概率提升 2 倍</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-palette"/></svg></span><div class="bitem__c"><span class="bitem__t">专属主题</span><span class="bitem__d">解锁 5 套 VIP 专属主题</span></div></div>
+                <div class="bitem"><span class="bitem__ic"><svg><use href="#i-chat"/></svg></span><div class="bitem__c"><span class="bitem__t">超级喜欢</span><span class="bitem__d">每日 3 次超级喜欢机会</span></div></div>
+              </div>
+            </div>
+            <div class="vsec"><div class="vsec__t">选择套餐</div>
+              <div class="pgrid">
+                <div class="pcard pcard--sel pcard--dis"><span class="pcard__check"><svg><use href="#i-check"/></svg></span><span class="pcard__name">月卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">18</span></div><span class="pcard__oprice">¥28</span><span class="pcard__period">30 天</span><span class="pcard__per-day">0.6 元/天</span></div>
+                <div class="pcard pcard--pop pcard--dis"><span class="pcard__badge"><span>超值</span></span><span class="pcard__name">季卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">48</span></div><span class="pcard__oprice">¥84</span><span class="pcard__period">90 天</span><span class="pcard__per-day">0.53 元/天</span></div>
+                <div class="pcard pcard--dis"><span class="pcard__badge"><span>最划算</span></span><span class="pcard__name">年卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">158</span></div><span class="pcard__oprice">¥336</span><span class="pcard__period">365 天</span><span class="pcard__per-day">0.43 元/天</span></div>
+              </div>
+            </div>
+            <div class="vagree"><span class="vagree__t">开通即表示同意</span><span class="vagree__l">《VIP 服务协议》</span><span class="vagree__t">·</span><span class="vagree__l">《自动续费协议》</span></div>
+            <div class="vsec"><div class="renew">
+              <div class="renew__i"><span class="renew__t">自动续费</span><span class="renew__d">关闭后，到期将不再自动扣费</span></div>
+              <span class="sw sw--dis"><i></i></span>
+            </div></div>
+            <div class="vsec"><div class="elist">
+              <div class="eitem"><span class="eitem__ic"><svg><use href="#i-ticket"/></svg></span><span class="eitem__l">优惠码</span><span class="eitem__a">›</span></div>
+              <div class="eitem"><span class="eitem__ic"><svg><use href="#i-clipboard"/></svg></span><span class="eitem__l">账单记录</span><span class="eitem__a">›</span></div>
+            </div></div>
+          </div>
+          <div class="vfooter">
+            <div class="vfooter__pr"><span class="vfooter__l">应付：</span><span class="vfooter__cur">¥</span><span class="vfooter__p">18</span><span class="vfooter__o">¥28</span></div>
+            <div class="vfooter__btn vfooter__btn--dis"><span>立即开通</span></div>
+          </div>
+          <span class="toast">会员功能暂未开放</span>
+        </div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页四类件全部是「类绑定态」而非 <code>v-if</code> 态——整页恒渲染，
+    回归只会表现为「类没挂上」，不会表现为「块消失」，所以每类都必须逐格画到。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>套餐卡 · 四态（可叠加）</h3>
+      <p class="hint">条件：<code>plan.id===selectedPlanId</code> / <code>plan.popular</code> /
+        <code>membershipDisabled</code>（<code>:589-594</code>）；三张卡的字段差异来自 <code>config/vip-plans.ts</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:104px"><div class="pcard" style="padding:12px 6px 9px"><span class="pcard__name">月卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">18</span></div><span class="pcard__oprice">¥28</span><span class="pcard__period">30 天</span><span class="pcard__per-day">0.6 元/天</span></div><span class="lab">default</span></div>
+        <div class="cell" style="width:104px"><div class="pcard pcard--sel" style="padding:12px 6px 9px"><span class="pcard__check"><svg><use href="#i-check"/></svg></span><span class="pcard__name">月卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">18</span></div><span class="pcard__oprice">¥28</span><span class="pcard__period">30 天</span><span class="pcard__per-day">0.6 元/天</span></div><span class="lab">selected（金边 + 橙金底 + 勾）</span></div>
+        <div class="cell" style="width:104px"><div class="pcard pcard--pop" style="padding:16px 6px 9px"><span class="pcard__badge"><span>超值</span></span><span class="pcard__name">季卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">48</span></div><span class="pcard__oprice">¥84</span><span class="pcard__period">90 天</span><span class="pcard__per-day">0.53 元/天</span></div><span class="lab">popular（角标 + 金边）</span></div>
+        <div class="cell" style="width:104px"><div class="pcard pcard--dis" style="padding:12px 6px 9px"><span class="pcard__name">月卡</span><div class="pcard__pr"><span class="pcard__cur">¥</span><span class="pcard__price">18</span></div><span class="pcard__oprice">¥28</span><span class="pcard__period">30 天</span><span class="pcard__per-day">0.6 元/天</span></div><span class="lab">disabled（opacity .45 + 不可点）</span></div>
+      </div>
+      <table class="tbl" style="margin-top:12px">
+        <tr><th>套餐</th><th>价 / 原价</th><th>周期</th><th>日均</th><th>角标</th></tr>
+        <tr><td>月卡 monthly</td><td>18 / 28</td><td>30 天</td><td>0.6 元/天</td><td>—</td></tr>
+        <tr><td>季卡 quarterly</td><td>48 / 84</td><td>90 天</td><td>0.53 元/天</td><td>超值（<code>popular:true</code>）</td></tr>
+        <tr><td>年卡 yearly</td><td>158 / 336</td><td>365 天</td><td>0.43 元/天</td><td>最划算</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>自动续费开关 · 四态</h3>
+      <p class="hint">原生 <code>switch</code>，激活色由 JS 传 <code>designTokens.color.gold</code>（<code>:140</code>，
+        注释自陈与 <code>--c-gold #FFD700</code> 双源同步）；
+        <code>disabled = autoRenewStore.updating || membershipDisabled</code>（<code>:656</code>）；
+        说明行随 <code>autoRenewEnabled</code> 换文案（<code>:646-648</code>）。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="renew"><div class="renew__i"><span class="renew__t">自动续费</span><span class="renew__d">关闭后，到期将不再自动扣费</span></div><span class="sw"><i></i></span></div><span class="lab">off（mock 默认 <code>enabled:false</code>）</span></div>
+        <div class="cell" style="width:186px"><div class="renew"><div class="renew__i"><span class="renew__t">自动续费</span><span class="renew__d">下次扣费日期：2026-11-25</span></div><span class="sw sw--on"><i></i></span></div><span class="lab">on（说明行换插值文案）</span></div>
+        <div class="cell" style="width:186px"><div class="renew"><div class="renew__i"><span class="renew__t">自动续费</span><span class="renew__d">关闭后，到期将不再自动扣费</span></div><span class="sw sw--dis"><i></i></span></div><span class="lab">disabled（updating 或 flag=false）</span></div>
+      </div>
+      <p class="hint" style="margin-top:10px">开/关各自二次确认弹窗（<code>vip.autoRenewConfirmTitle/Content</code>、
+        <code>vip.autoRenewOffTitle/Content</code>）；用户点「取消」时 <code>revertAutoRenewSwitch()</code> 用 <code>:key</code> 强拆重建，
+        防「视觉已开、store 仍关」（MP-R1-VIP-001）。</p>
+    </div>
+
+    <div class="panel">
+      <h3>底部开通栏 · 四态</h3>
+      <p class="hint"><code>footer__btn--disabled</code> 条件是 <code>processing || membershipDisabled</code>（<code>:698</code>），
+        两成因共用同一视觉（opacity .6），但点击行为不同：前者被 <code>subscribeGuarded()</code> 的重入锁吞掉，
+        后者走 <code>guardMembershipDisabled()</code> 出 toast。</p>
+      <div class="row">
+        <div class="cell" style="width:200px"><div class="vfooter" style="position:static;border-radius:var(--r-lg)"><div class="vfooter__pr"><span class="vfooter__l">应付：</span><span class="vfooter__cur">¥</span><span class="vfooter__p">18</span><span class="vfooter__o">¥28</span></div><div class="vfooter__btn"><span>立即开通</span></div></div><span class="lab">default（应付随选中卡）</span></div>
+        <div class="cell" style="width:200px"><div class="vfooter" style="position:static;border-radius:var(--r-lg)"><div class="vfooter__pr"><span class="vfooter__l">应付：</span><span class="vfooter__cur">¥</span><span class="vfooter__p">48</span><span class="vfooter__o">¥84</span></div><div class="vfooter__btn vfooter__btn--dis"><span class="spin"></span><span>处理中...</span></div></div><span class="lab">processing（文案 <code>vip.processing</code>）</span></div>
+        <div class="cell" style="width:200px"><div class="vfooter" style="position:static;border-radius:var(--r-lg)"><div class="vfooter__pr"><span class="vfooter__l">应付：</span><span class="vfooter__cur">¥</span><span class="vfooter__p">18</span><span class="vfooter__o">¥28</span></div><div class="vfooter__btn vfooter__btn--dis"><span>立即开通</span></div></div><span class="lab">membershipDisabled</span></div>
+        <div class="cell" style="width:200px"><div class="vfooter" style="position:static;border-radius:var(--r-lg)"><div class="vfooter__pr"><span class="vfooter__l">应付：</span><span class="vfooter__cur">¥</span><span class="vfooter__p">18</span><span class="vfooter__o">¥28</span></div><div class="vfooter__btn" style="transform:scale(0.96)"><span>立即开通</span></div></div><span class="lab">pressed（hover 0.96）</span></div>
+      </div>
+      <p class="hint" style="margin-top:10px">支付结果三态：<code>vip.subscribeSuccess</code> 弹窗（内容
+        「已成功开通 VIP {name}\n有效期：{period}」）/ <code>vip.paymentCancelled</code>「已取消支付」/
+        <code>vip.paymentFailed</code>「支付失败，请重试」；后端 404 或 403 <code>COMMERCE_DISABLED</code> 时回退
+        <code>vip.paymentNotReady</code>「支付功能建设中，敬请期待」。</p>
+    </div>
+
+    <div class="panel">
+      <h3>权益项 / 功能入口 · 两态</h3>
+      <p class="hint">权益项 <code>hover</code> 时底换 <code>--c-vip-border-light</code> + scale .98；点条目弹
+        <code>uni.showModal</code>（title/desc 原文，无跳转）。入口两行（优惠码 / 账单记录）在 flag=false 时
+        <strong>不禁用、可点</strong>——目标页自己会在 onLoad 里被弹走，这是在册的口径断裂。</p>
+      <div class="row">
+        <div class="cell" style="width:171px"><div class="bitem"><span class="bitem__ic"><svg><use href="#i-eye"/></svg></span><div class="bitem__c"><span class="bitem__t">查看谁喜欢我</span><span class="bitem__d">无限次查看喜欢我的用户列表</span></div></div><span class="lab">default（desc 单行省略）</span></div>
+        <div class="cell" style="width:171px"><div class="bitem" style="transform:scale(.98);background:var(--c-vip-border-light)"><span class="bitem__ic"><svg><use href="#i-heart"/></svg></span><div class="bitem__c"><span class="bitem__t">无限喜欢</span><span class="bitem__d">每日喜欢次数无上限</span></div></div><span class="lab">hover</span></div>
+        <div class="cell" style="width:200px"><div class="eitem" style="background:var(--c-vip-border-light);transform:scale(.98)"><span class="eitem__ic"><svg><use href="#i-ticket"/></svg></span><span class="eitem__l">优惠码</span><span class="eitem__a">›</span></div><span class="lab">入口 hover</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint"><strong>本页是全站唯一暗底页</strong>（页底 <code>--c-neutral-800</code>），
+      base 未登记该档；金色档 base 登记值与真值源冲突 ⇒ 见 §04 的 BASE_PROBLEM。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#FFD700"></span><div><div class="sw__n">金<code>--c-gold</code>（真值）</div><div class="sw__u">标题 / 价格 / 选中边 / 开关激活色 —— scss:814 与 tokens.scss:347 均为 #FFD700；base 现登记 #C9A36A（那是 --c-vip-from）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F97316"></span><div><div class="sw__n">强调 400<code>--c-accent-400</code></div><div class="sw__u">金渐变终点（皇冠 / 角标 / 主钮 / 选中卡）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1F26"></span><div><div class="sw__n">中性 800<code>--c-neutral-800</code></div><div class="sw__u">页底 · 底部栏底（base 未登记）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#5D4E37"></span><div><div class="sw__n">VIP 深字<code>--c-text-vip-dark</code></div><div class="sw__u">金底按钮字 · 角标字（base 未登记）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(201,163,106,.3);border:1px solid #C9A36A"></span><div><div class="sw__n">VIP 浅边<code>--c-vip-border-light</code></div><div class="sw__u">权益卡描边 · 底栏上边 · 入口 hover 底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(255,255,255,.08);border:1px solid #C2CAC6"></span><div><div class="sw__n">白透底<code>--c-overlay-white-bg-tint</code></div><div class="sw__u">权益卡 / 套餐卡底（base 未登记）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F59E0B"></span><div><div class="sw__n">警告<code>--c-warning</code></div><div class="sw__u">皇冠图标色（源码写在 <code>&lt;image&gt;</code> 上，对 SVG 素材不生效）</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-6xl 24/800</span><span class="type__p" style="font-size:24px;font-weight:800;color:var(--c-gold-true)">158</span></div>
+        <div class="type__i"><span class="type__m">--fs-5xl 22/800</span><span class="type__p" style="font-size:22px;font-weight:800;color:var(--c-gold-true);letter-spacing:1px">校园恋爱 VIP</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">开通 VIP</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/700</span><span class="type__p" style="font-size:15px;font-weight:700;color:var(--c-text-vip-dark)">立即开通</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">月卡 · 自动续费 · 优惠码</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/600</span><span class="type__p" style="font-size:13px;font-weight:600;color:var(--c-overlay-text-secondary)">会员权益 · 选择套餐</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-overlay-white-text-mid)">30 天 · 解锁专属权益 · 遇见更多可能</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/700</span><span class="type__p" style="font-size:10px;font-weight:700;color:var(--c-text-vip-dark)">超值 · 最划算 · 0.6 元/天</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。页底渐变声明是 <code>180deg 同色两端</code>（<code>:718</code>），等价纯色。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>16rpx（网格 gap）</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>24rpx（分组左右）</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>32rpx（卡内衬/页头）</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:7px"></b>--r-md<br>14rpx · 权益图标盒</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 权益卡 / 套餐卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>主钮 / 开关 / 返回盘</div>
+      </div>
+      <p class="hint" style="margin-top:14px">导航栏 44px、皇冠 72px、权益图标盒 28px（内图 16px）、勾标 16px、
+        套餐卡内衬 <code>32rpx 16rpx 24rpx</code>、底栏 <code>padding:16rpx 24rpx + safe-area</code>、
+        页面 <code>padding-bottom:200rpx=100px</code> 给底栏让位。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>本页无照片位；8 枚图标为 SVG 素材，画板用描边替身</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:120px;object-fit:contain">
+      <div class="asset__b"><b>ICONS_EMOJI.{EYE,HEART_FILLED,CROWN,ROCKET,PALETTE,CHAT}</b>
+        <p>六枚权益图标 + 皇冠主视觉，真源 <code>static/assets/icons/common/*.svg</code>（源码注释自陈「SVG 使用 currentColor」）。
+           画板按 §4 用页内 lucide 描边 symbol 替身，色档照源码：<code>--c-gold</code>（权益图标）/ <code>--c-warning</code>（皇冠）。</p>
+        <div class="m">16px / 36px · 非素材缺口</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:120px;object-fit:contain">
+      <div class="asset__b"><b>ICONS_EMOJI.{TICKET,CLIPBOARD} · ICONS_COMMON.CHECK_SVG</b>
+        <p>两个入口图标（20px，色档 <code>--c-brand-500</code>）与选中勾（11px 压在 16px 金圆上）。
+           本页无头像/封面位 ⇒ §8 照片位规则对本页不构成约束。</p>
+        <div class="m">20px / 11px · 非素材缺口</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:120px;object-fit:contain">
+      <div class="asset__b"><b>‹ 文字箭头（非素材）</b>
+        <p>本页与 vip 另两页的返回件是 <code>&lt;text&gt;‹&lt;/text&gt;</code> 字形（28px/300），
+           而 market 三页用的是 <code>ICONS_COMMON.BACK</code> 素材——同域不同件，属全站导航口径问题，画板照实况画。</p>
+        <div class="m">--fs-7xl 28px / weight 300 · 非素材缺口</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异 + 数值口径（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>当前默认态是「重定向」，画板画的是开关开启态。</b>判据不是后端商业化开关，而是前端常量：
+        <code>config/feature-flags.ts:40</code> <code>membershipEnabled: false</code>（注释「会员先不上线」）。
+        三页各自在 <code>onLoad</code> 拦截：本页 <code>vip/index.vue:45</code>（<code>membershipDisabled</code>）
+        → <code>:52-58</code> <code>guardMembershipDisabled()</code> 弹 toast「会员功能暂未开放」→
+        <code>:60-69</code> <code>navigateBack()</code>，无栈时 <code>switchTab(ROUTES.TAB.PROFILE)</code>；
+        <code>vip/promo-code.vue:33-42</code>、<code>vip/bills.vue:36-45</code> 同写法。
+        ⇒ <strong>今天这三页不可停留</strong>；F01–F04 只有在把 <code>membershipEnabled</code> 改 <code>true</code>（前端发版，非后台开关）后才可达。
+        与 market 三页的 <code>appConfig.isCommerceOn()</code>（后端下发 <code>commerce.*</code>、封存在页内渲染白卡）是<strong>两套互不相干的闸</strong>，
+        巡检时把两者混记为「封存态转发」会误读基准。</li>
+      <li><b>本页模板没有封存分支</b>：flag=false 时页面仍会完整渲染一帧再被弹走（F05 就是那一帧），
+        表现为套餐卡 <code>opacity .45</code>、开关禁用、主钮禁用 + toast。
+        <strong>验收 F05 的判据是「禁用类挂上了」，不是「内容不见了」。</strong></li>
+      <li><b>价格 18 / 48 / 158 与原价 28 / 84 / 336、日均 0.6 / 0.53 / 0.43 元/天 = 前端静态配置</b>
+        （<code>config/vip-plans.ts:54-93</code>；该文件 <code>R2-00058/R2-00134</code> 注释自陈
+        「前端静态价格，需与后端订单价格一致，后端下发配置后应移除」）。
+        <strong>不是后端真值、也不是 mock 种子</strong>——real 下单走 <code>POST /vip/orders {planId}</code>，
+        金额由服务端按同一档位定价；画板数字口径标为「前端配置真值」。</li>
+      <li><b>「下次扣费日期：2026-11-25」= mock 派生值</b>：<code>stores/vip-auto-renew.ts:78-88</code> 首拉返回
+        <code>enabled:false, nextBillingAt:now+30d</code>，开启分支 <code>:118-127</code> 同给 <code>now+30d</code>；
+        页面按 <code>YYYY-MM-DD</code> 格式化（<code>:394-406</code>）。画板取本基准日 2026-10-26 + 30 天 = 2026-11-25，
+        <strong>真环境以后端 <code>nextBillingAt</code> 为准</strong>。</li>
+      <li><b>权益六条的「2 倍 / 5 套 / 3 次」是 i18n 文案里的产品承诺</b>（<code>vip.benefit*Desc</code>），
+        不是实测数值；按 §3.3 不新增任何分数/百分比，画板逐字照 key 取，不改写。</li>
+      <li><b>在册可达性问题（照实况画，不修）：</b>① 选中套餐卡把 <code>--c-gold #FFD700</code> 字压在
+        <code>rgba(201,163,106,.3)→rgba(249,115,22,.75)</code> 橙金渐变上（<code>:933-937</code> 只换底不换字色）；
+        ② 皇冠图标的 <code>color:--c-warning</code> 声明在 <code>&lt;image&gt;</code> 节点上，对位图/独立 SVG 素材不生效；
+        ③ 底栏「应付」说明行用 <code>rgba(255,255,255,.7)</code> 压 #1A1F26 = 12px 小字，比值 10.4:1 达标，
+        但权益卡副题 <code>rgba(255,255,255,.6)</code> 压 <code>rgba(255,255,255,.08)</code> 叠暗底 ≈ 8.2:1，
+        单行省略后信息量再降——这三处属页面车道，不在画板修。</li>
+      <li><b>BASE_PROBLEM（base 缺档 / 错档，本页按 scss 真值 1:1 落字面量）：</b>
+        ① <strong>错档一条：base 的 <code>--c-gold</code> 登记为 <code>#C9A36A</code>，而两个登记处
+        （<code>theme/design-variables.scss:814</code> 与 <code>styles/tokens.scss:347</code>）逐字都是 <code>#FFD700</code>；
+        <code>#C9A36A</code> 是 <code>$vip-from</code>（scss:46）⇒ 谁用 base 的 --c-gold 画 VIP 页都会偏成土金。</strong>
+        ② 缺档：<code>--c-neutral-800</code>(#1A1F26)、<code>--c-accent-400</code>(#F97316)、
+        <code>--c-accent-bg-tint</code>(rgba(249,115,22,.75))、<code>--c-text-vip-dark</code>(#5D4E37)、
+        <code>--c-vip-border-tint</code>(rgba(201,163,106,.35))、<code>--c-gold-bg-tint</code>(rgba(255,215,0,.18))、
+        <code>--c-overlay-white-bg-tint</code>(.08)/<code>-tint-mid</code>(.1)、
+        <code>--c-overlay-white-text-mid</code>(.7)、<code>--c-overlay-text-{secondary,tertiary,quaternary,placeholder}</code>(.85/.6/.5/.4)。</li>
+      <li>本页在 vip 分包、<code>navigationStyle: custom</code>：<strong>无原生导航栏、无 tabbar</strong>；
+        「我的」页的 VIP 卡入口本身也受 <code>appConfig.isCommerceOn('vip')</code> 控制（<code>pages/profile/index.vue:1325</code>）
+        ⇒ 两道闸都开着才进得来，缺一即不可达。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · VIP 开通页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

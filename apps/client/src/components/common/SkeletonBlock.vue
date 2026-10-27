@@ -127,6 +127,14 @@ withDefaults(
   &--w90 { width: 90%; }
 }
 
+/* 资料态：封面位（底色与扫光由 .shimmer 提供，此处只定尺寸/圆角，不写私有色值） */
+.skeleton__cover {
+  width: 100%;
+  height: 320rpx;
+  margin-bottom: 20rpx;
+  border-radius: var(--r-xl, 24rpx);
+}
+
 .skeleton__block {
   height: 160rpx;
   border-radius: var(--r-xl, 24rpx);

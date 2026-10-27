@@ -104,4 +104,19 @@ describe("卡片详情弹层改版 DOM 契约（2026-08-14）", () => {
     await wrapper.vm.$nextTick();
     expect(wrapper.findAll(".detail-whisper__item").length).toBe(3);
   });
+
+  /* 2026-10-26 审计 §4.3（reports/audit/2026-10-25-mini-program-review.md）：
+     hero 区原「♥ 匹配度 N%」胶囊的 N 来自 constants/match.ts 的 80+n×5 常量式
+     （共同圈缺失归一为 0 时仍恒显 80%，真实游客实帧即此），不是后端真分。
+     CardSwiper / MatchSuccess 已同批撤除（R11-L08-D18/D29、R11-L06-D05），
+     本弹层同步撤除。断言从"胶囊显示多少"改为"胶囊不存在且详情不出现任何百分比"，
+     后者更强（同 card-swiper-contract 的反转口径）。 */
+  it("不渲染匹配度胶囊，且详情不出现任何百分比读数", () => {
+    for (const count of [0, 2]) {
+      const wrapper = mountDetail(makeCard({ commonCircleCount: count }));
+      expect(wrapper.find(".detail-hero__match").exists()).toBe(false);
+      expect(wrapper.text()).not.toMatch(/\d+%/);
+      expect(wrapper.text()).not.toContain("匹配度");
+    }
+  });
 });

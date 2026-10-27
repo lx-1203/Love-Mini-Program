@@ -56,16 +56,37 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findByStatusAndRole(String status, String role, Pageable pageable);
 
     /**
+     * 可推荐用户分页查询（2026-10-26 素材/数据补全）：在 status/role 之外再要求
+     * 资料完整度达到阈值，避免空资料账号（官方小助手 0%、QA 账号 30%）混入推荐池。
+     *
+     * @param status        账号状态（active）
+     * @param role          用户角色（USER）
+     * @param minCompletion 资料完整度下限（0-100）
+     * @param pageable      分页参数
+     * @return 可推荐用户分页
+     */
+    @Query("SELECT u FROM User u WHERE u.status = :status AND u.role = :role"
+            + " AND u.profileCompletion >= :minCompletion")
+    Page<User> findRecommendableUsers(@Param("status") String status,
+                                      @Param("role") String role,
+                                      @Param("minCompletion") int minCompletion,
+                                      Pageable pageable);
+
+    /**
      * R4-00349：候选用户 ID 投影分页查询（仅取 ID 列）。
      *
      * <p>匹配引擎 {@code findAndScoreCandidates} 对候选评分时只依赖 ID 与三类档案
      * （校区/兴趣/日程，另有批量预加载），无需加载候选 User 实体的大字段；
      * 仅对最终选中的 Top-N 候选再按 ID 加载完整实体，降低匹配请求的 DB 载荷。</p>
      *
+     * <p>2026-10-26：与 {@link #findRecommendableUsers} 同一口径——仅 status=active、
+     * role=USER、资料完整度 ≥60 的账号可进入匹配候选（空资料/测试号不进卡池）。</p>
+     *
      * @param pageable 分页参数
      * @return 候选用户 ID 分页列表
      */
-    @Query("SELECT u.id FROM User u")
+    @Query("SELECT u.id FROM User u WHERE u.status = 'active' AND u.role = 'USER'"
+            + " AND u.profileCompletion >= 80")
     Page<Long> findCandidateIds(Pageable pageable);
 
     /**
@@ -92,6 +113,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return 用户数
      */
     long countByCreatedAtBetween(LocalDateTime from, LocalDateTime to);
+
+    /**
+     * 按角色集合查询用户（2026-10-25 管理员口令启动审计用）。
+     *
+     * @param roles 角色集合（ADMIN / SUPER_ADMIN / AUDITOR）
+     * @return 匹配的用户列表
+     */
+    java.util.List<User> findByRoleIn(java.util.Collection<String> roles);
 
     /**
      * 按代词偏好（pronouns，用作性别近似字段）分组统计用户数。
@@ -223,7 +252,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
               AND EXISTS (
                     SELECT 1 FROM AdminLayer al, CircleLayer cl
                     WHERE al.circleLayerId = cl.id AND al.adminId = :adminId
-                      AND u.circlePath LIKE CONCAT(cl.circlePath, '%'))
+                      AND (u.circlePath = cl.circlePath
+                           OR u.circlePath LIKE CONCAT(cl.circlePath, '/%')))
             ORDER BY u.createdAt DESC
             """)
     Page<User> searchForAdminScoped(

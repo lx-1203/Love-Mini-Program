@@ -1,0 +1,17 @@
+{
+  "schema": "design-board-shoot/v1",
+  "board": "discover-match-success.html",
+  "dsf": 2.273,
+  "results": [
+    {
+      "id": "F01",
+      "title": "匹配成功 · 共同点卡空态",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\discover-match-success\\F01.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    }
+  ]
+}

@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 校园话题详情页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 未登记令牌：按 design-variables.scss 真值 1:1 落地（base 缺档，已回报 BASE_PROBLEM） ===== */
+:root{
+  --c-black-shadow-xs: rgba(0, 0, 0, 0.04);                     /* scss :898 · 卡影/底栏影 */
+  --c-brand-border-tint-stronger: rgba(61, 201, 148, 0.4);      /* scss :883 · 发送钮影 */
+  --c-overlay-white-bg-mid-strong: rgba(255, 255, 255, 0.25);   /* scss :917 · 返回胶囊底 */
+  --c-overlay-white-bg-stronger: rgba(255, 255, 255, 0.4);      /* scss :919 · 返回胶囊 press */
+}
+
+/* ===== 本页专属组件（值一律取源码 topic-detail.vue 的声明，rpx ÷ 2 = px） ===== */
+.td-hdr { position: absolute; top: 0; left: 0; width: 100%; z-index: 4; display: flex;
+  align-items: center; justify-content: space-between; padding: 56px 16px 12px;
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%); }
+.td-hdr__back { display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+  min-height: 44px; padding: 6px 10px; border-radius: var(--r-full); background: var(--c-overlay-white-bg-mid-strong);
+  font-size: var(--fs-lg); color: var(--c-text-primary); font-weight: 500; }
+.td-hdr__back--press { background: var(--c-overlay-white-bg-stronger); }
+.td-hdr__title { font-size: 17px; font-weight: 700; color: var(--c-text-primary); } /* 源码硬写 34rpx，无 --fs-* 档 → §04 第 12 条 */
+.td-hdr__spacer { width: 38px; flex: none; }
+
+.td-body { position: absolute; top: 112px; left: 0; right: 0; bottom: 78px; padding: 12px;
+  overflow: hidden; display: flex; flex-direction: column; }
+.td-blank { position: absolute; top: 112px; left: 0; right: 0; bottom: 0; }
+
+.td-cat { margin-bottom: 10px; }
+.td-cat span { display: inline-block; padding: 5px 12px; border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-brand-50), var(--c-romance-50));
+  font-size: var(--fs-base); font-weight: 600; color: var(--c-brand); }
+
+.td-au { display: flex; align-items: center; gap: 8px; padding: 14px; background: var(--c-bg-container);
+  border-radius: var(--r-xl) var(--r-xl) 0 0; box-shadow: 0 1px 8px var(--c-black-shadow-xs); }
+.td-av { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; flex: none; display: flex;
+  align-items: center; justify-content: center; background: linear-gradient(135deg, var(--c-brand-50), var(--c-romance-50)); }
+.td-av img { width: 100%; height: 100%; object-fit: cover; }
+.td-av--char { font-size: var(--fs-xl); font-weight: 700; color: var(--c-brand); }
+.td-au__info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.td-au__name { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); }
+.td-au__school { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.td-time { font-size: var(--fs-sm); color: var(--c-text-tertiary); flex-shrink: 0; }
+
+.td-ct { padding: 14px; background: var(--c-bg-container); border-radius: 0 0 var(--r-xl) var(--r-xl);
+  margin-bottom: 10px; box-shadow: 0 1px 8px var(--c-black-shadow-xs); }
+.td-ct__title { display: block; font-size: 17px; font-weight: 700; color: var(--c-text-primary);
+  line-height: 1.5; margin-bottom: 10px; } /* 源码硬写 34rpx */
+.td-ct__text { display: block; font-size: var(--fs-lg); color: var(--c-neutral-500); line-height: 1.8;
+  white-space: pre-wrap; } /* 源码 $text-secondary = --c-neutral-500（比同族 circles 淡一档） */
+.td-imgs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.td-imgs img { width: calc((100% - 12px) / 3); height: 100px; object-fit: cover;
+  border-radius: var(--r-lg); background: var(--c-bg-page); }
+
+.td-rp { background: var(--c-bg-container); padding: 14px; border-radius: var(--r-xl);
+  box-shadow: 0 1px 8px var(--c-black-shadow-xs); }
+.td-rp__hd { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+.td-rp__t { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.td-rp__n { font-size: var(--fs-base); color: var(--c-brand); background: var(--c-brand-50);
+  padding: 3px 9px; border-radius: var(--r-full); font-weight: 600; }
+.td-rp__load { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 0; }
+.td-rp__load .spin { width: 20px; height: 20px; border-color: var(--c-neutral-200); border-top-color: var(--c-brand); }
+.td-rp__loadtx { font-size: var(--fs-md); color: var(--c-text-tertiary); }
+.td-rp__list { display: flex; flex-direction: column; gap: 12px; }
+.td-item { display: flex; gap: 8px; padding: 10px; background: var(--c-bg-page); border-radius: var(--r-lg); }
+.td-item__av { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex: none; display: flex;
+  align-items: center; justify-content: center; background: linear-gradient(135deg, var(--c-brand-50), var(--c-romance-50)); }
+.td-item__av img { width: 100%; height: 100%; object-fit: cover; }
+.td-item__ch { font-size: var(--fs-base); font-weight: 600; color: var(--c-brand); }
+.td-item__ct { flex: 1; min-width: 0; }
+.td-item__hd { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.td-item__name { font-size: var(--fs-md); font-weight: 600; color: var(--c-text-primary); }
+.td-item__time { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.td-item__text { font-size: var(--fs-md); color: var(--c-neutral-500); line-height: 1.6; }
+
+/* 评论区空态 = EmptyState 组件（无动作钮） */
+.td-esin { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
+.td-esin svg { width: 60px; height: 60px; margin-bottom: 8px; color: var(--c-border-strong); }
+.td-esin__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-secondary); }
+.td-esin__s { font-size: var(--fs-base); color: var(--c-text-secondary); margin-top: 1px; text-align: center; }
+
+/* 页面级空态：宿主 view 包一层，flex:1 1 auto + align-items:center */
+.td-eswrap { position: absolute; top: 112px; left: 0; right: 0; bottom: 0; display: flex;
+  flex-direction: column; align-items: center; justify-content: center; min-height: 0; gap: 12px; }
+.td-es { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
+.td-es svg { width: 60px; height: 60px; margin-bottom: 8px; color: var(--c-border-strong); }
+.td-es__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-secondary); }
+.td-es__s { font-size: var(--fs-base); color: var(--c-text-secondary); margin-top: 1px; text-align: center; }
+.td-es__a { margin-top: 12px; padding: 8px 20px; border-radius: var(--r-full); background: var(--c-brand-800);
+  min-height: 44px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.td-es__a span { font-size: var(--fs-base); font-weight: 600; color: var(--c-neutral-0); }
+
+/* 底部回复栏（四件：输入 / 触顶提示 / 匿名开关 / 发送） */
+.td-ft { position: absolute; bottom: 0; left: 0; width: 100%; z-index: 8; display: flex; align-items: center;
+  gap: 6px; padding: 10px 12px 24px; background: var(--c-bg-container);
+  box-shadow: 0 -2px 8px var(--c-black-shadow-xs); }
+.td-ft__wrap { flex: 1; }
+.td-in { padding: 10px 14px; border-radius: var(--r-full); background: var(--c-bg-page); font-size: var(--fs-lg);
+  color: var(--c-text-primary); border: 1px solid transparent; }
+.td-in--ph { color: var(--c-text-placeholder); }
+.td-in--focus { border-color: var(--c-brand); background: var(--c-bg-container); }
+.td-counter { display: block; padding-left: 14px; margin-top: 2px; font-size: var(--fs-sm); color: var(--c-error); }
+.td-anon { display: flex; align-items: center; box-sizing: border-box; min-height: 44px; padding: 7px 11px;
+  border-radius: var(--r-full); background: var(--c-bg-page); border: 1px solid var(--c-neutral-200); flex-shrink: 0; }
+.td-anon span { font-size: var(--fs-base); color: var(--c-text-tertiary); font-weight: 500; white-space: nowrap; }
+.td-anon--on { background: var(--c-brand-50); border-color: var(--c-brand); }
+.td-anon--on span { color: var(--c-brand); font-weight: 600; }
+.td-send { display: flex; align-items: center; justify-content: center; box-sizing: border-box; min-height: 44px;
+  padding: 9px 16px; border-radius: var(--r-full); background: linear-gradient(135deg, var(--c-brand), var(--c-brand-300));
+  flex-shrink: 0; box-shadow: 0 3px 8px var(--c-brand-border-tint-stronger); }
+.td-send span { font-size: var(--fs-md); color: var(--c-text-inverse); font-weight: 600; white-space: nowrap; }
+.td-send--dis { background: var(--c-neutral-200); box-shadow: none; }
+.td-send--dis span { color: var(--c-text-tertiary); }
+.td-gap { height: 20px; flex: none; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 8.2 12 4l8.5 4.2v7.6L12 20l-8.5-4.2z"/><path d="M3.5 8.2 12 12.4l8.5-4.2"/><path d="M12 12.4V20"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.3 4.3 2.6 17.6A2 2 0 0 0 4.3 20.6h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/><path d="M12 9.6v4.2"/><path d="M12 16.8h.01"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>校园话题详情页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/campus/campus/topic-detail</code>。
+     本页与 <code style="font-family:var(--mono);font-size:12.5px">circles/circles/topic-detail</code> 是跨域同族页
+     （同一套外壳复制成两份）。本画板把内容态的匿名/分类/配图/分页分支与页面级空错态逐屏画全，
+     并在 §04 登记两页实测差异、标出有意差异与复制粘贴没同步的漂移，作为这两页的永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>campus/topic-detail</b></span>
+    <span>分包 <b>campus</b>（无 tabbar）</span>
+    <span>状态 <b>10 屏</b></span>
+    <span>同族 <b>circles/topic-detail</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1845</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 10 屏</h2>
+    <p>内容态 6 支 / 首屏空档 / 页面级空态 3 支</p></div>
+  <div class="sec__sub">本页状态机有 10 态，来自模板分支
+    <code>v-if="currentTopic"</code>（内含 <code>v-if="loading"</code> /
+    <code>v-else-if="replies.length &gt; 0"</code> / <code>v-else</code> 空回复、
+    <code>v-if="currentTopic.author.school"</code> 学校行、<code>v-if="images &amp;&amp; images.length &gt; 0"</code> 配图、
+    <code>getDisplayName(isAnonymous, name)</code> 匿名换名、<code>v-if="isReplyAtLimit"</code> 触顶提示、
+    <code>anonymous-toggle--active</code>）与三条兄弟分支
+    <code>v-else-if="!loading &amp;&amp; paramMissing"</code>、<code>v-else-if="!loading &amp;&amp; errorMessage"</code>、
+    <code>v-else-if="!loading"</code>。页头由页面自绘（navigationStyle custom），返回是文字「返回」白胶囊。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">内容态 · 实名作者（分类标签 + 学校行）</span><span class="d">底栏实名态 · 发送禁用</span></figcaption>
+      <div class="phone">
+        <div class="td-hdr"><span class="td-hdr__back">返回</span><span class="td-hdr__title">话题详情</span><span class="td-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="td-body">
+          <div class="td-cat"><span>课程交流</span></div>
+          <div class="td-au">
+            <span class="td-av"><img src="assets/demo/person-02.png" alt=""></span>
+            <div class="td-au__info"><span class="td-au__name">阿辰</span><span class="td-au__school">广州大学</span></div>
+            <span class="td-time">30 分钟前</span>
+          </div>
+          <div class="td-ct">
+            <span class="td-ct__title">高数B期末复习资料分享</span>
+            <span class="td-ct__text">整理了一份高数B的期末复习资料，包含重点公式和典型例题解析，有需要的同学自取~
+
+内容包括：
+1. 极限与连续性重点公式
+2. 导数与微分的应用
+3. 不定积分与定积分</span>
+          </div>
+          <div class="td-rp">
+            <div class="td-rp__hd"><span class="td-rp__t">回复</span><span class="td-rp__n">23</span></div>
+            <div class="td-rp__list">
+              <div class="td-item">
+                <span class="td-item__av"><img src="assets/demo/person-01.png" alt=""></span>
+                <div class="td-item__ct">
+                  <div class="td-item__hd"><span class="td-item__name">周岚</span><span class="td-item__time">20 分钟前</span></div>
+                  <span class="td-item__text">感谢学长！正好在复习高数，太及时了！</span>
+                </div>
+              </div>
+              <div class="td-item">
+                <span class="td-item__av"><span class="td-item__ch">匿</span></span>
+                <div class="td-item__ct">
+                  <div class="td-item__hd"><span class="td-item__name">匿名校友</span><span class="td-item__time">15 分钟前</span></div>
+                  <span class="td-item__text">可以也发我一份吗？谢谢！</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="td-gap"></div>
+        </div>
+        <div class="td-ft">
+          <div class="td-ft__wrap"><div class="td-in td-in--ph">写下你的回复...</div></div>
+          <div class="td-anon"><span>实名</span></div>
+          <div class="td-send td-send--dis"><span>发送</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">内容态 · 匿名发帖</span><span class="d">名字换「匿名校友」· 学校行不渲染</span></figcaption>
+      <div class="phone">
+        <div class="td-hdr"><span class="td-hdr__back">返回</span><span class="td-hdr__title">话题详情</span><span class="td-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="td-body">
+          <div class="td-cat"><span>社团招新</span></div>
+          <div class="td-au">
+            <span class="td-av"><span class="td-av--char">匿</span></span>
+            <div class="td-au__info"><span class="td-au__name">匿名校友</span></div>
+            <span class="td-time">3 小时前</span>
+          </div>
+          <div class="td-ct">
+            <span class="td-ct__title">街舞社寻找志同道合的舞伴</span>
+            <span class="td-ct__text">街舞社新学期招新！无论你是什么水平，只要热爱街舞就欢迎加入。每周二四晚集训~</span>
+          </div>
+          <div class="td-rp">
+            <div class="td-rp__hd"><span class="td-rp__t">回复</span><span class="td-rp__n">32</span></div>
+            <div class="td-rp__list">
+              <div class="td-item">
+                <span class="td-item__av"><img src="assets/demo/xiaoman-avatar.png" alt=""></span>
+                <div class="td-item__ct">
+                  <div class="td-item__hd"><span class="td-item__name">小满</span><span class="td-item__time">10 分钟前</span></div>
+                  <span class="td-item__text">零基础可以报吗？想先去围观一次。</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="td-gap"></div>
+        </div>
+        <div class="td-ft">
+          <div class="td-ft__wrap"><div class="td-in td-in--ph">写下你的回复...</div></div>
+          <div class="td-anon"><span>实名</span></div>
+          <div class="td-send td-send--dis"><span>发送</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">内容态 · 回复加载中</span><span class="d">正文已渲染 · 列表区被 spinner 顶替</span></figcaption>
+      <div class="phone">
+        <div class="td-hdr"><span class="td-hdr__back">返回</span><span class="td-hdr__title">话题详情</span><span class="td-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="td-body">
+          <div class="td-cat"><span>课程交流</span></div>
+          <div class="td-au">
+            <span class="td-av"><img src="assets/demo/person-02.png" alt=""></span>
+            <div class="td-au__info"><span class="td-au__name">阿辰</span><span class="td-au__school">广州大学</span></div>
+            <span class="td-time">30 分钟前</span>
+          </div>
+          <div class="td-ct">
+            <span class="td-ct__title">高数B期末复习资料分享</span>
+            <span class="td-ct__text">整理了一份高数B的期末复习资料，包含重点公式和典型例题解析，有需要的同学自取~</span>
+          </div>
+          <div class="td-rp">
+            <div class="td-rp__hd"><span class="td-rp__t">回复</span><span class="td-rp__n">23</span></div>
+            <div class="td-rp__load"><span class="spin"></span><span class="td-rp__loadtx">加载回复中...</span></div>
+          </div>
+          <div class="td-gap"></div>
+        </div>
+        <div class="td-ft">
+          <div class="td-ft__wrap"><div class="td-in td-in--ph">写下你的回复...</div></div>
+          <div class="td-anon"><span>实名</span></div>
+          <div class="td-send td-send--dis"><span>发送</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">内容态 · 暂无回复</span><span class="d">EmptyState 组件两行 · 无动作钮</span></figcaption>
+      <div class="phone">
+        <div class="td-hdr"><span class="td-hdr__back">返回</span><span class="td-hdr__title">话题详情</span><span class="td-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="td-body">
+          <div class="td-cat"><span>课程交流</span></div>
+          <div class="td-au">
+            <span class="td-av"><img src="assets/demo/person-02.png" alt=""></span>
+            <div class="td-au__info"><span class="td-au__name">阿辰</span><span class="td-au__school">广州大学</span></div>
+            <span class="td-time">30 分钟前</span>
+          </div>
+          <div class="td-ct">
+            <span class="td-ct__title">高数B期末复习资料分享</span>
+            <span class="td-ct__text">整理了一份高数B的期末复习资料，包含重点公式和典型例题解析，有需要的同学自取~</span>
+          </div>
+          <div class="td-rp">
+            <div class="td-rp__hd"><span class="td-rp__t">回复</span><span class="td-rp__n">0</span></div>
+            <div class="td-esin"><svg><use href="#i-box"/></svg><span class="td-esin__t">暂无回复</span><span class="td-esin__s">快来抢沙发吧</span></div>
+          </div>
+          <div class="td-gap"></div>
+        </div>
+        <div class="td-ft">
+          <div class="td-ft__wrap"><div class="td-in td-in--ph">写下你的回复...</div></div>
+          <div class="td-anon"><span>实名</span></div>
+          <div class="td-send td-send--dis"><span>发送</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">内容态 · 话题配图三列</span><span class="d">判点：三列 100px · 圆角 --r-lg 10px</span></figcaption>
+      <div class="phone">
+        <div class="td-hdr"><span class="td-hdr__back">返回</span><span class="td-hdr__title">话题详情</span><span class="td-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="td-body">
+          <div class="td-cat"><span>校园活动</span></div>
+          <div class="td-au">
+            <span class="td-av"><img src="assets/demo/person-10.png" alt=""></span>
+            <div class="td-au__info"><span class="td-au__name">星辰</span><span class="td-au__school">广州大学</span></div>
+            <span class="td-time">3 小时前</span>
+          </div>
+          <div class="td-ct">
+            <span class="td-ct__title">本周六校园音乐节节目单公布</span>
+            <span class="td-ct__text">校园音乐节节目单出来啦！本周六下午2点开始，地点在操场，有乐队表演、舞蹈、相声等节目~</span>
+            <div class="td-imgs">
+              <img src="assets/demo/xiaoman-photo-1.png" alt="">
+              <img src="assets/demo/xiaoman-photo-2.png" alt="">
+              <img src="assets/demo/xiaoman-photo-3.png" alt="">
+            </div>
+          </div>
+          <div class="td-rp">
+            <div class="td-rp__hd"><span class="td-rp__t">回复</span><span class="td-rp__n">89</span></div>
+            <div class="td-rp__list">
+              <div class="td-item">
+                <span class="td-item__av"><img src="assets/demo/person-05.png" alt=""></span>
+                <div class="td-item__ct">
+                  <div class="td-item__hd"><span class="td-item__name">小溪</span><span class="td-item__time">10 分钟前</span></div>
+                  <span class="td-item__text">终于等到！节目单存下了。</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="td-gap"></div>
+        </div>
+        <div class="td-ft">
+          <div class="td-ft__wrap"><div class="td-in td-in--ph">写下你的回复...</div></div>
+          <div class="td-anon"><span>实名</span></div>
+          <div class="td-send td-send--dis"><span>发送</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">底栏态 · 匿名开关激活 + 输入触顶</span><span class="d">底栏 78→96px · 提示行仅此刻浮出</span></figcaption>
+      <div class="phone">
+        <div class="td-hdr"><span class="td-hdr__back">返回</span><span class="td-hdr__title">话题详情</span><span class="td-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="td-body">
+          <div class="td-cat"><span>课程交流</span></div>
+          <div class="td-au">
+            <span class="td-av"><img src="assets/demo/person-02.png" alt=""></span>
+            <div class="td-au__info"><span class="td-au__name">阿辰</span><span class="td-au__school">广州大学</span></div>
+            <span class="td-time">30 分钟前</span>
+          </div>
+          <div class="td-ct">
+            <span class="td-ct__title">高数B期末复习资料分享</span>
+            <span class="td-ct__text">整理了一份高数B的期末复习资料，包含重点公式和典型例题解析，有需要的同学自取~</span>
+          </div>
+          <div class="td-rp">
+            <div class="td-rp__hd"><span class="td-rp__t">回复</span><span class="td-rp__n">23</span></div>
+            <div class="td-rp__list">
+              <div class="td-item">
+                <span class="td-item__av"><img src="assets/demo/person-01.png" alt=""></span>
+                <div class="td-item__ct">
+                  <div class="td-item__hd"><span class="td-item__name">周岚</span><span class="td-item__time">20 分钟前</span></div>
+                  <span class="td-item__text">感谢学长！正好在复习高数，太及时了！</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="td-ft">
+          <div class="td-ft__wrap">
+            <div class="td-in td-in--focus">（已输入 500 字）</div>
+            <span class="td-counter">已达 500 字上限，无法继续输入</span>
+          </div>
+          <div class="td-anon td-anon--on"><span>匿名</span></div>
+          <div class="td-send"><span>发送</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">页面级 · 首屏 loading</span><span class="d">四分支全短路 · 主体零像素</span></figcaption>
+      <div class="phone">
+        <div class="td-hdr"><span class="td-hdr__back">返回</span><span class="td-hdr__title">话题详情</span><span class="td-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="td-blank"></div>
+      </div>
+    </figure>
+
+    <!-- F08 -->
+    <figure class="frame">
+      <figcaption><b>F08</b><span class="t">空态 · 话题 ID 无效</span><span class="d">hide-sub · 出口「返回」</span></figcaption>
+      <div class="phone">
+        <div class="td-hdr"><span class="td-hdr__back">返回</span><span class="td-hdr__title">话题详情</span><span class="td-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="td-eswrap">
+          <div class="td-es"><svg><use href="#i-box"/></svg><span class="td-es__t">话题 ID 无效</span>
+            <div class="td-es__a"><span>返回</span></div></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F09 -->
+    <figure class="frame">
+      <figcaption><b>F09</b><span class="t">错误态 · 加载失败（network）</span><span class="d">未传 hide-sub ⇒ 带预设副句 · 出口「重试」</span></figcaption>
+      <div class="phone">
+        <div class="td-hdr"><span class="td-hdr__back">返回</span><span class="td-hdr__title">话题详情</span><span class="td-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="td-eswrap">
+          <div class="td-es"><svg><use href="#i-warn"/></svg><span class="td-es__t">加载话题详情失败</span>
+            <span class="td-es__s">请检查网络连接后重试</span>
+            <div class="td-es__a"><span>重试</span></div></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F10 -->
+    <figure class="frame">
+      <figcaption><b>F10</b><span class="t">空态 · 话题不存在</span><span class="d">hide-sub · 出口「返回」</span></figcaption>
+      <div class="phone">
+        <div class="td-hdr"><span class="td-hdr__back">返回</span><span class="td-hdr__title">话题详情</span><span class="td-hdr__spacer"></span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="td-eswrap">
+          <div class="td-es"><svg><use href="#i-box"/></svg><span class="td-es__t">话题不存在或已被删除</span>
+            <div class="td-es__a"><span>返回</span></div></div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页八类交互件。其中「匿名开关」「触顶提示」「分类标签」是同族 circles 页没有的；
+    本页没有「打招呼」，也没有「加载更多回复」钮（靠 <code>@scrolltolower</code> 触底翻页）。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>匿名开关 · 两态（本页独有）</h3>
+      <p class="hint">回复身份唯一出口，<code>isAnonymousReply</code> 取反；词条 <code>anonymousToggleOff</code>「实名」/ <code>anonymousToggleOn</code>「匿名」。min-height 88rpx（R13-L05-D05 在册）。</p>
+      <div class="row">
+        <div class="cell"><div class="td-anon"><span>实名</span></div><span class="lab">off（灰底灰字 500）</span></div>
+        <div class="cell"><div class="td-anon td-anon--on"><span>匿名</span></div><span class="lab">on（brand-50 底 + brand 字 600）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>输入框 + 触顶提示 · 三态</h3>
+      <p class="hint"><code>:maxlength="MAX_REPLY_LENGTH"</code>=500；仅 <code>isReplyAtLimit</code> 为真时浮出提示行（底栏因此高 78→96px，常驻会改变底栏高度）。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="td-in td-in--ph">写下你的回复...</div><span class="lab">placeholder</span></div>
+        <div class="cell" style="width:186px"><div class="td-in td-in--focus">资料能发我一份吗</div><span class="lab">focus（brand 描边 + 容器白底）</span></div>
+        <div class="cell" style="width:186px"><div class="td-in">（已输入 500 字）</div><span class="td-counter">已达 500 字上限，无法继续输入</span><span class="lab">触顶（--c-error 11px）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>发送钮 · 三态</h3>
+      <p class="hint">禁用条件 <code>!replyContent.trim() || isSubmitting</code>；min-height 88rpx（R14-L05-D04 在册，同族 circles 未补）。底为 brand→brand-300 渐变，前景 <code>--c-text-inverse</code>。</p>
+      <div class="row">
+        <div class="cell"><div class="td-send"><span>发送</span></div><span class="lab">default</span></div>
+        <div class="cell"><div class="td-send td-send--dis"><span>发送</span></div><span class="lab">disabled（--c-neutral-200 底）</span></div>
+        <div class="cell"><div class="td-send"><span>发送中</span></div><span class="lab">isSubmitting（文案换「发送中」）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>分类标签 · 六档枚举（本页独有）</h3>
+      <p class="hint">取 <code>CAMPUS_CATEGORY_MAP[topic.category]</code>（服务端字典为空时回退本地静态值）。六档全列，画板 F01 用第一档。</p>
+      <div class="row">
+        <div class="cell"><div class="td-cat" style="margin:0"><span>课程交流</span></div><span class="lab">course_exchange</span></div>
+        <div class="cell"><div class="td-cat" style="margin:0"><span>社团招新</span></div><span class="lab">club_recruitment</span></div>
+        <div class="cell"><div class="td-cat" style="margin:0"><span>校园活动</span></div><span class="lab">campus_activity</span></div>
+        <div class="cell"><div class="td-cat" style="margin:0"><span>学习互助</span></div><span class="lab">study_help</span></div>
+        <div class="cell"><div class="td-cat" style="margin:0"><span>生活服务</span></div><span class="lab">life_service</span></div>
+        <div class="cell"><div class="td-cat" style="margin:0"><span>校友动态</span></div><span class="lab">alumni_news</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>头像 · 两型 × 匿名</h3>
+      <p class="hint">无 <code>avatar</code> 时取 <code>getDisplayName(isAnonymous, name)[0]</code>：匿名 → 「匿」，空名 → 「?」。作者兜底字 15px（同族 circles 是 13px），回复兜底字 12px。</p>
+      <div class="row">
+        <div class="cell"><div class="td-av" style="width:36px;height:36px"><img src="assets/demo/person-02.png" alt=""></div><span class="lab">作者 · 真头像</span></div>
+        <div class="cell"><div class="td-av" style="width:36px;height:36px"><span class="td-av--char">匿</span></div><span class="lab">作者 · 匿名兜底</span></div>
+        <div class="cell"><div class="td-item__av" style="width:28px;height:28px"><img src="assets/demo/person-01.png" alt=""></div><span class="lab">回复 · 28px</span></div>
+        <div class="cell"><div class="td-item__av" style="width:28px;height:28px"><span class="td-item__ch">?</span></div><span class="lab">回复 · 空名兜底</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>空态 · 四处（评论区 1 + 页面级 3）</h3>
+      <p class="hint">四处都是 <code>&lt;EmptyState&gt;</code>；页面级三条各套一层宿主 <code>view.empty-state</code>（R7-L05-D05 在册口径，同族 circles 直接挂组件标签）。</p>
+      <table class="tbl">
+        <tr><th>位置 / 条件</th><th>type</th><th>主标题（i18n 真值）</th><th>副标题 · 动作</th></tr>
+        <tr><td>评论区 <code>v-else</code></td><td><code>no-data</code></td><td>暂无回复</td><td>快来抢沙发吧 · 无钮</td></tr>
+        <tr><td><code>!loading &amp;&amp; paramMissing</code></td><td><code>no-data</code></td><td>话题 ID 无效</td><td>hide-sub · 返回</td></tr>
+        <tr><td><code>!loading &amp;&amp; errorMessage</code></td><td><code>network</code></td><td>errorMessage || 加载话题详情失败</td><td>预设「请检查网络连接后重试」· 重试</td></tr>
+        <tr><td><code>!loading</code></td><td><code>no-data</code></td><td>话题不存在或已被删除</td><td>hide-sub · 返回</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">base 已登记档为主；<code>--c-black-shadow-xs</code> /
+      <code>--c-brand-border-tint-stronger</code> / <code>--c-overlay-white-bg-*</code> base 未登记，按 scss 真值 1:1 声明（已回报 BASE_PROBLEM）。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:linear-gradient(135deg,#36C99A,#75E1B7 60%,#FF8DA1)"></span><div><div class="sw__n">页头三档渐变<code>--c-brand → -300 → romance-300</code></div><div class="sw__u">导航带（源码页内自写，非 <code>--c-gradient-brand</code>）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(255,255,255,.25);border:1px solid #DDE3E0"></span><div><div class="sw__n">返回胶囊底<code>--c-overlay-white-bg-mid-strong</code></div><div class="sw__u">白胶囊 + 深墨字（R10-L05-D07）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">主文本<code>--c-text-primary</code></div><div class="sw__u">导航标题 10.2:1 · 话题标题 · 回复名</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">正文墨色<code>$text-secondary = --c-neutral-500</code></div><div class="sw__u">话题正文 · 回复正文（与 tertiary 同值，比同族 circles 淡一档）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">分类标签字 · 计数 · 匿名激活态 · focus 描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3;border:1px solid #DDE3E0"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">计数底 · 标签渐变起点 · 匿名激活底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFECEF;border:1px solid #DDE3E0"></span><div><div class="sw__n">浪漫 50<code>--c-romance-50</code></div><div class="sw__u">标签/头像渐变终点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器底<code>--c-bg-container</code></div><div class="sw__u">三张卡 + 底栏（R4-02525 已改，同族 circles 仍是裸 --c-neutral-0）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">页底 · 回复项底 · 输入/匿名底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#DDE3E0"></span><div><div class="sw__n">中性 200<code>--c-neutral-200</code></div><div class="sw__u">发送钮禁用底 · spinner 环 · 匿名描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">触顶提示行「已达 500 字上限」</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">空态唯一出口钮</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页有两处源码硬写 34rpx（导航标题、话题标题）无对应 <code>--fs-*</code> 档，画板按源码值 17px 落地并登记为漂移。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">34rpx→17px/700 硬写</span><span class="type__p" style="font-size:17px;font-weight:700">话题详情 · 高数B期末复习资料分享</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/700·600</span><span class="type__p" style="font-size:15px;font-weight:700">回复　<span style="font-weight:600;color:var(--c-text-secondary)">暂无回复</span></span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600·400</span><span class="type__p" style="font-size:14px;font-weight:600">阿辰　<span style="font-weight:400;color:var(--c-neutral-500)">写下你的回复...</span></span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/600·400</span><span class="type__p" style="font-size:13px;font-weight:600">周岚　<span style="font-weight:400;color:var(--c-neutral-500)">感谢学长！正好在复习高数</span></span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/600·500</span><span class="type__p" style="font-size:12px;font-weight:600;color:var(--c-brand)">23　<span style="color:var(--c-text-tertiary);font-weight:500">实名 / 课程交流</span></span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-tertiary)">30 分钟前 · 广州大学</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 阴影</h3><p class="hint">rpx ÷ 2 = px；本页源码大量直接写 rpx 值（画板按换算落地），同族 circles 走 sp 令牌 —— 两条口径同值但不可互相校验。</p>
+      <div class="space">
+        <div class="space__i"><b>4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>10rpx</b><i style="width:5px"></i></div>
+        <div class="space__i"><b>12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>28rpx</b><i style="width:14px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 回复项 · 配图</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 三张卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>胶囊 · 输入 · 钮</div>
+      </div>
+      <p class="hint" style="margin-top:14px">卡影 <code>0 2rpx 16rpx --c-black-shadow-xs</code>（页内 <code>$card-soft-shadow</code>，同族 circles 用 <code>--s-card-soft</code>）；
+        底栏影 <code>0 -4rpx 16rpx --c-black-shadow-xs</code>；发送钮影 <code>0 6rpx 16rpx --c-brand-border-tint-stronger</code>。</p>
+    </div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与同族 circles 页的差异清单</h2><p>差异逐条标【有意】/【漂移】/【待定】</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/person-02.png" alt="">
+      <div class="asset__b"><b>assets/demo/person-02.png</b><p>话题作者头像位（<code>.author-avatar__img</code>，36px）。真素材，供判 aspectFill 裁切与圆形兜底。</p><div class="m">36px · 圆形 · 兜底为单字 --c-brand 15px</div></div></div>
+    <div class="asset"><img src="assets/demo/person-01.png" alt="">
+      <div class="asset__b"><b>assets/demo/person-01.png</b><p>回复者头像位（28px）。校园域回复项比兴趣圈域少一层 <code>.reply-body</code> 包裹，头像到文字的距离因此由 8px 直排。</p><div class="m">28px · 圆形</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-photo-1.png" alt="">
+      <div class="asset__b"><b>assets/demo/xiaoman-photo-1..3.png</b><p>话题配图三列（<code>.topic-images__img</code>，100px 高、--r-lg 10px 圆角、gap 6px）。源码 mock 的 <code>POSTS.POST_n</code> 是线上地址，画板按 §8 换成本盘真素材。</p><div class="m">三列等宽 · calc((100% - 24rpx)/3)</div></div></div>
+  </div>
+  <div class="note">
+    <b>与同族 circles/topic-detail 的实测差异：两页是同一份 template 骨架 + 同一份 style 的复制体，结构基本相同；
+    逐条核下来差异 19 条——有意 5 条 / 漂移 12 条 / 待定 2 条。本域视角，值取自
+    <code>subpackages/campus/campus/topic-detail.vue</code> 与 <code>subpackages/circles/circles/topic-detail.vue</code> 原文：</b>
+    <ul>
+      <li>【有意】本页顶部多一条分类标签 <code>.topic-category-tag</code>（<code>CAMPUS_CATEGORY_MAP</code> 六档，浅渐变底 + brand 字 12px/600）；circles 无分类轴。</li>
+      <li>【有意】作者身份字段两页不同：本页第二行是 <code>author.school</code>（<code>v-if</code>，缺值整行不占位，见 F02），且作者名与回复名一律走 <code>getDisplayName(isAnonymous, name)</code>，匿名时替换成词条「匿名校友」、头像兜底字随之取「匿」；circles 第二行是 <code>author.headline</code>（恒渲染、nowrap + 省略号），且是实名体系、无此函数。</li>
+      <li>【有意】底栏三件（输入 / 匿名开关 / 发送），匿名开关是回复身份唯一出口；circles 底栏只有两件。</li>
+      <li>【有意】回复分页靠 <code>@scrolltolower</code> + 本地 <code>repliesHasMore</code> ref 估算，无显式钮；circles 是「加载更多回复」钮 + <code>isLoadingMoreReplies</code> 文案态，且 <code>.detail-page</code> 为此必须定高（本页 <code>height:100%;overflow:hidden</code>，circles 是 <code>min-height:100vh</code> + <code>min-height:0</code>）。</li>
+      <li>【有意】回复项右侧没有「打个招呼」钮（circles 独有的跨域私信出口，点击先过 <code>ensureCertified("realname")</code>）；校园域互动不出口到私信。</li>
+      <li>【漂移】评论区空态：本页是 <code>&lt;EmptyState&gt;</code> 组件两行（60px 图标 + 「暂无回复」+「快来抢沙发吧」），circles 是一句行内灰字（词条整句「暂无回复，快来抢沙发吧」）。同一句话两种组件、两种词格；且本页 <code>.replies-empty</code> / <code>.replies-empty__text</code> 样式已无消费者（改造后未删的死样式）。</li>
+      <li>【漂移】返回胶囊配色：本页 R10-L05-D07 用 25% 白胶囊 + 深墨字；circles R10-L04-D06 用深玻璃底 + 白字。同一判点两条相反口径，全站导航带读法因此分叉。</li>
+      <li>【漂移】卡片底色与影：本页三张卡 + 底栏在 R4-02525 统一改 <code>--c-bg-container</code>（深色模式自适应），circles 仍写裸 <code>--c-neutral-0</code>；卡影本页是页内 <code>$card-soft-shadow</code>（0 2rpx 16rpx 单段），circles 用登记的 <code>--s-card-soft</code>（双段合成）。深色模式下 circles 必掉档。</li>
+      <li>【漂移】页头几何与色：本页底是页内自写三档 brand→brand-300→romance-300，circles 用 <code>--c-gradient-brand</code>（两档纯 mint）；本页上内边距 <code>statusbar + 24rpx</code>（≈56px），circles 是 <code>statusbar + 20px + --sp-6</code>（≈76px）⇒ 导航带差 20px，正文起始线不同（本页 112px / circles 122px）。</li>
+      <li>【漂移】字号：本页导航标题与话题标题源码硬写 <code>34rpx</code>（17px，无 <code>--fs-*</code> 档，违 §1 令牌纪律），circles 走 <code>--fs-xl</code> 15px；作者头像兜底字本页 15px，circles 13px。</li>
+      <li>【漂移】正文墨色：本页局部变量 <code>$text-secondary = var(--c-neutral-500) #6B7571</code>，与它自己的 tertiary 同值 ⇒ 话题正文与回复正文比 circles 淡一档，且两档在本页塌成一档。同族还有发送钮前景 <code>--c-text-inverse</code>（.95 白）vs circles <code>--c-neutral-0</code>（纯白）、禁用底 <code>--c-neutral-200</code> vs <code>--c-border-default</code>（同值异名）。</li>
+      <li>【漂移】配图网格：本页 <code>gap 12rpx</code> + 圆角 <code>--r-lg</code> 10px、宽度直接给 img；circles <code>gap 10rpx</code> + 圆角 <code>--r-md</code> 6px + 外包一层 wrap。同为三列 100px 高，圆角差 4px。判空条件也不同（本页 <code>images &amp;&amp; images.length &gt; 0</code>，circles 只写 <code>images.length &gt; 0</code>，字段缺失时 circles 抛错）。</li>
+      <li>【漂移】返回钮热区：本页 <code>.detail-header__back</code> 补了 <code>min-height:88rpx</code>（R13-L05-D04，帧上 44px），circles 只有 padding（≈34px），低于同族与自述的 44px 标准。</li>
+      <li>【漂移】发送钮热区：本页 <code>.reply-btn</code> 补了 <code>min-height:88rpx</code>（R14-L05-D04，明写「同条控件不许只修一半」），circles 未补（≈39px）。同批可达性修复只落在本域。</li>
+      <li>【漂移】错误态兜底标题：本页 <code>errorMessage || t('storeErrors.campus.loadTopicDetailFailed')</code>「加载话题详情失败」；circles 兜底成「话题不存在或已被删除」，把网络失败说成内容被删。本页口径是对的。</li>
+      <li>【漂移】空态宿主写法：本页在 <code>&lt;EmptyState&gt;</code> 外面包一层 <code>view.empty-state</code>（注释判定组件标签打不进页面样式），circles 直接把 class 挂在组件标签上（注释判定可行）——两条注释对同一条 mp 编译机制的结论互相否定，必有一页是错的。本页 <code>.empty-state</code> 取 <code>flex:1 1 auto; min-height:0; align-items:center</code>，circles 取 <code>flex:1; align-items:stretch</code>。</li>
+      <li>【漂移】缺参判定：本页 <code>paramMissing</code> 一次性 latch，circles 读实时 <code>!topicId</code>；词条同源（「话题 ID 无效」），实现分叉。</li>
+      <li>【待定】本页有 <code>:maxlength="500"</code> + 触顶提示行，circles 两者皆无（微信 <code>&lt;input&gt;</code> 不写 maxlength 默认 140 字静默截断）。字数上限与提示是否全站统一，需产品定性；差异本身是同步缺失。</li>
+      <li>【待定】本页无举报入口（circles 有长按举报五档原因）；校园域是实名 + 认证私域不等于免举报，倾向漏做。</li>
+      <li>【口径】两页共用 <code>formatDateTime(dateStr,"relative","zh-CN")</code>，时间字一律「刚刚 / N 分钟前 / N 小时前 / N 天前」。</li>
+      <li>【登记】本页在 campus 分包、navigationStyle custom、无原生导航栏，<b>不画 tabbar</b>；画了即退稿。演示人设取真名池（阿辰/周岚/小满/星辰/小溪），学校用真校名（广州大学），话题与回复正文逐字取自 <code>stores/campus/mock-data.ts</code>；本页无分数/百分比位，故无留空判点。十屏均未触达 812px 裁切线（每屏只放该态必需的最少回复条数，保证判点同屏可读）；若后续把条数加满，超出部分按「帧即视口」裁切，裁切说明只写题注、不写画面。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 校园话题详情页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1845（面积 1,571,940 px，对齐语料 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

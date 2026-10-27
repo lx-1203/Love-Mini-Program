@@ -183,6 +183,7 @@ $gradient-page: linear-gradient(180deg, #DFF3EA 0%, #EEF7F2 100%);
 $gradient-page-romance: linear-gradient(180deg, #FFECEF 0%, #E8FAF3 50%, #EEF7F2 100%);
 $gradient-card-atmosphere: linear-gradient(135deg, rgba(54, 201, 154, 0.04) 0%, rgba(255, 107, 129, 0.02) 100%);
 $gradient-brand-overlay: linear-gradient(180deg, rgba(54, 201, 154, 0.08) 0%, transparent 100%);
+$gradient-brand-soft: linear-gradient(180deg, #{$brand-50} 0%, #ffffff 60%);
 $gradient-float-btn: linear-gradient(135deg, #36C99A 0%, #36C99A 100%);
 
 // ---------- 边框色 ----------
@@ -393,6 +394,7 @@ page {
   --c-gradient-vip: #{$gradient-vip};
   --c-gradient-card-atmosphere: #{$gradient-card-atmosphere};
   --c-gradient-brand-overlay: #{$gradient-brand-overlay};
+  --c-gradient-brand-soft: #{$gradient-brand-soft};
   --c-gradient-warm-cool: #{$gradient-warm-cool};
   --c-gradient-sunset: #{$gradient-sunset};
   --c-gradient-float-btn: #{$gradient-float-btn};
@@ -823,6 +825,7 @@ page {
   --c-tint-green-50: #E8F5E9;
   --c-tint-pink-50: #FCE4EC;
   --c-tint-pink-soft: #FFF0F5;
+  --c-tint-purple-soft: #F3EFFF;
   --c-tint-orange-50: #FFF3E0;
   --c-tint-amber-50: #FFF8E1;
   --c-tint-cream-50: #FFF8E7;
@@ -926,6 +929,7 @@ page {
 
   /* 浅黑透明叠层（用于无障碍/Overlay 模态） */
   --c-overlay-light-black: rgba(0, 0, 0, 0.04);
+  --c-overlay-faint: rgba(15, 23, 42, 0.05);
   --c-overlay-text-shadow-light: rgba(0, 0, 0, 0.1);
   --c-overlay-text-shadow-mid: rgba(0, 0, 0, 0.2);
 

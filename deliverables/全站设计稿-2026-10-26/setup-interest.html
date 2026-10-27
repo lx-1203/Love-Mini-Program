@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 兴趣选择页高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 已登记令牌，rpx ÷ 2 = px） ===== */
+
+/* 页面根：.interest-page 不是 AppShell，是自带 padding-top:calc(--statusbar + 24rpx) 的普通容器 */
+.page { position: absolute; inset: 0; overflow: hidden; background: var(--c-bg-page);
+  padding: 56px var(--page-padding) 0; display: flex; flex-direction: column; } /* 56 = 状态栏 44 + 24rpx */
+
+/* 页头：返回圆钮独占一行，标题/副标题回到 16px 主轴（R6-B66/D23） */
+.hd { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; flex: none; }
+.hd__back { width: 44px; height: 44px; margin-left: -6px; box-sizing: border-box; flex: none;
+  display: flex; align-items: center; justify-content: center; }
+.hd__circle { width: 32px; height: 32px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: 0.5px solid var(--c-line); display: flex; align-items: center; justify-content: center; color: var(--c-text-primary); }
+.hd__circle svg { width: 20px; height: 20px; }
+.hd__texts { display: flex; flex-direction: column; gap: 4px; }
+.hd__title { font-size: var(--fs-5xl); font-weight: 800; color: var(--c-text-primary); line-height: 1.3; }
+.hd__sub { font-size: var(--fs-base); color: var(--c-text-secondary); line-height: 1.5; }
+
+/* TagSelector 头部 */
+.tshd { display: flex; flex-direction: column; gap: 1px; margin-bottom: var(--sp-4); flex: none; }
+.tshd__t { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); }
+.tshd__s { font-size: var(--fs-sm); color: var(--c-text-secondary); line-height: 1.5; }
+
+/* 已选标签区（底 --c-bg-secondary） */
+.selbox { display: flex; flex-direction: column; gap: var(--sp-1); padding: 6px 8px;
+  border-radius: var(--r-lg); background: var(--c-bg-secondary); margin-bottom: var(--sp-4); flex: none; }
+.selbox__hd { display: flex; align-items: center; gap: var(--sp-1); }
+.selbox__l { font-size: var(--fs-sm); font-weight: 500; color: var(--c-text-secondary); }
+.selbox__c { font-size: var(--fs-xs); color: var(--c-text-tertiary); flex: 1; }
+.selbox__clear { padding: 1px 6px; border-radius: var(--r-full); background: var(--c-bg-container); }
+.selbox__clear span { font-size: var(--fs-xs); color: var(--c-brand); }
+.selbox__empty { padding: 1px 0; }
+.selbox__empty span { font-size: var(--fs-xs); color: var(--c-text-quaternary); }
+
+/* 分组头 */
+.grphd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.grphd__t { font-size: var(--fs-md); font-weight: 600; color: var(--c-text-primary); }
+.grphd__c { font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+
+/* chip（88rpx 热区 · 图标 14px + 文字 11px） */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: flex; align-items: center; gap: 3px; box-sizing: border-box; min-height: 44px;
+  padding: 6px 8px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: 0.5px solid var(--c-border-default); }
+.chip svg { width: 14px; height: 14px; color: var(--c-text-secondary); flex: none; }
+.chip span { font-size: var(--fs-sm); color: var(--c-text-primary); }
+.chip--on { background: var(--c-brand-100); border-color: var(--c-brand-300); }
+.chip--on span { color: var(--c-brand-800); font-weight: 600; }
+.chip--press { transform: scale(0.98); opacity: 0.85; }
+.chip__x { font-size: var(--fs-md); color: var(--c-text-tertiary); line-height: 1; margin-left: 2px; }
+
+/* 吸底 BottomActionBar（本页传 fixed） */
+.cta-spacer { height: 76px; flex: none; }
+.bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 90; display: flex;
+  padding: var(--sp-4) var(--page-padding) 42px; background: var(--c-bg-page); }
+.cta { flex: 1; height: 44px; border-radius: var(--r-xl); background: var(--c-brand-800); color: var(--c-text-inverse);
+  font-size: var(--fs-lg); font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: var(--s-brand); }
+.cta--dis { background: var(--c-status-disabled); color: var(--c-text-secondary); box-shadow: none; }
+.cta--press { transform: scale(0.97); box-shadow: var(--s-brand-md); }
+
+/* 系统层 */
+.sb { z-index: 130; }
+.toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 120;
+  max-width: 64%; padding: 12px var(--sp-7); border-radius: var(--r-lg); background: var(--c-text-primary);
+  color: var(--c-bg-container); font-size: var(--fs-lg); line-height: 1.4; text-align: center; }
+.toast--ic { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 116px; padding: 20px 18px 16px; }
+.toast--ic svg { width: 30px; height: 30px; color: var(--c-text-inverse); }
+.homebar { z-index: 95; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5.5 8 12l7 6.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.6l4.4 4.4L19 7"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2 2 0 0 1 6 3.5h5V20H6a2 2 0 0 0-2 2z"/><path d="M20 5.5a2 2 0 0 0-2-2h-5V20h5a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></symbol>
+  <symbol id="i-film" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.4"/><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4"/></symbol>
+  <symbol id="i-plane" viewBox="0 0 24 24"><path d="M20.5 3.5 3 11l6 2 2 6z"/><path d="M9 13l11.5-9.5"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8.6h3.1L8.6 6h6.8l1.5 2.6H20a1.6 1.6 0 0 1 1.6 1.6v8A1.6 1.6 0 0 1 20 19.8H4a1.6 1.6 0 0 1-1.6-1.6v-8A1.6 1.6 0 0 1 4 8.6z"/><circle cx="12" cy="14" r="3.3"/></symbol>
+  <symbol id="i-pad" viewBox="0 0 24 24"><path d="M6.5 7h11a4 4 0 0 1 4 4.3l-.6 4.4A2.8 2.8 0 0 1 16 17.4l-1.4-1.6h-5.2L8 17.4a2.8 2.8 0 0 1-4.9-1.7l-.6-4.4A4 4 0 0 1 6.5 7z"/><path d="M7.5 11v2M6.5 12h2"/><circle cx="16" cy="11.6" r=".8"/><circle cx="18" cy="13.4" r=".8"/></symbol>
+  <symbol id="i-pot" viewBox="0 0 24 24"><path d="M4 9h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M2 11h2M20 11h2"/><path d="M9 6.5c0-1.3 1.3-1.3 1.3-2.6M13 6.5c0-1.3 1.3-1.3 1.3-2.6"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M16.5 3.5l4 4L8 20H4v-4z"/><path d="M14 6l4 4"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 17.4l-5.4 2.9 1.1-6.1L3.2 9.9l6.1-.8z"/></symbol>
+  <symbol id="i-signal" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>兴趣选择页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/setup/interest/index</code>。
+     它住在 setup 分包里，但<b>不在注册链的 5 步上</b>：页面上没有任何 <code style="font-family:var(--mono);font-size:12.5px">SetupProgress</code> 实例，
+     唯一入口是「我的 → 兴趣选择」（<code style="font-family:var(--mono);font-size:12.5px">pages/profile/index.vue:839</code>），保存后返回上一页。
+     本页只渲染 <b>interest 一组</b>标签（MP-R1-SETUPINTEREST-003 把其余三组收掉），组上限 5、下限 3。
+     本页状态机有 <b>6</b> 个可见态，逐屏画全作为该页验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>setup/interest</b></span>
+    <span>分包 <b>setup</b>（无 tabbar）</span>
+    <span>链位 <b>不在 5 步注册链上</b></span>
+    <span>状态 <b>6 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无验收基准图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 6 屏</h2>
+    <p>0 选 / 2 选未达标 / 3 选达标 / 5 选上限 / 保存中 / 保存成功</p></div>
+  <div class="sec__sub">本页状态机有 <b>6</b> 态，来自这些实际分支：
+    ① <code>canSave = interestCount &gt;= 3</code> 与 <code>:disabled="!canSave || saving"</code> ⇒ CTA 的灰/亮两档（0 选、2 选都是灰）；
+    ② TagSelector 内 <code>v-if="selectedTags.length &gt; 0"</code>（chips）与 <code>v-else</code>（<code>tagSelector.emptyTip</code>）；
+    ③ <code>v-if="totalCount &gt; 0"</code> 的「清空」件；
+    ④ 组计数 <code>{{ (modelValue[group.key] ?? []).length }}/{{ group.max }}</code> 的 0/5 · 2/5 · 3/5 · 5/5 档；
+    ⑤ 达上限再点 → <code>uni.showToast(tagSelector.maxReached)</code>；
+    ⑥ CTA 文案三元 <code>saving ? common.loading : interestSelect.save</code> + 成功 toast <code>interestSelect.saved</code>。
+    页面无原生导航栏、也不是 AppShell：页头是本页自绘的白圆返回钮（独占一行）+ 标题 + 副标题；
+    整页高约 541px（含吸底留位），一屏装得下，故各屏都是 scrollTop=0，无裁切。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">0 选 · 首次进入</span><span class="d">CTA 灰档 · 已选区是 emptyTip</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="page">
+          <div class="hd">
+            <span class="hd__back"><span class="hd__circle"><svg><use href="#i-back"/></svg></span></span>
+            <span class="hd__texts"><span class="hd__title">选择兴趣</span><span class="hd__sub">选择你的兴趣，让匹配更懂你（至少 3 个）</span></span>
+          </div>
+          <div class="tshd"><span class="tshd__t">选择你的标签</span><span class="tshd__s">选择最能代表你的标签，让别人快速了解你</span></div>
+          <div class="selbox">
+            <div class="selbox__hd"><span class="selbox__l">已选标签</span><span class="selbox__c">已选 0/5</span></div>
+            <div class="selbox__empty"><span>暂未选择任何标签</span></div>
+          </div>
+          <div class="grphd"><span class="grphd__t">兴趣</span><span class="grphd__c">0/5</span></div>
+          <div class="chips">
+            <span class="chip"><svg><use href="#i-book"/></svg><span>阅读</span></span>
+            <span class="chip"><svg><use href="#i-trend"/></svg><span>运动</span></span>
+            <span class="chip"><svg><use href="#i-music"/></svg><span>音乐</span></span>
+            <span class="chip"><svg><use href="#i-film"/></svg><span>电影</span></span>
+            <span class="chip"><svg><use href="#i-plane"/></svg><span>旅行</span></span>
+            <span class="chip"><svg><use href="#i-cam"/></svg><span>摄影</span></span>
+            <span class="chip"><svg><use href="#i-pad"/></svg><span>游戏</span></span>
+            <span class="chip"><svg><use href="#i-pot"/></svg><span>美食</span></span>
+            <span class="chip"><svg><use href="#i-pencil"/></svg><span>绘画</span></span>
+            <span class="chip"><svg><use href="#i-star"/></svg><span>舞蹈</span></span>
+          </div>
+          <div class="cta-spacer"></div>
+        </div>
+        <div class="bar"><span class="cta cta--dis">完成选择</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">2 选 · 仍未达标</span><span class="d">canSave=false · CTA 仍灰 · 清空出现</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="page">
+          <div class="hd">
+            <span class="hd__back"><span class="hd__circle"><svg><use href="#i-back"/></svg></span></span>
+            <span class="hd__texts"><span class="hd__title">选择兴趣</span><span class="hd__sub">选择你的兴趣，让匹配更懂你（至少 3 个）</span></span>
+          </div>
+          <div class="tshd"><span class="tshd__t">选择你的标签</span><span class="tshd__s">选择最能代表你的标签，让别人快速了解你</span></div>
+          <div class="selbox">
+            <div class="selbox__hd"><span class="selbox__l">已选标签</span><span class="selbox__c">已选 2/5</span>
+              <span class="selbox__clear"><span>清空</span></span></div>
+            <div class="chips">
+              <span class="chip chip--on"><svg><use href="#i-book"/></svg><span>阅读</span><span class="chip__x">×</span></span>
+              <span class="chip chip--on"><svg><use href="#i-music"/></svg><span>音乐</span><span class="chip__x">×</span></span>
+            </div>
+          </div>
+          <div class="grphd"><span class="grphd__t">兴趣</span><span class="grphd__c">2/5</span></div>
+          <div class="chips">
+            <span class="chip chip--on"><svg><use href="#i-book"/></svg><span>阅读</span></span>
+            <span class="chip"><svg><use href="#i-trend"/></svg><span>运动</span></span>
+            <span class="chip chip--on"><svg><use href="#i-music"/></svg><span>音乐</span></span>
+            <span class="chip"><svg><use href="#i-film"/></svg><span>电影</span></span>
+            <span class="chip"><svg><use href="#i-plane"/></svg><span>旅行</span></span>
+            <span class="chip"><svg><use href="#i-cam"/></svg><span>摄影</span></span>
+            <span class="chip"><svg><use href="#i-pad"/></svg><span>游戏</span></span>
+            <span class="chip"><svg><use href="#i-pot"/></svg><span>美食</span></span>
+            <span class="chip"><svg><use href="#i-pencil"/></svg><span>绘画</span></span>
+            <span class="chip"><svg><use href="#i-star"/></svg><span>舞蹈</span></span>
+          </div>
+          <div class="cta-spacer"></div>
+        </div>
+        <div class="bar"><span class="cta cta--dis">完成选择</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">3 选 · 达标（CTA 转亮）</span><span class="d">canSave=true · 灰→亮唯一分界在 3</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="page">
+          <div class="hd">
+            <span class="hd__back"><span class="hd__circle"><svg><use href="#i-back"/></svg></span></span>
+            <span class="hd__texts"><span class="hd__title">选择兴趣</span><span class="hd__sub">选择你的兴趣，让匹配更懂你（至少 3 个）</span></span>
+          </div>
+          <div class="tshd"><span class="tshd__t">选择你的标签</span><span class="tshd__s">选择最能代表你的标签，让别人快速了解你</span></div>
+          <div class="selbox">
+            <div class="selbox__hd"><span class="selbox__l">已选标签</span><span class="selbox__c">已选 3/5</span>
+              <span class="selbox__clear"><span>清空</span></span></div>
+            <div class="chips">
+              <span class="chip chip--on"><svg><use href="#i-book"/></svg><span>阅读</span><span class="chip__x">×</span></span>
+              <span class="chip chip--on"><svg><use href="#i-music"/></svg><span>音乐</span><span class="chip__x">×</span></span>
+              <span class="chip chip--on"><svg><use href="#i-plane"/></svg><span>旅行</span><span class="chip__x">×</span></span>
+            </div>
+          </div>
+          <div class="grphd"><span class="grphd__t">兴趣</span><span class="grphd__c">3/5</span></div>
+          <div class="chips">
+            <span class="chip chip--on"><svg><use href="#i-book"/></svg><span>阅读</span></span>
+            <span class="chip"><svg><use href="#i-trend"/></svg><span>运动</span></span>
+            <span class="chip chip--on"><svg><use href="#i-music"/></svg><span>音乐</span></span>
+            <span class="chip"><svg><use href="#i-film"/></svg><span>电影</span></span>
+            <span class="chip chip--on"><svg><use href="#i-plane"/></svg><span>旅行</span></span>
+            <span class="chip"><svg><use href="#i-cam"/></svg><span>摄影</span></span>
+            <span class="chip"><svg><use href="#i-pad"/></svg><span>游戏</span></span>
+            <span class="chip"><svg><use href="#i-pot"/></svg><span>美食</span></span>
+            <span class="chip"><svg><use href="#i-pencil"/></svg><span>绘画</span></span>
+            <span class="chip"><svg><use href="#i-star"/></svg><span>舞蹈</span></span>
+          </div>
+          <div class="cta-spacer"></div>
+        </div>
+        <div class="bar"><span class="cta">完成选择</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">5 选 · 达上限后再点</span><span class="d">toast 已达最大选择数 · 第 6 枚不入选</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="page">
+          <div class="hd">
+            <span class="hd__back"><span class="hd__circle"><svg><use href="#i-back"/></svg></span></span>
+            <span class="hd__texts"><span class="hd__title">选择兴趣</span><span class="hd__sub">选择你的兴趣，让匹配更懂你（至少 3 个）</span></span>
+          </div>
+          <div class="tshd"><span class="tshd__t">选择你的标签</span><span class="tshd__s">选择最能代表你的标签，让别人快速了解你</span></div>
+          <div class="selbox">
+            <div class="selbox__hd"><span class="selbox__l">已选标签</span><span class="selbox__c">已选 5/5</span>
+              <span class="selbox__clear"><span>清空</span></span></div>
+            <div class="chips">
+              <span class="chip chip--on"><svg><use href="#i-book"/></svg><span>阅读</span><span class="chip__x">×</span></span>
+              <span class="chip chip--on"><svg><use href="#i-trend"/></svg><span>运动</span><span class="chip__x">×</span></span>
+              <span class="chip chip--on"><svg><use href="#i-music"/></svg><span>音乐</span><span class="chip__x">×</span></span>
+              <span class="chip chip--on"><svg><use href="#i-film"/></svg><span>电影</span><span class="chip__x">×</span></span>
+              <span class="chip chip--on"><svg><use href="#i-plane"/></svg><span>旅行</span><span class="chip__x">×</span></span>
+            </div>
+          </div>
+          <div class="grphd"><span class="grphd__t">兴趣</span><span class="grphd__c">5/5</span></div>
+          <div class="chips">
+            <span class="chip chip--on"><svg><use href="#i-book"/></svg><span>阅读</span></span>
+            <span class="chip chip--on"><svg><use href="#i-trend"/></svg><span>运动</span></span>
+            <span class="chip chip--on"><svg><use href="#i-music"/></svg><span>音乐</span></span>
+            <span class="chip chip--on"><svg><use href="#i-film"/></svg><span>电影</span></span>
+            <span class="chip chip--on"><svg><use href="#i-plane"/></svg><span>旅行</span></span>
+            <span class="chip chip--press"><svg><use href="#i-cam"/></svg><span>摄影</span></span>
+            <span class="chip"><svg><use href="#i-pad"/></svg><span>游戏</span></span>
+            <span class="chip"><svg><use href="#i-pot"/></svg><span>美食</span></span>
+            <span class="chip"><svg><use href="#i-pencil"/></svg><span>绘画</span></span>
+            <span class="chip"><svg><use href="#i-star"/></svg><span>舞蹈</span></span>
+          </div>
+          <div class="cta-spacer"></div>
+        </div>
+        <div class="bar"><span class="cta">完成选择</span></div>
+        <span class="homebar"></span>
+        <div class="toast">已达最大选择数</div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">保存中 · saving=true</span><span class="d">CTA 文案档「加载中...」且转灰不可点</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="page">
+          <div class="hd">
+            <span class="hd__back"><span class="hd__circle"><svg><use href="#i-back"/></svg></span></span>
+            <span class="hd__texts"><span class="hd__title">选择兴趣</span><span class="hd__sub">选择你的兴趣，让匹配更懂你（至少 3 个）</span></span>
+          </div>
+          <div class="tshd"><span class="tshd__t">选择你的标签</span><span class="tshd__s">选择最能代表你的标签，让别人快速了解你</span></div>
+          <div class="selbox">
+            <div class="selbox__hd"><span class="selbox__l">已选标签</span><span class="selbox__c">已选 3/5</span>
+              <span class="selbox__clear"><span>清空</span></span></div>
+            <div class="chips">
+              <span class="chip chip--on"><svg><use href="#i-book"/></svg><span>阅读</span><span class="chip__x">×</span></span>
+              <span class="chip chip--on"><svg><use href="#i-music"/></svg><span>音乐</span><span class="chip__x">×</span></span>
+              <span class="chip chip--on"><svg><use href="#i-plane"/></svg><span>旅行</span><span class="chip__x">×</span></span>
+            </div>
+          </div>
+          <div class="grphd"><span class="grphd__t">兴趣</span><span class="grphd__c">3/5</span></div>
+          <div class="chips">
+            <span class="chip chip--on"><svg><use href="#i-book"/></svg><span>阅读</span></span>
+            <span class="chip"><svg><use href="#i-trend"/></svg><span>运动</span></span>
+            <span class="chip chip--on"><svg><use href="#i-music"/></svg><span>音乐</span></span>
+            <span class="chip"><svg><use href="#i-film"/></svg><span>电影</span></span>
+            <span class="chip chip--on"><svg><use href="#i-plane"/></svg><span>旅行</span></span>
+            <span class="chip"><svg><use href="#i-cam"/></svg><span>摄影</span></span>
+            <span class="chip"><svg><use href="#i-pad"/></svg><span>游戏</span></span>
+            <span class="chip"><svg><use href="#i-pot"/></svg><span>美食</span></span>
+            <span class="chip"><svg><use href="#i-pencil"/></svg><span>绘画</span></span>
+            <span class="chip"><svg><use href="#i-star"/></svg><span>舞蹈</span></span>
+          </div>
+          <div class="cta-spacer"></div>
+        </div>
+        <div class="bar"><span class="cta cta--dis">加载中...</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">保存成功 · toast 后 600ms 返回</span><span class="d">icon:success「已保存」· 深链时改 switchTab 回「我的」</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="page">
+          <div class="hd">
+            <span class="hd__back"><span class="hd__circle"><svg><use href="#i-back"/></svg></span></span>
+            <span class="hd__texts"><span class="hd__title">选择兴趣</span><span class="hd__sub">选择你的兴趣，让匹配更懂你（至少 3 个）</span></span>
+          </div>
+          <div class="tshd"><span class="tshd__t">选择你的标签</span><span class="tshd__s">选择最能代表你的标签，让别人快速了解你</span></div>
+          <div class="selbox">
+            <div class="selbox__hd"><span class="selbox__l">已选标签</span><span class="selbox__c">已选 3/5</span>
+              <span class="selbox__clear"><span>清空</span></span></div>
+            <div class="chips">
+              <span class="chip chip--on"><svg><use href="#i-book"/></svg><span>阅读</span><span class="chip__x">×</span></span>
+              <span class="chip chip--on"><svg><use href="#i-music"/></svg><span>音乐</span><span class="chip__x">×</span></span>
+              <span class="chip chip--on"><svg><use href="#i-plane"/></svg><span>旅行</span><span class="chip__x">×</span></span>
+            </div>
+          </div>
+          <div class="grphd"><span class="grphd__t">兴趣</span><span class="grphd__c">3/5</span></div>
+          <div class="chips">
+            <span class="chip chip--on"><svg><use href="#i-book"/></svg><span>阅读</span></span>
+            <span class="chip"><svg><use href="#i-trend"/></svg><span>运动</span></span>
+            <span class="chip chip--on"><svg><use href="#i-music"/></svg><span>音乐</span></span>
+            <span class="chip"><svg><use href="#i-film"/></svg><span>电影</span></span>
+            <span class="chip chip--on"><svg><use href="#i-plane"/></svg><span>旅行</span></span>
+            <span class="chip"><svg><use href="#i-cam"/></svg><span>摄影</span></span>
+            <span class="chip"><svg><use href="#i-pad"/></svg><span>游戏</span></span>
+            <span class="chip"><svg><use href="#i-pot"/></svg><span>美食</span></span>
+            <span class="chip"><svg><use href="#i-pencil"/></svg><span>绘画</span></span>
+            <span class="chip"><svg><use href="#i-star"/></svg><span>舞蹈</span></span>
+          </div>
+          <div class="cta-spacer"></div>
+        </div>
+        <div class="bar"><span class="cta cta--dis">加载中...</span></div>
+        <span class="homebar"></span>
+        <div class="toast toast--ic"><svg><use href="#i-check"/></svg>已保存</div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页交互件三类：标签 chip（组区 + 已选区两处实例）/ 已选区容器 / 吸底主 CTA；外加页头返回件与 toast。
+    文案取 <code>interestSelect.*</code>、<code>tagSelector.*</code>、<code>config.profileTags.interest.*</code> 现值；
+    十枚标签的 value/label/图标逐条取自 <code>config/profile-tags.ts:77-86</code>。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>标签 chip · 四档（同一组件的两处实例）</h3>
+      <p class="hint">未选底取 <code>--c-bg-container</code>（R8-L12-D10：原 <code>--c-bg-page</code> 与页面底逐通道差 0，十枚 chip 与背景零色差）；
+        选中底 <code>--c-brand-100</code> + 描边 <code>--c-brand-300</code> + 字 <code>--c-brand-800</code>（对白底 5.50:1）；
+        热区 <code>min-height:88rpx</code>、间距 <code>--sp-3</code>（R8-L12-D12 从 8rpx 抬起）。已选区实例多一个「×」。</p>
+      <div class="row">
+        <div class="cell"><div class="chip"><svg><use href="#i-trend"/></svg><span>运动</span></div><span class="lab">未选（组区）</span></div>
+        <div class="cell"><div class="chip chip--on"><svg><use href="#i-book"/></svg><span>阅读</span></div><span class="lab">已选（组区）</span></div>
+        <div class="cell"><div class="chip chip--on"><svg><use href="#i-plane"/></svg><span>旅行</span><span class="chip__x">×</span></div><span class="lab">已选区实例（点 = 移除）</span></div>
+        <div class="cell"><div class="chip chip--press"><svg><use href="#i-cam"/></svg><span>摄影</span></div><span class="lab">按压 tag-chip--hover</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>value（存后端）</th><th>label 现值</th><th>图标（<code>opt.icon</code>）</th></tr>
+        <tr><td><code class="plain">reading</code></td><td>阅读</td><td>icons/common/book.svg</td></tr>
+        <tr><td><code class="plain">sports</code></td><td>运动</td><td>icons/common/trend-up.svg</td></tr>
+        <tr><td><code class="plain">music</code></td><td>音乐</td><td>icons/common/music.svg</td></tr>
+        <tr><td><code class="plain">movie</code></td><td>电影</td><td>icons/common/clapperboard.svg</td></tr>
+        <tr><td><code class="plain">travel</code></td><td>旅行</td><td>icons/common/plane.svg</td></tr>
+        <tr><td><code class="plain">photography</code></td><td>摄影</td><td>icons/common/camera.svg</td></tr>
+        <tr><td><code class="plain">gaming</code></td><td>游戏</td><td>icons/common/gamepad.svg</td></tr>
+        <tr><td><code class="plain">cooking</code></td><td>美食</td><td>icons/common/cooking-pot.svg</td></tr>
+        <tr><td><code class="plain">painting</code></td><td>绘画</td><td>icons/common/pencil.svg</td></tr>
+        <tr><td><code class="plain">dance</code></td><td>舞蹈</td><td>icons/common/star.svg</td></tr>
+      </table>
+      <p class="hint" style="margin-top:12px">value 保持英文 key（存 localStorage 与后端比对），展示层经 <code>labelKey</code> 走 <code>t()</code>；
+        画板上的中文是 <code>config.profileTags.interest.*</code> 的 locale 真值，图标画板用同语义 lucide 描边替身。</p>
+    </div>
+
+    <div class="panel">
+      <h3>已选区容器 · 三档 + 计数两串</h3>
+      <p class="hint">底取 <code>--c-bg-secondary</code>（#D1F5E7，比选中 chip 的 <code>--c-brand-100</code> 同值 ⇒ 已选区与 chip 之间零色差，只靠 chip 描边区分）；
+        「清空」件 <code>v-if="totalCount &gt; 0"</code>；空档显示 <code>tagSelector.emptyTip</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:240px"><div class="selbox" style="margin:0"><div class="selbox__hd"><span class="selbox__l">已选标签</span><span class="selbox__c">已选 0/5</span></div><div class="selbox__empty"><span>暂未选择任何标签</span></div></div><span class="lab">空档（无「清空」）</span></div>
+        <div class="cell" style="width:240px"><div class="selbox" style="margin:0"><div class="selbox__hd"><span class="selbox__l">已选标签</span><span class="selbox__c">已选 2/5</span><span class="selbox__clear"><span>清空</span></span></div><div class="chips"><span class="chip chip--on"><svg><use href="#i-book"/></svg><span>阅读</span><span class="chip__x">×</span></span></div></div><span class="lab">有选档（清空出现）</span></div>
+        <div class="cell" style="width:240px"><div class="selbox" style="margin:0"><div class="selbox__hd"><span class="selbox__l">已选标签</span><span class="selbox__c">已选 5/5</span><span class="selbox__clear"><span>清空</span></span></div></div><span class="lab">满档（5/5）</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>串</th><th>i18n / 表达式</th><th>现值</th></tr>
+        <tr><td>已选区计数</td><td><code>tagSelector.selectedCount</code>（n=totalCount，max=totalMax=可见组 max 之和）</td><td>已选 N/5</td></tr>
+        <tr><td>分组计数</td><td><code>{{ (modelValue[group.key] ?? []).length }}/{{ group.max }}</code>（字面拼接，不走 i18n）</td><td>N/5</td></tr>
+        <tr><td>同屏结果</td><td>本页只渲染 interest 一组 ⇒ 两个计数恒等</td><td><b>「已选 3/5」与「兴趣 3/5」同屏重复</b>（见 §04）</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>吸底主 CTA · 四档（本页禁用档真实存在）</h3>
+      <p class="hint">与同域 campus / schedule 相反：本页 <b>传了</b> <code>:disabled="!canSave || saving"</code>，
+        而 BottomActionBar 的 tap 守卫是 <code>@tap="!disabled &amp;&amp; emit('primary')"</code> ⇒ 灰档下点击被整块吞掉，
+        <code>handleSave()</code> 里的 <code>interestSelect.minThree</code> 提示<b>不可达</b>（R11-L12-D19/D20 把颜色档与另两步对齐了，但没处理这条死路）。</p>
+      <div class="row">
+        <div class="cell" style="width:240px"><div class="cta cta--dis">完成选择</div><span class="lab">0–2 选 · 灰（点击无反馈）</span></div>
+        <div class="cell" style="width:240px"><div class="cta">完成选择</div><span class="lab">≥3 选 · 亮（--c-brand-800，白字 6.45:1）</span></div>
+        <div class="cell" style="width:240px"><div class="cta cta--dis">加载中...</div><span class="lab">saving · 换文案 + 转灰</span></div>
+        <div class="cell" style="width:240px"><div class="cta cta--press">完成选择</div><span class="lab">:active scale(0.97)</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>档位派生</th><th>源码</th></tr>
+        <tr><td>可保存</td><td><code>canSave = computed(() =&gt; interestCount.value &gt;= 3)</code>（:34）</td></tr>
+        <tr><td>计数来源</td><td><code>interestCount = selected.interest?.length ?? 0</code>（:33，只算 interest 一组）</td></tr>
+        <tr><td>文案</td><td><code>saving ? common.loading : interestSelect.save</code>（:144）</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>页头返回件 · 两档 + 两个出口</h3>
+      <p class="hint">外层 44px 热区 + 内层 32px 白圆底（<code>margin-left:-6px</code> 让圆底左缘仍落在页边距上）；
+        箭头是包内素材 <code>ICONS_COMMON.BACK</code>（40rpx=20px，R6-B66/D22 前是字符按 40rpx 渲染）。
+        本页<b>没有</b> AppShell，页头随正文一起滚，不吸顶。</p>
+      <div class="row">
+        <div class="cell"><span class="hd__back"><span class="hd__circle"><svg><use href="#i-back"/></svg></span></span><span class="lab">default</span></div>
+        <div class="cell"><span class="hd__back" style="opacity:.7"><span class="hd__circle"><svg><use href="#i-back"/></svg></span></span><span class="lab">按压 press-feedback--active</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>出口</th><th>条件</th><th>去向</th></tr>
+        <tr><td>返回</td><td><code>getCurrentPages().length &gt; 1</code></td><td><code>uni.navigateBack()</code>（回「我的」Tab）</td></tr>
+        <tr><td>返回兜底</td><td>深链直达、栈=1（MP-R1-REQ24-INTEREST-001）</td><td><code>uni.switchTab("/pages/profile/index")</code></td></tr>
+        <tr><td>保存后</td><td>同上两条（600ms 延时）</td><td>toast「已保存」→ 返回/切 Tab；<b>不进注册向导</b></td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Toast · 五档（一条不可达）</h3>
+      <p class="hint">全部 <code>icon:"none"</code>，除成功档。</p>
+      <table class="tbl">
+        <tr><th>触发条件</th><th>i18n key</th><th>文案现值</th><th>可达性</th></tr>
+        <tr><td><code>interests.length &lt; 3</code></td><td><code>interestSelect.minThree</code></td><td>至少选择 3 个兴趣</td><td><b>不可达</b>（灰档已吞掉点击，见上栏）</td></tr>
+        <tr><td><code>getBasicProfile()</code> 合并失败</td><td><code>common.networkError</code></td><td>网络错误</td><td>可达</td></tr>
+        <tr><td>保存 resolve</td><td><code>interestSelect.saved</code></td><td>已保存</td><td>可达（<code>icon:"success"</code>）</td></tr>
+        <tr><td>保存 catch 且非 Error</td><td><code>interestSelect.saveFailed</code></td><td>保存失败，请重试</td><td>可达</td></tr>
+        <tr><td>已选 5 枚再点第 6 枚</td><td><code>tagSelector.maxReached</code></td><td>已达最大选择数</td><td>可达（F04）</td></tr>
+      </table>
+      <div class="row" style="margin-top:14px">
+        <div class="cell" style="width:240px"><div class="toast" style="position:static;transform:none">已达最大选择数</div><span class="lab">none 型几何：居中浮层 · 无图标</span></div>
+        <div class="cell" style="width:240px"><div class="toast toast--ic" style="position:static;transform:none"><svg><use href="#i-check"/></svg>已保存</div><span class="lab">success 型（F06 全屏档）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>「至少 3 个 / 上限 5」三处口径对照</h3>
+      <p class="hint">同一件事在三个地方各写一次，画板如实并列，不替它们对齐。</p>
+      <table class="tbl">
+        <tr><th>出处</th><th>写的值</th><th>是否被执行</th></tr>
+        <tr><td>页头副标题 <code>interestSelect.subtitle</code></td><td>「至少 3 个」</td><td>只是话术</td></tr>
+        <tr><td>页面守卫 <code>canSave</code>（:34）</td><td><code>&gt;= 3</code></td><td>决定 CTA 灰/亮</td></tr>
+        <tr><td>组配置 <code>profileTagGroups.interest.min</code></td><td><code>1</code></td><td><b>组件不校验 min</b>（注释：取消不阻止，提交时由父组件校验）⇒ 这个 1 从未生效</td></tr>
+        <tr><td>组配置 <code>max</code> / <code>totalMax</code></td><td><code>5</code> / 5</td><td>组件层拦截 + 两串计数都显示它</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位，与 design-variables.scss 一一对应</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">页内零私有色值；源文件 <code>var(--x, 十六进制)</code> 的兜底值不进画板。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-page)"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">.interest-page 底 · 吸底条底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-container);border:1px solid var(--c-border-default)"></span><div><div class="sw__n">容器白<code>--c-bg-container</code></div><div class="sw__u">未选 chip 底 · 返回圆底 · 清空件底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-secondary)"></span><div><div class="sw__n">次级底<code>--c-bg-secondary</code></div><div class="sw__u">已选区容器（与 --c-brand-100 同值）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-100)"></span><div><div class="sw__n">主色 100<code>--c-brand-100</code></div><div class="sw__u">选中 chip 底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-300)"></span><div><div class="sw__n">主色 300<code>--c-brand-300</code></div><div class="sw__u">选中 chip 描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand)"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">「清空」字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-800)"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">主 CTA 底 · 选中 chip 字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-border-default)"></span><div><div class="sw__n">边框<code>--c-border-default</code></div><div class="sw__u">未选 chip 描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-line)"></span><div><div class="sw__n">细线<code>--c-line</code></div><div class="sw__u">返回圆底描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-status-disabled)"></span><div><div class="sw__n">禁用档<code>--c-status-disabled</code></div><div class="sw__u">未达标 / 保存中的 CTA 底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-text-quaternary)"></span><div><div class="sw__n">第四级字<code>--c-text-quaternary</code></div><div class="sw__u">「暂未选择任何标签」</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-text-primary)"></span><div><div class="sw__n">正文最深<code>--c-text-primary</code></div><div class="sw__u">页头标题 · chip 文字 · toast 浮层底（就近）</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到六档；页头标题源文件写的是字面量 <code>44rpx</code>，恰等于 <code>--fs-5xl</code> 真值 22px，画板按令牌档标。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/800</span><span class="type__p" style="font-size:22px;font-weight:800">选择兴趣</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">选择你的标签 · 完成选择</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/600</span><span class="type__p" style="font-size:13px;font-weight:600">兴趣（分组名）</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-secondary)">选择最能代表你的标签，让别人快速了解你</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/500</span><span class="type__p" style="font-size:11px;font-weight:500;color:var(--c-text-secondary)">已选标签 · 阅读 · 运动</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/400</span><span class="type__p" style="font-size:10px;font-weight:400;color:var(--c-text-tertiary)">已选 3/5 · 3/5 · 清空 · 暂未选择任何标签</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-1 2rpx</b><i style="width:1px"></i></div>
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:5px"></b>--r-lg<br>20rpx · 已选区容器</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 主 CTA</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>chip · 清空件 · 返回圆底</div>
+      </div>
+      <p class="hint" style="margin-top:14px">几何档：页头 <code>padding-top: calc(--statusbar + 24rpx)</code>（画板按状态栏 44px 取值 = 56px）、
+        返回热区 88rpx=44px / 圆底 64rpx=32px / 箭头 40rpx=20px、chip 图标 28rpx=14px、
+        正文 <code>padding-bottom:64rpx</code>=32px + <code>.cta-spacer 152rpx</code>=76px（含机型安全区）。
+        源文件里 <code>--r-lg</code> 的兜底写 18rpx，画板取令牌真值 10px。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 链位 + 差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 · 本页在 setup 域中的位置 · 与实况的已知差异</h2>
+    <p>十枚标签图标走工程既有素材；本页无照片位</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>config/profile-tags.ts · 十枚 interest 图标</b>
+        <p><code>opt.icon</code> 逐条指向 <code>/static/assets/icons/common/{book,trend-up,music,clapperboard,plane,camera,gamepad,cooking-pot,pencil,star}.svg</code>，
+           渲染 28rpx=14px、色 <code>--c-text-secondary</code>。画板用同语义的 lucide 描边替身，不新增素材。</p>
+        <div class="m">14px × 10 枚 · 与文字 gap 3px</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_COMMON.BACK</b>
+        <p>页头返回箭头（<code>common/back</code>，40rpx=20px）压在 64rpx 白圆底上；R6-B66/D22 前是「‹」字符。
+           本页<b>没有任何照片/头像位</b>，故 §8 的真素材要求不产生 NEED_ASSET。</p>
+        <div class="m">20px · 圆底 32px --c-bg-container</div></div></div>
+  </div>
+  <div class="note">
+    <b>本页在 setup 域 / 注册链中的位置（源码实测）：</b>
+    <ul>
+      <li><b>本页不在 5 步注册链上。</b>链是 ① <code>setup/profile</code> → ② <code>setup/campus</code>（仅学生）→ ③ <code>setup/schedule</code> → ④ <code>setup/recommend-pref</code> → ⑤「完成」= <code>/pages/discover/index</code>；
+        本页模板里<b>没有</b> <code>SetupProgress</code> 实例（已 grep 证：同域只有 profile:753 / campus:221 / schedule:133 / recommend-pref:181 四处），
+        入口唯一：<code>pages/profile/index.vue:839</code> 的「我的 → 兴趣选择」（<code>openAppPath</code>）。</li>
+      <li><b>上一步 / 下一步：</b>上一步是「我的」Tab（<code>pages/profile/index</code>）；下一步没有——保存成功后 600ms <code>navigateBack()</code>（栈=1 时兜底 <code>switchTab</code> 回「我的」）。
+        对照：同域 <code>setup/profile</code> 有两态入口（<code>?entry=edit</code> 编辑态与向导态），本页只有编辑型一条。</li>
+      <li><b>因此本页没有进度条分母可对</b>——不存在「写 5 实际 4」的问题，但也意味着用户从「我的」进来时看不到自己在链上的任何位置（与向导四页的观感不连续，属全站口径，登记不修）。</li>
+      <li><b>缺陷 · 「至少 3 个」的提示不可达：</b><code>:disabled="!canSave || saving"</code> + 组件内 <code>@tap="!disabled &amp;&amp; emit('primary')"</code>
+        ⇒ 0–2 选时点击被吞，<code>handleSave()</code> 的 <code>interestSelect.minThree</code>「至少选择 3 个兴趣」永不触发（灰档无解释句）。
+        这与同域 campus 的 R11-L12-D09（撤 <code>:disabled</code>、改常亮 + toast 定位）是<b>同一类问题的相反解法</b>：三页里 interest 与 schedule/campus 的 CTA 可达性口径不一致。画板如实照画灰态。</li>
+      <li><b>缺陷 · 保存中的文案是「加载中...」：</b>CTA 在 <code>saving</code> 时取 <code>common.loading</code>（:144），而此刻用户做的是「保存」不是「加载」；
+        同域 campus 用的是 <code>setup.campus.saveSaving</code>「保存中...」。画板按源码现值画，不替它改成「保存中」。</li>
+      <li><b>缺陷 · 两个计数同屏重复：</b>已选区的 <code>已选 N/5</code>（<code>tagSelector.selectedCount</code>）与分组头的 <code>N/5</code>（字面拼接、不走 i18n）
+        在本页恒等（只渲染一组）⇒ 同一屏出现两处同值计数；且分组头那串是硬拼的，英文环境也不会翻译。</li>
+      <li><b>缺陷 · 已选区两串文字连成一句：</b><code>.tag-selector__selected-header</code> 的 gap 只有 <code>--sp-1</code>=1px，
+        而左串是「已选标签」、右串是 <code>selectedCount</code>「已选 N/5」⇒ 画面上读作<b>「已选标签已选 0/5」</b>，「已选」重复两次且几乎不隔空。
+        画板如实按 1px 间距画（F01–F06 同面），不替它加间距、不改文案。</li>
+      <li><b>缺陷 · 组配置 <code>min:1</code> 是死值：</b>TagSelector 明确不校验 min（注释「取消不阻止，提交时由父组件校验」），
+        实际门槛是页面的 <code>canSave &gt;= 3</code> 与副标题的「至少 3 个」——三处数字（1 / 3 / 3）里只有页面的 3 生效。</li>
+      <li><b>回填口径：</b><code>onLoad</code> 拉 <code>getBasicProfile()</code>，把 <code>interestTags</code> 回填进 <code>selected</code>；失败<b>静默</b>（catch 空注释「静默」）⇒ 已有兴趣可能显示为空而无任何提示。画板 F01 即该分支的可见形态。</li>
+      <li><b>全量 PUT 语义：</b>保存前先再拉一次全量资料、合并 <code>interestTags</code> 后整体提交（MP-R2-INTEREST-002），拉取失败时提示「网络错误」并<b>不提交</b>；
+        该分支只在 toast 层可见，画板在 §02 toast 表登记，不另立屏。</li>
+      <li>本页在 setup 分包，<b>无 tabbar</b>、无原生导航栏（<code>navigationStyle=custom</code>，页头自绘）；画板若出现 tabbar 即为错。</li>
+      <li><code>page { background: --c-bg-container }</code>（R16 纯白口径）被 <code>.interest-page</code> 的 <code>--c-bg-page</code> 覆盖 ⇒ 实测页面底与吸底条同为 #EEF7F2 连成一片。</li>
+      <li>toast 浮层底取 <code>--c-text-primary</code>（base 无黑色浮层档，就近取最深墨色，与 setup-schedule.html 同口径）；
+        状态栏高度取画板口径 44px（<code>--statusbar</code> 在 DevTools 恒 0，MP-R9-STATUS-005 已登记）。</li>
+      <li>不入静态画板的动效项：chip 按压缩放、<code>lightHaptic</code> 反馈、600ms 返回延时、吸底条 safe-area（画板按 34px 机型几何留位）。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 兴趣选择页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1,572,192 px，对齐 素材/理想效果图 语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

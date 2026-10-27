@@ -18,6 +18,12 @@ import NearbySection from "../../components/nearby/NearbySection.vue";
 // （clientApi.getRecommendations + mapToDiscoverCard，距离口径 NEARBY_MAX_DISTANCE_KM=20），
 // 头像走共享件 SafeImage（失败兜底默认头像），与 people.vue:224 同一口径。
 import SafeImage from "../../components/common/SafeImage.vue";
+// 2026-10-26（goal-2026-10-26 视觉对样·缺陷4-6）：右下角绿色「＋」发帖 FAB。
+// 理想图 附近的首页.png 右下角有绿色圆形悬浮发布钮，本页此前只有页头「发动态」药丸一个入口。
+// 复用既有全局组件 GlobalPublishFab（自述「全局发帖悬浮按钮」，此前仅 profile 页挂载；
+// 组件内部自带 isPostPublishOpen 配置闸与展开动画），跳转走本页既有 goToPublishPost
+// （与页头药丸同一落点 /subpackages/village/village/post），不新造链路。
+import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
 import { clientApi } from "../../services/api";
 import { mapToDiscoverCard, NEARBY_MAX_DISTANCE_KM } from "../../stores/discover/utils";
 import type { DiscoverCard } from "../../stores/discover/types";
@@ -659,36 +665,13 @@ function formatMemberCount(count: number): string {
         </view>
       </view>
 
-      <!-- ① 附近的人（含同城） -->
-      <NearbySection :title="t('nearby.peopleTitle')">
-        <view class="people-entry-list">
-          <view class="people-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.peopleNearby')" @tap="goPeople('nearby')">
-            <view class="people-entry__icon-wrap">
-              <image class="people-entry__icon" :src="IMAGE_PATHS.ICONS_EMOJI.LOCATION" mode="aspectFit" alt="" />
-            </view>
-            <view class="people-entry__body">
-              <text class="people-entry__title">{{ t('nearby.peopleNearby') }}</text>
-              <text class="people-entry__desc">{{ t('nearby.peopleNearbyDesc') }}</text>
-            </view>
-            <text class="people-entry__arrow">›</text>
-          </view>
-          <view class="people-entry press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" :aria-label="t('nearby.peopleCity')" @tap="goPeople('city')">
-            <view class="people-entry__icon-wrap people-entry__icon-wrap--city">
-              <image class="people-entry__icon" :src="IMAGE_PATHS.ICONS_EMOJI.GROUP" mode="aspectFit" alt="" />
-            </view>
-            <view class="people-entry__body">
-              <text class="people-entry__title">{{ t('nearby.peopleCity') }}</text>
-              <text class="people-entry__desc">{{ t('nearby.peopleCityDesc') }}</text>
-            </view>
-            <text class="people-entry__arrow">›</text>
-          </view>
-        </view>
-
-        <!-- R8-L02-D04（需新建）：§3.5 要求的「距离/同城」分段控件 + 人卡横滑列表，
-             补在两张入口条下方——该分区此前只有两个跳转条、内容区在 DOM 里根本不存在。
-             四态齐备（同分区②/④既有三态口径）：登录门 → 引导空态、加载中 → SkeletonBlock、
-             取回但为空/失败 → 空态文案 + 重试、有数据 → 人卡横滑。整屏列表出口（goPeople）保留。 -->
-        <view class="people-segment" role="tablist" :aria-label="t('nearby.peopleTabsAria')">
+      <!-- ① 附近的人（含同城）
+           规范 §3.5 给这一分区的分段口径是「按距离 / 同城」——分段项只描述范围，
+           不再复述分区名；整屏列表出口由分区头「全部」承担（带当前分段）。
+           四态齐备（同分区②/④既有三态口径）：登录门 → 引导空态、加载中 → SkeletonBlock、
+           取回但为空/失败 → 空态文案 + 重试、有数据 → 人卡横滑。 -->
+      <NearbySection :title="t('nearby.peopleTitle')" :more-text="t('nearby.viewAll')" @more="goPeople(peopleScope)">
+        <view class="people-segment" role="tablist" :aria-label="t('nearby.peopleScopeTabsAria')">
           <view
             class="people-segment__item"
             :class="{ 'people-segment__item--active': peopleScope === 'nearby' }"
@@ -698,7 +681,7 @@ function formatMemberCount(count: number): string {
             hover-stay-time="40"
             @tap="switchPeopleScope('nearby')"
           >
-            <text class="people-segment__text">{{ t('nearby.peopleNearby') }}</text>
+            <text class="people-segment__text">{{ t('nearby.peopleScopeNearby') }}</text>
           </view>
           <view
             class="people-segment__item"
@@ -709,7 +692,7 @@ function formatMemberCount(count: number): string {
             hover-stay-time="40"
             @tap="switchPeopleScope('city')"
           >
-            <text class="people-segment__text">{{ t('nearby.peopleCity') }}</text>
+            <text class="people-segment__text">{{ t('nearby.peopleScopeCity') }}</text>
           </view>
         </view>
 
@@ -853,9 +836,11 @@ function formatMemberCount(count: number): string {
             </view>
             <text class="campus-entry__name">{{ school.name }}</text>
             <text class="campus-entry__desc">{{ school.city }}</text>
-            <view class="campus-entry__status">
+            <view class="campus-entry__status" :class="{ 'campus-entry__status--verify': campusChipKey(school.name) === 'nearby.campusVerify' }">
               <!-- MP-R1-PAGES-NEARBY-INDEX-902：认证状态双态——本校已认证「已加入」、
-                   本校未认证「去认证」、其余「公开浏览」 -->
+                   本校未认证「去认证」、其余「公开浏览」。
+                   2026-10-26：补「去认证」态浅紫胶囊样式（对齐理想图 附近的首页.png），
+                   状态判定逻辑（campusChipKey）不动。 -->
               <text class="campus-entry__status-text">{{ t(campusChipKey(school.name)) }}</text>
             </view>
           </view>
@@ -971,6 +956,9 @@ function formatMemberCount(count: number): string {
 
       <view class="nearby-home__footer-space" />
     </scroll-view>
+    <!-- 缺陷4-6：右下角发帖 FAB（理想图 附近的首页.png 有；fixed 定位不吃滚动层热区，
+         组件自身按 isPostPublishOpen 配置闸显隐，跳转与页头「发动态」药丸同落点） -->
+    <GlobalPublishFab @publish="goToPublishPost" />
   </view>
 </template>
 
@@ -1146,18 +1134,10 @@ function formatMemberCount(count: number): string {
   color: var(--c-text-secondary, #4A524E);
 }
 
-/* 附近的人 */
-.people-entry-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-}
-
 /* ========== R8-L02-D04：分区①「距离/同城」分段控件 + 人卡横滑 ========== */
 .people-segment {
   display: flex;
   gap: 12rpx;
-  margin-top: 20rpx;
 }
 
 /* 热区 88rpx = 本页既有最小可点件口径（同 .nearby-home__search-btn 的 88rpx） */
@@ -1242,61 +1222,6 @@ function formatMemberCount(count: number): string {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.people-entry {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  padding: 24rpx;
-  border-radius: 20rpx;
-  background: var(--c-bg-container, #FFFFFF);
-  border: 1rpx solid var(--c-line, #EEF2F0);
-  box-shadow: var(--c-shadow-card, 0 4px 16px rgba(30, 80, 65, 0.08));
-}
-
-.people-entry__icon-wrap {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 20rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--c-brand-50, #E8FAF3);
-  flex-shrink: 0;
-}
-
-.people-entry__icon-wrap--city {
-  background: var(--c-romance-100, #FFD9DF);
-}
-
-.people-entry__icon {
-  width: 40rpx;
-  height: 40rpx;
-}
-
-.people-entry__body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-  min-width: 0;
-}
-
-.people-entry__title {
-  font-size: 28rpx;
-  font-weight: 700;
-  color: var(--c-text-primary, #222222);
-}
-
-.people-entry__desc {
-  font-size: 22rpx;
-  color: var(--c-text-secondary, #666666);
-}
-
-.people-entry__arrow {
-  font-size: 30rpx;
-  color: var(--c-text-quaternary, #C8CFCD);
 }
 
 /* 热门兴趣圈 */
@@ -1502,14 +1427,23 @@ function formatMemberCount(count: number): string {
   background: var(--c-brand-50, #E8FAF3);
 }
 
+/* 2026-10-26 对齐理想图：未认证本校的「去认证」为浅紫胶囊（逻辑仍走 campusChipKey 三态） */
+.campus-entry__status--verify {
+  background: var(--c-lavender-50, #F5F3FF);
+}
+
+.campus-entry__status--verify .campus-entry__status-text {
+  color: var(--c-lavender-500, #8B5CF6);
+}
+
 .campus-entry__status-text {
   font-size: 20rpx;
   font-weight: 600;
   color: var(--c-brand-800, #156B51);
 }
 
-/* R7-L02-D04：分区④三张活动卡在帧上是直角矩形，而同页同族的 .people-entry（:827）
-   是 20rpx 圆角 + 卡片阴影——同页同族两套口径。补齐与 .people-entry 逐字相同的两键。 */
+/* R7-L02-D04：分区④三张活动卡在帧上是直角矩形，而同页同族的 .campus-entry 是
+   20rpx 圆角 + 卡片阴影——同页同族两套口径。此处对齐同族的两键。 */
 .activity-entry {
   display: flex;
   align-items: center;
@@ -1530,7 +1464,7 @@ function formatMemberCount(count: number): string {
   z-index: 1;
   /* R7-L02-D03：align-items/justify-content 此前挂在非 flex 容器上（整条规则无
      display:flex），出包后 40rpx 图标不会在 72rpx 杏色底板里居中。补容器声明，
-     口径同 .people-entry__icon-wrap（:838-845）。 */
+     与本页其它图标底板同一居中口径。 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1690,15 +1624,17 @@ function formatMemberCount(count: number): string {
 .nearby-home__footer-space {
   height: 48rpx;
 }
+/* 2026-10-26 对齐理想图（附近的首页.png）：五宫格为 5 个独立浅色圆角方块、块间留白、
+   图标各带底板——拆掉整体浅色横板（白底/阴影/内边距归零），底板保留在各枚图标上 */
 .nearby-entries {
   display: flex;
   justify-content: space-between;
   gap: 8rpx;
   margin: 8rpx 0 24rpx;
-  padding: 24rpx 12rpx;
-  background: var(--c-bg-container, #FFFFFF);
-  border-radius: 32rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .nearby-entry {

@@ -67,6 +67,7 @@ const optFlag = (name, dflt) => {
 /** 写死共享目录之外还能安全跑的门禁（real 档 --full-chain 用；与泛化前同一串、同一顺序） */
 const FULL_CHAIN = [
   ["check-mp-image-styles", ["--strict"]],
+  ["check-token-refs", ["--strict"]],
   ["check-statusbar-offset", []],
   ["check-tabbar-consistency", []],
   ["check-project-rules", []],
@@ -106,7 +107,7 @@ const BANDS = {
     outName: "mp-weixin-showcase",
     stripMock: false,
     preSteps: SHOWCASE_PRE,
-    fullChainSteps: [["check-mp-image-styles", ["--strict"]], ["check-statusbar-offset", []], ["check-tabbar-consistency", []], ["check-project-rules", []], ...SHOWCASE_PRE],
+    fullChainSteps: [["check-mp-image-styles", ["--strict"]], ["check-token-refs", ["--strict"]], ["check-statusbar-offset", []], ["check-tabbar-consistency", []], ["check-project-rules", []], ...SHOWCASE_PRE],
     expectMode: "mp-weixin-showcase",
     // 展示档的数据源是真实 HTTP（.env.mp-weixin-showcase: VITE_API_MODE=real），不是 mock
     expectApiMode: "real",

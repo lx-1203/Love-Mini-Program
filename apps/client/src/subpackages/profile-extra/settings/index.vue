@@ -868,6 +868,18 @@ function handleMenuTap(item: MenuItem) {
   background: var(--c-lavender-100, #EDE9FE);
 }
 
+/* R17（样式断引用）：:578「本周安排」图标格用的就是这个类，但全仓（本页 scoped 块 +
+   styles/ + theme/ + uni.scss）`--mint` 定义 0 处 ⇒ 芯片实测无底色，同组其余芯片
+   （cream / lavender）都有底，唯独这一格是裸图标。
+   处置=补规则而非删类名：删类名等于承认「这格不该有底」，与同组设计相反，且类名本身
+   已表达清楚 mint 档语义。底色取登记处已有的绿底令牌 --c-schedule-mint
+   （theme/design-variables.scss:629 = $schedule-mint #DCEFE2，深色档由 styles/tokens.scss:339
+   翻成 #1B2E24 自动跟随）——名实相符，且本行正是「本周安排」课表开关，色语义对得上；
+   未写任何私有色值。 */
+.settings-card--mint {
+  background: var(--c-schedule-mint, #DCEFE2);
+}
+
 .menu-item__emoji-img {
   width: 36rpx;
   height: 36rpx;

@@ -36,6 +36,8 @@ import { ROUTES } from "../../../constants/routes";
 // 认证引导跳转统一走 openAppPath（含 tab 页/栈底兜底），与 campus/campus/index.vue 同源
 import { openAppPath } from "../../../utils/navigation";
 import { UI_LIMITS } from "../../../constants/limits";
+// 发布类正文统一口径（规范 §3.14）：与 village 发帖共用同一常量，不再各页抄一份字数上限
+import { POST_MAX_LENGTH } from "../../../constants/village";
 // 功能4：帖子创建话题选择器（带搜索 + 自定义创建）
 import TopicSelector from "../../../components/village/TopicSelector.vue";
 import { designTokens } from "../../../theme/tokens";
@@ -201,14 +203,12 @@ const categoryOptions: { key: CampusTopicCategory; label: string }[] = [
 ];
 
 /**
- * 内容最大字数（客户端口径，严于后端）。
- * 后端真实上限为 `@NotBlank @Size(max = 5000)`（CampusController.java:452-455），
- * 标题为 `@Size(max = 200)`（同文件 :454，本页 input maxlength=50）。
- * 取 500 与 subpackages/circles/circles/post-topic.vue:149 同构，好处是不会因长度被服务端拒；
- * 代价是长文用户被本地截断 —— 是否放宽属产品决策（取舍见本轮报告的「500 vs 后端上限」一节），
- * 本次不动数值，仅把两侧口径写清，并保证超长态可观测（内容计数器 + isOverLimit 变红）。
+ * 内容最大字数：取发布类正文的统一口径（规范 §3.14，与理想效果图「发布帖子页面.png」的 0/1000 一致），
+ * 与 village 发帖共用同一常量，避免再出现「页面一个数、store 一个数」。
+ * 后端 CampusController 的 content 是 `@NotBlank @Size(max = 5000)`，1000 不越界。
+ * 原注释声称与 circles/post-topic.vue 同取 500，实测该文件早已按 R11-L04-D09 升到 1000——口径已并轨。
  */
-const MAX_LENGTH = 500;
+const MAX_LENGTH = POST_MAX_LENGTH;
 
 /** 当前字数 */
 const currentLength = computed(() => content.value.length);

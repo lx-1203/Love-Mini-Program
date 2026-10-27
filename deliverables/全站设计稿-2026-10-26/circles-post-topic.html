@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 兴趣圈发话题页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（色值一律取 base 令牌；base 未登记的档位逐条注明真源令牌） ===== */
+.pub { position: absolute; inset: 0; background: linear-gradient(180deg, var(--c-bg-brand) 0%, var(--c-bg-page) 20%); }
+
+/* 页头：源码 .post-header 渐变 135° brand→brand-300(60%)→romance-300；
+   padding-top = --statusbar(44px) + 20rpx(10px)；padding-right = --capsule-right(7px) + 104px = 111px */
+.pub__hdr { position: absolute; top: 0; left: 0; width: 100%; z-index: 5; display: flex; align-items: center;
+  justify-content: space-between; padding: 54px 111px 12px 16px;
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 60%, var(--c-romance-300) 100%); }
+.pub__back { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 6px 10px;
+  border-radius: var(--r-full); background: rgba(255,255,255,.25); /* = --c-overlay-white-bg-mid-strong（base 未登记） */
+  font-size: var(--fs-lg); color: var(--c-text-primary); }
+.pub__title { font-size: 17px; font-weight: 700; color: var(--c-text-primary); letter-spacing: .5px; } /* 源码 34rpx 硬写 */
+.pub__spacer { width: 48px; flex: none; } /* R11-L04-D10 撤掉页头「发布」胶囊后留的同宽占位 */
+
+/* .post-body：padding 24rpx var(--page-padding) */
+.pub__body { position: absolute; top: 110px; left: 0; right: 0; bottom: 0; padding: 12px 16px; overflow: hidden; }
+
+/* 各分区卡：28rpx 内衬 / --r-xl 24rpx 圆角 / 下边 20rpx / $card-soft-shadow = 0 2rpx 16rpx --c-black-shadow-xs */
+.pcard { background: var(--c-bg-container); border-radius: var(--r-xl); padding: 14px; margin-bottom: 10px;
+  box-shadow: 0 1px 8px rgba(0,0,0,.04); }
+.pcard--img { margin-bottom: 12px; }
+.plabel { display: block; font-size: var(--fs-md); font-weight: 500; color: var(--c-text-tertiary); margin-bottom: 8px; }
+.plabel + .plabel { margin-bottom: 0; margin-top: 2px; }
+.phead { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.phead .plabel { margin-bottom: 0; }
+.phint { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+
+/* 标题输入：34rpx/600，底 --c-bg-page，2rpx transparent 框（focus 才出品牌色） */
+.ptitle { font-size: 17px; font-weight: 600; color: var(--c-text-primary); padding: 8px 10px; line-height: 1.45;
+  border-radius: var(--r-lg); background: var(--c-bg-page); border: 1px solid transparent; }
+.ptitle--ph { color: var(--c-text-placeholder); }
+/* 正文 textarea：min-height 280rpx，30rpx/1.7 */
+.parea { min-height: 140px; font-size: var(--fs-xl); line-height: 1.7; color: var(--c-text-primary);
+  background: var(--c-bg-page); padding: 10px; border-radius: var(--r-lg); border: 1px solid transparent; }
+.parea--ph { color: var(--c-text-placeholder); }
+.parea--focus { background: var(--c-bg-container); border-color: var(--c-brand); }
+/* 正文铺满上限：mp textarea 未开 auto-height ⇒ 定高 280rpx 内滚，只显首屏 */
+.parea--full { height: 140px; overflow: hidden; }
+/* 计数：右对齐 24rpx，--c-text-tertiary；isOverLimit（currentLength > MAX_LENGTH）才转 error */
+.pcnt { display: flex; justify-content: flex-end; margin-top: 8px; font-size: var(--fs-base); color: var(--c-text-tertiary); }
+.pcnt--over { color: var(--c-error); }
+
+/* 发布到：两张等宽 chip */
+.ptargets { display: flex; gap: 8px; }
+.ptarget { flex: 1; display: flex; align-items: center; justify-content: center; padding: 10px 0;
+  border-radius: var(--r-lg); border: 1px solid var(--c-border-light); background: var(--c-bg-page); }
+.ptarget--on { background: var(--c-brand-50); border-color: var(--c-brand-800); }
+.ptarget--on .ptarget__t { color: var(--c-brand-800); }
+.ptarget--dis { opacity: .5; }
+.ptarget__t { font-size: var(--fs-md); font-weight: 500; color: var(--c-text-secondary); }
+/* 兴趣分类 chip */
+.pcats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.pcat { padding: 6px 12px; border-radius: var(--r-full); border: 1px solid var(--c-border-light); background: var(--c-bg-page); }
+.pcat__t { font-size: var(--fs-sm); font-weight: 500; color: var(--c-text-secondary); }
+.pcat--on { background: var(--c-brand-50); border-color: var(--c-brand-800); }
+.pcat--on .pcat__t { color: var(--c-brand-800); font-weight: 700; }
+/* 已选目标名 */
+.pname { margin-top: 10px; padding: 8px 10px; border-radius: var(--r-lg); background: var(--c-bg-page); }
+.pname__t { font-size: var(--fs-md); font-weight: 600; color: var(--c-brand); }
+
+/* 话题标签 chip（选中＝品牌实底白字） */
+.ptags { display: flex; flex-wrap: wrap; gap: 6px; }
+.ptag { padding: 6px 12px; border-radius: var(--r-full); border: 1px solid var(--c-border-light); background: var(--c-bg-page); }
+.ptag__t { font-size: var(--fs-md); font-weight: 500; color: var(--c-text-secondary); }
+.ptag--on { background: var(--c-brand); border-color: var(--c-brand); }
+.ptag--on .ptag__t { color: var(--c-neutral-0); font-weight: 700; }
+
+/* 喜爱开关行 */
+.pfav { display: flex; align-items: center; justify-content: space-between; }
+.pfav__l { display: flex; flex-direction: column; gap: 3px; }
+.pfav__t { font-size: var(--fs-md); font-weight: 600; color: var(--c-text-primary); }
+.pfav__d { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.sw { width: 44px; height: 26px; border-radius: var(--r-full); background: var(--c-border-strong); position: relative; flex: none; }
+.sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--c-neutral-0); box-shadow: var(--s-sm); }
+.sw--on { background: var(--c-brand); }
+.sw--on::after { left: 20px; }
+.sw--dis { opacity: .5; }
+
+/* 配图九宫：列宽 (100% - 32rpx)/3，1:1，gap 16rpx */
+.pimgs { display: flex; flex-wrap: wrap; gap: 8px; }
+.pimg { position: relative; width: calc((100% - 16px) / 3); padding-top: calc((100% - 16px) / 3);
+  border-radius: var(--r-lg); overflow: hidden; background: var(--c-bg-page); }
+.pimg img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pimg__x { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--c-gradient-mask-strong); color: var(--c-text-inverse); font-size: var(--fs-lg);
+  font-weight: 300; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.padd { position: relative; width: calc((100% - 16px) / 3); padding-top: calc((100% - 16px) / 3);
+  border-radius: var(--r-lg); border: 1px dashed var(--c-border-light); background: var(--c-bg-page); }
+.padd__in { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.padd__p { font-size: var(--fs-7xl); font-weight: 300; line-height: 1; color: var(--c-text-tertiary); }
+.padd__t { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+
+/* 关联活动（帖子模式） */
+.pact-add { display: flex; align-items: center; gap: 4px; padding: 8px 10px; border-radius: var(--r-lg);
+  border: 1px dashed var(--c-brand-300); background: #F0FDF9; /* = --c-bg-brand-soft（base 未登记） */ }
+.pact-add__i { font-size: 16px; font-weight: 600; color: var(--c-brand-500); line-height: 1; }
+.pact-add__t { font-size: var(--fs-base); font-weight: 500; color: var(--c-brand-500); }
+.pact { display: flex; gap: 10px; align-items: center; border-radius: var(--r-lg); overflow: hidden;
+  background: var(--c-bg-page); border: var(--c-border-card); }
+.pact__cover { width: 62px; height: 62px; flex: none; object-fit: cover; }
+.pact__b { min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 8px 0; }
+.pact__t { font-size: var(--fs-md); font-weight: 600; color: var(--c-text-primary); }
+.pact__m { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.pact-sel { display: flex; flex-direction: column; gap: 6px; } /* .activity-selected */
+.pact-rm { align-self: flex-end; padding: 3px 10px; border-radius: var(--r-full);
+  border: 1px solid var(--c-border-light); }
+.pact-rm__t { font-size: 11px; color: var(--c-text-tertiary); }
+
+/* 底部主 CTA：brand-800 实底（R10-L04-D10），禁用 = status-disabled + neutral-400 描边 */
+.pcta { margin-top: 10px; padding: 14px 0; border-radius: var(--r-xl); background: var(--c-brand-800);
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px var(--c-brand-shadow-tint-strong); }
+.pcta__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-inverse); }
+.pcta--dis { background: var(--c-status-disabled); border: 1px solid var(--c-text-placeholder); box-shadow: none; }
+.pcta--dis .pcta__t { color: var(--c-text-secondary); }
+.pcta__wrap { padding: 10px 0 20px; }
+
+/* 活动选择弹层 */
+.pk { position: absolute; inset: 0; z-index: 9; background: rgba(0,0,0,.45); /* = --c-bg-overlay（base 未登记） */
+  display: flex; align-items: center; justify-content: center; }
+.pk__box { width: 320px; background: var(--c-bg-container); border-radius: var(--r-xl); padding: 10px;
+  display: flex; flex-direction: column; }
+.pk__hd { display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px;
+  border-bottom: 1px solid var(--c-border-light); }
+.pk__t { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); }
+.pk__x { font-size: var(--fs-lg); color: var(--c-text-tertiary); }
+.pk__i { display: flex; align-items: center; justify-content: space-between; padding: 8px 6px; border-radius: var(--r-lg); }
+.pk__b { display: flex; flex-direction: column; gap: 2px; }
+.pk__it { font-size: var(--fs-base); font-weight: 500; color: var(--c-text-primary); }
+.pk__im { font-size: 11px; color: var(--c-text-tertiary); }
+.pk__ck { font-size: 14px; color: var(--c-brand-500); }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格，与工程 SVG 体系一致） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>兴趣圈发话题页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/circles/circles/post-topic</code>。
+     本页是兴趣圈/村口两套发布流的共用编辑页：带 <code style="font-family:var(--mono);font-size:12.5px">?circleId</code> 从圈内「写话题」进来时
+     目标只读，不带时给「发布到 校园圈 / 兴趣圈」二选一，<code style="font-family:var(--mono);font-size:12.5px">?channel=today|school|activity</code>
+     时整页切成帖子模式并多出「关联活动」区。正文计数上限 2026-10-26 起统一到 <b>1000</b>
+     （<code style="font-family:var(--mono);font-size:12.5px">POST_MAX_LENGTH</code>，产品裁定 A，对齐规范 §3.14 与「发布帖子页面.png」）——
+     本画板把 7 态逐屏画全，作为该页的永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>circles/post-topic</b></span>
+    <span>分包 <b>circles</b>（无 tabbar）</span>
+    <span>状态 <b>7 屏</b></span>
+    <span>计数 <b>0/1000 · MAX_LENGTH=POST_MAX_LENGTH</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1845</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 7 屏</h2>
+    <p>圈内只读 / 站外二选一 / mock 增强区 / 填写中 / 帖子模式 / 达上限 / 活动弹层</p></div>
+  <div class="sec__sub">本页状态机有 7 屏，分支全部取自源码 <code>v-if</code>：
+    <code>v-if="circleId"</code>（目标只读）与 <code>v-else</code>（发布到二选一）、
+    <code>v-if="publishTarget === 'interest'"</code>（兴趣分类宫格）、
+    <code>v-if="useMock()"</code>（话题标签区 + 喜爱开关，real 档整块消失）、
+    <code>v-if="isPostMode"</code>（关联活动区）、<code>v-if="images.length &lt; MAX_IMAGES"</code>（加图瓷片）、
+    <code>v-if="showActivityPicker"</code>（活动弹层）。
+    页头无原生导航栏，返回是文字胶囊「返回」（<code>circle.postTopicBack</code>），且页头那颗「发布」已按 §3.14 撤除——
+    只剩等宽占位块，全站唯一发布出口是底部主 CTA。帧即视口：超出 812px 的内容被裁掉，被裁掉什么写在题注里，不写进画面。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">圈内进入 · 空表单（real 档）</span><span class="d">目标只读 · 0/1000 · 整页可见无裁切</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pub">
+          <div class="pub__hdr"><span class="pub__back">返回</span><span class="pub__title">发布话题</span><span class="pub__spacer"></span></div>
+          <div class="pub__body">
+            <div class="pcard"><div class="ptitle ptitle--ph">话题标题</div></div>
+            <div class="pcard">
+              <div class="parea parea--ph">分享你的想法...</div>
+              <div class="pcnt"><span>0/1000</span></div>
+            </div>
+            <div class="pcard">
+              <span class="plabel">发布到</span>
+              <span class="plabel">摄影</span>
+            </div>
+            <div class="pcard pcard--img">
+              <span class="plabel">添加图片（可选）</span>
+              <div class="pimgs">
+                <div class="padd"><div class="padd__in"><span class="padd__p">+</span><span class="padd__t">0/9</span></div></div>
+              </div>
+            </div>
+            <div class="pcta__wrap"><div class="pcta pcta--dis"><span class="pcta__t">发布话题</span></div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">站外进入 · 发布到二选一（real 档）</span><span class="d">兴趣圈降级禁用 · 0/1000 · 整页可见无裁切</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pub">
+          <div class="pub__hdr"><span class="pub__back">返回</span><span class="pub__title">发布话题</span><span class="pub__spacer"></span></div>
+          <div class="pub__body">
+            <div class="pcard"><div class="ptitle ptitle--ph">话题标题</div></div>
+            <div class="pcard">
+              <div class="parea parea--ph">分享你的想法...</div>
+              <div class="pcnt"><span>0/1000</span></div>
+            </div>
+            <div class="pcard">
+              <span class="plabel">发布到</span>
+              <div class="ptargets">
+                <div class="ptarget ptarget--on"><span class="ptarget__t">校园圈</span></div>
+                <div class="ptarget ptarget--dis"><span class="ptarget__t">兴趣圈</span></div>
+              </div>
+              <div class="pname"><span class="pname__t">已选：校园圈</span></div>
+            </div>
+            <div class="pcard pcard--img">
+              <span class="plabel">添加图片（可选）</span>
+              <div class="pimgs">
+                <div class="padd"><div class="padd__in"><span class="padd__p">+</span><span class="padd__t">0/9</span></div></div>
+              </div>
+            </div>
+            <div class="pcta__wrap"><div class="pcta pcta--dis"><span class="pcta__t">发布话题</span></div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">mock 档 · 发布到兴趣圈 · 增强区全开</span><span class="d">标签/喜爱仅 mock 渲染 · ↓裁切至标签区末行</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pub">
+          <div class="pub__hdr"><span class="pub__back">返回</span><span class="pub__title">发布话题</span><span class="pub__spacer"></span></div>
+          <div class="pub__body">
+            <div class="pcard"><div class="ptitle">求组队周末爬山</div></div>
+            <div class="pcard">
+              <div class="parea">求组队周末爬山，我出路线你出零食。</div>
+              <div class="pcnt"><span>17/1000</span></div>
+            </div>
+            <div class="pcard">
+              <span class="plabel">发布到</span>
+              <div class="ptargets">
+                <div class="ptarget"><span class="ptarget__t">校园圈</span></div>
+                <div class="ptarget ptarget--on"><span class="ptarget__t">兴趣圈</span></div>
+              </div>
+              <div class="pcats">
+                <div class="pcat"><span class="pcat__t">学习</span></div>
+                <div class="pcat pcat--on"><span class="pcat__t">运动</span></div>
+                <div class="pcat"><span class="pcat__t">音乐</span></div>
+                <div class="pcat"><span class="pcat__t">电影</span></div>
+                <div class="pcat"><span class="pcat__t">旅行</span></div>
+                <div class="pcat"><span class="pcat__t">游戏</span></div>
+                <div class="pcat"><span class="pcat__t">美食</span></div>
+                <div class="pcat"><span class="pcat__t">阅读</span></div>
+              </div>
+              <div class="pname"><span class="pname__t">已选：运动</span></div>
+            </div>
+            <div class="pcard">
+              <div class="phead"><span class="plabel">话题标签</span><span class="phint">最多选择 3 个</span></div>
+              <div class="ptags">
+                <div class="ptag"><span class="ptag__t">脱单</span></div>
+                <div class="ptag"><span class="ptag__t">学习</span></div>
+                <div class="ptag ptag--on"><span class="ptag__t">组队</span></div>
+                <div class="ptag"><span class="ptag__t">树洞</span></div>
+                <div class="ptag ptag--on"><span class="ptag__t">分享</span></div>
+                <div class="ptag"><span class="ptag__t">求助</span></div>
+                <div class="ptag"><span class="ptag__t">吐槽</span></div>
+              </div>
+            </div>
+            <div class="pcard">
+              <div class="pfav">
+                <div class="pfav__l"><span class="pfav__t">喜爱</span><span class="pfav__d">标记为喜爱内容</span></div>
+                <div class="sw sw--on"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">填写中 · 已选 4 张配图（real 档）</span><span class="d">正文 focus 态 · 43/1000 · ↓主 CTA 只露上缘</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pub">
+          <div class="pub__hdr"><span class="pub__back">返回</span><span class="pub__title">发布话题</span><span class="pub__spacer"></span></div>
+          <div class="pub__body">
+            <div class="pcard"><div class="ptitle">周末篮球缺一个大个子</div></div>
+            <div class="pcard">
+              <div class="parea parea--focus">周末在南山体育馆打了一场三对三，缺一个大个子篮板手。固定的场地、固定的时间，输赢都笑。</div>
+              <div class="pcnt"><span>43/1000</span></div>
+            </div>
+            <div class="pcard">
+              <span class="plabel">发布到</span>
+              <span class="plabel">摄影</span>
+            </div>
+            <div class="pcard pcard--img">
+              <span class="plabel">添加图片（可选）</span>
+              <div class="pimgs">
+                <div class="pimg"><img src="assets/demo/xiaoman-photo-1.png" alt=""><span class="pimg__x">×</span></div>
+                <div class="pimg"><img src="assets/demo/xiaoman-photo-2.png" alt=""><span class="pimg__x">×</span></div>
+                <div class="pimg"><img src="assets/demo/xiaoman-photo-3.png" alt=""><span class="pimg__x">×</span></div>
+                <div class="pimg"><img src="assets/demo/xiaoman-photo-4.png" alt=""><span class="pimg__x">×</span></div>
+                <div class="padd"><div class="padd__in"><span class="padd__p">+</span><span class="padd__t">4/9</span></div></div>
+              </div>
+            </div>
+            <div class="pcta__wrap"><div class="pcta"><span class="pcta__t">发布话题</span></div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">帖子模式 · ?channel=activity · 已关联活动</span><span class="d">activity-section 仅此模式出现 · ↓裁切至配图区</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pub">
+          <div class="pub__hdr"><span class="pub__back">返回</span><span class="pub__title">发布话题</span><span class="pub__spacer"></span></div>
+          <div class="pub__body">
+            <div class="pcard"><div class="ptitle">周四晚上一起去南门散步</div></div>
+            <div class="pcard">
+              <div class="parea">顺路推荐一场很轻的散步局，人不多，聊得来。</div>
+              <div class="pcnt"><span>26/1000</span></div>
+            </div>
+            <div class="pcard">
+              <span class="plabel">关联活动（发活动链接帖）</span>
+              <div class="pact-sel">
+                <div class="pact">
+                  <img class="pact__cover" src="assets/demo/xiaoman-photo-2.png" alt="">
+                  <div class="pact__b"><span class="pact__t">图书馆南门咖啡散步</span><span class="pact__m">周四 19:00-20:00 · 南门咖啡馆</span></div>
+                </div>
+                <div class="pact-rm"><span class="pact-rm__t">移除关联</span></div>
+              </div>
+            </div>
+            <div class="pcard">
+              <span class="plabel">发布到</span>
+              <span class="plabel">摄影</span>
+            </div>
+            <div class="pcard pcard--img">
+              <span class="plabel">添加图片（可选）</span>
+              <div class="pimgs">
+                <div class="pimg"><img src="assets/demo/xiaoman-photo-1.png" alt=""><span class="pimg__x">×</span></div>
+                <div class="padd"><div class="padd__in"><span class="padd__p">+</span><span class="padd__t">1/9</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">正文达上限 · 1000/1000</span><span class="d">=MAX_LENGTH 仍非超限态 · 输入框定高内滚只显首屏</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pub">
+          <div class="pub__hdr"><span class="pub__back">返回</span><span class="pub__title">发布话题</span><span class="pub__spacer"></span></div>
+          <div class="pub__body">
+            <div class="pcard"><div class="ptitle">写满一千字是一种什么体验</div></div>
+            <div class="pcard">
+              <div class="parea parea--full">这条想认真把话说完。第一次在兴趣圈里发长帖，是因为上周那场地震演练之后，我在群里问了句「有人一起走走吗」，结果真的有人回。后来我们每周四晚上都走一圈，从南门咖啡馆绕到图书馆后面那排银杏，再绕回来。走路这件事很怪，两个人并排走的时候不用一直看着对方，话反而比面对面多。我不指望这里能遇到多契合的人，只是想把「愿意出门」这件事说清楚：固定的时间、固定的路线、不查户口、不催进度，聊得来就多走一段，聊不来就在路口说再见。如果你也讨厌那种一上来就问星座问工作的局，可以在这条下面留一句你常走的路。我会一条条看，但不会全都回，因为回得慢比回得假要好。最后补一句：我不喝酒，也不抽烟，散步结束各回各的宿舍，这就是全部安排。写完这段大概用了四十分钟，中间停下来三次去倒水，也有一次差点删掉不发了。后来想想，发出来不是为了被夸，是为了让同样愿意出门的那几个人看见——看见就够了，剩下的交给路线和时间。</div>
+              <div class="pcnt"><span>1000/1000</span></div>
+            </div>
+            <div class="pcard">
+              <span class="plabel">发布到</span>
+              <span class="plabel">摄影</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">帖子模式 · 活动选择弹层（showActivityPicker）</span><span class="d">遮罩 + 320px 居中卡 · 列表取活动前 10 条</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pub">
+          <div class="pub__hdr"><span class="pub__back">返回</span><span class="pub__title">发布话题</span><span class="pub__spacer"></span></div>
+          <div class="pub__body">
+            <div class="pcard"><div class="ptitle">周四晚上一起去南门散步</div></div>
+            <div class="pcard">
+              <div class="parea">顺路推荐一场很轻的散步局，人不多，聊得来。</div>
+              <div class="pcnt"><span>26/1000</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="pk">
+          <div class="pk__box">
+            <div class="pk__hd"><span class="pk__t">选择要推荐的活动</span><span class="pk__x">×</span></div>
+            <div class="pk__i"><div class="pk__b"><span class="pk__it">图书馆南门咖啡散步</span><span class="pk__im">周四 19:00-20:00 · 南门咖啡馆</span></div><span class="pk__ck">›</span></div>
+            <div class="pk__i"><div class="pk__b"><span class="pk__it">电影社轻松线下碰面</span><span class="pk__im">周六 15:00-17:00 · 影像楼 B 厅</span></div><span class="pk__ck">›</span></div>
+            <div class="pk__i"><div class="pk__b"><span class="pk__it">周末篮球友谊赛</span><span class="pk__im">周日 10:00-12:00 · 南山体育馆</span></div><span class="pk__ck">›</span></div>
+            <div class="pk__i"><div class="pk__b"><span class="pk__it">校园音乐节</span><span class="pk__im">下周五 19:30 · 大礼堂前草坪</span></div><span class="pk__ck">›</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每类交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页五类交互件。计数与主 CTA 是本页的判定核心：两者的状态都由同一组
+    <code>currentLength / isOverLimit / title / content / isSubmitting</code> 驱动。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>正文计数 · 三态（2026-10-26 上限统一到 1000）</h3>
+      <p class="hint">分母绑定 <code>{{ currentLength }}/{{ MAX_LENGTH }}</code>，而
+        <code>const MAX_LENGTH = POST_MAX_LENGTH</code> ← <code>constants/village.ts:18</code> 再导出
+        <code>stores/village/constants.ts:20 MAX_CONTENT_LENGTH = 1000</code>。空表单必须读作 <b>0/1000</b>。</p>
+      <div class="row">
+        <div class="cell"><div style="width:186px;background:var(--c-bg-container);border-radius:var(--r-xl);padding:10px"><div class="pcnt"><span>0/1000</span></div></div><span class="lab">空 · --c-text-tertiary</span></div>
+        <div class="cell"><div style="width:186px;background:var(--c-bg-container);border-radius:var(--r-xl);padding:10px"><div class="pcnt"><span>43/1000</span></div></div><span class="lab">输入中 · 同档</span></div>
+        <div class="cell"><div style="width:186px;background:var(--c-bg-container);border-radius:var(--r-xl);padding:10px"><div class="pcnt"><span>1000/1000</span></div></div><span class="lab">=MAX_LENGTH · 仍不转红</span></div>
+        <div class="cell"><div style="width:186px;background:var(--c-bg-container);border-radius:var(--r-xl);padding:10px"><div class="pcnt pcnt--over"><span>1012/1000</span></div></div><span class="lab">isOverLimit · --c-error</span></div>
+      </div>
+      <table class="tbl" style="margin-top:14px">
+        <tr><th>条件</th><th>类名</th><th>可达性</th></tr>
+        <tr><td><code>currentLength &gt; MAX_LENGTH</code></td><td><code>.content-count--over</code></td>
+            <td>textarea 同绑 <code>:maxlength="MAX_LENGTH"</code>，键盘输入被截断在 1000 ⇒ 红态只能由
+                非键入路径（受控赋值/粘贴绕过）到达，真机极窄。画板仍保留该态，因为它是提交守卫
+                <code>isOverLimit → toast「内容不能超过1000字」</code> 的唯一视觉前兆。</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>底部主 CTA · 四态</h3>
+      <p class="hint">禁用条件 <code>!title.trim() || !content.trim() || isOverLimit || isSubmitting</code>；
+        文案 <code>isSubmitting ? common.submitting : circle.postTopicNavTitle</code>。R11-L04-D10 后页头不再有第二颗发布钮。</p>
+      <div class="row">
+        <div class="cell"><div class="pcta" style="margin-top:0"><span class="pcta__t">发布话题</span></div><span class="lab">default · brand-800</span></div>
+        <div class="cell"><div class="pcta pcta--dis" style="margin-top:0"><span class="pcta__t">发布话题</span></div><span class="lab">disabled · 空表单</span></div>
+        <div class="cell"><div class="pcta pcta--dis" style="margin-top:0"><span class="pcta__t">提交中...</span></div><span class="lab">loading（同禁用底）</span></div>
+        <div class="cell"><div class="pcta pcta--dis" style="margin-top:0"><span class="pcta__t">发布话题</span></div><span class="lab">disabled · 超字数</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>「发布到」chip · 四态</h3>
+      <p class="hint">选中档描边与文字同取 <code>--c-brand-800</code>（R10-L04-D09 可达性收口，压浅绿底 5.96:1）。</p>
+      <div class="row">
+        <div class="cell" style="width:120px"><div class="ptarget"><span class="ptarget__t">校园圈</span></div><span class="lab">未选</span></div>
+        <div class="cell" style="width:120px"><div class="ptarget ptarget--on"><span class="ptarget__t">校园圈</span></div><span class="lab">选中</span></div>
+        <div class="cell" style="width:120px"><div class="ptarget ptarget--dis"><span class="ptarget__t">兴趣圈</span></div><span class="lab">real 降级禁用</span></div>
+        <div class="cell" style="width:120px"><div class="ptarget" style="border-style:dashed;opacity:.75"><span class="ptarget__t">（不渲染）</span></div><span class="lab">带 circleId 时整块换成只读圈名</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>配图瓷片 · 三态 · 上限 9</h3>
+      <p class="hint"><code>MAX_IMAGES = 9</code>（与校园页的 6 不同，见 §04 差异清单）。加图格子受
+        <code>v-if="images.length &lt; MAX_IMAGES"</code> 约束。</p>
+      <div class="row">
+        <div class="cell" style="width:96px"><div class="padd" style="width:96px;padding-top:96px"><div class="padd__in"><span class="padd__p">+</span><span class="padd__t">0/9</span></div></div><span class="lab">空态（虚线 + 计数）</span></div>
+        <div class="cell" style="width:96px"><div class="pimg" style="width:96px;padding-top:96px"><img src="assets/demo/xiaoman-photo-1.png" alt=""><span class="pimg__x">×</span></div><span class="lab">已选（右上删除）</span></div>
+        <div class="cell" style="width:96px"><div class="padd" style="width:96px;padding-top:96px;border-style:solid;border-color:var(--c-brand);background:var(--c-brand-50)"><div class="padd__in"><span class="padd__p" style="color:var(--c-brand)">+</span><span class="padd__t" style="color:var(--c-brand-700)">按压</span></div></div><span class="lab">press-feedback 按压态</span></div>
+        <div class="cell" style="width:96px"><div style="width:96px;height:96px;border-radius:var(--r-lg);border:1px dashed var(--c-border-light);display:flex;align-items:center;justify-content:center;font-size:var(--fs-sm);color:var(--c-text-placeholder)">9/9 后<br>格子消失</div><span class="lab">达上限</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>话题标签 chip / 分类 chip · 选中态不同档</h3>
+      <p class="hint">同页两套选中语言：标签 chip 是品牌实底白字（2026-08-31 因「感知不到选中」改的），
+        分类 chip 仍是浅绿底 + brand-800 字。两者都只在 <code>useMock()</code> 下的标签区/兴趣目标下出现。</p>
+      <div class="row">
+        <div class="cell" style="width:80px"><div class="ptag"><span class="ptag__t">组队</span></div><span class="lab">标签 · 未选</span></div>
+        <div class="cell" style="width:80px"><div class="ptag ptag--on"><span class="ptag__t">组队</span></div><span class="lab">标签 · 选中（实底）</span></div>
+        <div class="cell" style="width:80px"><div class="pcat"><span class="pcat__t">运动</span></div><span class="lab">分类 · 未选</span></div>
+        <div class="cell" style="width:80px"><div class="pcat pcat--on"><span class="pcat__t">运动</span></div><span class="lab">分类 · 选中（浅底）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>喜爱开关 · 三态（仅 mock 渲染）</h3>
+      <p class="hint">uni <code>&lt;switch&gt;</code> 的 <code>color</code> 走 <code>designTokens.color.brand[500]</code>；
+        MP 原生开关底为系统灰，画板按 <code>--c-border-strong</code> 近似。</p>
+      <div class="row">
+        <div class="cell"><div class="sw"></div><span class="lab">off</span></div>
+        <div class="cell"><div class="sw sw--on"></div><span class="lab">on · --c-brand</span></div>
+        <div class="cell"><div class="sw sw--dis"></div><span class="lab">real 档整块不渲染（无此态）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">页头渐变 + 卡片白 + 品牌绿族；未引入 base 之外的新色（缺登记档见 §04）。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">页头渐变起点 · 标签选中底 · 已选目标名</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#75E1B7"></span><div><div class="sw__n">主色 300<code>--c-brand-300</code></div><div class="sw__u">页头渐变 60% 段 · 活动虚线框</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF8DA1"></span><div><div class="sw__n">浪漫 300<code>--c-romance-300</code></div><div class="sw__u">页头渐变终点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">底部主 CTA · chip 选中描边/文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3;border:1px solid #DDE3E0"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">chip 选中底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FBF2"></span><div><div class="sw__n">品牌页底<code>--c-bg-brand</code></div><div class="sw__u">页面渐变首段（0%→20% 落到 --c-bg-page）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页底<code>--c-bg-page</code></div><div class="sw__u">输入区底 · 未选 chip 底 · 加图格子</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#DCE5E2"></span><div><div class="sw__n">禁用底<code>--c-status-disabled</code></div><div class="sw__u">主 CTA 禁用（+ neutral-400 描边成轮廓）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">isOverLimit 计数红</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">页头标题源码硬写 34rpx（无对应 --fs 档），画板按真值 17px 落。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">34rpx 17/700 硬写</span><span class="type__p" style="font-size:17px;font-weight:700">发布话题</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">话题标题（输入内容本体）</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/400</span><span class="type__p" style="font-size:15px;font-weight:400">分享你的想法...</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/500</span><span class="type__p" style="font-size:13px;font-weight:500;color:var(--c-text-tertiary)">发布到 · 添加图片（可选）</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px;font-weight:400;color:var(--c-text-tertiary)">0/1000 · 内容计数</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-placeholder)">最多选择 3 个 · 标记为喜爱内容</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。卡片内衬 28rpx、分区下边 20rpx 为源码硬写档，无对应 <code>--sp-*</code>。</p>
+      <div class="space">
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>28rpx（卡内衬）</b><i style="width:14px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-4 8rpx</b><i style="width:4px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>12rpx · 弹层内输入</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 输入区 · chip · 配图</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 分区卡 · 主 CTA</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>返回胶囊 · 标签 chip</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材与差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 · 已知差异</h2><p>含与同族「校园发话题页」的差异清单</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/xiaoman-photo-1.png" alt="" style="height:190px;object-fit:cover">
+      <div class="asset__b"><b>assets/demo/xiaoman-photo-1..4.png</b>
+        <p>已选配图位（F04 四张、F05 一张）。按规范 §8，照片位不许留灰占位：封面裁切、图片密度、右上删除钮的压图关系正是像素比对的主要对象。</p>
+        <div class="m">96×96 方格 · object-fit: cover · --r-lg</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-photo-2.png" alt="" style="height:190px;object-fit:cover">
+      <div class="asset__b"><b>ActivityCard compact 封面（F05）</b>
+        <p>帖子模式已关联活动卡复用共享 <code>ActivityCard</code>，其封面在工程里取 <code>IMAGE_PATHS.ACTIVITIES.*</code>；
+           <code>assets/demo/</code> 目前未收录圈子/活动封面池（<code>covers/circle-*.png</code> 仍在源码 static 目录），
+           本页暂以演示照片代位，见回报 NEED_ASSET。</p>
+        <div class="m">62×62 · 左封面 + 右标题/元信息</div></div></div>
+  </div>
+
+  <div class="note">
+    <b>与同族「校园发话题页」（<code>campus/campus/post-topic</code>）的差异清单</b>（两页共用同一计数常量，其余形态各走各的）：
+    <ul>
+      <li><b>页头右端：</b>本页 <b>无</b>发布钮——R11-L04-D10 按 §3.14「只保留一处发布出口」撤除页头胶囊，留 96rpx 等宽占位；
+        校园页顶栏右侧仍常驻「发布 / 发布中」白胶囊，与底部主 CTA 双出口并存。</li>
+      <li><b>返回文案：</b>本页 <code>circle.postTopicBack</code> =「返回」；校园页 <code>campus.postTopic.cancel</code> =「取消」。同一形态（白半透胶囊）两种文案。</li>
+      <li><b>正文计数：</b>两页同 <code>0/1000</code>（<code>MAX_LENGTH = POST_MAX_LENGTH</code>，2026-10-26 统一到 1000）。差异只在标题上限：本页 <code>:maxlength="POST_TITLE_MAX_LENGTH"</code> = 30，校园页硬写 <code>maxlength="50"</code>。</li>
+      <li><b>配图上限：</b>本页 <code>MAX_IMAGES = 9</code>（页内常量），格子内显示 <code>N/9</code>；校园页 <code>UI_LIMITS.PHOTO_GALLERY_MAX = 6</code>，计数移到分区标题右侧 <code>N/6</code>。</li>
+      <li><b>卡片圆角：</b>本页统一 <code>--r-xl</code>（24rpx=12px）；校园页按 R11-L05-D09 收成 <code>--card-radius</code>（40rpx=20px）。</li>
+      <li><b>底部主 CTA：</b>本页 <code>--c-brand-800</code> 实底（R10-L04-D10 收口）；校园页仍是 <code>brand→brand-300</code> mint 渐变，禁用底取 <code>--c-border-light</code>。</li>
+      <li><b>目标选择：</b>本页有「发布到 校园圈/兴趣圈」+ 8 个兴趣分类；校园页无目标选择，改为 6 个话题分类（课程交流…校友动态）宫格。</li>
+      <li><b>本页独有：</b>话题标签多选（≤3）、喜爱开关、帖子模式关联活动 + 活动弹层——且标签区/喜爱区 <code>v-if="useMock()"</code>，real 档整块不渲染。<b>校园页独有：</b>未认证横幅（<code>certGate === 'denied'</code>）、TopicSelector 话题选择器、匿名发布开关。</li>
+    </ul>
+  </div>
+
+  <div class="note" style="margin-top:14px">
+    <b>与实况的已知差异 / base 缺档登记（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>base 未登记档位：</b>本页源码用了四个 <code>board-base.css</code> 里没有的令牌，画板按真值以字面量落盘并逐条注明——
+        <code>rgba(255,255,255,.25)</code> = <code>--c-overlay-white-bg-mid-strong</code>（返回胶囊底）、
+        <code>#F0FDF9</code> = <code>--c-bg-brand-soft</code>（关联活动虚线框底）、
+        <code>rgba(0,0,0,.45)</code> = <code>--c-bg-overlay</code>（弹层遮罩）、
+        <code>0 1px 8px rgba(0,0,0,.04)</code> = <code>$card-soft-shadow</code>（<code>--c-black-shadow-xs</code>）。
+        另 <code>--c-neutral-400</code> 未登记，其与 <code>--c-text-placeholder</code> 同值 #9AA39F，画板直接取后者。</li>
+      <li><b>状态栏字色：</b><code>pages.json</code> 全局 <code>navigationBarTextStyle: "black"</code>，故画板用深色状态栏字；
+        页头文字本身也已按 R10-L04-D08 收成 <code>--c-text-primary</code>（白字压薄荷渐变只有 1.65:1）。</li>
+      <li><b>标题占位继承 600 字重：</b>本页 <code>.title-input</code> 未设 <code>placeholder-style</code>，
+        占位「话题标题」继承 600 字重（校园页已按 R12-L05-D06 收口为 400 + placeholder 色）。画板按各页源码实况分别落，不改源码。</li>
+      <li><b>「发布到」只读态复用 label 样式：</b>带 <code>circleId</code> 时圈名与「发布到」同用 <code>.section-label</code>（F01/F04/F06 可见），
+        视觉上像两行同级标签，无独立只读样式。</li>
+      <li><b>不捏造数据：</b>本页无分数/共同点位；关联活动的标题/时间/地点取自 <code>stores/activity.ts</code> 的 mock 演示条目，未自创。</li>
+      <li><b>F06 的 1000/1000 是被测状态，不是文本长度反推：</b>mp <code>&lt;textarea&gt;</code> 未开 <code>auto-height</code> ⇒
+        定高 280rpx 内滚，画板只落首段可见文本（约 400 字）并把超出部分裁在框内，计数位表达的是「已达上限」这一状态。
+        真机上再按一个字符不会变成 1001——<code>:maxlength</code> 会先截断。</li>
+      <li><b>本页在 circles 分包，无 tabbar</b>——画板若出现 tabbar 即为错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 兴趣圈发话题页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1,572,792 px，对齐 素材/理想效果图 语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

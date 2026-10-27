@@ -90,8 +90,8 @@ const groups: ShowcaseGroup[] = [
     subtitleKey: "showcase.groups.chat.subtitle",
     accent: "linear-gradient(135deg, #7C6CF0, #A78BFA)",
     items: [
-      { path: "/pages/messages/index", titleKey: "showcase.groups.chat.items.messages.title", descKey: "showcase.groups.chat.items.messages.desc", chipBg: "var(--c-tint-purple-soft, #F3EFFF)", isTab: true },
-      { path: "/subpackages/chat/chat-session/index", titleKey: "showcase.groups.chat.items.session.title", descKey: "showcase.groups.chat.items.session.desc", chipBg: "var(--c-tint-purple-soft, #F3EFFF)" },
+      { path: "/pages/messages/index", titleKey: "showcase.groups.chat.items.messages.title", descKey: "showcase.groups.chat.items.messages.desc", chipBg: "var(--c-tint-purple-soft)", isTab: true },
+      { path: "/subpackages/chat/chat-session/index", titleKey: "showcase.groups.chat.items.session.title", descKey: "showcase.groups.chat.items.session.desc", chipBg: "var(--c-tint-purple-soft)" },
     ],
   },
   {
@@ -121,10 +121,10 @@ const groups: ShowcaseGroup[] = [
     subtitleKey: "showcase.groups.commerce.subtitle",
     accent: "linear-gradient(135deg, #F59E0B, #FBBF24)",
     items: [
-      { path: "/subpackages/vip/index", titleKey: "showcase.groups.commerce.items.vip.title", descKey: "showcase.groups.commerce.items.vip.desc", chipBg: "var(--c-vip-bg-soft, #FEF3C7)" },
+      { path: "/subpackages/vip/index", titleKey: "showcase.groups.commerce.items.vip.title", descKey: "showcase.groups.commerce.items.vip.desc", chipBg: "var(--c-tint-amber-50)" },
       { path: "/subpackages/market/wallet/index", titleKey: "showcase.groups.commerce.items.wallet.title", descKey: "showcase.groups.commerce.items.wallet.desc", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
-      { path: "/subpackages/vip/promo-code", titleKey: "showcase.groups.commerce.items.promoCode.title", descKey: "showcase.groups.commerce.items.promoCode.desc", chipBg: "var(--c-vip-bg-soft, #FEF3C7)" },
-      { path: "/subpackages/vip/bills", titleKey: "showcase.groups.commerce.items.bills.title", descKey: "showcase.groups.commerce.items.bills.desc", chipBg: "var(--c-vip-bg-soft, #FEF3C7)" },
+      { path: "/subpackages/vip/promo-code", titleKey: "showcase.groups.commerce.items.promoCode.title", descKey: "showcase.groups.commerce.items.promoCode.desc", chipBg: "var(--c-tint-amber-50)" },
+      { path: "/subpackages/vip/bills", titleKey: "showcase.groups.commerce.items.bills.title", descKey: "showcase.groups.commerce.items.bills.desc", chipBg: "var(--c-tint-amber-50)" },
       { path: "/subpackages/market/shop/index", titleKey: "showcase.groups.commerce.items.shop.title", descKey: "showcase.groups.commerce.items.shop.desc", chipBg: "var(--c-tint-cream-50, #FFF8E7)" },
     ],
   },
@@ -318,7 +318,7 @@ $card-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .sc-header__subtitle {
   font-size: var(--fs-sm, 22rpx);
-  color: var(--c-overlay-white-text-soft, rgba(255, 255, 255, 0.82));
+  color: var(--c-overlay-white-text-strong);
 }
 
 .sc-header__badge {

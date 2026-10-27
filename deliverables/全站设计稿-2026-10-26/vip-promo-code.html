@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · VIP 优惠码页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 未登记令牌：按 design-variables.scss 真值 1:1 落地（base 缺档，已回报 BASE_PROBLEM） ===== */
+:root{
+  --c-accent-400: #F97316;                       /* scss :33/:292 · 页底渐变终点 */
+  --c-gold-true: #FFD700;                        /* scss :814 与 styles/tokens.scss:347 逐字同值；base 现登记 #C9A36A ⇒ BASE_PROBLEM */
+  --c-overlay-text-secondary: rgba(255, 255, 255, 0.85); /* scss :750 */
+  --c-overlay-white-bg-most: rgba(255, 255, 255, 0.96);  /* scss :920 · 分组卡/底栏底 */
+  --c-overlay-border-mid: rgba(255, 255, 255, 0.25);     /* scss :735 · hero 圆盘底 */
+  --c-red-bg-tint: rgba(239, 68, 68, 0.1);               /* scss :859 */
+  --c-red-border-tint: rgba(239, 68, 68, 0.2);           /* scss :860 */
+}
+
+/* ===== 本页专属组件（金橙渐变页） ===== */
+.ppage { position: absolute; inset: 0; overflow: hidden; padding-bottom: 100px;
+  background: linear-gradient(180deg, var(--c-gold-true) 0%, var(--c-accent-400) 100%); }
+.pnav { position: absolute; top: 44px; left: 0; width: 100%; height: 44px; z-index: 4;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 12px; }
+.pnav__back { width: 32px; height: 32px; border-radius: var(--r-full); display: flex; align-items: center;
+  justify-content: center; color: var(--c-text-inverse); font-size: var(--fs-7xl); font-weight: 300; line-height: 1; }
+.pnav__title { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-inverse); }
+.pnav__ph { width: 32px; height: 32px; flex: none; }
+
+.phero { display: flex; flex-direction: column; align-items: center; padding: 12px 16px 24px; }
+.phero__ic { width: 72px; height: 72px; border-radius: var(--r-full); background: var(--c-overlay-border-mid);
+  display: flex; align-items: center; justify-content: center; color: var(--c-text-inverse); margin-bottom: 10px; }
+.phero__ic svg { width: 36px; height: 36px; }
+.phero__t { font-size: var(--fs-4xl); font-weight: 800; color: var(--c-text-inverse); margin-bottom: 4px; }
+.phero__s { font-size: var(--fs-base); color: var(--c-overlay-text-secondary); }
+
+.psec { position: relative; z-index: 1; margin: 8px 12px 0; background: var(--c-overlay-white-bg-most);
+  border-radius: var(--r-lg); padding: 12px; box-shadow: var(--s-md); }
+.psec__t { padding: 0 0 8px; font-size: var(--fs-md); font-weight: 600; color: var(--c-text-secondary); }
+.psec--result { margin-top: 12px; }
+
+.codebox { background: var(--c-bg-secondary); border-radius: var(--r-lg); padding: 12px; }
+.codebox__v { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); letter-spacing: 2px; text-align: center; }
+.codebox__v--ph { color: var(--c-text-placeholder); font-weight: 400; letter-spacing: 0; }
+.amtbox { display: flex; align-items: baseline; gap: 4px; background: var(--c-bg-secondary); border-radius: var(--r-lg); padding: 8px 12px; }
+.amtbox__cur { font-size: var(--fs-2xl); color: var(--c-gold-true); font-weight: 700; }
+.amtbox__v { flex: 1; font-size: var(--fs-6xl); font-weight: 800; color: var(--c-text-primary); }
+
+.arow { display: flex; gap: 8px; margin: 12px 12px 0; position: relative; z-index: 1; }
+.abtn { flex: 1; padding: 12px 16px; border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-gold-true) 0%, var(--c-accent-400) 100%);
+  box-shadow: var(--s-accent); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.abtn span { font-size: var(--fs-lg); color: var(--c-text-inverse); font-weight: 700; }
+.abtn--dis { opacity: 0.5; box-shadow: none; }
+.abtn--ghost { background: var(--c-overlay-white-bg-most); box-shadow: var(--s-md); }
+.abtn--ghost span { color: var(--c-text-primary); }
+.spin { width: 13px; height: 13px; border-radius: 50%; border: 2px solid rgba(255,255,255,.4);
+  border-top-color: var(--c-text-inverse); flex: none; }
+
+.rcard { background: var(--c-bg-secondary); border-radius: var(--r-lg); padding: 8px 12px; border: 1px solid transparent; }
+.rcard--invalid { background: var(--c-red-bg-tint); border-color: var(--c-red-border-tint); }
+.rrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 0; }
+.rrow + .rrow { border-top: 0.5px solid rgba(26, 30, 28, 0.06); }
+.rrow__l { font-size: var(--fs-md); color: var(--c-text-tertiary); }
+.rrow__v { font-size: var(--fs-lg); color: var(--c-text-primary); font-weight: 600; text-align: right; }
+.rrow__v--accent { color: var(--c-romance-500); }
+.rrow__v--danger { color: var(--c-error); }
+
+.pfooter { position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; background: var(--c-overlay-white-bg-most);
+  border-top: 1px solid var(--c-border-light); padding: 8px 12px 20px; }
+.pfooter__btn { padding: 12px 0; border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-gold-true) 0%, var(--c-accent-400) 100%);
+  box-shadow: var(--s-accent); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.pfooter__btn--dis { opacity: 0.5; box-shadow: none; }
+.pfooter__btn span { font-size: var(--fs-xl); color: var(--c-text-inverse); font-weight: 700; }
+
+.mask { position: absolute; inset: 0; background: var(--c-bg-overlay); z-index: 18; }
+.modal { position: absolute; left: 37px; top: 260px; width: 300px; border-radius: var(--r-xxl);
+  overflow: hidden; background: var(--c-bg-container); box-shadow: var(--s-modal); z-index: 19; }
+.modal__hd { padding: 20px 20px 8px; text-align: center; font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.modal__bd { padding: 0 20px 16px; text-align: center; font-size: var(--fs-md); line-height: 1.6; color: var(--c-text-secondary); }
+.modal__row { display: flex; border-top: 0.5px solid var(--c-border-light); }
+.modal__b { flex: 1; height: 44px; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-lg); font-weight: 600; color: var(--c-brand-700); }
+.toast { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); z-index: 20;
+  padding: 11px 18px; border-radius: var(--r-lg); background: var(--c-overlay-strong);
+  color: var(--c-text-inverse); font-size: var(--fs-md); text-align: center; white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-ticket" viewBox="0 0 24 24"><path d="M3.5 7.5A1.6 1.6 0 0 1 5.1 5.9h13.8a1.6 1.6 0 0 1 1.6 1.6v1.9a2.1 2.1 0 0 0 0 4.2v1.9a1.6 1.6 0 0 1-1.6 1.6H5.1a1.6 1.6 0 0 1-1.6-1.6v-1.9a2.1 2.1 0 0 0 0-4.2z"/><path d="M13 6v12"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>VIP 优惠码页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/vip/promo-code</code>（输入优惠码 → 校验 → 兑换）。
+     本页状态机 5 屏取自模板三支 <code>v-if</code>：<code>validationResult</code>（<code>:271</code>，内含
+     <code>available</code> 真/假两分支与 <code>description</code> 条件行）、
+     <code>validationResult?.available</code> 决定兑换底栏（<code>:308</code>）、<code>redeemResult</code>（<code>:323</code>），
+     外加校验钮的 <code>!codeInput.trim() || store.validating</code> 禁用条件。逐屏画全作为该页永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>vip/promo-code</b></span>
+    <span>分包 <b>vip</b>（无 tabbar）</span>
+    <span>状态 <b>5 屏</b></span>
+    <span>闸门 <b>featureFlags.membershipEnabled</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 5 屏</h2>
+    <p>空码 / 已填待校验 / 校验通过 / 校验失败 / 兑换成功</p></div>
+  <div class="sec__sub">页底是 <code>linear-gradient(180deg, --c-gold → --c-accent-400)</code> 的金橙渐变（<code>:355</code>），
+    分组卡是 0.96 白浮在上面；页头自绘 <code>‹</code> 文字箭头，无原生栏、无 tabbar。
+    <strong>本页当前不可停留</strong>：<code>onLoad</code>（<code>:33-42</code>）读 <code>featureFlags.membershipEnabled=false</code>
+    即弹 toast 并 <code>navigateBack</code>／无栈时 <code>switchTab</code> 到「我的」，且模板没有封存分支 ⇒ F01–F05 全部画的是
+    <code>membershipEnabled=true</code> 的形态。F05 的兑换结果卡 + 回执弹窗叠加后总高 860px，末行按视口裁切。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">开关开启 · 空码（校验钮禁用）</span><span class="d">订单金额默认取季卡价 48 · 无结果卡</span></figcaption>
+      <div class="phone">
+        <div class="ppage">
+          <div class="pnav"><span class="pnav__back">‹</span><span class="pnav__title">优惠码</span><span class="pnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="phero">
+              <span class="phero__ic"><svg><use href="#i-ticket"/></svg></span>
+              <span class="phero__t">VIP 优惠码</span>
+              <span class="phero__s">兑换优惠，立享折扣</span>
+            </div>
+            <div class="psec"><div class="psec__t">优惠码</div>
+              <div class="codebox"><span class="codebox__v codebox__v--ph">请输入优惠码</span></div>
+            </div>
+            <div class="psec"><div class="psec__t">订单金额（元）</div>
+              <div class="amtbox"><span class="amtbox__cur">¥</span><span class="amtbox__v">48</span></div>
+            </div>
+            <div class="arow">
+              <span class="abtn abtn--dis"><span>校验</span></span>
+              <span class="abtn abtn--ghost"><span>重置</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">开关开启 · 已填待校验</span><span class="d">钮解禁 · 结果卡仍未出</span></figcaption>
+      <div class="phone">
+        <div class="ppage">
+          <div class="pnav"><span class="pnav__back">‹</span><span class="pnav__title">优惠码</span><span class="pnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="phero">
+              <span class="phero__ic"><svg><use href="#i-ticket"/></svg></span>
+              <span class="phero__t">VIP 优惠码</span>
+              <span class="phero__s">兑换优惠，立享折扣</span>
+            </div>
+            <div class="psec"><div class="psec__t">优惠码</div>
+              <div class="codebox"><span class="codebox__v">CAMPUS10</span></div>
+            </div>
+            <div class="psec"><div class="psec__t">订单金额（元）</div>
+              <div class="amtbox"><span class="amtbox__cur">¥</span><span class="amtbox__v">48</span></div>
+            </div>
+            <div class="arow">
+              <span class="abtn"><span>校验</span></span>
+              <span class="abtn abtn--ghost"><span>重置</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">开关开启 · 校验通过</span><span class="d">结果卡 5 行 · ↓ 末行「应付金额」被固定底栏压位</span></figcaption>
+      <div class="phone">
+        <div class="ppage">
+          <div class="pnav"><span class="pnav__back">‹</span><span class="pnav__title">优惠码</span><span class="pnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="phero">
+              <span class="phero__ic"><svg><use href="#i-ticket"/></svg></span>
+              <span class="phero__t">VIP 优惠码</span>
+              <span class="phero__s">兑换优惠，立享折扣</span>
+            </div>
+            <div class="psec"><div class="psec__t">优惠码</div>
+              <div class="codebox"><span class="codebox__v">CAMPUS10</span></div>
+            </div>
+            <div class="psec"><div class="psec__t">订单金额（元）</div>
+              <div class="amtbox"><span class="amtbox__cur">¥</span><span class="amtbox__v">48</span></div>
+            </div>
+            <div class="arow">
+              <span class="abtn"><span>校验</span></span>
+              <span class="abtn abtn--ghost"><span>重置</span></span>
+            </div>
+            <div class="psec psec--result"><div class="psec__t">校验结果</div>
+              <div class="rcard">
+                <div class="rrow"><span class="rrow__l">优惠码</span><span class="rrow__v">CAMPUS10</span></div>
+                <div class="rrow"><span class="rrow__l">类型</span><span class="rrow__v">满减</span></div>
+                <div class="rrow"><span class="rrow__l">描述</span><span class="rrow__v">立减 10 元</span></div>
+                <div class="rrow"><span class="rrow__l">优惠金额</span><span class="rrow__v rrow__v--accent">¥10.00</span></div>
+                <div class="rrow"><span class="rrow__l">应付金额</span><span class="rrow__v rrow__v--accent">¥38.00</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="pfooter"><div class="pfooter__btn"><span>兑换</span></div></div>
+        </div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">开关开启 · 校验失败</span><span class="d">卡转红底 · 描述/金额三行消失 · 无兑换栏</span></figcaption>
+      <div class="phone">
+        <div class="ppage">
+          <div class="pnav"><span class="pnav__back">‹</span><span class="pnav__title">优惠码</span><span class="pnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="phero">
+              <span class="phero__ic"><svg><use href="#i-ticket"/></svg></span>
+              <span class="phero__t">VIP 优惠码</span>
+              <span class="phero__s">兑换优惠，立享折扣</span>
+            </div>
+            <div class="psec"><div class="psec__t">优惠码</div>
+              <div class="codebox"><span class="codebox__v">EXPIRED</span></div>
+            </div>
+            <div class="psec"><div class="psec__t">订单金额（元）</div>
+              <div class="amtbox"><span class="amtbox__cur">¥</span><span class="amtbox__v">48</span></div>
+            </div>
+            <div class="arow">
+              <span class="abtn"><span>校验</span></span>
+              <span class="abtn abtn--ghost"><span>重置</span></span>
+            </div>
+            <div class="psec psec--result"><div class="psec__t">校验结果</div>
+              <div class="rcard rcard--invalid">
+                <div class="rrow"><span class="rrow__l">优惠码</span><span class="rrow__v">EXPIRED</span></div>
+                <div class="rrow"><span class="rrow__l">类型</span><span class="rrow__v">满减</span></div>
+                <div class="rrow"><span class="rrow__l">原因</span><span class="rrow__v rrow__v--danger">优惠码已过期或不可用</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">开关开启 · 兑换成功</span><span class="d">回执弹窗 + 兑换结果卡 · ↓ 裁切至结果卡末行</span></figcaption>
+      <div class="phone">
+        <div class="ppage">
+          <div class="pnav"><span class="pnav__back">‹</span><span class="pnav__title">优惠码</span><span class="pnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="phero">
+              <span class="phero__ic"><svg><use href="#i-ticket"/></svg></span>
+              <span class="phero__t">VIP 优惠码</span>
+              <span class="phero__s">兑换优惠，立享折扣</span>
+            </div>
+            <div class="psec"><div class="psec__t">优惠码</div>
+              <div class="codebox"><span class="codebox__v">CAMPUS10</span></div>
+            </div>
+            <div class="psec"><div class="psec__t">订单金额（元）</div>
+              <div class="amtbox"><span class="amtbox__cur">¥</span><span class="amtbox__v">48</span></div>
+            </div>
+            <div class="arow">
+              <span class="abtn"><span>校验</span></span>
+              <span class="abtn abtn--ghost"><span>重置</span></span>
+            </div>
+            <div class="psec psec--result"><div class="psec__t">校验结果</div>
+              <div class="rcard">
+                <div class="rrow"><span class="rrow__l">优惠码</span><span class="rrow__v">CAMPUS10</span></div>
+                <div class="rrow"><span class="rrow__l">类型</span><span class="rrow__v">满减</span></div>
+                <div class="rrow"><span class="rrow__l">描述</span><span class="rrow__v">立减 10 元</span></div>
+                <div class="rrow"><span class="rrow__l">优惠金额</span><span class="rrow__v rrow__v--accent">¥10.00</span></div>
+                <div class="rrow"><span class="rrow__l">应付金额</span><span class="rrow__v rrow__v--accent">¥38.00</span></div>
+              </div>
+            </div>
+            <div class="psec psec--result"><div class="psec__t">兑换结果</div>
+              <div class="rcard">
+                <div class="rrow"><span class="rrow__l">状态</span><span class="rrow__v rrow__v--accent">兑换成功</span></div>
+                <div class="rrow"><span class="rrow__l">优惠金额</span><span class="rrow__v">¥10.00</span></div>
+                <div class="rrow"><span class="rrow__l">应付金额</span><span class="rrow__v">¥38.00</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="pfooter"><div class="pfooter__btn pfooter__btn--dis"><span class="spin"></span><span>兑换中...</span></div></div>
+          <div class="mask"></div>
+          <div class="modal">
+            <div class="modal__hd">兑换成功</div>
+            <div class="modal__bd">优惠金额：¥10.00<br>应付金额：¥38.00</div>
+            <div class="modal__row"><span class="modal__b">确认</span></div>
+          </div>
+        </div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">四类件：优惠码输入（含格式轻校验）、订单金额输入、校验/重置钮、结果卡（可用/不可用两型 + 条件行）。
+    兑换底栏是「只在可用时存在」的节点，缺它即回归。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>优惠码输入 · 四态</h3>
+      <p class="hint"><code>maxlength="32"</code>，但轻校验正则只收 <code>^[A-Za-z0-9-]{4,24}$</code>（<code>:105</code>）⇒
+        <strong>25–32 位能输进去、校验时被拒</strong>（在册不一致）。展示值一律 <code>trim().toUpperCase()</code> 后回显。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="codebox"><span class="codebox__v codebox__v--ph">请输入优惠码</span></div><span class="lab">placeholder</span></div>
+        <div class="cell" style="width:186px"><div class="codebox"><span class="codebox__v">CAMPUS10</span></div><span class="lab">已填（18px/700 + 2px 字距，居中）</span></div>
+        <div class="cell" style="width:186px"><div class="codebox"><span class="codebox__v">AB</span></div><span class="lab">格式不足 4 位 → toast「优惠码格式不正确（4-24 位字母/数字/-）」</span></div>
+        <div class="cell" style="width:186px"><div class="codebox"><span class="codebox__v">CAMPUS10</span></div><span class="lab">校验中：输入框不禁用，钮转「校验中...」并禁用</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>订单金额输入 · 三态</h3>
+      <p class="hint">默认值 <code>VIP_PLANS.find(p=&gt;p.id==='quarterly').price</code> = <strong>48</strong>（<code>:69</code>，R4-00117 从套餐配置取，不再硬编码）；
+        单位「元」，页面内 <code>×100</code> 折算成分校验。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="amtbox"><span class="amtbox__cur">¥</span><span class="amtbox__v">48</span></div><span class="lab">default（季卡价）</span></div>
+        <div class="cell" style="width:186px"><div class="amtbox"><span class="amtbox__cur">¥</span><span class="amtbox__v">0</span></div><span class="lab">≤0 或非数字 → toast「订单金额无效」，不发请求</span></div>
+        <div class="cell" style="width:186px"><div class="amtbox"><span class="amtbox__cur">¥</span><span class="amtbox__v">5</span></div><span class="lab">小于优惠额 → 优惠额被 <code>Math.min(1000, base)</code> 截到 ¥5.00</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>校验 / 重置 / 兑换 钮 · 全态</h3>
+      <p class="hint">校验钮禁用条件只有 <code>!codeInput.trim() || store.validating</code>——
+        <strong>格式不合法时钮仍可点</strong>（点击后才弹 toast），这是本页最容易误判的一处。</p>
+      <div class="row">
+        <div class="cell" style="width:150px"><span class="abtn"><span>校验</span></span><span class="lab">校验 default（金橙渐变）</span></div>
+        <div class="cell" style="width:150px"><span class="abtn abtn--dis"><span>校验</span></span><span class="lab">校验 disabled（空码 / validating，opacity .5）</span></div>
+        <div class="cell" style="width:150px"><span class="abtn"><span class="spin"></span><span>校验中...</span></span><span class="lab">validating 文案档</span></div>
+        <div class="cell" style="width:150px"><span class="abtn abtn--ghost"><span>重置</span></span><span class="lab">重置（0.96 白底 + 主文字色）</span></div>
+        <div class="cell" style="width:150px"><span class="abtn abtn--dis"><span>兑换</span></span><span class="lab">兑换 redeeming（opacity .5）</span></div>
+        <div class="cell" style="width:150px"><span class="abtn" style="transform:scale(.96)"><span>校验</span></span><span class="lab">pressed（hover 0.96）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>结果卡 · 两型 + 条件行</h3>
+      <p class="hint">同一张卡按 <code>available</code> 换底与换行：<code>description</code> / <code>优惠金额</code> / <code>应付金额</code>
+        三行只在可用时出现，<code>原因</code> 行只在不可用时出现（<code>:286-303</code>）。</p>
+      <div class="row">
+        <div class="cell" style="width:210px"><div class="rcard">
+          <div class="rrow"><span class="rrow__l">优惠码</span><span class="rrow__v">CAMPUS10</span></div>
+          <div class="rrow"><span class="rrow__l">类型</span><span class="rrow__v">满减</span></div>
+          <div class="rrow"><span class="rrow__l">描述</span><span class="rrow__v">立减 10 元</span></div>
+          <div class="rrow"><span class="rrow__l">优惠金额</span><span class="rrow__v rrow__v--accent">¥10.00</span></div>
+          <div class="rrow"><span class="rrow__l">应付金额</span><span class="rrow__v rrow__v--accent">¥38.00</span></div>
+        </div><span class="lab">available=true（5 行）</span></div>
+        <div class="cell" style="width:210px"><div class="rcard rcard--invalid">
+          <div class="rrow"><span class="rrow__l">优惠码</span><span class="rrow__v">EXPIRED</span></div>
+          <div class="rrow"><span class="rrow__l">类型</span><span class="rrow__v">满减</span></div>
+          <div class="rrow"><span class="rrow__l">原因</span><span class="rrow__v rrow__v--danger">优惠码已过期或不可用</span></div>
+        </div><span class="lab">available=false（3 行 + 红底描边）</span></div>
+      </div>
+      <table class="tbl" style="margin-top:12px">
+        <tr><th>字段</th><th>取值</th><th>口径</th></tr>
+        <tr><td>类型</td><td><code>discountType==='AMOUNT'</code> → 满减，否则 折扣</td><td>mock 恒返 AMOUNT ⇒ 画板不出「折扣」档</td></tr>
+        <tr><td>优惠金额</td><td><code>discountAmount/100</code> 保留两位</td><td>mock 固定 <code>min(1000, base)</code> 分 = ¥10.00</td></tr>
+        <tr><td>应付金额</td><td><code>payableAmount ?? orderAmountCents</code></td><td>mock = base − discount = ¥38.00</td></tr>
+        <tr><td>原因</td><td><code>reason || vip.promoCodeInvalid</code></td><td>mock 写死「优惠码已过期或不可用」（非 i18n 串）</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">页底是全站唯一「金→橙」整页渐变；分组卡用 0.96 白浮于渐变之上。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#FFD700"></span><div><div class="sw__n">金<code>--c-gold</code>（真值）</div><div class="sw__u">页底起点 · 钮渐变起点 · ¥ 符号 —— base 现登记 #C9A36A ⇒ BASE_PROBLEM</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F97316"></span><div><div class="sw__n">强调 400<code>--c-accent-400</code></div><div class="sw__u">页底终点 · 钮渐变终点（base 未登记）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#D1F5E7;border:1px solid #DDE3E0"></span><div><div class="sw__n">次级底<code>--c-bg-secondary</code></div><div class="sw__u">输入盒 / 结果卡底（金页上的浅绿块，在册不协调点）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(255,255,255,.96);border:1px solid #DDE3E0"></span><div><div class="sw__n">近白<code>--c-overlay-white-bg-most</code></div><div class="sw__u">分组卡 · 底栏 · 重置钮（base 未登记）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(255,255,255,.25);border:1px solid #C2CAC6"></span><div><div class="sw__n">白透边<code>--c-overlay-border-mid</code></div><div class="sw__u">hero 圆盘底（base 未登记）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫 500<code>--c-romance-500</code></div><div class="sw__u">优惠/应付金额 · 兑换成功状态字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.4)"></span><div><div class="sw__n">红透底<code>--c-red-bg-tint</code></div><div class="sw__u">不可用结果卡底（边 --c-red-border-tint，base 未登记）</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-6xl 24/800</span><span class="type__p" style="font-size:24px;font-weight:800">48</span></div>
+        <div class="type__i"><span class="type__m">--fs-4xl 20/800</span><span class="type__p" style="font-size:20px;font-weight:800">VIP 优惠码</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700;letter-spacing:2px">CAMPUS10</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700;color:var(--c-gold-true)">¥</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/700</span><span class="type__p" style="font-size:15px;font-weight:700">兑换</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">立减 10 元 · ¥38.00 · 校验</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400·600</span><span class="type__p" style="font-size:13px;font-weight:600;color:var(--c-text-secondary)">优惠码 · 订单金额（元） · 校验结果</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px;font-weight:400;color:var(--c-overlay-text-secondary)">兑换优惠，立享折扣</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>16rpx（分组上边距）</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>24rpx（分组左右/内衬）</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>48rpx（hero 下内衬）</b><i style="width:24px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 分组卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>三枚按钮</div>
+      </div>
+      <p class="hint" style="margin-top:14px">导航栏 44px、hero 圆盘 72px（内图 36px）、输入盒内衬 12px、
+        钮内衬 <code>24rpx 32rpx</code>=12/16px、底栏 <code>16rpx 24rpx</code> + safe-area、页面 <code>padding-bottom:200rpx</code>=100px。</p>
+      <p class="hint" style="margin-top:6px">注：输入盒/结果卡/分组卡三处源码都写 <code>var(--r-lg, 16rpx)</code>——
+        兜底 16rpx(8px) 是过期字面量，真值 <code>--r-lg</code>=20rpx=<strong>10px</strong>；画板一律按真值 10px 落位（已知机制 §2）。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>本页无照片位；hero 图标为 SVG 素材，画板用描边替身</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:120px;object-fit:contain">
+      <div class="asset__b"><b>ICONS_EMOJI.TICKET → #i-ticket</b>
+        <p>hero 主视觉（<code>:45</code> <code>heroIcon = IMAGE_PATHS.ICONS_EMOJI.TICKET</code>，注释「emoji 替换为 SVG」），
+           真源 <code>static/assets/icons/common/ticket.svg</code>，压在 0.25 白圆盘上。画板按 §4 用页内描边替身。</p>
+        <div class="m">36px · 非素材缺口</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:120px;object-fit:contain">
+      <div class="asset__b"><b>‹ 文字箭头（非素材）</b>
+        <p>返回件是 <code>&lt;text&gt;‹&lt;/text&gt;</code> 字形 28px/300，色档 <code>--c-text-inverse</code>（0.95 白）压在 #FFD700 上 ≈ 1.2:1，
+           全站最低的一处导航可达性；画板照实况画，登记不修。</p>
+        <div class="m">--fs-7xl 28px · 非素材缺口</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异 + 数值口径（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>当前默认态是「重定向」，本画板五屏全部画开关开启态。</b>判据 <code>vip/promo-code.vue:33-42</code>：
+        <code>onLoad</code> 读 <code>featureFlags.membershipEnabled</code>（<code>config/feature-flags.ts:40</code> 硬编码 <code>false</code>）
+        → toast <code>vip.membershipDisabled</code>「会员功能暂未开放」→ 有栈 <code>navigateBack()</code>、无栈 <code>switchTab('/pages/profile/index')</code>。
+        这与 market 三页的 <code>appConfig.isCommerceOn()</code>（后端下发 <code>commerce.*</code>、封存在页内渲染白卡）<strong>是两套闸</strong>；
+        本页模板没有白卡分支，所以「封存态」在画板上的唯一真实记录就是「进不去」。</li>
+      <li><b>¥48 / ¥10.00 / ¥38.00 三个数的口径各不相同：</b>
+        ① <strong>¥48 = 前端配置真值</strong>——订单金额默认值取 <code>VIP_PLANS</code> 季卡 price（<code>:69</code>，R4-00117），
+        与后端订单价需人工保持一致（<code>config/vip-plans.ts</code> 头注 R2-00134）；
+        ② <strong>¥10.00 / ¥38.00 = mock 分支产物</strong>——<code>stores/promo-code.ts:116-128</code>
+        对任意非 <code>INVALID/EXPIRED</code> 码恒返 <code>discountAmount=min(1000, base)</code>、
+        <code>payableAmount=base−discount</code>、<code>description:"立减 10 元"</code>；
+        真环境由 <code>POST /vip/promo-codes/validate</code> 按后台登记的券面额下发 ⇒
+        <strong>画板上的优惠/应付两数是演示态推导值，不得当后端真值验收</strong>。</li>
+      <li><b>「优惠码已过期或不可用」是 mock 硬编码中文串</b>（<code>promo-code.ts:111</code>），不走 i18n；
+        i18n 侧对应文案是 <code>vip.promoCodeInvalid</code>「优惠码不可用」——两档不同源，画板按 mock 实况取前者并登记。</li>
+      <li><b>兑换成功后页面同时挂两张卡</b>：校验结果（<code>validationResult</code> 仍在）+ 兑换结果（<code>redeemResult</code>），
+        再叠 <code>uni.showModal</code> 回执（<code>vip.promoCodeRedeemSuccessContent</code> 插值，确认钮 <code>common.confirm</code>「确认」）。
+        两卡 + hero 合计 860px &gt; 812px ⇒ F05 按视口裁切，裁切说明只写在题注。</li>
+      <li><b>在册不一致三条（照实况画，不修）：</b>
+        ① 输入框 <code>maxlength=32</code> 与轻校验 <code>{4,24}</code> 不同档；
+        ② 输入盒/结果卡圆角写 <code>var(--r-lg, 16rpx)</code>，真值 20rpx=10px 与兜底 16rpx=8px 不同值（画板取真值，兜底属过期字面量）；
+        ③ 金底上白字（页头、hero 标题、钮文字）多处 &lt; 3:1，而 <code>.footer__btn-text</code> 用 0.95 白压金橙渐变——
+        与 vip/index 的 <code>--c-text-vip-dark</code> 深字档不同写法；
+        ④ 订单金额的 <code>¥</code> 取 <code>--c-gold</code> 压在 <code>--c-bg-secondary</code> #D1F5E7 浅绿块上 ≈ 1.1:1，
+        画板上几乎不可见（F01–F05 同形），属令牌配对问题，登记不修。</li>
+      <li><b>BASE_PROBLEM（base 缺档 / 错档，本页按 scss 真值 1:1 落字面量）：</b>
+        <code>--c-gold</code> 错档（base #C9A36A vs scss:814 / tokens.scss:347 = #FFD700，<strong>本页整页底色依赖它</strong>）；
+        缺档 <code>--c-accent-400</code>(#F97316)、<code>--c-overlay-white-bg-most</code>(.96)、
+        <code>--c-overlay-border-mid</code>(.25)、<code>--c-overlay-text-secondary</code>(.85)、
+        <code>--c-red-bg-tint</code>(rgba(239,68,68,.1))、<code>--c-red-border-tint</code>(rgba(239,68,68,.2))。</li>
+      <li>本页在 vip 分包、<code>navigationStyle: custom</code>：<strong>无原生导航栏、无 tabbar</strong>。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · VIP 优惠码页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

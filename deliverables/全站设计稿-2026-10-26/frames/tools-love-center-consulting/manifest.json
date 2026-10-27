@@ -1,0 +1,37 @@
+{
+  "schema": "design-board-shoot/v1",
+  "board": "tools-love-center-consulting.html",
+  "dsf": 2.273,
+  "results": [
+    {
+      "id": "F01",
+      "title": "封存态 · commerce.consult=false",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\tools-love-center-consulting\\F01.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F02",
+      "title": "未封存 · 未配 H5",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\tools-love-center-consulting\\F02.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F03",
+      "title": "未封存 · 已配 H5 · web-view 接管",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\tools-love-center-consulting\\F03.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    }
+  ]
+}

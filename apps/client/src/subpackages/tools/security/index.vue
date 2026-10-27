@@ -891,8 +891,12 @@ async function submitDeleteAccount(): Promise<void> {
       </view>
     </view>
 
-    <!-- 注销凭据弹层（第二层：输入「注销」确认文字 + 旧密码，3-E） -->
-    <view v-if="showDeactivateModal" class="sec-modal-mask" @tap="showDeactivateModal = false">
+    <!-- 注销凭据弹层（第二层：输入「注销」确认文字 + 旧密码，3-E）
+         这一层直通永久删除，遮罩不可关：语义对齐 components/common/BottomSheet.vue:36 的
+         maskClosable=false（本页弹层是内联 view，不带那个 prop），做法按同仓
+         components/discover/WhisperUnlockSheet.vue:147 的关键态口径——遮罩上只吞掉点击、
+         不给关闭绑定，退出走「取消」钮。第一层（注销预告）维持点遮罩可关，它无不可逆后果。 -->
+    <view v-if="showDeactivateModal" class="sec-modal-mask" @tap.stop>
       <view class="sec-modal" @tap.stop>
         <text class="sec-modal__title">{{ t('security.deleteAccount') }}</text>
         <text class="sec-modal__body">{{ t('security.deleteTypeHint') }}</text>

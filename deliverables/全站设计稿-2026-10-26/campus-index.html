@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 校园圈私域主页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 令牌；base 未登记的令牌写成 var(--x, 真值) 形态，
+   真值逐字抄自 apps/client/src/theme/design-variables.scss v4.0.0，见 §04 note） ===== */
+.cx { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--c-bg-page); }
+
+/* 页头：无原生导航栏，页面自画渐变带（padding = statusbar + 20rpx / 32rpx / 28rpx） */
+.cx-hdr { padding: 54px 16px 14px; flex: none;
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 50%, var(--c-romance-300) 100%); }
+.cx-top { display: flex; align-items: center; gap: 8px; }
+.cx-back { width: 44px; height: 44px; flex: none; border-radius: var(--r-full); display: flex;
+  align-items: center; justify-content: center; background: var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2));
+  font-size: 24px; line-height: 1; color: var(--c-text-primary); }
+.cx-school { display: flex; align-items: center; gap: 6px; }
+.cx-school__ic { width: 20px; height: 20px; color: var(--c-text-primary); flex: none; }
+.cx-school__name { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); }
+.cx-badge { padding: 3px 10px; border-radius: var(--r-full); flex: none;
+  background: var(--c-overlay-white-bg-mid-strong, rgba(255, 255, 255, 0.25)); }
+.cx-badge__t { font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-primary); }
+.cx-badge--ver { background: var(--c-overlay-white-bg-strong-mid, rgba(255, 255, 255, 0.35)); }
+.cx-badge--unver { background: var(--c-overlay-bg-light, rgba(255, 255, 255, 0.2)); }
+.cx-badge--pending { background: var(--c-state-ongoing-bg, #FFD479); }
+.cx-badge--rejected { background: var(--c-red-border-tint, rgba(239, 68, 68, 0.2)); }
+
+/* 认证状态拉取失败条（v-if="certificationError"，与门链并列、独立渲染） */
+.cx-errbar { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 10px 12px 0; padding: 8px 12px; border-radius: var(--r-lg); flex: none;
+  background: var(--c-error-bg-tint, rgba(229, 69, 77, 0.1)); }
+.cx-errbar__t { flex: 1; min-width: 0; font-size: var(--fs-md); line-height: 1.5; color: var(--c-error); }
+.cx-errbar__btn { flex: none; padding: 4px 12px; border-radius: var(--r-full); font-size: var(--fs-md);
+  font-weight: 600; color: var(--c-text-inverse); white-space: nowrap;
+  background: linear-gradient(135deg, var(--c-brand), var(--c-brand-300)); }
+
+/* 未认证引导卡（v-if="!isVerified"） */
+.cx-guide { display: flex; align-items: center; gap: 6px; margin: 10px 12px; padding: 14px; flex: none;
+  border-radius: var(--r-xl); background: linear-gradient(135deg, var(--c-brand-50), var(--c-tint-green-50, #E8F5E9)); }
+.cx-guide__b { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.cx-guide__t { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.cx-guide__d { font-size: var(--fs-base); color: var(--c-text-secondary); line-height: 1.5; }
+.cx-guide__btn { flex: none; display: flex; align-items: center; justify-content: center; min-height: 44px;
+  padding: 8px 12px; border-radius: var(--r-full); font-size: var(--fs-md); font-weight: 600;
+  color: var(--c-text-primary); background: linear-gradient(135deg, var(--c-brand), var(--c-brand-300));
+  box-shadow: 0 2px 6px var(--c-brand-border-tint-stronger, rgba(61, 201, 148, 0.4)); }
+
+/* 未认证推荐兴趣圈（v-if="!isVerified"，card-base 但无左右缩进） */
+.cx-reco { margin-top: 12px; padding: 12px; flex: none; background: var(--c-bg-container);
+  border-radius: 20px; border: var(--c-border-card); box-shadow: var(--s-card-soft); }
+.cx-reco__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cx-reco__title { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.cx-reco__more { font-size: var(--fs-base); color: var(--c-brand); }
+.cx-reco__grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.cx-reco__i { position: relative; flex: 1 1 22%; height: 60px; border-radius: 8px; overflow: hidden; }
+.cx-reco__i img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cx-reco__lab { position: absolute; left: 0; right: 0; bottom: 0; padding: 13px 4px 3px;
+  font-size: var(--fs-sm); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--c-overlay-text-primary, rgba(255, 255, 255, 0.95));
+  background: linear-gradient(to top, var(--c-overlay-strong) 0%, var(--c-overlay-strong) 60%,
+    var(--c-gradient-mask-transparent, rgba(0, 0, 0, 0)) 100%);
+  text-shadow: 0 1px 4px var(--c-overlay-strong); }
+
+/* 已认证但非本校：公开浏览提示条（v-else-if="!isOwnCertifiedView"） */
+.cx-banner { display: flex; flex-direction: column; gap: 4px; margin: 0 16px 10px; padding: 12px; flex: none;
+  border-radius: 9px; background: var(--c-bg-surface); border: 0.5px solid var(--c-border-light); }
+.cx-banner__t { font-size: var(--fs-md); font-weight: 700; color: var(--c-text-primary); }
+.cx-banner__d { font-size: var(--fs-sm); color: var(--c-text-secondary); line-height: 1.5; }
+
+/* 分类 Tab（横向 scroll-view，六片，超出视口即裁） */
+.cx-tabs { display: flex; white-space: nowrap; padding: 12px 12px 10px; flex: none;
+  background: var(--c-bg-container); box-shadow: var(--s-card-soft); }
+.cx-tab { display: inline-flex; align-items: center; justify-content: center; flex: none;
+  padding: 9px 14px; margin-right: 8px; border-radius: var(--r-lg); background: var(--c-bg-page); }
+.cx-tab__l { font-size: var(--fs-md); font-weight: 500; color: var(--c-text-secondary); }
+.cx-tab--on { background: linear-gradient(135deg, var(--c-brand-50), var(--c-tint-green-50, #E8F5E9));
+  box-shadow: 0 2px 6px var(--c-brand-border-tint, rgba(61, 201, 148, 0.2)); }
+.cx-tab--on .cx-tab__l { color: var(--c-brand); font-weight: 700; }
+
+/* 话题卡 */
+.cx-list { flex: 1; overflow: hidden; }
+.cx-topic { display: flex; flex-direction: column; gap: 8px; margin: 8px 12px; padding: 14px; flex: none;
+  background: var(--c-bg-container); border-radius: var(--r-xl); box-shadow: var(--s-card-soft); }
+.cx-topic__h { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cx-topic__t { flex: 1; min-width: 0; font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-topic__time { flex: none; font-size: var(--fs-base); color: var(--c-text-secondary);
+  background: var(--c-bg-page); padding: 2px 6px; border-radius: var(--r-full); }
+.cx-topic__p { font-size: var(--fs-md); color: var(--c-text-secondary); line-height: 1.7; max-height: 3.4em;
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.cx-topic__f { display: flex; align-items: center; justify-content: space-between;
+  padding-top: 6px; border-top: 0.5px solid var(--c-border-light); }
+.cx-topic__ar { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.cx-topic__av { width: 20px; height: 20px; border-radius: 50%; overflow: hidden; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%); }
+.cx-topic__av--char { font-size: var(--fs-sm); font-weight: 600; line-height: 1; color: var(--c-brand-700); }
+.cx-topic__av img { width: 100%; height: 100%; object-fit: cover; }
+.cx-topic__au { font-size: var(--fs-base); font-weight: 500; color: var(--c-text-secondary); }
+.cx-topic__rp { display: flex; align-items: center; gap: 4px; flex: none; padding: 4px 8px;
+  background: var(--c-brand-50); border-radius: var(--r-full); }
+.cx-topic__rp svg { width: 12px; height: 12px; color: var(--c-brand-800); flex: none; }
+.cx-topic__rp span { font-size: var(--fs-base); color: var(--c-brand-800); }
+
+/* 列表末行 */
+.cx-more { display: flex; justify-content: center; padding: 18px 0; flex: none; }
+.cx-more__t { font-size: var(--fs-base); color: var(--c-text-tertiary); background: var(--c-bg-page);
+  padding: 4px 12px; border-radius: var(--r-full); }
+.cx-loadmore { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 18px 0; flex: none; }
+.cx-loadmore__t { font-size: var(--fs-base); color: var(--c-text-tertiary); }
+
+/* 加载 / 错误 / 空 三态槽（.campus-state，flex:1 居中） */
+.cx-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 20px; }
+.cx-state__sp { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--c-border-light);
+  border-top-color: var(--c-brand); animation: cxspin 1s linear infinite; }
+.cx-state__sp--sm { width: 16px; height: 16px; border-width: 1.5px; }
+@keyframes cxspin { to { transform: rotate(360deg); } }
+.cx-state__ic { width: 50px; height: 50px; opacity: 0.5; color: var(--c-text-tertiary); }
+.cx-state__t { font-size: var(--fs-lg); color: var(--c-text-tertiary); text-align: center; line-height: 1.6; }
+.cx-state__btn { padding: 10px 28px; border-radius: var(--r-full); font-size: var(--fs-lg); font-weight: 600;
+  color: var(--c-text-inverse); background: linear-gradient(135deg, var(--c-brand), var(--c-brand-300));
+  box-shadow: 0 2px 8px var(--c-brand-border-tint-stronger, rgba(61, 201, 148, 0.4)); }
+
+/* FAB（v-if="isOwnCertifiedView"；bottom = env(safe-area-inset-bottom) + 150rpx，画板取 env=0） */
+.cx-fab { position: absolute; right: 16px; bottom: 75px; width: 52px; height: 52px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; z-index: 9; color: var(--c-text-inverse);
+  background: linear-gradient(135deg, var(--c-brand), var(--c-brand-300));
+  box-shadow: 0 4px 14px var(--c-brand-border-tint-stronger, rgba(61, 201, 148, 0.4)); }
+.cx-fab svg { width: 22px; height: 22px; }
+
+/* §02 权限门矩阵的行内码 */
+.gatecode { font-family: var(--mono); font-size: 11px; color: var(--c-brand-800); background: var(--c-brand-50);
+  padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格；base 已全局 stroke:currentColor，不写 fill） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-school" viewBox="0 0 24 24"><path d="M12 3.2 3 7.4l9 4.2 9-4.2z"/><path d="M6.6 9.6v5.1c0 1.9 2.4 3.4 5.4 3.4s5.4-1.5 5.4-3.4V9.6"/><path d="M21 7.4v6.2"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M20 14.5a2.2 2.2 0 0 1-2.2 2.2H8.4L4 20.4V6.2A2.2 2.2 0 0 1 6.2 4h11.6A2.2 2.2 0 0 1 20 6.2z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M13.7 19a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="i-xc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M13.5 6.5l4 4"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>校园圈私域主页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/campus/campus/index</code>。
+     这是<b>认证通过后的本校私域主页</b>，唯一入口是校园圈 Hub（<code style="font-family:var(--mono);font-size:12.5px">campus/hub</code>）
+     点校名卡片带 <code style="font-family:var(--mono);font-size:12.5px">?school=</code> 跳入。
+     本页权限门不在组件里，而在两条 computed 上：<code style="font-family:var(--mono);font-size:12.5px">isVerified</code> 决定「引导 / 私域」，
+     <code style="font-family:var(--mono);font-size:12.5px">isOwnCertifiedView</code> 决定「本校可发帖 / 非本校只读」。
+     本画板把门链四分支 × 内容区四态共 8 屏画全，作为该页永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>campus/index</b></span>
+    <span>分包 <b>campus</b>（无 tabbar）</span>
+    <span>导航 <b>custom · 页面自画渐变头</b></span>
+    <span>状态 <b>8 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1845</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 8 屏</h2>
+    <p>权限门四分支 + 内容区四态 + 认证拉取失败条</p></div>
+  <div class="sec__sub">本页状态机有 8 屏，分支全部取自模板条件表达式：
+    <code>v-if="certificationError"</code>（:284，门链之外的独立错误条）、
+    <code>v-if="!isVerified"</code>（:298 引导卡 / :310 推荐兴趣圈）、
+    <code>v-else-if="!isOwnCertifiedView"</code>（:324 公开浏览提示条）、
+    <code>v-if="isVerified || viewSchool"</code>（:330 内容区）、
+    内容区内 <code>loading &amp;&amp; topics.length === 0</code> → <code>topicsError &amp;&amp; topics.length === 0</code> → <code>topics.length === 0</code> → 列表四段互斥、
+    <code>v-if="isOwnCertifiedView"</code>（:434 发帖 FAB）。
+    两条判据的真值源：<code>isVerified = state.certificationStatus === "verified"</code>（stores/campus.ts:387-389）、
+    <code>isOwnCertifiedView = isVerified.value &amp;&amp; (!viewSchool.value || viewSchool.value === certificationInfo.value?.schoolName)</code>（本页 :72-74）。
+    帧即视口 375×812：超出部分裁掉，被裁掉了什么只写在题注 <code>.d</code> 里，画面内零注记。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">未认证 · 带 ?school= 进入本校</span><span class="d">引导卡 + 推荐圈 + 公开列表同屏 · 无 FAB · 列表末行与 Tab 第 5/6 片在视口外</span></figcaption>
+      <div class="phone">
+        <div class="cx">
+          <div class="cx-hdr"><div class="cx-top">
+            <span class="cx-back">&#x2039;</span>
+            <span class="cx-school"><svg class="cx-school__ic"><use href="#i-school"/></svg>
+              <span class="cx-school__name">北京大学</span>
+              <span class="cx-badge cx-badge--unver"><span class="cx-badge__t">未认证</span></span></span>
+          </div></div>
+          <div class="cx-guide">
+            <div class="cx-guide__b"><span class="cx-guide__t">完成学生认证，解锁校园专区</span>
+              <span class="cx-guide__d">上传学生证即可认证，与同校同学畅聊校园话题</span></div>
+            <span class="cx-guide__btn">去认证</span>
+          </div>
+          <div class="cx-reco">
+            <div class="cx-reco__head"><span class="cx-reco__title">热门兴趣圈</span><span class="cx-reco__more">查看更多 ›</span></div>
+            <div class="cx-reco__grid">
+              <div class="cx-reco__i"><img src="assets/demo/circle-photo.png" alt=""><span class="cx-reco__lab">摄影</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-travel.png" alt=""><span class="cx-reco__lab">旅行</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-music.png" alt=""><span class="cx-reco__lab">音乐</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-cover-sports.jpg" alt=""><span class="cx-reco__lab">运动</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-food.png" alt=""><span class="cx-reco__lab">美食</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-gaming.png" alt=""><span class="cx-reco__lab">游戏</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-reading.png" alt=""><span class="cx-reco__lab">阅读</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-pets.png" alt=""><span class="cx-reco__lab">宠物</span></div>
+            </div>
+          </div>
+          <div class="cx-tabs">
+            <span class="cx-tab cx-tab--on"><span class="cx-tab__l">课程交流</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">社团招新</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校园活动</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">学习互助</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">生活服务</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校友动态</span></span>
+          </div>
+          <div class="cx-list">
+            <div class="cx-topic">
+              <div class="cx-topic__h"><span class="cx-topic__t">高数B期末复习资料分享</span><span class="cx-topic__time">30 分钟前</span></div>
+              <span class="cx-topic__p">整理了一份高数B的期末复习资料，包含重点公式和典型例题解析，有需要的同学自取~</span>
+              <div class="cx-topic__f">
+                <span class="cx-topic__ar"><span class="cx-topic__av"><img src="assets/demo/person-01.png" alt=""></span><span class="cx-topic__au">阿辰</span></span>
+                <span class="cx-topic__rp"><svg><use href="#i-msg"/></svg><span>23</span></span>
+              </div>
+            </div>
+            <div class="cx-topic">
+              <div class="cx-topic__h"><span class="cx-topic__t">数据结构实验报告模板</span><span class="cx-topic__time">1 小时前</span></div>
+              <span class="cx-topic__p">分享一份数据结构实验报告的标准模板，含代码规范和注释要求，适合新手参考。</span>
+              <div class="cx-topic__f">
+                <span class="cx-topic__ar"><span class="cx-topic__au">匿名校友</span></span>
+                <span class="cx-topic__rp"><svg><use href="#i-msg"/></svg><span>15</span></span>
+              </div>
+            </div>
+            <div class="cx-more"><span class="cx-more__t">没有更多了</span></div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">审核中 · pending 不算已认证</span><span class="d">徽章改「审核中」· 门链走 !isVerified 同一支 · 列表末行与 Tab 第 5/6 片在视口外</span></figcaption>
+      <div class="phone">
+        <div class="cx">
+          <div class="cx-hdr"><div class="cx-top">
+            <span class="cx-back">&#x2039;</span>
+            <span class="cx-school"><svg class="cx-school__ic"><use href="#i-school"/></svg>
+              <span class="cx-school__name">北京大学</span>
+              <span class="cx-badge cx-badge--pending"><span class="cx-badge__t">审核中</span></span></span>
+          </div></div>
+          <div class="cx-guide">
+            <div class="cx-guide__b"><span class="cx-guide__t">完成学生认证，解锁校园专区</span>
+              <span class="cx-guide__d">上传学生证即可认证，与同校同学畅聊校园话题</span></div>
+            <span class="cx-guide__btn">去认证</span>
+          </div>
+          <div class="cx-reco">
+            <div class="cx-reco__head"><span class="cx-reco__title">热门兴趣圈</span><span class="cx-reco__more">查看更多 ›</span></div>
+            <div class="cx-reco__grid">
+              <div class="cx-reco__i"><img src="assets/demo/circle-photo.png" alt=""><span class="cx-reco__lab">摄影</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-travel.png" alt=""><span class="cx-reco__lab">旅行</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-music.png" alt=""><span class="cx-reco__lab">音乐</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-cover-sports.jpg" alt=""><span class="cx-reco__lab">运动</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-food.png" alt=""><span class="cx-reco__lab">美食</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-gaming.png" alt=""><span class="cx-reco__lab">游戏</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-reading.png" alt=""><span class="cx-reco__lab">阅读</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-pets.png" alt=""><span class="cx-reco__lab">宠物</span></div>
+            </div>
+          </div>
+          <div class="cx-tabs">
+            <span class="cx-tab cx-tab--on"><span class="cx-tab__l">课程交流</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">社团招新</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校园活动</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">学习互助</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">生活服务</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校友动态</span></span>
+          </div>
+          <div class="cx-list">
+            <div class="cx-topic">
+              <div class="cx-topic__h"><span class="cx-topic__t">高数B期末复习资料分享</span><span class="cx-topic__time">30 分钟前</span></div>
+              <span class="cx-topic__p">整理了一份高数B的期末复习资料，包含重点公式和典型例题解析，有需要的同学自取~</span>
+              <div class="cx-topic__f">
+                <span class="cx-topic__ar"><span class="cx-topic__av"><img src="assets/demo/person-01.png" alt=""></span><span class="cx-topic__au">阿辰</span></span>
+                <span class="cx-topic__rp"><svg><use href="#i-msg"/></svg><span>23</span></span>
+              </div>
+            </div>
+            <div class="cx-topic">
+              <div class="cx-topic__h"><span class="cx-topic__t">数据结构实验报告模板</span><span class="cx-topic__time">1 小时前</span></div>
+              <span class="cx-topic__p">分享一份数据结构实验报告的标准模板，含代码规范和注释要求，适合新手参考。</span>
+              <div class="cx-topic__f">
+                <span class="cx-topic__ar"><span class="cx-topic__au">匿名校友</span></span>
+                <span class="cx-topic__rp"><svg><use href="#i-msg"/></svg><span>15</span></span>
+              </div>
+            </div>
+            <div class="cx-more"><span class="cx-more__t">没有更多了</span></div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">已认证 · 看外校（非本校只读）</span><span class="d">提示条出现 · FAB 缺席 · Tab 第 5/6 片横向在视口外</span></figcaption>
+      <div class="phone">
+        <div class="cx">
+          <div class="cx-hdr"><div class="cx-top">
+            <span class="cx-back">&#x2039;</span>
+            <span class="cx-school"><svg class="cx-school__ic"><use href="#i-school"/></svg>
+              <span class="cx-school__name">清华大学</span>
+              <span class="cx-badge cx-badge--ver"><span class="cx-badge__t">已认证</span></span></span>
+          </div></div>
+          <div class="cx-banner">
+            <span class="cx-banner__t">公开浏览</span>
+            <span class="cx-banner__d">非本校，可浏览公开内容；完成对应学校认证后可进入私域互动</span>
+          </div>
+          <div class="cx-tabs">
+            <span class="cx-tab cx-tab--on"><span class="cx-tab__l">课程交流</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">社团招新</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校园活动</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">学习互助</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">生活服务</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校友动态</span></span>
+          </div>
+          <div class="cx-list">
+            <div class="cx-topic">
+              <div class="cx-topic__h"><span class="cx-topic__t">高数B期末复习资料分享</span><span class="cx-topic__time">30 分钟前</span></div>
+              <span class="cx-topic__p">整理了一份高数B的期末复习资料，包含重点公式和典型例题解析，有需要的同学自取~</span>
+              <div class="cx-topic__f">
+                <span class="cx-topic__ar"><span class="cx-topic__av"><img src="assets/demo/person-02.png" alt=""></span><span class="cx-topic__au">周岚</span></span>
+                <span class="cx-topic__rp"><svg><use href="#i-msg"/></svg><span>23</span></span>
+              </div>
+            </div>
+            <div class="cx-topic">
+              <div class="cx-topic__h"><span class="cx-topic__t">数据结构实验报告模板</span><span class="cx-topic__time">1 小时前</span></div>
+              <span class="cx-topic__p">分享一份数据结构实验报告的标准模板，含代码规范和注释要求，适合新手参考。</span>
+              <div class="cx-topic__f">
+                <span class="cx-topic__ar"><span class="cx-topic__au">匿名校友</span></span>
+                <span class="cx-topic__rp"><svg><use href="#i-msg"/></svg><span>15</span></span>
+              </div>
+            </div>
+            <div class="cx-more"><span class="cx-more__t">没有更多了</span></div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">已认证 · 本校私域（唯一可发帖态）</span><span class="d">无提示条 · FAB 出现 · Tab 第 5/6 片横向在视口外</span></figcaption>
+      <div class="phone">
+        <div class="cx">
+          <div class="cx-hdr"><div class="cx-top">
+            <span class="cx-back">&#x2039;</span>
+            <span class="cx-school"><svg class="cx-school__ic"><use href="#i-school"/></svg>
+              <span class="cx-school__name">北京大学</span>
+              <span class="cx-badge cx-badge--ver"><span class="cx-badge__t">已认证</span></span></span>
+          </div></div>
+          <div class="cx-tabs">
+            <span class="cx-tab cx-tab--on"><span class="cx-tab__l">课程交流</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">社团招新</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校园活动</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">学习互助</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">生活服务</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校友动态</span></span>
+          </div>
+          <div class="cx-list">
+            <div class="cx-topic">
+              <div class="cx-topic__h"><span class="cx-topic__t">高数B期末复习资料分享</span><span class="cx-topic__time">30 分钟前</span></div>
+              <span class="cx-topic__p">整理了一份高数B的期末复习资料，包含重点公式和典型例题解析，有需要的同学自取~</span>
+              <div class="cx-topic__f">
+                <span class="cx-topic__ar"><span class="cx-topic__av"><img src="assets/demo/person-01.png" alt=""></span><span class="cx-topic__au">阿辰</span></span>
+                <span class="cx-topic__rp"><svg><use href="#i-msg"/></svg><span>23</span></span>
+              </div>
+            </div>
+            <div class="cx-topic">
+              <div class="cx-topic__h"><span class="cx-topic__t">数据结构实验报告模板</span><span class="cx-topic__time">1 小时前</span></div>
+              <span class="cx-topic__p">分享一份数据结构实验报告的标准模板，含代码规范和注释要求，适合新手参考。</span>
+              <div class="cx-topic__f">
+                <span class="cx-topic__ar"><span class="cx-topic__au">匿名校友</span></span>
+                <span class="cx-topic__rp"><svg><use href="#i-msg"/></svg><span>15</span></span>
+              </div>
+            </div>
+            <div class="cx-more"><span class="cx-more__t">没有更多了</span></div>
+          </div>
+          <span class="cx-fab"><svg><use href="#i-edit"/></svg></span>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">内容区 · 加载中</span><span class="d">loading &amp;&amp; topics.length===0 · 本校视角 · Tab 第 5/6 片横向在视口外</span></figcaption>
+      <div class="phone">
+        <div class="cx">
+          <div class="cx-hdr"><div class="cx-top">
+            <span class="cx-back">&#x2039;</span>
+            <span class="cx-school"><svg class="cx-school__ic"><use href="#i-school"/></svg>
+              <span class="cx-school__name">北京大学</span>
+              <span class="cx-badge cx-badge--ver"><span class="cx-badge__t">已认证</span></span></span>
+          </div></div>
+          <div class="cx-tabs">
+            <span class="cx-tab cx-tab--on"><span class="cx-tab__l">课程交流</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">社团招新</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校园活动</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">学习互助</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">生活服务</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校友动态</span></span>
+          </div>
+          <div class="cx-state">
+            <span class="cx-state__sp" role="status"></span>
+            <span class="cx-state__t">正在加载话题...</span>
+          </div>
+          <span class="cx-fab"><svg><use href="#i-edit"/></svg></span>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">内容区 · 话题拉取失败</span><span class="d">topicsError 独立槽 · 重试只重拉话题 · Tab 第 5/6 片横向在视口外</span></figcaption>
+      <div class="phone">
+        <div class="cx">
+          <div class="cx-hdr"><div class="cx-top">
+            <span class="cx-back">&#x2039;</span>
+            <span class="cx-school"><svg class="cx-school__ic"><use href="#i-school"/></svg>
+              <span class="cx-school__name">北京大学</span>
+              <span class="cx-badge cx-badge--ver"><span class="cx-badge__t">已认证</span></span></span>
+          </div></div>
+          <div class="cx-tabs">
+            <span class="cx-tab cx-tab--on"><span class="cx-tab__l">课程交流</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">社团招新</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校园活动</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">学习互助</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">生活服务</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校友动态</span></span>
+          </div>
+          <div class="cx-state">
+            <svg class="cx-state__ic"><use href="#i-xc"/></svg>
+            <span class="cx-state__t">加载校园话题失败</span>
+            <span class="cx-state__btn">重试</span>
+          </div>
+          <span class="cx-fab"><svg><use href="#i-edit"/></svg></span>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">内容区 · 该分类空态</span><span class="d">末行/分页槽整块缺席 · FAB 仍在 · Tab 第 5/6 片横向在视口外</span></figcaption>
+      <div class="phone">
+        <div class="cx">
+          <div class="cx-hdr"><div class="cx-top">
+            <span class="cx-back">&#x2039;</span>
+            <span class="cx-school"><svg class="cx-school__ic"><use href="#i-school"/></svg>
+              <span class="cx-school__name">北京大学</span>
+              <span class="cx-badge cx-badge--ver"><span class="cx-badge__t">已认证</span></span></span>
+          </div></div>
+          <div class="cx-tabs">
+            <span class="cx-tab"><span class="cx-tab__l">课程交流</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">社团招新</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校园活动</span></span>
+            <span class="cx-tab cx-tab--on"><span class="cx-tab__l">学习互助</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">生活服务</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校友动态</span></span>
+          </div>
+          <div class="cx-state">
+            <svg class="cx-state__ic"><use href="#i-bell"/></svg>
+            <span class="cx-state__t">该分类下还没有话题，快来发布第一个吧</span>
+          </div>
+          <span class="cx-fab"><svg><use href="#i-edit"/></svg></span>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F08 -->
+    <figure class="frame">
+      <figcaption><b>F08</b><span class="t">认证状态拉取失败（不塌缩成未认证）</span><span class="d">错误条/引导卡/推荐圈/公开列表四块同屏 · 第二张卡与末行及 Tab 第 5/6 片在视口外</span></figcaption>
+      <div class="phone">
+        <div class="cx">
+          <div class="cx-hdr"><div class="cx-top">
+            <span class="cx-back">&#x2039;</span>
+            <span class="cx-school"><svg class="cx-school__ic"><use href="#i-school"/></svg>
+              <span class="cx-school__name">北京大学</span>
+              <span class="cx-badge cx-badge--unver"><span class="cx-badge__t">未认证</span></span></span>
+          </div></div>
+          <div class="cx-errbar">
+            <span class="cx-errbar__t">获取认证状态失败</span>
+            <span class="cx-errbar__btn">重试</span>
+          </div>
+          <div class="cx-guide">
+            <div class="cx-guide__b"><span class="cx-guide__t">完成学生认证，解锁校园专区</span>
+              <span class="cx-guide__d">上传学生证即可认证，与同校同学畅聊校园话题</span></div>
+            <span class="cx-guide__btn">去认证</span>
+          </div>
+          <div class="cx-reco">
+            <div class="cx-reco__head"><span class="cx-reco__title">热门兴趣圈</span><span class="cx-reco__more">查看更多 ›</span></div>
+            <div class="cx-reco__grid">
+              <div class="cx-reco__i"><img src="assets/demo/circle-photo.png" alt=""><span class="cx-reco__lab">摄影</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-travel.png" alt=""><span class="cx-reco__lab">旅行</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-music.png" alt=""><span class="cx-reco__lab">音乐</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-cover-sports.jpg" alt=""><span class="cx-reco__lab">运动</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-food.png" alt=""><span class="cx-reco__lab">美食</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-gaming.png" alt=""><span class="cx-reco__lab">游戏</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-reading.png" alt=""><span class="cx-reco__lab">阅读</span></div>
+              <div class="cx-reco__i"><img src="assets/demo/circle-pets.png" alt=""><span class="cx-reco__lab">宠物</span></div>
+            </div>
+          </div>
+          <div class="cx-tabs">
+            <span class="cx-tab cx-tab--on"><span class="cx-tab__l">课程交流</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">社团招新</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校园活动</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">学习互助</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">生活服务</span></span>
+            <span class="cx-tab"><span class="cx-tab__l">校友动态</span></span>
+          </div>
+          <div class="cx-list">
+            <div class="cx-topic">
+              <div class="cx-topic__h"><span class="cx-topic__t">高数B期末复习资料分享</span><span class="cx-topic__time">30 分钟前</span></div>
+              <span class="cx-topic__p">整理了一份高数B的期末复习资料，包含重点公式和典型例题解析，有需要的同学自取~</span>
+              <div class="cx-topic__f">
+                <span class="cx-topic__ar"><span class="cx-topic__av"><img src="assets/demo/person-01.png" alt=""></span><span class="cx-topic__au">阿辰</span></span>
+                <span class="cx-topic__rp"><svg><use href="#i-msg"/></svg><span>23</span></span>
+              </div>
+            </div>
+            <div class="cx-topic">
+              <div class="cx-topic__h"><span class="cx-topic__t">数据结构实验报告模板</span><span class="cx-topic__time">1 小时前</span></div>
+              <span class="cx-topic__p">分享一份数据结构实验报告的标准模板，含代码规范和注释要求，适合新手参考。</span>
+              <div class="cx-topic__f">
+                <span class="cx-topic__ar"><span class="cx-topic__au">匿名校友</span></span>
+                <span class="cx-topic__rp"><svg><use href="#i-msg"/></svg><span>15</span></span>
+              </div>
+            </div>
+            <div class="cx-more"><span class="cx-more__t">没有更多了</span></div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每类交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页没有表单件，交互件四类：认证徽章、分类 Tab、话题卡（作者位 + 回复胶囊 + 末行）、发帖 FAB。
+    但真正要验收的是下面第一张表——<b>权限门分支矩阵</b>：八个视角各自命中哪条条件表达式、渲染哪几块、FAB 在不在，
+    全部取自 index.vue 模板 :284 / :298 / :310 / :324 / :330 / :434 与 stores/campus.ts:387-389 的 <code>isVerified</code> getter。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>权限门 · 分支矩阵（本页验收主对象）</h3>
+      <p class="hint">判据只有两条：<code>isVerified</code>（认证门槛）与 <code>isOwnCertifiedView</code>（本校门槛）。
+        pending / rejected 都算「未认证」，源码里<b>没有</b>为它们单独写的视图。</p>
+      <table class="tbl">
+        <tr><th>视角</th><th>命中条件</th><th>渲染块</th><th>FAB</th></tr>
+        <tr><td>未认证</td><td class="plain"><code>!isVerified</code></td><td>引导卡 + 热门兴趣圈 + 内容区*</td><td>无</td></tr>
+        <tr><td>审核中</td><td class="plain"><code>!isVerified</code>（status=pending）</td><td>同上，仅徽章不同</td><td>无</td></tr>
+        <tr><td>未通过</td><td class="plain"><code>!isVerified</code>（status=rejected）</td><td>同上，引导文案与未认证<b>逐字相同</b></td><td>无</td></tr>
+        <tr><td>已认证 · 本校</td><td class="plain"><code>isVerified &amp;&amp; viewSchool === certificationInfo?.schoolName</code></td><td>内容区（无提示条）</td><td><b>有</b></td></tr>
+        <tr><td>已认证 · 非本校</td><td class="plain"><code>isVerified &amp;&amp; viewSchool !== schoolName</code></td><td>公开浏览提示条 + 内容区</td><td>无</td></tr>
+        <tr><td>已认证 · 无参直达</td><td class="plain"><code>!viewSchool</code> → onLoad <code>redirectTo(hub)</code></td><td>跳转前一瞬可达，不构成可验收屏</td><td>—</td></tr>
+        <tr><td>认证拉取失败</td><td class="plain"><code>certificationError</code>（非 404）</td><td>错误条 + 未认证块（<b>不再塌缩</b>）</td><td>无</td></tr>
+        <tr><td>游客</td><td class="plain"><code>guideGuestToLogin()</code> 返回 true</td><td>onLoad/onShow/onMounted 三处早退，本页不出内容</td><td>—</td></tr>
+      </table>
+      <p class="hint" style="margin:12px 0 0">* 内容区条件是 <code>isVerified || viewSchool</code>：未认证者只要带了 <code>?school=</code>（Hub 唯一入口必然带），
+        话题列表照样渲染——所以 F01 是「引导卡 + 推荐圈 + 公开列表」三块同屏，而不是只有引导卡。</p>
+    </div>
+
+    <div class="panel">
+      <h3>页头认证徽章 · 四档（certStatusClass）</h3>
+      <p class="hint">底为半透明白/状态档，墨色统一 <code>--c-text-primary</code>（R10-L05-D17 收口：改前 0.95 白压合成底 ≈1.4:1 读不出）。</p>
+      <div class="row">
+        <div class="cell"><span class="cx-badge cx-badge--unver"><span class="cx-badge__t">未认证</span></span><span class="lab">unverified · 20% 白</span></div>
+        <div class="cell"><span class="cx-badge cx-badge--ver"><span class="cx-badge__t">已认证</span></span><span class="lab">verified · 35% 白</span></div>
+        <div class="cell"><span class="cx-badge cx-badge--pending"><span class="cx-badge__t">审核中</span></span><span class="lab">pending · --c-state-ongoing-bg</span></div>
+        <div class="cell"><span class="cx-badge cx-badge--rejected"><span class="cx-badge__t">未通过</span></span><span class="lab">rejected · --c-red-border-tint</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>分类 Tab · 三态 × 六类</h3>
+      <p class="hint">六类名取自 <code>CAMPUS_CATEGORY_MAP</code>（stores/campus.ts:171-178）。scroll-view 横向：一屏可见约 4.2 片，
+        选中档 = 浅绿渐变 + 品牌色 700；按压档 = <code>transform: scale(0.96)</code>。</p>
+      <div class="row">
+        <div class="cell"><div class="cx-tabs" style="border-radius:10px"><span class="cx-tab"><span class="cx-tab__l">课程交流</span></span></div><span class="lab">默认</span></div>
+        <div class="cell"><div class="cx-tabs" style="border-radius:10px"><span class="cx-tab cx-tab--on"><span class="cx-tab__l">课程交流</span></span></div><span class="lab">选中</span></div>
+        <div class="cell"><div class="cx-tabs" style="border-radius:10px"><span class="cx-tab" style="transform:scale(0.96);opacity:.9"><span class="cx-tab__l">课程交流</span></span></div><span class="lab">按压（H5 #ifdef）</span></div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <div class="cell"><div class="cx-tabs" style="border-radius:10px"><span class="cx-tab"><span class="cx-tab__l">社团招新</span></span><span class="cx-tab"><span class="cx-tab__l">校园活动</span></span><span class="cx-tab"><span class="cx-tab__l">学习互助</span></span><span class="cx-tab"><span class="cx-tab__l">生活服务</span></span><span class="cx-tab"><span class="cx-tab__l">校友动态</span></span></div><span class="lab">其余五类 · 均分横向滚动</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>话题卡 · 作者位三形态 + 末行两态</h3>
+      <p class="hint">作者位条件 <code>v-if="!topic.isAnonymous &amp;&amp; topic.author?.avatar"</code>；
+        匿名档不渲染头像、名字取 <code>t('campus.index.anonymousAuthor')</code> =「匿名校友」。
+        底栏 <code>space-between</code> 只推回复胶囊，头像与名字由 <code>.topic-card__author-row</code> 左聚簇（R15-L05-D03）。</p>
+      <div class="row">
+        <div class="cell" style="width:220px">
+          <div class="cx-topic" style="margin:0"><div class="cx-topic__f">
+            <span class="cx-topic__ar"><span class="cx-topic__av"><img src="assets/demo/person-01.png" alt=""></span><span class="cx-topic__au">阿辰</span></span>
+            <span class="cx-topic__rp"><svg><use href="#i-msg"/></svg><span>23</span></span>
+          </div></div><span class="lab">非匿名 · 有 avatar（real 档）</span></div>
+        <div class="cell" style="width:220px">
+          <div class="cx-topic" style="margin:0"><div class="cx-topic__f">
+            <span class="cx-topic__ar"><span class="cx-topic__au">匿名校友</span></span>
+            <span class="cx-topic__rp"><svg><use href="#i-msg"/></svg><span>15</span></span>
+          </div></div><span class="lab">匿名 · 头像缺席</span></div>
+        <div class="cell" style="width:220px">
+          <div class="cx-topic" style="margin:0"><div class="cx-topic__f">
+            <span class="cx-topic__ar"><span class="cx-topic__av cx-topic__av--char">阿</span><span class="cx-topic__au">阿辰</span></span>
+            <span class="cx-topic__rp"><svg><use href="#i-msg"/></svg><span>23</span></span>
+          </div></div><span class="lab">非匿名 · avatar 空串 ⇒ 首字外壳（2026-10-27 源码已补）</span></div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <div class="cell" style="width:220px"><div class="cx-loadmore"><span class="cx-state__sp cx-state__sp--sm"></span><span class="cx-loadmore__t">加载中...</span></div><span class="lab">末行 · loading &amp;&amp; topics.length&gt;0</span></div>
+        <div class="cell" style="width:220px"><div class="cx-more" style="padding:8px 0"><span class="cx-more__t">没有更多了</span></div><span class="lab">末行 · !topicHasMore &amp;&amp; topics.length&gt;0</span></div>
+        <div class="cell" style="width:220px"><div class="cx-more" style="padding:8px 0"><span class="cx-more__t" style="opacity:.35">（整块缺席）</span></div><span class="lab">空态/错误/loading：两末行都不渲染</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>内容区状态槽 · 三态 + 认证错误条</h3>
+      <p class="hint">四段互斥（<code>loading</code> → <code>topicsError</code> → 空列表 → 列表），且后三段都带 <code>topics.length === 0</code> 守卫；
+        认证错误条 <code>certificationError</code> 在门链之外，可与任一支同屏。</p>
+      <div class="row">
+        <div class="cell" style="width:220px"><div class="cx-errbar" style="margin:0"><span class="cx-errbar__t">获取认证状态失败</span><span class="cx-errbar__btn">重试</span></div><span class="lab">认证拉取失败（非 404）</span></div>
+        <div class="cell" style="width:220px"><div class="cx-banner" style="margin:0"><span class="cx-banner__t">公开浏览</span><span class="cx-banner__d">非本校，可浏览公开内容；完成对应学校认证后可进入私域互动</span></div><span class="lab">已认证非本校提示条</span></div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <div class="cell" style="width:220px"><div class="cx-state" style="padding:20px 10px"><span class="cx-state__sp"></span><span class="cx-state__t">正在加载话题...</span></div><span class="lab">loading</span></div>
+        <div class="cell" style="width:220px"><div class="cx-state" style="padding:20px 10px"><svg class="cx-state__ic"><use href="#i-xc"/></svg><span class="cx-state__t">加载校园话题失败</span><span class="cx-state__btn">重试</span></div><span class="lab">topicsError（图标 = ICONS_COMMON.CLOSE）</span></div>
+        <div class="cell" style="width:220px"><div class="cx-state" style="padding:20px 10px"><svg class="cx-state__ic"><use href="#i-bell"/></svg><span class="cx-state__t">该分类下还没有话题，快来发布第一个吧</span></div><span class="lab">empty（图标 = ICONS_COMMON.NOTIFICATION）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>发帖 FAB · 两态</h3>
+      <p class="hint">条件 <code>v-if="isOwnCertifiedView"</code>——公开浏览（含未认证）一律缺席；
+        出现时 <code>goToPostTopic</code> 透传当前分类 <code>?category=activeCategory</code>（MP-R2-CAMPUSINDEX-002a）。
+        bottom = <code>calc(env(safe-area-inset-bottom) + 150rpx)</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:120px"><span class="cx-fab" style="position:static"><svg><use href="#i-edit"/></svg></span><span class="lab">本校已认证 · 出现</span></div>
+        <div class="cell" style="width:120px"><span class="cx-fab" style="position:static;opacity:.3;background:var(--c-status-disabled);box-shadow:none"><svg><use href="#i-edit"/></svg></span><span class="lab">其余七视角 · 整块不渲染</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位，不抄全量色板</p></div>
+  <div class="sec__sub">rpx ÷ 2 = px。页头渐变带是本页唯一的品牌浓色区，其余全部走浅绿 / 白卡 / 墨字三档；
+    状态栏文字取深墨（与页头校名、徽章、返回键同口径，R15-L05-D01 / R10-L05-D02 / R10-L05-D17 三次收口的结果）。</div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用下面这些档，未引入页内私有色值；base 未登记的令牌写成 <code>var(--x, 真值)</code>，真值逐字抄自 design-variables.scss。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">页头渐变 0% · 选中 Tab 文字 · 查看更多 · 按钮/错误条/FAB 渐变起</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#75E1B7"></span><div><div class="sw__n">主色 300<code>--c-brand-300</code></div><div class="sw__u">页头渐变 50% · 按钮/胶囊/FAB 渐变终</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF8DA1"></span><div><div class="sw__n">浪漫 300<code>--c-romance-300</code></div><div class="sw__u">页头渐变 100%（唯一一处粉）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3;border:1px solid #DDE3E0"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">回复胶囊底 · 选中 Tab / 引导卡渐变起</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8F5E9;border:1px solid #DDE3E0"></span><div><div class="sw__n">绿 50 替身<code>--c-tint-green-50</code></div><div class="sw__u">引导卡 / 选中 Tab 渐变终 · base 未登记</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">未选中 Tab 底 · 时间戳胶囊 · 末行胶囊</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">表面<code>--c-bg-surface</code></div><div class="sw__u">公开浏览提示条底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">主墨<code>--c-text-primary</code></div><div class="sw__u">页头校名 / 徽章 / 引导按钮文字 · 卡标题</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#4A524E"></span><div><div class="sw__n">次墨<code>--c-text-secondary</code></div><div class="sw__u">摘要 · 作者名 · 时间戳 · 提示条描述</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">回复计数（浅胶囊上 5.96:1）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">认证拉取失败条文字 · 底 --c-error-bg-tint</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFD479"></span><div><div class="sw__n">进行中底<code>--c-state-ongoing-bg</code></div><div class="sw__u">审核中徽章 · base 未登记</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到七档。页头三处（校名 / 徽章 / 返回字形）都压在渐变带上，全取深墨。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">北京大学（页头校名）</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">高数B期末复习资料分享</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/700</span><span class="type__p" style="font-size:15px;font-weight:700">完成学生认证，解锁校园专区</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/400</span><span class="type__p" style="font-size:14px;font-weight:400;color:var(--c-text-tertiary)">该分类下还没有话题，快来发布第一个吧</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/500</span><span class="type__p" style="font-size:13px;font-weight:500">课程交流 · 分享摘要 · 重试</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500">阿辰 · 30 分钟前 · 没有更多了</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/600</span><span class="type__p" style="font-size:11px;font-weight:600">已认证 · 摄影（封面叠字）</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">页头横向 32rpx，卡片横向 24rpx，两套缩进并存是实况（见 §04）。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-1 2rpx</b><i style="width:1px"></i></div>
+        <div class="space__i"><b>16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>28rpx</b><i style="width:14px"></i></div>
+        <div class="space__i"><b>32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>88rpx</b><i style="width:44px"></i></div>
+        <div class="space__i"><b>104rpx</b><i style="width:52px"></i></div>
+      </div>
+      <p class="hint" style="margin:10px 0 0">88rpx = 返回键热区（R10-L05-D02 扩到 44px 口径）；104rpx = FAB；16rpx = Tab 间距 / 列表外缩进 24rpx；28rpx = 话题卡内衬。</p>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:8px"></b>16rpx<br>封面瓷片</div>
+        <div class="rad__i"><b style="border-radius:9px"></b>18rpx<br>公开浏览提示条（私档）</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · Tab / 错误条</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 引导卡 / 话题卡</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--card-radius<br>40rpx · 推荐圈卡（card-base）</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>徽章 / 胶囊 / 按钮 / FAB</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与实况的已知差异</h2><p>差异不修，逐条登记在此</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/circle-photo.png" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>RECOMMEND_CIRCLES · 8 片封面</b>
+        <p>只出现在未认证两支（F01/F02/F08）。真源 index.vue:34-45，逐片 =
+          circle-photo.png / circle-travel.png / circle-music.png / circle-cover-sports.jpg / circle-food.png /
+          Cozy_flat_lay_of_video_game_co_2026-08-21T03-34-01.png（游戏）/
+          A_person_reading_a_book_in_a_c_2026-08-21T03-35-17.png（阅读）/
+          A_cute_golden_retriever_dog_lo_2026-08-21T03-36-28.png（宠物）。
+          瓷片 120rpx 高、四片一行两行换行（R7-L05-D01），叠字带 0.7 黑蒙层（R7-L05-D02）。</p>
+        <div class="m">盘上缺：circle-gaming.png / circle-pets.png（回报已提 NEED_ASSET）</div></div></div>
+    <div class="asset"><img src="assets/demo/person-01.png" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>话题作者头像 · 40rpx</b>
+        <p>渲染条件 <code>!topic.isAnonymous &amp;&amp; topic.author?.avatar</code>。real 档取后端 authorAvatar 经
+          SafeImage → resolveMediaUrl 重写 <code>/uploads</code>；mock 夹具 12 条 avatar 全为 <code>""</code>
+          ⇒ 该支在 mock 档恒 false。SafeImage 的 default-avatar.jpg 只在 src 加载失败时兜底，与「有名字无头像」是两回事。</p>
+        <div class="m">20px 圆 · 与名字 gap 8rpx 左聚簇（R15-L05-D03）</div></div></div>
+    <div class="asset"><img src="assets/demo/campus-circle-cover.jpg" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>图标件 · 5 枚（走 IMAGE_PATHS，非画板自绘）</b>
+        <p>页头/引导卡 = ICONS_COMMON.SCHOOL、FAB = ICONS_COMMON.EDIT、回复胶囊 = ICONS_EMOJI.COMMENT
+          （R10-L05-D04：原 ICONS_SOCIAL.COMMENT 不在 real 包内）、错误槽 = ICONS_COMMON.CLOSE、
+          空态 = ICONS_COMMON.NOTIFICATION、返回 = 文字字形 &amp;#x2039;（非图片，R10-L05-D02）。</p>
+        <div class="m">画板内以 lucide 描边 symbol 替身，不改 base</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异 / 结构性事实（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>分包页，无 tabbar</b>；<code>navigationStyle: custom</code> 无原生导航栏 ⇒ 页头由页面自画渐变带，
+        返回是 88rpx 半透明白圆 + 「‹」字形。画板出现 tabbar 即为错。</li>
+      <li><b>pending / rejected 没有专属视图</b>：<code>isVerified = certificationStatus === "verified"</code> 是唯一门槛，
+        审核中与未通过都落进「未认证」引导支，引导文案逐字相同，只有页头徽章底色不同。
+        想给「审核中」做单独画面 = 画板越权，源码里没有。</li>
+      <li><b>公开浏览提示条挂在推荐圈的 v-else-if 上</b>（:310 <code>v-if="!isVerified"</code> → :324 <code>v-else-if="!isOwnCertifiedView"</code>）：
+        未认证用户即使正在看外校也<b>看不到</b>「公开浏览」提示，提示只发给已认证非本校者。F01 与 F03 因此形态不同。</li>
+      <li><b>恒 false 死分支两处：</b>
+        ① 话题卡头像位的**图片分支**——mock 夹具（stores/campus/mock-data.ts）16 条 author 的 <code>avatar</code> 全空 ⇒ 
+        <code>v-if="topic.author?.avatar"</code> 在 mock 档恒 false，画板按 real 档（后端下发 authorAvatar）画真素材头像。
+        <b>2026-10-27 更新</b>：源码已把该位改成「外壳常挂 + 内层二选一」（照 <code>topic-detail.vue:225-234</code> /
+        <code>circles/topics.vue:690-701</code> 先例），具名无头像者出 name 首字圈（底色 <code>--c-bg-brand→--c-bg-romance</code>、
+        字色 <code>--c-brand-700</code>，比先例 500 档深一档以压住浅薄荷底）；匿名仍什么都不画（产品只裁定了具名那一档）。
+        ⇒ 本条从「整块空白的死分支」降级为「图片分支在 mock 档不可达」，§02 第三形态位已按新画法改绘并重拍。
+        ② 页头校名兜底 <code>t('campus.index.defaultSchool') = 广州大学</code>——要 <code>viewSchool</code> 与 <code>certificationInfo</code> 同时为空才显示，
+        而 <code>viewSchool</code> 为空时 onLoad（:225-226）已 <code>uni.redirectTo(hub)</code> ⇒ 该兜底只在跳转前一瞬可达，不构成可验收屏；
+        同一条 <code>!viewSchool</code> 也令 <code>isOwnCertifiedView</code> 的第一子条件近似死路（Hub 入口恒带 <code>?school=</code>）。</li>
+      <li><b>SafeImage custom-class 已知机制（已知机制 §1）：</b>引导卡图标 56rpx、状态槽图标 100rpx、FAB 图标 44rpx 三处尺寸写在
+        <code>custom-class</code> 上，跨不过 data-v 边界，源码自证「帧上图标本就不可见、不占宽」（:613-614）。
+        ⇒ 画板<b>不画</b>引导卡图标（按实况），FAB 与状态槽图标按语义补画 lucide 替身；这三档尺寸日后改挂宿主标签时应当场生效。</li>
+      <li><b>两处横向缩进不同源</b>：引导卡 / 话题卡外缩进 24rpx，提示条 32rpx，推荐圈卡（card-base）无左右缩进直接贴屏边。
+        实况如此，画板照画。</li>
+      <li><b>演示数据全部有源</b>：标题 / 摘要 / 回复数 / 相对时间取自 stores/campus/mock-data.ts 的 course_exchange 两条夹具
+        （「没有更多了」由 <code>topicHasMore = filtered.length &gt;= TOPIC_PAGE_SIZE(10)</code> 判出）；
+        时间文案取 <code>RELATIVE_TIME_TEXT["zh-CN"]</code>（utils/time.ts:41-46，「30 分钟前」「1 小时前」）。
+        作者名按规范第 4 条改用真名池（阿辰 / 周岚），夹具原名为「学长小王」。
+        本页没有分数类真值位（合拍度/匹配度一类），故不存在「留空 vs 造数」的取舍。</li>
+      <li><b>本校名与 Hub 画板对齐</b>：certificationInfo.schoolName 取「北京大学」，非本校视角取「清华大学」，
+        与 campus-hub.html F04/F05 同一套演示事实（i18n defaultSchool「广州大学」是上面那条死兜底，不采用）。</li>
+      <li><b>FAB 纵向位</b>：原式 <code>calc(env(safe-area-inset-bottom) + 150rpx)</code>，画板不画 iOS home indicator ⇒ 取 env=0（75px）；
+        真机安全区 34px 时应为 109px。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 校园圈私域主页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1845（面积 1,571,940 px，对齐 素材/理想效果图 语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

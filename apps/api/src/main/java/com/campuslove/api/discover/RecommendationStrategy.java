@@ -65,6 +65,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class RecommendationStrategy {
 
+    /**
+     * 可推荐账号的资料完整度下限（2026-10-26）：空资料官方小助手（0%）、QA 测试号（30%）
+     * 不得进入游客/登录推荐池；演示人设已补全到 90–100%。
+     */
+    private static final int MIN_RECOMMEND_PROFILE_COMPLETION = 80;
+
     private final RecommendationConfig recommendationConfig;
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
@@ -161,8 +167,8 @@ public class RecommendationStrategy {
 
         // 8. 分页查询候选用户（P0-21：仅查询 status=active 且 role=USER 的普通用户，
         //    排除禁用账号与 ADMIN/SUPER_ADMIN 管理员）
-        List<User> allUsers = userRepository.findByStatusAndRole(
-                "active", "USER",
+        List<User> allUsers = userRepository.findRecommendableUsers(
+                "active", "USER", MIN_RECOMMEND_PROFILE_COMPLETION,
                 PageRequest.of(0, recommendationConfig.getCandidatePageSize())).getContent();
 
         // 9. 根据 scope 过滤候选
@@ -241,8 +247,8 @@ public class RecommendationStrategy {
     @Transactional(readOnly = true)
     public RecommendResult doRecommendForGuest() {
         // 候选池：与 doRecommend 一致，仅 status=active 且 role=USER 的普通用户
-        List<User> allUsers = userRepository.findByStatusAndRole(
-                "active", "USER",
+        List<User> allUsers = userRepository.findRecommendableUsers(
+                "active", "USER", MIN_RECOMMEND_PROFILE_COMPLETION,
                 PageRequest.of(0, recommendationConfig.getCandidatePageSize())).getContent();
 
         // 批量预加载候选用户的关联数据（与 doRecommend 相同，保证视图字段完整）

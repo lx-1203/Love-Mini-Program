@@ -40,6 +40,25 @@ export interface CampusView {
   name: string;
   /** 学校所在城市（可选，用于按城市分组筛选） */
   city: string | null;
+  /** 该校在籍用户数；null = 后端统计不可用，客户端隐藏该行而非补 0 */
+  memberCount: number | null;
+  /** 该校用户的可见动态数；null 语义同 memberCount */
+  postCount: number | null;
+  /**
+   * 该校专业目录（选项顺序即数组顺序，picker 直接消费）。
+   *
+   * 真源是后端新表 {@code school_majors}（database/flyway/sql/V2026.10.27.0001__create_school_majors.sql）：
+   * 命中「按校档」时下发该校专属目录，没有按校数据时后端自己回退「通用基线档（67 条）」
+   * 并记一行日志。截至本次接线，库里**只有基线档**，即所有学校拿到的都是通用基线，
+   * 不是该校开课事实——按校真源待教育部备案/学校本科招生专业目录导入。
+   *
+   * `null` 只出现在后端连基线都取不到的降级路径，语义是「后端没目录，客户端自己回退本地常量」；
+   * 两种情况都**不得**渲染成空 picker（那等于告诉用户「这所学校没有专业」）。
+   *
+   * 声明为可选（`?`）：后端 mock 档与历史响应可能整体缺键，消费方统一走
+   * `config/schools.ts` 的 getMajorsForSchool() 回退链，不在这里区分「缺键」与「null」。
+   */
+  majors?: string[] | null;
 }
 
 /**

@@ -212,6 +212,36 @@ export const IN_PACKAGE_ASSETS = {
   EMOJI_FILE_TEXT_SVG: { pkg: '/static/assets/icons/common/file-text.svg', tail: '/assets/icons/common/file-text.svg' },
   EMOJI_CHECK_SVG: { pkg: '/static/assets/icons/common/check.svg', tail: '/assets/icons/common/check.svg' },
   /**
+   * 2026-10-26 首页邀请横幅「带翅膀爱心」插画（对齐理想图 素材/理想效果图/首页.png）。
+   * 素材来源：从该理想图邀请横幅区域裁切 + 浅粉底透明化（88x56 @2x，约 9.5KB）。
+   * 落盘目录 icons/common/ 在 cdn-buckets.json 的 localPrefixes（恒包内），
+   * 按 EMOJI_USER_SVG 同款 pkg+tail 双形态登记，过 prepare-static --real 与
+   * prune-unreferenced-static 两道按源码文本认引用的过滤器。消费方 InviteBanner.vue。
+   */
+  INVITE_WINGED_HEART: { pkg: '/static/assets/icons/common/invite-winged-heart.png', tail: '/assets/icons/common/invite-winged-heart.png' },
+  /**
+   * 2026-10-26 寻觅页「打个招呼」按钮图标（对齐理想图 寻觅匹配卡片页面.png）：
+   * 粉色实心对话气泡内含白色爱心眼（原 ICONS_V2.CHAT_PINK 为描边空心气泡+文本线条）。
+   * 素材来源：从该理想图 CTA 键区域裁切 + 边缘泛洪去白底（61x62 @2x，6.5KB），
+   * 内部白色爱心眼经连通域判定保留。落盘 icons/common/（localPrefixes 恒包内），
+   * 同款 pkg+tail 双形态登记。消费方 MatchActions.vue。
+   */
+  GREET_HEART_BUBBLE: { pkg: '/static/assets/icons/common/greet-heart-bubble.png', tail: '/assets/icons/common/greet-heart-bubble.png' },
+  /**
+   * 2026-10-26 寻觅页头「已喜欢列表」入口图标（对齐理想图 寻觅匹配卡片页面.png）：
+   * 黑描边心形+右下小弧尾（原 icons/heart.svg 素描边标准心形，无弧尾）。
+   * 素材来源：从该理想图收藏键区域裁切 + 边缘泛洪去白底（64x64 @2x）。
+   * 落盘 icons/common/，同款 pkg+tail 双形态登记。消费方 pages/discover/index.vue。
+   */
+  FAV_HEART_SWOOSH: { pkg: '/static/assets/icons/common/fav-heart-swoosh.png', tail: '/assets/icons/common/fav-heart-swoosh.png' },
+  /**
+   * 2026-10-26 匹配成功页导航右上「取景框/扫描」图标（对齐理想图 匹配成功页面.png）：
+   * 四角框+中心符号的扫码式字形（原 ICONS_EMOJI.CAMERA_ICON 相机形态用错）。
+   * 纯几何字形自绘（24x24 stroke 体系，同 common/ 图标族）。落盘 icons/common/，
+   * 同款 pkg+tail 双形态登记。消费方 subpackages/discover-extra/discover/match-success.vue。
+   */
+  SCAN_VIEWFINDER_SVG: { pkg: '/static/assets/icons/common/scan-viewfinder.svg', tail: '/assets/icons/common/scan-viewfinder.svg' },
+  /**
    * R6/F7（2026-10-20）：`assets/icons/` **根目录**的 6 枚同判据双登记（R6-L11-D03 / R6-L02-D04
    * / R6-L02-D05 / R6-L02-D07 / R6-L01-D09）。根目录既不在 cdnPrefixes 也不在 localPrefixes
    * ⇒ real 档按契约留包内，但盘上实测它们**发不出去**：
@@ -433,6 +463,18 @@ export const IMAGE_PATHS = {
     HOME: BANNERS_DIR + '/home-banner.jpg',
   },
 
+  /** 首页邀请横幅带翅膀爱心插画（包内恒驻，见 IN_PACKAGE_ASSETS.INVITE_WINGED_HEART） */
+  INVITE_WINGED_HEART: IN_PACKAGE_ASSETS.INVITE_WINGED_HEART.pkg,
+
+  /** 寻觅页「打个招呼」心眼气泡图标（包内恒驻，见 IN_PACKAGE_ASSETS.GREET_HEART_BUBBLE） */
+  GREET_HEART_BUBBLE: IN_PACKAGE_ASSETS.GREET_HEART_BUBBLE.pkg,
+
+  /** 寻觅页头「已喜欢列表」入口图标（包内恒驻，见 IN_PACKAGE_ASSETS.FAV_HEART_SWOOSH） */
+  FAV_HEART_SWOOSH: IN_PACKAGE_ASSETS.FAV_HEART_SWOOSH.pkg,
+
+  /** 寻觅页头筛选漏斗（svg-spec 03-icons，黑色描边漏斗，对齐理想图页头右上筛选入口） */
+  FILTER_FUNNEL: SVG_SPEC_DIR + '/03-icons/filter.svg',
+
   /** 通用图标（common 目录） */
   ICONS_COMMON: {
     ADD: ICONS_BASE + '/common/add.png',
@@ -523,6 +565,7 @@ export const IMAGE_PATHS = {
     PLAY_SVG: ICONS_BASE + '/common/play.svg',           // ▶ 播放
     PAUSE_SVG: ICONS_BASE + '/common/pause.svg',         // ❚❚ 暂停
     CLOSE_WHITE_SVG: ICONS_BASE + '/common/close-white.svg', // 白色 ✕（深色背景关闭）
+    SCAN_VIEWFINDER_SVG: IN_PACKAGE_ASSETS.SCAN_VIEWFINDER_SVG.pkg, // 取景框/扫描（匹配成功页 nav）
   },
 
   /** 社交图标（social 目录）
@@ -542,11 +585,15 @@ export const IMAGE_PATHS = {
     VISITOR: ICONS_SOCIAL_DIR + '/visitor.svg',
   },
 
-  /** 附近页入口图标 */
+  /** 附近页入口图标
+   *  2026-10-26 对齐理想图（附近的首页.png 五宫格）：「附近的人」= 绿色双人人群
+   *  （原 common/user.svg 单人像）、「校园圈」= 蓝色学士帽（原 common/school.svg 楼宇格窗）。
+   *  两枚仅 nearby/index.vue 五宫格消费；group.svg 已有 ICONS_GROUP_SVG pkg+tail 双登记，
+   *  graduation-cap.svg 在 localPrefixes 的 common/ 桶（ICONS_COMMON.GRADUATION_CAP_SVG 同款路径）。 */
   NEARBY_ICONS: {
-    PEOPLE:  ICONS_BASE + '/common/user.svg',
+    PEOPLE:  ICONS_BASE + '/group.svg',
     CIRCLE:  ICONS_BASE + '/group.svg',          // 2026-08-26 P1-1：原 common/group.svg 不存在导致渲染 404 → 指向真实文件
-    CAMPUS:  ICONS_BASE + '/common/school.svg',
+    CAMPUS:  ICONS_BASE + '/common/graduation-cap.svg',
     ACTIVITY: ICONS_BASE + '/common/schedule.svg',
     DYNAMIC: ICONS_BASE + '/common/fire.svg',
   },

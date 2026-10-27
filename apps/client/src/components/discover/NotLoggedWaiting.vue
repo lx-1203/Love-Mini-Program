@@ -250,7 +250,7 @@ function goLater() {
      被顶出画布下沿约 19px（实帧墨迹 y800–812，正被 home indicator y805–808 压字）。
      高度改成「视口 − 页头带」：页头高走 --nlw-header-offset，宿主未注入时取实测默认 100px
      （= 状态栏 44 + 页头上下内衬 12+8 + 返回件行高约 36）。 */
-  min-height: calc(100vh - var(--nlw-header-offset, 100px));
+  min-height: calc(100vh - var(--nlw-header-offset, 100px)); // token-audit:ignore 宿主注入契约（R10-L06-D23），未注入时取实测页头高 100px
   overflow: hidden;
   background: var(--c-bg-page);
   display: flex;

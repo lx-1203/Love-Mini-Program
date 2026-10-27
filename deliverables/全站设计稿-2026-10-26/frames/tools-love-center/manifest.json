@@ -1,0 +1,27 @@
+{
+  "schema": "design-board-shoot/v1",
+  "board": "tools-love-center.html",
+  "dsf": 2.273,
+  "results": [
+    {
+      "id": "F01",
+      "title": "商业化缺省档 · course/consult 双关",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\tools-love-center\\F01.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F02",
+      "title": "商业化开启档 · course+consult 放行",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\tools-love-center\\F02.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    }
+  ]
+}

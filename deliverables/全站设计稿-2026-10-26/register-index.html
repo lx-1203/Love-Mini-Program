@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 注册页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（色/字/圆角一律走 base 令牌；几何 px 由 rpx ÷ 2 推得） ===== */
+/* 页面壳：整页可上下滚动，画框只拍 812px 视口。.rg-page--up = 下滚 235px 的视口位 */
+.rg-page { position: absolute; top: 0; left: 0; width: 375px; z-index: 2; background: var(--c-bg-page);
+  padding-bottom: 12px; }
+.rg-page--up { transform: translateY(-235px); }
+
+/* ---------------- 页头 hero（源码 480rpx + --statusbar） ---------------- */
+.rg-hero { position: relative; width: 375px; height: 284px;
+  background: linear-gradient(160deg, var(--c-brand-50) 0%, var(--c-bg-page) 52%, var(--c-romance-50) 100%); }
+.rg-hero__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.rg-hero__fade { position: absolute; left: 0; right: 0; bottom: 0; height: 52px;
+  background: linear-gradient(180deg, transparent 0%, var(--c-bg-page) 100%); }
+.rg-hero__back { position: absolute; left: 16px; top: 88px; width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(255, 255, 255, .78); display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--s-md); z-index: 3; }
+.rg-hero__back svg { width: 20px; height: 20px; color: var(--c-text-primary); }
+.rg-hero__txt { position: absolute; left: 16px; top: 148px; display: flex; flex-direction: column; z-index: 2; }
+.rg-eyebrow { font-size: var(--fs-xs); font-weight: 800; letter-spacing: 2px; color: var(--c-brand-800);
+  margin-bottom: 5px; }
+.rg-title { font-size: 26px; font-weight: 800; line-height: 1.2; color: var(--c-text-primary); }
+.rg-sub { margin-top: 6px; font-size: var(--fs-base); line-height: 1.55; color: var(--c-text-secondary); }
+
+/* ---------------- 表单卡（骑压 hero 32px） ---------------- */
+.rg-card { position: relative; z-index: 2; margin: -32px 16px 0; background: var(--c-bg-container);
+  border-radius: var(--r-card); padding: 20px; box-shadow: var(--card-shadow); }
+.rg-cap { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; }
+.rg-cap b { font-size: var(--fs-base); font-weight: 700; color: var(--c-text-primary); }
+.rg-cap i { flex: 1; height: 1px; background: var(--c-border-light); }
+.rg-cap--second { margin-top: 20px; }
+
+/* ---------------- 字段 ---------------- */
+.rg-label { display: block; font-size: var(--fs-md); font-weight: 600; line-height: 1.4;
+  color: var(--c-text-secondary); margin: 0 0 6px 2px; }
+.rg-field { display: flex; align-items: center; height: 48px; padding: 0 14px; border-radius: var(--r-xl);
+  margin-bottom: 12px; font-size: var(--fs-xl); color: var(--c-text-primary);
+  border: 1px solid var(--c-border-light); }
+.rg-field.input--focus { border: 1.5px solid var(--c-brand); }
+.rg-field.input--err { border: 1.5px solid var(--c-error); }
+.rg-field__ic { width: 18px; height: 18px; flex: none; margin-right: 10px; color: var(--c-text-secondary); }
+.rg-field__v { flex: 1; min-width: 0; font-weight: 500; }
+.rg-field__v--ph { color: var(--c-text-tertiary); font-weight: 400; }
+.rg-field__v--pick { color: var(--c-text-placeholder); font-weight: 400; }
+.rg-field__v--dots { letter-spacing: 2px; }
+.rg-field__hint { font-size: var(--fs-base); color: var(--c-text-tertiary); flex: none; margin-left: 6px; }
+.rg-eye { width: 20px; height: 20px; flex: none; color: var(--c-text-placeholder); }
+.rg-clear { width: 16px; height: 16px; border-radius: 50%; flex: none; background: var(--c-border-strong);
+  display: flex; align-items: center; justify-content: center; }
+.rg-clear svg { width: 10px; height: 10px; color: var(--c-neutral-0); stroke-width: 2.4; }
+
+/* 行内错误 */
+.rg-err { display: flex; align-items: center; gap: 4px; margin: -6px 0 10px 4px; }
+.rg-err svg { width: 13px; height: 13px; flex: none; color: var(--c-error); }
+.rg-err span { font-size: var(--fs-base); font-weight: 500; line-height: 1.35; color: var(--c-error); }
+
+/* 验证码按钮（高 44px · 圆角胶囊 · 底 brand-800） */
+.rg-sms { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 88px; height: 44px;
+  padding: 0 12px; border-radius: var(--r-full); flex: none; background: var(--c-brand-800);
+  font-size: var(--fs-base); font-weight: 700; color: var(--c-text-inverse); white-space: nowrap; }
+.rg-sms--cd { background: var(--c-border-light); color: var(--c-text-placeholder); }
+.rg-sms--sending { background: var(--c-brand-100); color: var(--c-brand-700); }
+.rg-sms--off { opacity: .55; }
+.rg-sms__spin { width: 13px; height: 13px; border-radius: 50%; border: 2px solid rgba(31, 141, 106, .25);
+  border-top-color: var(--c-brand-700); animation: sp .8s linear infinite; }
+
+/* 密码强度（3 格 · 32×4） */
+.rg-str { display: flex; align-items: center; gap: 8px; margin: -6px 0 10px 4px; }
+.rg-str__bars { display: flex; gap: 4px; }
+.rg-str__bar { width: 32px; height: 4px; border-radius: var(--r-xs); background: var(--c-border-light); }
+.rg-str__bar--l1 { background: var(--c-error); }
+.rg-str__bar--l2 { background: var(--c-warning); }
+.rg-str__bar--l3 { background: var(--c-brand); }
+.rg-str__t { font-size: var(--fs-sm); font-weight: 700; line-height: 1; }
+.rg-str__t--l1 { color: var(--c-error); }
+.rg-str__t--l2 { color: var(--c-warning); }
+.rg-str__t--l3 { color: var(--c-brand-700); }
+
+/* 主按钮（高 48 · 圆角 12 · 135° 品牌渐变） */
+.rg-submit { background: var(--c-gradient-brand); box-shadow: var(--s-brand); }
+.rg-submit.btn--dis { background: var(--c-status-disabled); box-shadow: none; }
+.rg-submit__t { font-size: var(--fs-xl); font-weight: 700; letter-spacing: .4px; color: var(--c-text-inverse); }
+.rg-submit.btn--dis .rg-submit__t { color: var(--c-text-secondary); }
+
+/* 次级出口（手机号已注册） */
+.rg-ghost { display: flex; align-items: center; justify-content: center; height: 44px; margin-top: 10px;
+  border-radius: var(--r-xl); border: 1px solid var(--c-border-default); background: var(--c-bg-container);
+  font-size: var(--fs-lg); font-weight: 500; color: var(--c-text-secondary); }
+
+/* 协议行 */
+.rg-agree { display: flex; align-items: flex-start; gap: 7px; margin: 15px 24px 0; }
+.rg-chk { width: 16px; height: 16px; border-radius: var(--r-sm); border: 1.5px solid var(--c-border-default);
+  background: var(--c-bg-container); flex: none; margin-top: 1px; display: flex; align-items: center;
+  justify-content: center; }
+.rg-chk--on { background: var(--c-brand); border-color: var(--c-brand); }
+.rg-chk svg { width: 10px; height: 10px; color: var(--c-neutral-0); stroke-width: 2.6; }
+.rg-agree__t { font-size: var(--fs-base); line-height: 1.55; color: var(--c-text-tertiary); }
+.rg-agree__t--err { color: var(--c-error); }
+.rg-agree__link { color: var(--c-brand-700); font-weight: 500; }
+
+/* 底部说明与出口 */
+.rg-safety { display: block; margin: 14px 24px 0; font-size: var(--fs-sm); line-height: 1.75;
+  color: var(--c-text-secondary); text-align: center; }
+.rg-tologin { display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 15px; }
+.rg-tologin__a { font-size: var(--fs-md); color: var(--c-text-tertiary); }
+.rg-tologin__b { font-size: var(--fs-md); font-weight: 600; color: var(--c-brand-800); }
+
+/* Toast（系统件，非页面 DOM：uni.showToast icon:none 黑底白字） */
+.rg-toast { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); z-index: 9;
+  max-width: 290px; padding: 11px 16px; border-radius: var(--r-lg); background: rgba(15, 23, 42, .92);
+  color: var(--c-neutral-0); font-size: var(--fs-base); line-height: 1.45; text-align: center; }
+
+/* 结构标尺（仅 §02 面板用） */
+.rg-ruler { display: flex; align-items: center; gap: 8px; font-size: 10.5px; color: var(--c-text-placeholder); }
+</style>
+</head>
+<body>
+
+<!-- ===== 图标库（lucide 描边风格；同源 apps/client/src/static/assets/icons/register/*.svg） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 18 8.5 12l6-6"/></symbol>
+  <symbol id="i-mobile" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2.2"/><path d="M10.5 18.5h3"/></symbol>
+  <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 8.5h8M8 12h5"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2.2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.1"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-3.6 8-10V5.2L12 2 4 5.2V12c0 6.4 8 10 8 10z"/><path d="M9 11.6l2.2 2.2 4-4"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-1.6a4.4 4.4 0 0 0-4.4-4.4H8.4A4.4 4.4 0 0 0 4 19.4V21"/><circle cx="12" cy="7.4" r="4"/></symbol>
+  <symbol id="i-cake" viewBox="0 0 24 24"><path d="M4.5 21v-6.2c0-1.1.9-2 2-2h11c1.1 0 2 .9 2 2V21"/><path d="M2.8 21h18.4M12 12.6V9.2"/><path d="M12 7.6c.9-.8.9-2 0-3.1-.9 1.1-.9 2.3 0 3.1z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.2 12S5.8 5.2 12 5.2 21.8 12 21.8 12 18.2 18.8 12 18.8 2.2 12 2.2 12z"/><circle cx="12" cy="12" r="2.9"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M9.9 9.9a3 3 0 1 0 4.2 4.2"/><path d="M10.7 5.3A9.8 9.8 0 0 1 12 5.2c6.2 0 9.8 6.8 9.8 6.8a17 17 0 0 1-2.7 3.5"/><path d="M6.4 6.6A16.4 16.4 0 0 0 2.2 12s3.6 6.8 9.8 6.8a9.6 9.6 0 0 0 4.6-1.2"/><path d="M3 3l18 18"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.6"/><path d="M12 7.6V13"/><path d="M12 16.4h.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6.5 9.5 17 4 11.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M9 9l6 6M15 9l-6 6"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.2 12.4l2.6 2.6 5-5.6"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>注册页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">pages/register/index</code>（主包、非 Tab 页）。
+     本页是全站唯一的账号创建入口。2026-09 的旧画板把「昵称 + 出生日期」画成第 07 屏备选方案，
+     现源码已把它们并入主链路常渲染——本画板按 <b>当前源码实况</b> 重画七态，
+     并把与旧画板的差异逐条登记在 §04，作为该页的永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>pages/register/index</b></span>
+    <span>主包非 Tab 页 <b>无 tabbar</b></span>
+    <span>状态 <b>7 屏</b></span>
+    <span>字段 <b>6 + 1 勾选 + 1 按钮</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 7 屏</h2>
+    <p>默认 / 填写中 / 首错定位 / 身份错误 / 协议未勾选 / 提交中 / 失败·已注册</p></div>
+  <div class="sec__sub">本页状态机有 7 个可见态，来自模板的条件分支：
+    <code style="font-family:var(--mono);font-size:11.5px">focusField === 'x' &amp;&amp; !errors.x</code>、
+    <code style="font-family:var(--mono);font-size:11.5px">errors.x</code>、
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="phone"</code>、
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="password"</code>（强度条）、
+    <code style="font-family:var(--mono);font-size:11.5px">smsSending / smsCountdown &gt; 0 / submitting</code>、
+    <code style="font-family:var(--mono);font-size:11.5px">!formComplete / submitting</code>、
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="phoneRegistered"</code>、
+    <code style="font-family:var(--mono);font-size:11.5px">agreeShake</code>、
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="agreed"</code>。
+    <b>帧即视口：</b>整页内容高 <b>1034px</b>（默认态；本画板与源码同几何，渲染实测。六字段填满 + 强度条 1049、生日报错 1069、出现次级出口 1123），
+    超 812px 视口 222px 起。
+    F01–F03 是不滚动的首屏视口；F04–F07 是下滚 235px 后的视口（页面为整页原生滚动，主按钮与协议行本就在首屏之外），
+    裁切说明只写在题注 <code style="font-family:var(--mono);font-size:11.5px">.d</code> 里，不写进画面。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">默认态 · 空表单（六字段）</span><span class="d">主按钮置灰 · ↓裁切至出生日期输入框</span></figcaption>
+      <div class="phone">
+        <div class="rg-page">
+          <div class="rg-hero">
+            <img class="rg-hero__img" src="assets/demo/reg-hero-illustration@3x.jpg" alt="">
+            <div class="rg-hero__fade"></div>
+            <div class="rg-hero__back"><svg><use href="#i-back"/></svg></div>
+            <div class="rg-hero__txt">
+              <span class="rg-eyebrow">XUNMI · CAMPUS</span>
+              <span class="rg-title">创建账号</span>
+              <span class="rg-sub">用手机号注册，开始遇见同频的人</span>
+            </div>
+          </div>
+          <div class="rg-card">
+            <div class="rg-cap"><b>账号信息</b><i></i></div>
+            <span class="rg-label">手机号</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-mobile"/></svg><span class="rg-field__v rg-field__v--ph">请输入手机号</span></div>
+            <span class="rg-label">短信验证码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-message"/></svg><span class="rg-field__v rg-field__v--ph">短信验证码</span><span class="rg-sms">获取验证码</span></div>
+            <span class="rg-label">设置密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-lock"/></svg><span class="rg-field__v rg-field__v--ph">设置密码（8–20 位）</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <span class="rg-label">确认密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-shield"/></svg><span class="rg-field__v rg-field__v--ph">再次输入密码</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <div class="rg-cap rg-cap--second"><b>基础身份</b><i></i></div>
+            <span class="rg-label">昵称</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-user"/></svg><span class="rg-field__v rg-field__v--ph">昵称（1–20 字）</span></div>
+            <span class="rg-label">出生日期</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-cake"/></svg><span class="rg-field__v rg-field__v--pick">出生日期</span><span class="rg-field__hint">需满 18 周岁</span></div>
+            <div class="btn rg-submit btn--dis" style="margin-top:4px"><span class="rg-submit__t">注 册</span></div>
+          </div>
+          <div class="rg-agree">
+            <span class="rg-chk"></span>
+            <span class="rg-agree__t">我已阅读并同意 <span class="rg-agree__link">《用户协议》</span> 和 <span class="rg-agree__link">《隐私政策》</span></span>
+          </div>
+          <span class="rg-safety">注册即代表你已满 18 周岁；信息仅用于校园身份核验，严格保密</span>
+          <div class="rg-tologin"><span class="rg-tologin__a">已有账号？</span><span class="rg-tologin__b">去登录</span></div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">填写中 · 倒计时 + 强度「强」+ 已勾选</span><span class="d">主按钮可用 · ↓裁切至出生日期输入框</span></figcaption>
+      <div class="phone">
+        <div class="rg-page">
+          <div class="rg-hero">
+            <img class="rg-hero__img" src="assets/demo/reg-hero-illustration@3x.jpg" alt="">
+            <div class="rg-hero__fade"></div>
+            <div class="rg-hero__back"><svg><use href="#i-back"/></svg></div>
+            <div class="rg-hero__txt">
+              <span class="rg-eyebrow">XUNMI · CAMPUS</span>
+              <span class="rg-title">创建账号</span>
+              <span class="rg-sub">用手机号注册，开始遇见同频的人</span>
+            </div>
+          </div>
+          <div class="rg-card">
+            <div class="rg-cap"><b>账号信息</b><i></i></div>
+            <span class="rg-label">手机号</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-mobile"/></svg><span class="rg-field__v">138 8888 8888</span><span class="rg-clear"><svg><use href="#i-x"/></svg></span></div>
+            <span class="rg-label">短信验证码</span>
+            <div class="input rg-field input--focus"><svg class="rg-field__ic"><use href="#i-message"/></svg><span class="rg-field__v">582914</span><span class="rg-sms rg-sms--cd">重新发送 45s</span></div>
+            <span class="rg-label">设置密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-lock"/></svg><span class="rg-field__v rg-field__v--dots">••••••••••</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <div class="rg-str">
+              <span class="rg-str__bars"><i class="rg-str__bar rg-str__bar--l3"></i><i class="rg-str__bar rg-str__bar--l3"></i><i class="rg-str__bar rg-str__bar--l3"></i></span>
+              <span class="rg-str__t rg-str__t--l3">强</span>
+            </div>
+            <span class="rg-label">确认密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-shield"/></svg><span class="rg-field__v rg-field__v--dots">••••••••••</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <div class="rg-cap rg-cap--second"><b>基础身份</b><i></i></div>
+            <span class="rg-label">昵称</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-user"/></svg><span class="rg-field__v">小满</span></div>
+            <span class="rg-label">出生日期</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-cake"/></svg><span class="rg-field__v">2004-03-18</span><span class="rg-field__hint">需满 18 周岁</span></div>
+            <div class="btn rg-submit" style="margin-top:4px"><span class="rg-submit__t">注 册</span></div>
+          </div>
+          <div class="rg-agree">
+            <span class="rg-chk rg-chk--on"><svg><use href="#i-check"/></svg></span>
+            <span class="rg-agree__t">我已阅读并同意 <span class="rg-agree__link">《用户协议》</span> 和 <span class="rg-agree__link">《隐私政策》</span></span>
+          </div>
+          <span class="rg-safety">注册即代表你已满 18 周岁；信息仅用于校园身份核验，严格保密</span>
+          <div class="rg-tologin"><span class="rg-tologin__a">已有账号？</span><span class="rg-tologin__b">去登录</span></div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">校验错误 · 首错定位在手机号</span><span class="d">点「获取验证码」触发 · ↓裁切至昵称输入框下缘</span></figcaption>
+      <div class="phone">
+        <div class="rg-page">
+          <div class="rg-hero">
+            <img class="rg-hero__img" src="assets/demo/reg-hero-illustration@3x.jpg" alt="">
+            <div class="rg-hero__fade"></div>
+            <div class="rg-hero__back"><svg><use href="#i-back"/></svg></div>
+            <div class="rg-hero__txt">
+              <span class="rg-eyebrow">XUNMI · CAMPUS</span>
+              <span class="rg-title">创建账号</span>
+              <span class="rg-sub">用手机号注册，开始遇见同频的人</span>
+            </div>
+          </div>
+          <div class="rg-card">
+            <div class="rg-cap"><b>账号信息</b><i></i></div>
+            <span class="rg-label">手机号</span>
+            <div class="input rg-field input--err"><svg class="rg-field__ic" style="color:var(--c-error)"><use href="#i-mobile"/></svg><span class="rg-field__v">138 8888</span><span class="rg-clear"><svg><use href="#i-x"/></svg></span></div>
+            <div class="rg-err"><svg><use href="#i-alert"/></svg><span>手机号格式不正确，请输入 11 位手机号</span></div>
+            <span class="rg-label">短信验证码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-message"/></svg><span class="rg-field__v rg-field__v--ph">短信验证码</span><span class="rg-sms">获取验证码</span></div>
+            <span class="rg-label">设置密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-lock"/></svg><span class="rg-field__v rg-field__v--ph">设置密码（8–20 位）</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <span class="rg-label">确认密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-shield"/></svg><span class="rg-field__v rg-field__v--ph">再次输入密码</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <div class="rg-cap rg-cap--second"><b>基础身份</b><i></i></div>
+            <span class="rg-label">昵称</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-user"/></svg><span class="rg-field__v rg-field__v--ph">昵称（1–20 字）</span></div>
+            <span class="rg-label">出生日期</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-cake"/></svg><span class="rg-field__v rg-field__v--pick">出生日期</span><span class="rg-field__hint">需满 18 周岁</span></div>
+            <div class="btn rg-submit btn--dis" style="margin-top:4px"><span class="rg-submit__t">注 册</span></div>
+          </div>
+          <div class="rg-agree">
+            <span class="rg-chk"></span>
+            <span class="rg-agree__t">我已阅读并同意 <span class="rg-agree__link">《用户协议》</span> 和 <span class="rg-agree__link">《隐私政策》</span></span>
+          </div>
+          <span class="rg-safety">注册即代表你已满 18 周岁；信息仅用于校园身份核验，严格保密</span>
+          <div class="rg-tologin"><span class="rg-tologin__a">已有账号？</span><span class="rg-tologin__b">去登录</span></div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">基础身份错误 · 生日未满 18</span><span class="d">下滚 235px · ↑hero 与账号段在视口外 · ↓裁切至去登录行 · 主按钮仍可用见 §04</span></figcaption>
+      <div class="phone">
+        <div class="rg-page rg-page--up">
+          <div class="rg-hero">
+            <img class="rg-hero__img" src="assets/demo/reg-hero-illustration@3x.jpg" alt="">
+            <div class="rg-hero__fade"></div>
+            <div class="rg-hero__back"><svg><use href="#i-back"/></svg></div>
+            <div class="rg-hero__txt">
+              <span class="rg-eyebrow">XUNMI · CAMPUS</span>
+              <span class="rg-title">创建账号</span>
+              <span class="rg-sub">用手机号注册，开始遇见同频的人</span>
+            </div>
+          </div>
+          <div class="rg-card">
+            <div class="rg-cap"><b>账号信息</b><i></i></div>
+            <span class="rg-label">手机号</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-mobile"/></svg><span class="rg-field__v">138 8888 8888</span><span class="rg-clear"><svg><use href="#i-x"/></svg></span></div>
+            <span class="rg-label">短信验证码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-message"/></svg><span class="rg-field__v">582914</span><span class="rg-sms rg-sms--cd">重新发送 31s</span></div>
+            <span class="rg-label">设置密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-lock"/></svg><span class="rg-field__v rg-field__v--dots">••••••••</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <div class="rg-str">
+              <span class="rg-str__bars"><i class="rg-str__bar rg-str__bar--l2"></i><i class="rg-str__bar rg-str__bar--l2"></i><i class="rg-str__bar"></i></span>
+              <span class="rg-str__t rg-str__t--l2">中</span>
+            </div>
+            <span class="rg-label">确认密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-shield"/></svg><span class="rg-field__v rg-field__v--dots">••••••••</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <div class="rg-cap rg-cap--second"><b>基础身份</b><i></i></div>
+            <span class="rg-label">昵称</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-user"/></svg><span class="rg-field__v">小满</span></div>
+            <span class="rg-label">出生日期</span>
+            <div class="input rg-field input--err"><svg class="rg-field__ic" style="color:var(--c-error)"><use href="#i-cake"/></svg><span class="rg-field__v">2010-06-01</span><span class="rg-field__hint">需满 18 周岁</span></div>
+            <div class="rg-err"><svg><use href="#i-alert"/></svg><span>出生日期需已满 18 周岁</span></div>
+            <div class="btn rg-submit" style="margin-top:4px"><span class="rg-submit__t">注 册</span></div>
+          </div>
+          <div class="rg-agree">
+            <span class="rg-chk rg-chk--on"><svg><use href="#i-check"/></svg></span>
+            <span class="rg-agree__t">我已阅读并同意 <span class="rg-agree__link">《用户协议》</span> 和 <span class="rg-agree__link">《隐私政策》</span></span>
+          </div>
+          <span class="rg-safety">注册即代表你已满 18 周岁；信息仅用于校园身份核验，严格保密</span>
+          <div class="rg-tologin"><span class="rg-tologin__a">已有账号？</span><span class="rg-tologin__b">去登录</span></div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">协议未勾选 · 点注册的阻断态</span><span class="d">下滚 235px · ↓裁切至去登录行 · 抖动 4px×2 不可见于静帧</span></figcaption>
+      <div class="phone">
+        <div class="rg-page rg-page--up">
+          <div class="rg-hero">
+            <img class="rg-hero__img" src="assets/demo/reg-hero-illustration@3x.jpg" alt="">
+            <div class="rg-hero__fade"></div>
+            <div class="rg-hero__back"><svg><use href="#i-back"/></svg></div>
+            <div class="rg-hero__txt">
+              <span class="rg-eyebrow">XUNMI · CAMPUS</span>
+              <span class="rg-title">创建账号</span>
+              <span class="rg-sub">用手机号注册，开始遇见同频的人</span>
+            </div>
+          </div>
+          <div class="rg-card">
+            <div class="rg-cap"><b>账号信息</b><i></i></div>
+            <span class="rg-label">手机号</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-mobile"/></svg><span class="rg-field__v">138 8888 8888</span><span class="rg-clear"><svg><use href="#i-x"/></svg></span></div>
+            <span class="rg-label">短信验证码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-message"/></svg><span class="rg-field__v">582914</span><span class="rg-sms rg-sms--cd">重新发送 12s</span></div>
+            <span class="rg-label">设置密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-lock"/></svg><span class="rg-field__v rg-field__v--dots">••••••••••</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <div class="rg-str">
+              <span class="rg-str__bars"><i class="rg-str__bar rg-str__bar--l3"></i><i class="rg-str__bar rg-str__bar--l3"></i><i class="rg-str__bar rg-str__bar--l3"></i></span>
+              <span class="rg-str__t rg-str__t--l3">强</span>
+            </div>
+            <span class="rg-label">确认密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-shield"/></svg><span class="rg-field__v rg-field__v--dots">••••••••••</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <div class="rg-cap rg-cap--second"><b>基础身份</b><i></i></div>
+            <span class="rg-label">昵称</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-user"/></svg><span class="rg-field__v">周岚</span></div>
+            <span class="rg-label">出生日期</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-cake"/></svg><span class="rg-field__v">2003-11-02</span><span class="rg-field__hint">需满 18 周岁</span></div>
+            <div class="btn rg-submit btn--dis" style="margin-top:4px"><span class="rg-submit__t">注 册</span></div>
+          </div>
+          <div class="rg-agree">
+            <span class="rg-chk"></span>
+            <span class="rg-agree__t rg-agree__t--err">我已阅读并同意 <span class="rg-agree__link">《用户协议》</span> 和 <span class="rg-agree__link">《隐私政策》</span></span>
+          </div>
+          <span class="rg-safety">注册即代表你已满 18 周岁；信息仅用于校园身份核验，严格保密</span>
+          <div class="rg-tologin"><span class="rg-tologin__a">已有账号？</span><span class="rg-tologin__b">去登录</span></div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">提交中 · Loading</span><span class="d">下滚 235px · ↓裁切至去登录行 · 字段无压暗类见 §04</span></figcaption>
+      <div class="phone">
+        <div class="rg-page rg-page--up">
+          <div class="rg-hero">
+            <img class="rg-hero__img" src="assets/demo/reg-hero-illustration@3x.jpg" alt="">
+            <div class="rg-hero__fade"></div>
+            <div class="rg-hero__back"><svg><use href="#i-back"/></svg></div>
+            <div class="rg-hero__txt">
+              <span class="rg-eyebrow">XUNMI · CAMPUS</span>
+              <span class="rg-title">创建账号</span>
+              <span class="rg-sub">用手机号注册，开始遇见同频的人</span>
+            </div>
+          </div>
+          <div class="rg-card">
+            <div class="rg-cap"><b>账号信息</b><i></i></div>
+            <span class="rg-label">手机号</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-mobile"/></svg><span class="rg-field__v">138 8888 8888</span><span class="rg-clear"><svg><use href="#i-x"/></svg></span></div>
+            <span class="rg-label">短信验证码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-message"/></svg><span class="rg-field__v">582914</span><span class="rg-sms rg-sms--cd rg-sms--off">重新发送 04s</span></div>
+            <span class="rg-label">设置密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-lock"/></svg><span class="rg-field__v rg-field__v--dots">••••••••••</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <div class="rg-str">
+              <span class="rg-str__bars"><i class="rg-str__bar rg-str__bar--l3"></i><i class="rg-str__bar rg-str__bar--l3"></i><i class="rg-str__bar rg-str__bar--l3"></i></span>
+              <span class="rg-str__t rg-str__t--l3">强</span>
+            </div>
+            <span class="rg-label">确认密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-shield"/></svg><span class="rg-field__v rg-field__v--dots">••••••••••</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <div class="rg-cap rg-cap--second"><b>基础身份</b><i></i></div>
+            <span class="rg-label">昵称</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-user"/></svg><span class="rg-field__v">阿辰</span></div>
+            <span class="rg-label">出生日期</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-cake"/></svg><span class="rg-field__v">2005-09-21</span><span class="rg-field__hint">需满 18 周岁</span></div>
+            <div class="btn rg-submit btn--load" style="margin-top:4px"><span class="spin"></span><span class="rg-submit__t">注 册 中</span></div>
+          </div>
+          <div class="rg-agree">
+            <span class="rg-chk rg-chk--on"><svg><use href="#i-check"/></svg></span>
+            <span class="rg-agree__t">我已阅读并同意 <span class="rg-agree__link">《用户协议》</span> 和 <span class="rg-agree__link">《隐私政策》</span></span>
+          </div>
+          <span class="rg-safety">注册即代表你已满 18 周岁；信息仅用于校园身份核验，严格保密</span>
+          <div class="rg-tologin"><span class="rg-tologin__a">已有账号？</span><span class="rg-tologin__b">去登录</span></div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">注册失败 · 手机号已注册</span><span class="d">下滚 235px · 次级出口出现 · 手机字段红框在视口外</span></figcaption>
+      <div class="phone">
+        <div class="rg-page rg-page--up">
+          <div class="rg-hero">
+            <img class="rg-hero__img" src="assets/demo/reg-hero-illustration@3x.jpg" alt="">
+            <div class="rg-hero__fade"></div>
+            <div class="rg-hero__back"><svg><use href="#i-back"/></svg></div>
+            <div class="rg-hero__txt">
+              <span class="rg-eyebrow">XUNMI · CAMPUS</span>
+              <span class="rg-title">创建账号</span>
+              <span class="rg-sub">用手机号注册，开始遇见同频的人</span>
+            </div>
+          </div>
+          <div class="rg-card">
+            <div class="rg-cap"><b>账号信息</b><i></i></div>
+            <span class="rg-label">手机号</span>
+            <div class="input rg-field input--err"><svg class="rg-field__ic" style="color:var(--c-error)"><use href="#i-mobile"/></svg><span class="rg-field__v">138 8888 8888</span><span class="rg-clear"><svg><use href="#i-x"/></svg></span></div>
+            <div class="rg-err"><svg><use href="#i-alert"/></svg><span>该手机号已注册，试试直接登录</span></div>
+            <span class="rg-label">短信验证码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-message"/></svg><span class="rg-field__v">582914</span><span class="rg-sms rg-sms--cd">重新发送 22s</span></div>
+            <span class="rg-label">设置密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-lock"/></svg><span class="rg-field__v rg-field__v--dots">••••••••</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <div class="rg-str">
+              <span class="rg-str__bars"><i class="rg-str__bar rg-str__bar--l2"></i><i class="rg-str__bar rg-str__bar--l2"></i><i class="rg-str__bar"></i></span>
+              <span class="rg-str__t rg-str__t--l2">中</span>
+            </div>
+            <span class="rg-label">确认密码</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-shield"/></svg><span class="rg-field__v rg-field__v--dots">••••••••</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+            <div class="rg-cap rg-cap--second"><b>基础身份</b><i></i></div>
+            <span class="rg-label">昵称</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-user"/></svg><span class="rg-field__v">星辰</span></div>
+            <span class="rg-label">出生日期</span>
+            <div class="input rg-field"><svg class="rg-field__ic"><use href="#i-cake"/></svg><span class="rg-field__v">2002-07-30</span><span class="rg-field__hint">需满 18 周岁</span></div>
+            <div class="btn rg-submit" style="margin-top:4px"><span class="rg-submit__t">注 册</span></div>
+            <div class="rg-ghost">用这个手机号登录</div>
+          </div>
+          <div class="rg-agree">
+            <span class="rg-chk rg-chk--on"><svg><use href="#i-check"/></svg></span>
+            <span class="rg-agree__t">我已阅读并同意 <span class="rg-agree__link">《用户协议》</span> 和 <span class="rg-agree__link">《隐私政策》</span></span>
+          </div>
+          <span class="rg-safety">注册即代表你已满 18 周岁；信息仅用于校园身份核验，严格保密</span>
+          <div class="rg-tologin"><span class="rg-tologin__a">已有账号？</span><span class="rg-tologin__b">去登录</span></div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">六类交互件，状态档位一律按源码 class 绑定与 <code style="font-family:var(--mono);font-size:11.5px">:disabled</code> 分支枚举；
+    旧稿的「字段整体压暗 55%」「勾选框红框」两处在现源码里没有对应样式，已在 §04 登记。</div>
+
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>输入框 Field · 5 态（+ 清空副态）</h3>
+      <p class="hint">高 48px（96rpx）· 圆角 <code>--r-xl</code> · 内边距 0 14px · 前缀图标 18px / 右距 10px · 文本 15px/500。
+        默认底走 <code>--c-bg-surface</code>（真值 #F3FAF6，源码 :981 的 #f7faf9 是过时字面量）。</p>
+      <div class="row">
+        <div class="cell"><div class="input rg-field"><svg class="rg-field__ic"><use href="#i-mobile"/></svg><span class="rg-field__v rg-field__v--ph">请输入手机号</span></div><span class="lab">default（占位 = tertiary）</span></div>
+        <div class="cell"><div class="input rg-field input--focus"><svg class="rg-field__ic"><use href="#i-mobile"/></svg><span class="rg-field__v">138 88</span></div><span class="lab">focus（白底 + 光环）</span></div>
+        <div class="cell"><div class="input rg-field"><svg class="rg-field__ic"><use href="#i-mobile"/></svg><span class="rg-field__v">138 8888 8888</span></div><span class="lab">filled</span></div>
+        <div class="cell"><div class="input rg-field input--err"><svg class="rg-field__ic" style="color:var(--c-error)"><use href="#i-mobile"/></svg><span class="rg-field__v">138 8888</span></div><span class="lab">error（+ 抖动 4px×2）</span></div>
+        <div class="cell"><div class="input rg-field"><svg class="rg-field__ic"><use href="#i-mobile"/></svg><span class="rg-field__v">138 8888 8888</span><span class="rg-clear"><svg><use href="#i-x"/></svg></span></div><span class="lab">clearable（v-if="phone"）</span></div>
+      </div>
+      <table class="tbl" style="margin-top:20px">
+        <tr><th>状态</th><th>触发条件（源码）</th><th>底色</th><th>边框 / 光环</th><th>图标 · 文本</th></tr>
+        <tr><td>default</td><td><code>focusField ≠ 本字段</code></td><td><code>--c-bg-surface</code></td><td>1px <code>--c-border-light</code></td><td>图标 <code>--c-text-secondary</code> · 占位 <code>--c-text-tertiary</code></td></tr>
+        <tr><td>focus</td><td><code>focusField==='x' &amp;&amp; !errors.x</code></td><td><code>--c-bg-container</code></td><td>1.5px <code>--c-brand</code> + 3px 12% 光环</td><td>文本 15px/500 <code>--c-text-primary</code></td></tr>
+        <tr><td>filled</td><td><code>value ≠ ''</code>（无独立类）</td><td>同 default</td><td>同 default</td><td>文本 <code>--c-text-primary</code></td></tr>
+        <tr><td>error</td><td><code>!!errors.x</code>（优先于 focus）</td><td>#FEF5F6（error 5%）</td><td>1.5px <code>--c-error</code> + 3px 10% 光环</td><td>图标转 <code>--c-error</code> + 下挂行内错误</td></tr>
+        <tr><td>disabled</td><td><code>:disabled="submitting"</code></td><td>不变</td><td>不变</td><td>仅原生 input 置灰，页面无压暗类</td></tr>
+        <tr><td>clearable</td><td><code>v-if="phone"</code></td><td>—</td><td>—</td><td>16px 实心 <code>--c-border-strong</code> 圆 + 白叉</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>验证码按钮 SmsButton · 4 态</h3>
+      <p class="hint">高 44px（88rpx，MP-011 抬到可点件口径）· 圆角 <code>--r-full</code> · 内边距 0 12px · 文本 12px/700 · 最小宽 88px。</p>
+      <div class="row">
+        <div class="cell"><span class="rg-sms">获取验证码</span><span class="lab">idle（brand-800 底）</span></div>
+        <div class="cell"><span class="rg-sms rg-sms--sending"><span class="rg-sms__spin"></span></span><span class="lab">sending（转圈无文字）</span></div>
+        <div class="cell"><span class="rg-sms rg-sms--cd">重新发送 45s</span><span class="lab">countdown</span></div>
+        <div class="cell"><span class="rg-sms rg-sms--cd rg-sms--off">重新发送 04s</span><span class="lab">disabled（提交中 55%）</span></div>
+      </div>
+      <table class="tbl" style="margin-top:20px">
+        <tr><th>状态</th><th>样式</th><th>规则</th></tr>
+        <tr><td>idle</td><td><code>--c-brand-800</code> / <code>--c-text-inverse</code></td><td>手机号未过 <code>/^1[3-9]\d{9}$/</code> 时点按：手机字段转 error + 抖动 + Toast「请先输入正确的手机号」，不发请求</td></tr>
+        <tr><td>sending</td><td><code>--c-brand-100</code> / <code>--c-brand-700</code> + 13px 转圈</td><td><code>smsSending</code> 期 return，禁重复点击；模板 <code>v-if</code> 只留圈不留字</td></tr>
+        <tr><td>countdown</td><td><code>--c-border-light</code> / <code>--c-text-placeholder</code></td><td><code>smsCountdown &gt; 0</code>；时间戳基准 60s，切后台不冻结，onShow 按剩余刷新</td></tr>
+        <tr><td>disabled</td><td>倒计时底 + <code>opacity .55</code></td><td><code>submitting</code> 时叠加；三态互斥由 <code>handleSendSms</code> 首行守卫保证</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>密码强度 + 可见性 · 3 档 / 2 态</h3>
+      <p class="hint"><code>v-if="password"</code>（非空即出现）· 条 32×4px、间距 4px · 标签 11px/700。
+        眼睛 20px，图标色 <code>--c-text-placeholder</code>；<code>showPassword ? EYE : EYE_OFF</code>。</p>
+      <div class="row">
+        <div class="cell"><div class="rg-str" style="margin:0"><span class="rg-str__bars"><i class="rg-str__bar rg-str__bar--l1"></i><i class="rg-str__bar"></i><i class="rg-str__bar"></i></span><span class="rg-str__t rg-str__t--l1">弱</span></div><span class="lab">&lt;8 位 / 纯字母 / 纯数字</span></div>
+        <div class="cell"><div class="rg-str" style="margin:0"><span class="rg-str__bars"><i class="rg-str__bar rg-str__bar--l2"></i><i class="rg-str__bar rg-str__bar--l2"></i><i class="rg-str__bar"></i></span><span class="rg-str__t rg-str__t--l2">中</span></div><span class="lab">≥8 位且含字母+数字</span></div>
+        <div class="cell"><div class="rg-str" style="margin:0"><span class="rg-str__bars"><i class="rg-str__bar rg-str__bar--l3"></i><i class="rg-str__bar rg-str__bar--l3"></i><i class="rg-str__bar rg-str__bar--l3"></i></span><span class="rg-str__t rg-str__t--l3">强</span></div><span class="lab">≥10 位且含大小写或符号</span></div>
+        <div class="cell"><div class="input rg-field" style="width:186px;margin:0"><svg class="rg-field__ic"><use href="#i-lock"/></svg><span class="rg-field__v rg-field__v--dots">••••••••</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div><span class="lab">密文（eye-off）</span></div>
+        <div class="cell"><div class="input rg-field" style="width:186px;margin:0"><svg class="rg-field__ic"><use href="#i-lock"/></svg><span class="rg-field__v">xunmi2026</span><svg class="rg-eye" style="color:var(--c-text-secondary)"><use href="#i-eye"/></svg></div><span class="lab">明文（eye）</span></div>
+      </div>
+      <table class="tbl" style="margin-top:20px">
+        <tr><th>档</th><th>条色</th><th>标签文案色（源码实取）</th><th>备注</th></tr>
+        <tr><td>弱</td><td><code>--c-error</code></td><td><code>--c-error</code></td><td>标签只有「弱」一字</td></tr>
+        <tr><td>中</td><td><code>--c-warning</code></td><td><code>--c-warning</code>（#F59E0B）</td><td>设计规范 §5.3 要求 #B87400，源码写 <code>var(--c-warning,#B87400)</code> ⇒ 实际取到 #F59E0B，见 §04</td></tr>
+        <tr><td>强</td><td><code>--c-brand</code></td><td><code>--c-brand-700</code></td><td>强度只作提示，不参与 <code>formComplete</code></td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>勾选框 + 协议行 · 3 态</h3>
+      <p class="hint">框 16×16px · 圆角 <code>--r-sm</code> · 边框 1.5px <code>--c-border-default</code>；选中 <code>--c-brand</code> + 白对勾 10px。
+        协议文本 12px/1.55 <code>--c-text-tertiary</code>，链接 <code>--c-brand-700</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:230px"><div class="rg-agree" style="margin:0"><span class="rg-chk"></span><span class="rg-agree__t">我已阅读并同意 <span class="rg-agree__link">《用户协议》</span> 和 <span class="rg-agree__link">《隐私政策》</span></span></div><span class="lab">未勾选（进页默认，不预选）</span></div>
+        <div class="cell" style="width:230px"><div class="rg-agree" style="margin:0"><span class="rg-chk rg-chk--on"><svg><use href="#i-check"/></svg></span><span class="rg-agree__t">我已阅读并同意 <span class="rg-agree__link">《用户协议》</span> 和 <span class="rg-agree__link">《隐私政策》</span></span></div><span class="lab">已勾选</span></div>
+        <div class="cell" style="width:230px"><div class="rg-agree" style="margin:0"><span class="rg-chk"></span><span class="rg-agree__t rg-agree__t--err">我已阅读并同意 <span class="rg-agree__link">《用户协议》</span> 和 <span class="rg-agree__link">《隐私政策》</span></span></div><span class="lab">未勾选点注册（文字转红 + 抖动）</span></div>
+      </div>
+      <table class="tbl" style="margin-top:20px">
+        <tr><th>场景</th><th>源码表现</th><th>规则</th></tr>
+        <tr><td>默认</td><td><code>agreed=false</code></td><td>一律未勾选、不预选（合规）</td></tr>
+        <tr><td>未勾选点注册</td><td><code>agree__text--error</code> 文字转红 + <code>agree__chk--shake</code> 抖动 400ms</td><td>勾选框本身<b>不变红</b>：<code>agree--error</code> 类有绑定、样式块里无定义（死类），见 §04</td></tr>
+        <tr><td>点协议链接</td><td><code>@tap.stop</code> → <code>SUBPACKAGE_ROUTES.LEGAL.*</code></td><td>跳内嵌页且<b>不得</b>改变勾选状态</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>主按钮 + 次级出口 · 4 态</h3>
+      <p class="hint">高 48px · 圆角 12px · 文本 15px/700 / 字距 0.4px。置灰态<b>仍可点</b>，点按给「哪里没填对」定位提示。</p>
+      <div class="row">
+        <div class="cell"><div class="btn rg-submit btn--dis"><span class="rg-submit__t">注 册</span></div><span class="lab">disabled（!formComplete）</span></div>
+        <div class="cell"><div class="btn rg-submit"><span class="rg-submit__t">注 册</span></div><span class="lab">enabled（135° 品牌渐变）</span></div>
+        <div class="cell"><div class="btn rg-submit btn--load"><span class="spin"></span><span class="rg-submit__t">注 册 中</span></div><span class="lab">loading（≥400ms 防闪烁）</span></div>
+        <div class="cell"><div class="rg-ghost" style="width:186px;margin:0">用这个手机号登录</div><span class="lab">secondary（v-if="phoneRegistered"）</span></div>
+      </div>
+      <table class="tbl" style="margin-top:20px">
+        <tr><th>状态</th><th>样式</th><th>说明</th></tr>
+        <tr><td>disabled</td><td><code>--c-status-disabled</code> / 字 <code>--c-text-secondary</code> / 无阴影</td><td><code>formComplete</code> 要求六字段 + 协议全通过；R11 把白字（1.28:1）收口到 secondary（6.27:1）</td></tr>
+        <tr><td>enabled</td><td><code>--c-gradient-brand</code> + <code>--s-brand</code></td><td>按压 <code>scale .98</code> + 透明度 .92（hover-class，静帧不可见）</td></tr>
+        <tr><td>loading</td><td>透明度 .72 + 15px 白转圈</td><td>文案是「注 册 中」（含空格），非旧稿的「注册中…」；全 input <code>:disabled</code>、验证码按钮 .55</td></tr>
+        <tr><td>防重复</td><td>—</td><td><code>createButtonGuard(handleSubmit, 2000)</code> + <code>submitting</code> 首行守卫</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>反馈 · 行内错误 / Toast</h3>
+      <p class="hint">行内管「哪个字段错了」、Toast 管「整次操作结果」；两者同时出现时行内优先。
+        Toast 是 <code>uni.showToast({icon:'none'})</code> 系统件、非本页 DOM ⇒ 只在此枚举，<b>不画进 §01 任何一帧</b>。</p>
+      <div class="row" style="align-items:flex-start">
+        <div class="cell" style="width:200px">
+          <div class="input rg-field input--err" style="margin-bottom:0"><svg class="rg-field__ic" style="color:var(--c-error)"><use href="#i-shield"/></svg><span class="rg-field__v rg-field__v--dots">••••</span><svg class="rg-eye"><use href="#i-eyeoff"/></svg></div>
+          <div class="rg-err" style="margin:6px 0 0 4px"><svg><use href="#i-alert"/></svg><span>两次输入的密码不一致</span></div>
+          <span class="lab">行内错误 12px/500 · 图标 13px</span>
+        </div>
+        <div class="cell"><div class="rg-toast" style="position:static;transform:none;max-width:186px">验证码已发送至 138****8888</div><span class="lab">成功 Toast · 1500ms</span></div>
+        <div class="cell"><div class="rg-toast" style="position:static;transform:none;max-width:186px">网络异常，请检查网络后重试</div><span class="lab">失败 Toast · 2000ms</span></div>
+      </div>
+      <table class="tbl" style="margin-top:20px">
+        <tr><th>项</th><th>口径（源码）</th></tr>
+        <tr><td>确认密码比对时机</td><td><code>@blur</code> 才判（MP-012）：打字过程中不即时变红</td></tr>
+        <tr><td>输入中清错</td><td><code>@input</code> 只做「有错则清」，不做新报错</td></tr>
+        <tr><td>失败后</td><td>不清空已填内容，只解锁并把两个密码框重新置回密文</td></tr>
+        <tr><td>错误文案源</td><td><code>i18n/locales/zh-CN.ts · register.*</code>（本画板逐字取用，无自造文案）</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>页面结构尺寸 · RegisterLayout（px = rpx ÷ 2，状态栏按 44px 档）</h3>
+      <p class="hint">hero 高度 <code>calc(480rpx + var(--statusbar))</code> 随状态栏一起长（R6 修复副标题被卡片裁切）。</p>
+      <table class="tbl">
+        <tr><th>区块</th><th>尺寸 / 位置</th><th>说明</th></tr>
+        <tr><td>状态栏</td><td>375 × 44</td><td>系统区，页面不画</td></tr>
+        <tr><td>页头插图</td><td>375 × 284（240 + 44）</td><td>全出血，底部 52px 渐隐到 <code>--c-bg-page</code></td></tr>
+        <tr><td>返回圆钮</td><td>34 × 34 · 左 16 · 上 88</td><td>白底 78% + 6px 模糊（H5 条件编译）；外覆 88rpx 热区</td></tr>
+        <tr><td>标题组</td><td>左 16 · 上 148</td><td>眉题 10/800 · 主标 26/800 · 副标 12/400</td></tr>
+        <tr><td>表单卡</td><td>宽 343 · 上 252（骑压 32）</td><td>圆角 20 · 内边距 20 · 左右 <code>--page-padding</code> 16</td></tr>
+        <tr><td>分组标题</td><td>12/700 + 1px 线</td><td>「账号信息」「基础身份」两段，第二段上距 20</td></tr>
+        <tr><td>字段行</td><td>label 13 + 间距 6 + 框 48 + 12</td><td>单行节奏约 84px（旧稿无 label，单行 60px）</td></tr>
+        <tr><td>协议行</td><td>卡下 15 · 左右 24</td><td>框 16 + 文本 12</td></tr>
+        <tr><td>安全说明</td><td>协议下 14 · 左右 24</td><td>11/400 · <code>--c-text-secondary</code> · 居中</td></tr>
+        <tr><td>去登录</td><td>说明下 15</td><td>13px，「去登录」为 <code>--c-brand-800</code></td></tr>
+        <tr><td>整页高度</td><td>1034px（默认态实测）</td><td>超视口 222px ⇒ 主按钮与协议行在首屏外，须下滚；填满后 1049、出现次级出口 1123</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页无页内私有色值；焦点/错误光环与返回钮白底 78% 是半透明件，base 未登记对应令牌。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">勾选框选中 · 强度「强」条 · 渐变起点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:linear-gradient(135deg,#36C99A,#55D5A7)"></span><div><div class="sw__n">品牌渐变<code>--c-gradient-brand</code></div><div class="sw__u">主按钮可用态（135°）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">验证码钮 idle · 眉题 · 去登录</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1F8D6A"></span><div><div class="sw__n">主色 700<code>--c-brand-700</code></div><div class="sw__u">协议链接 · 强度「强」字 · sending 字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#D1F5E7"></span><div><div class="sw__n">主色 100<code>--c-brand-100</code></div><div class="sw__u">sending 底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">error 边框 · 行内文案 · 强度「弱」</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F59E0B"></span><div><div class="sw__n">警告<code>--c-warning</code></div><div class="sw__u">强度「中」条与字（源码取令牌真值，非 #B87400）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#DCE5E2"></span><div><div class="sw__n">禁用<code>--c-status-disabled</code></div><div class="sw__u">主按钮置灰底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #EEF2F0"></span><div><div class="sw__n">输入底<code>--c-bg-surface</code></div><div class="sw__u">字段 default</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页底<code>--c-bg-page</code></div><div class="sw__u">整页背景 · 插图渐隐终点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFECEF"></span><div><div class="sw__n">浪漫 50<code>--c-romance-50</code></div><div class="sw__u">仅用于插图缺失时的页头兜底渐变</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">含一处档外孤值：主标 52rpx（26px），base 无 <code>--fs-*</code> 对应档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">孤值 26/800</span><span class="type__p" style="font-size:26px;font-weight:800">创建账号</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/500</span><span class="type__p" style="font-size:15px;font-weight:500">138 8888 8888 · 请输入手机号</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/700</span><span class="type__p" style="font-size:15px;font-weight:700;letter-spacing:.4px">注 册</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/600</span><span class="type__p" style="font-size:13px;font-weight:600;color:#4A524E">手机号 · 短信验证码 · 设置密码</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/700</span><span class="type__p" style="font-size:12px;font-weight:700">账号信息 · 获取验证码</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500;color:#E5454D">手机号格式不正确，请输入 11 位手机号</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/700</span><span class="type__p" style="font-size:11px;font-weight:700;color:#1F8D6A">强</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;color:#4A524E">注册即代表你已满 18 周岁；信息仅用于校园身份核验，严格保密</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/800</span><span class="type__p" style="font-size:10px;font-weight:800;letter-spacing:2px;color:#156B51">XUNMI · CAMPUS</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 阴影</h3><p class="hint">rpx ÷ 2 = px；卡片骑压量 32px 为设计稿口径（源码 -64rpx）。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-3 6px</b><i style="width:6px"></i>label 与框间距</div>
+        <div class="space__i"><b>--sp-6 12px</b><i style="width:12px"></i>字段行距 · 分组标题下距</div>
+        <div class="space__i"><b>--sp-7 16px</b><i style="width:16px"></i>页面左右边距（--page-padding）</div>
+        <div class="space__i"><b>--sp-9 24px</b><i style="width:24px"></i>协议行左右缩进 · 分组二段上距</div>
+        <div class="space__i"><b>— 20px</b><i style="width:20px"></i>卡片内边距（--card-padding 档外）</div>
+        <div class="space__i"><b>— 32px</b><i style="width:32px"></i>卡片骑压插图的重叠量</div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:2px"></b>--r-xs<br>4rpx · 强度条</div>
+        <div class="rad__i"><b style="border-radius:4px"></b>--r-sm<br>8rpx · 勾选框</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 输入框 · 按钮</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 表单卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>999rpx · 验证码钮</div>
+      </div>
+      <table class="tbl" style="margin-top:18px">
+        <tr><th>阴影</th><th>令牌</th><th>本页用途</th></tr>
+        <tr><td>卡片</td><td><code>--card-shadow</code></td><td>表单卡（源码 0 8px 24px .06 + 0 2px 8px .04，与 base 档几何略有差）</td></tr>
+        <tr><td>品牌</td><td><code>--s-brand</code></td><td>主按钮可用态（源码 alpha .28，base .25）</td></tr>
+        <tr><td>光环</td><td>—</td><td>focus 3px 12% / error 3px 10% rgba（base 仅在 .input--focus/.input--err 内定义，未出令牌）</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与旧画板/实况的已知差异</h2><p>差异清单为本单元主要产出</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/reg-hero-illustration@3x.jpg" alt="" style="height:190px;object-fit:cover">
+      <div class="asset__b"><b>IMAGE_PATHS.REGISTER.HERO</b><p>页头主插图，源码 <code>/static/assets/images/register/reg-hero-illustration.jpg</code>，源件在 <code>deliverables/注册页/assets/reg-hero-illustration@3x.jpg</code>（1250×800）。素材未落 <code>assets/demo/</code> 前，本画板页头显示为 brand-50→bg-page→romance-50 的兜底渐变（<b>不可用于像素比对</b>，落位后须重拍）。</p><div class="m">375 × 284 · aspectFill · NEED_ASSET</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>REGISTER_ICONS · 13 枚</b><p>mobile / message / lock / shield / user / cake / eye / eye-off / alert / check-white / back / clear（+ 成功页 check-green）。全部走 lucide 描边体系重绘，不引外部图标；实测色值：前缀图标 #4A524E、眼睛 #9AA39F、警示 #E5454D、返回 #1A1E1C、清空 #C2CAC6 实心。</p><div class="m">18px 前缀 · 20px 眼睛 · 13px 警示 · 16px 清空</div></div></div>
+  </div>
+
+  <div class="note">
+    <b>A. 旧画板有、现源码无（按实况重画时已删除，不得再画回）：</b>
+    <ul>
+      <li><b>「四要素」主链路版式</b>：旧稿 01–06 屏只有手机号/验证码/密码/确认四行，昵称+生日被单独关在第 07 屏「契约对齐变体」。现源码两段（<code>card__cap--second</code>「基础身份」）无条件常渲染、<code>formComplete</code> 亦要求昵称与生日 ⇒ 旧稿 §01 下方那块「方案 A / 方案 B 待拍板」的 note 已由代码选边（方案 B），<b>07 屏作为「变体」的语义已失效</b>，本画板把它并回所有屏。</li>
+      <li><b>字段整体压暗</b>：旧 04 屏把卡片压到 <code>opacity .86</code>、四个字段挂 <code>.field--off</code>（55%）。现源码无 <code>.field--off</code> 类，提交中只有 <code>&lt;input :disabled&gt;</code>（原生置灰）+ 验证码按钮 <code>.55</code> + 主按钮 <code>.72</code> ⇒ F06 按源码画，字段视觉不变。</li>
+      <li><b>勾选框红框 + 光环</b>：旧 03 屏 <code>.chk--err</code> 画了红框。现源码未勾选点注册只有「协议文字转红 + 方框抖动」；<code>agree--error</code> 类在模板有绑定、样式块内<b>无定义</b>（死类），方框不变红。</li>
+      <li><b>行内成功文案「验证码已发送至 138****8888，请注意查收」</b>（旧 02 屏的绿色 err--ok 行）：现源码成功提示只走 <code>uni.showToast</code>，页面不渲染成功态行内件；验证码行只有 error 一种行内文案。</li>
+      <li><b>强度条副文「密码强度 强 / 字母 + 数字」</b>：现源码标签只有单字「弱/中/强」，且整条 <code>v-if="password"</code>。</li>
+      <li><b>安全说明「🔒 密码加密传输 · 验证码 5 分钟内有效 · 不向他人展示」</b>：现源码 <code>.safety-note</code> 无图标，文案换成「注册即代表你已满 18 周岁；信息仅用于校园身份核验，严格保密」。</li>
+      <li><b>协议行第二句「并知悉平台实名认证与未成年人保护规则」</b>：现源码协议文本止于《隐私政策》。</li>
+      <li><b>底部「遇到问题？联系客服」出口</b>（旧 06 屏）：现源码没有这条出口，只有「已有账号？去登录」。</li>
+      <li><b>返回钮在 44px 导航带内 + 眉题「Xunmi · Campus」</b>：现源码返回在 hero 内（左 16 / 上 statusbar+44），眉题为全大写「XUNMI · CAMPUS」（首字母大写形式已废）。</li>
+      <li><b>「整页压进 812px 视口」的画法</b>：旧稿七屏都把主按钮、协议行画在同一帧内。现源码六字段版式整页高 <b>1034px</b>（默认态，本画板同几何渲染实测），主按钮绝对位置在 812px 视口之外 ⇒ 本画板 F04–F07 明确按下滚 235px 的视口拍，并在题注标注。</li>
+    </ul>
+  </div>
+
+  <div class="note">
+    <b>B. 现源码有、旧画板无（新增验收点）：</b>
+    <ul>
+      <li><b>每行可见 label</b>（手机号/短信验证码/设置密码/确认密码/昵称/出生日期，R11-L01-D05）：字段名不再只靠 placeholder 承载。</li>
+      <li><b>分组标题带 1px 分隔线</b>：<code>.card__cap</code>「账号信息」+ <code>.card__cap--second</code>「基础身份」。</li>
+      <li><b>出生日期 = <code>picker mode="date"</code></b>（<code>:end="today"</code>）＋行内右挂「需满 18 周岁」hint；未选时文字取 <code>--c-text-placeholder</code>（与输入框占位已提到 tertiary 的口径不一致，本页唯一残留低对比占位，登记不修）。</li>
+      <li><b>昵称/生日两条新校验分支</b>：请输入昵称 / 昵称最多 20 字 / 昵称需为 1-20 字 / 请选择出生日期 / 出生日期需已满 18 周岁。</li>
+      <li><b><code>formComplete</code> 不含成年判定</b>：只查 <code>!!birthDate</code>，不跑 <code>isAdult</code> ⇒ 填了未成年生日时<b>主按钮已是可用态、错误只在点下去才出现</b>（F04 即画这一真实组合）。设计规范与旧稿都未覆盖此态。</li>
+      <li><b>验证码 mockCode Toast</b>：<code>isDev || isMockMode()</code> 下文案为「验证码已发送（模拟：{code}）」；真实构建只发脱敏手机号版。</li>
+      <li><b>注册通道被后台关闭（B6）</b>：<code>isRegisterOpen=false</code> 时 Toast「注册功能暂未开放」+ 800ms 退登录页；纯 Toast 态，页面无视觉变化，故不占屏（旧稿无此态）。</li>
+      <li><b>失败按 <code>error.message</code> 关键字分支</b>六类（已注册 / 验证码 / 未满 18 / 手机号格式 / 密码长度 / 昵称长度）+ 5xx「服务暂时不可用」+ 无 AppApiError 走网络异常；旧稿只画了「已注册」一种。</li>
+      <li><b>88rpx 透明热区层</b>（返回钮 / 清空 / 两只眼睛 / 勾选框，MP-011）：不可见于像素，但属结构验收点。</li>
+      <li><b>协议版本随注册落库</b>：<code>fetchAgreedLegalVersion()</code>（失败回退 '1.0.0'）；旧稿无此链路。</li>
+      <li><b>主按钮 loading 文案「注 册 中」</b>（全角空格分隔），与 idle 的「注 册」同口径；旧稿写的是「注册中…」。</li>
+      <li><b>强度「中」文案色实取 <code>--c-warning</code> #F59E0B</b>：源码写的是 <code>var(--c-warning, #B87400)</code>，令牌已登记 ⇒ fallback 永不生效。设计规范 §5.3 要求的 #B87400（保对比度）在现源码里<b>没有落地</b>（11px 字压白卡约 2.1:1）。</li>
+    </ul>
+  </div>
+
+  <div class="note">
+    <b>C. 本画板自身的口径说明：</b>
+    <ul>
+      <li>演示数据（138 8888 8888 / 582914 / 小满 · 周岚 · 阿辰 · 星辰 / 2004-03-18）为人设真名池与手机号格式化样例，<b>不含任何分数类位</b>——本页无合拍度/匹配度/共同点，故无留空位。</li>
+      <li>Toast 为 <code>uni.showToast</code> 系统件（非页面 DOM），<b>不入 §01 帧</b>，只在 §02 枚举——旧稿把黑条 Toast 画在帧内，现按「帧只装页面 DOM」口径移除，避免把不保证复现的系统层写进像素基准。</li>
+      <li>抖动（<code>shake-x</code> 4px×2 / 400ms）、按压（<code>scale .98</code>）、进页淡入是时序态，静帧不可见，一律不画。</li>
+      <li>本页在主包但不是 Tab 页（<code>pages/register/index</code>），<code>navigationStyle:custom</code> 无原生导航栏，页头由页面自绘 ⇒ <b>画 tabbar = 退稿</b>。</li>
+      <li>BASE_PROBLEM 候选（不是 base 坏了，是令牌缺口）：① 主标 52rpx 无 <code>--fs-*</code> 对应档（画板按源码字面量 26px 画）；② focus/error 光环只存在于 base 的 <code>.input--focus/.input--err</code> 规则里，未单独出令牌。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 注册页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（375 × 812 @ 2.273×）<br>
+  本页此前无理想效果图；上一版为 2026-09-12 的 <b>deliverables/注册页/寻觅注册页-高保真设计稿.html</b>（7 屏），本画板按 2026-10-26 源码实况重画并取代之。
+</footer>
+
+</div>
+</body>
+</html>

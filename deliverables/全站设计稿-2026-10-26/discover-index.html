@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 寻觅页（匹配卡片）高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌；rpx ÷ 2 = px） ===== */
+.scr { position: absolute; inset: 0; display: flex; flex-direction: column;
+  background: var(--c-neutral-0); padding-bottom: 56px; }
+.dc-head { flex: none; background: var(--c-bg-container); padding: 64px var(--page-padding) 8px; }
+.dc-head__top { display: flex; align-items: center; justify-content: space-between; height: 36px; }
+.dc-head__titles { display: flex; align-items: baseline; gap: 4px; }
+.dc-head__title { font-size: 24px; font-weight: 700; color: var(--c-text-primary); line-height: 1.1; letter-spacing: -.3px; }
+.dc-head__heart { width: 17px; height: 17px; color: var(--c-romance); margin-left: 2px; }
+.dc-head__filter { width: 36px; height: 36px; margin-right: 7px; border-radius: 50%; background: transparent;
+  display: flex; align-items: center; justify-content: center; }
+.dc-head__filter svg { width: 16px; height: 16px; color: var(--c-text-primary); }
+.dc-head__tabs { display: flex; align-items: center; gap: 75px; margin-top: 8px; }
+.dc-tab { display: flex; flex-direction: column; align-items: center; padding-bottom: 2px; }
+.dc-tab__t { font-size: 18px; font-weight: 500; color: var(--c-text-secondary); line-height: 1.2; }
+.dc-tab__t--on { color: var(--c-text-primary); font-weight: 700; }
+.dc-tab__l { width: 24px; height: 3px; border-radius: var(--r-full); background: var(--c-romance-500); margin-top: 4px; }
+.dc-head__fav { width: 36px; height: 36px; margin-left: auto; margin-right: 7px; border-radius: 50%;
+  background: var(--c-bg-container); box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
+  display: flex; align-items: center; justify-content: center; }
+.dc-head__fav svg { width: 18px; height: 18px; color: var(--c-text-secondary); }
+
+.dc-scroll { flex: 1; min-height: 0; overflow: hidden; }
+.dc-quota { display: flex; justify-content: center; margin: 2px var(--page-padding) 6px; }
+.dc-quota__pill { display: flex; align-items: center; padding: 1px 8px; border-radius: var(--r-xxl);
+  background: var(--c-brand-50); border: 1px solid var(--c-brand-200); }
+.dc-quota__t { font-size: var(--fs-sm); font-weight: 700; color: var(--c-brand); }
+
+.dc-cardarea { margin: 0 var(--page-padding); height: 464px; }
+.mcard { position: relative; width: 100%; height: 100%; border-radius: 24px; overflow: hidden;
+  background: var(--c-bg-page); box-shadow: 0 8px 20px rgba(26, 55, 48, .16); }
+.mcard__ph { position: absolute; inset: 0; }
+.mcard__ph img { width: 100%; height: 100%; object-fit: cover; }
+.mcard__ovl { position: absolute; left: 0; right: 0; bottom: 0; height: 62%;
+  background: linear-gradient(180deg, rgba(13,19,19,0) 0%, rgba(13,19,19,.25) 42%, rgba(10,14,14,.7) 100%); }
+.mcard__dist { position: absolute; top: 14px; left: 14px; padding: 5px 12px; border-radius: var(--r-full);
+  background: var(--c-bg-container); box-shadow: 0 3px 8px rgba(0, 0, 0, .12); }
+.mcard__dist-t { font-size: var(--fs-sm); font-weight: 700; color: var(--c-romance); }
+.mcard__dist--unknown .mcard__dist-t { color: var(--c-text-secondary); }
+.mcard__on { position: absolute; top: 14px; right: 14px; display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 11px; border-radius: var(--r-full); background: var(--c-bg-container); box-shadow: 0 3px 8px rgba(0, 0, 0, .12); }
+.mcard__on-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c-brand); }
+.mcard__on-t { font-size: var(--fs-sm); font-weight: 700; color: var(--c-brand-800); }
+.mcard__info { position: absolute; left: 0; right: 0; bottom: 0; padding: 20px 16px 16px; }
+.minfo { width: 100%; max-width: 60%; display: flex; flex-direction: column; gap: 5px; }
+.minfo__row { display: flex; align-items: center; gap: 7px; }
+.minfo__name { font-size: 28px; font-weight: 700; line-height: 1.15; color: var(--c-neutral-0);
+  text-shadow: 0 1px 5px rgba(0, 0, 0, .35); letter-spacing: -.4px; }
+.minfo__age { font-size: 20px; color: var(--c-text-inverse); }
+.minfo__g { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: none; }
+.minfo__g--f { background: var(--c-romance); }
+.minfo__g--m { background: var(--c-secondary-blue-400); }
+.minfo__g svg { width: 13px; height: 13px; color: var(--c-neutral-0); }
+.minfo__sch { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.minfo__sch b { font-size: 16px; font-weight: 500; color: var(--c-neutral-0); }
+.minfo__sch i { font-size: 14px; font-style: normal; color: rgba(255, 255, 255, .7); }
+.minfo__dist { font-size: 14px; color: rgba(255, 255, 255, .7); }
+.minfo__tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.minfo__tag { height: 24px; line-height: 23px; padding: 0 8px; border-radius: var(--r-full);
+  background: rgba(255, 255, 255, .2); border: 1px solid rgba(255, 255, 255, .3); font-size: var(--fs-base); color: var(--c-neutral-0); }
+.minfo__intro { display: flex; align-items: flex-start; gap: 5px; margin-top: 2px; }
+.minfo__q { width: var(--sp-1); height: 21px; border-radius: var(--r-xs); background: rgba(255, 255, 255, .5); flex: none; }
+.minfo__i { font-size: 14px; line-height: 1.5; color: rgba(255, 255, 255, .9); }
+
+.dc-dock { flex: none; }
+.macts { display: flex; align-items: flex-start; justify-content: space-evenly; gap: 8px; padding: 16px 16px 4px; }
+.macts__i { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.macts__b { width: 64px; height: 64px; border-radius: 50%; background: var(--c-neutral-0);
+  border: 1px solid var(--c-border-light); box-shadow: 0 4px 16px rgba(0, 0, 0, .10);
+  display: flex; align-items: center; justify-content: center; }
+.macts__b svg { width: 28px; height: 28px; }
+.macts__b--pass { color: var(--c-text-placeholder); }
+.macts__b--super { color: var(--c-romance); }
+.macts__b--like { width: 76px; height: 76px; margin-top: -6px; border: none; background: var(--c-romance);
+  box-shadow: 0 6px 20px rgba(255, 107, 129, .35); color: var(--c-neutral-0); }
+.macts__b--like svg { width: 32px; height: 32px; }
+.macts__l { font-size: 14px; font-weight: 500; color: var(--c-text-secondary); }
+.macts__l--like { color: var(--c-romance); font-weight: 600; }
+.macts--dis { opacity: .55; }
+
+.dc-loginhint { position: absolute; left: 50%; transform: translateX(-50%); bottom: 174px; z-index: 9;
+  padding: 8px 20px; border-radius: var(--r-full); background: var(--c-brand-800); box-shadow: var(--s-float-btn); }
+.dc-loginhint span { font-size: 14px; font-weight: 600; color: var(--c-neutral-0); white-space: nowrap; }
+
+/* 未登录等待墙 NotLoggedWaiting */
+.nlw { position: absolute; inset: 0; background: var(--c-bg-page); padding: 80px 24px 30px;
+  display: flex; flex-direction: column; align-items: center; overflow: hidden; }
+.nlw__tw { width: 100%; text-align: left; margin-bottom: 16px; }
+.nlw__t { display: block; font-size: 22px; font-weight: 800; color: var(--c-brand); line-height: 1.4; }
+.nlw__st { display: block; margin-top: 5px; font-size: 13px; font-weight: 500; color: var(--c-text-primary); opacity: .7; }
+.nlw__orbit { position: relative; width: 280px; height: 280px; margin-bottom: 4px; }
+.nlw__ring { position: absolute; left: 50%; top: 50%; width: 210px; height: 210px; transform: translate(-50%,-50%);
+  border: 1px dashed rgba(54, 201, 154, .35); border-radius: 50%; }
+.nlw__node { position: absolute; transform: translate(-50%,-50%); }
+.nlw__av { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--c-neutral-0);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, .08); object-fit: cover; }
+.nlw__bd { position: absolute; right: -3px; bottom: -3px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--c-brand-50); border: 1px solid var(--c-neutral-0); display: flex; align-items: center; justify-content: center; }
+.nlw__bd svg { width: 9px; height: 9px; color: var(--c-brand); }
+.nlw__mascot { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 100px; height: 100px; object-fit: contain; }
+.nlw__hint { font-size: var(--fs-base); color: var(--c-text-secondary); margin-bottom: 14px; }
+.nlw__feats { display: flex; justify-content: space-between; width: 100%; padding: 0 4px; margin-bottom: 16px; }
+.nlw__feat { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.nlw__feat svg { width: 32px; height: 32px; color: var(--c-brand); }
+.nlw__feat span { font-size: var(--fs-base); color: var(--c-text-secondary); text-align: center; }
+.nlw__btns { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.nlw__btn { width: 100%; height: var(--btn-height-md); border-radius: var(--r-full);
+  display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 15px; font-weight: 600; letter-spacing: 1px; }
+.nlw__btn--p { background: linear-gradient(135deg, var(--c-brand-800) 0%, var(--c-brand-900) 100%);
+  color: var(--c-neutral-0); box-shadow: 0 4px 12px rgba(21, 107, 81, .32); }
+.nlw__btn--p svg { width: 16px; height: 16px; color: var(--c-neutral-0); }
+.nlw__btn--s { background: var(--c-bg-container); border: 1px solid var(--c-brand); color: var(--c-text-primary); }
+.nlw__btn--g { background: transparent; color: var(--c-text-secondary); font-weight: 500; }
+.nlw__btn--g::before, .nlw__btn--g::after { content: ""; flex: 1; height: 1px; background: var(--c-divider-light); }
+
+/* 骨架 / 空态 / 错误横幅 */
+.sk-card { margin: 0 var(--page-padding); height: 464px; border-radius: 24px; overflow: hidden; background: var(--c-bg-container);
+  border: 1px solid var(--c-border-light); display: flex; flex-direction: column; }
+.sk-img { flex: 1; }
+.sk-body { height: 108px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.shim { background: linear-gradient(90deg, var(--c-neutral-100) 25%, var(--c-neutral-200) 50%, var(--c-neutral-100) 75%);
+  background-size: 200% 100%; }
+.sk-line { height: 12px; border-radius: var(--r-sm); }
+.dc-empty { padding: 16px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.dc-empty img { width: 60px; height: 60px; object-fit: contain; margin-bottom: 8px; }
+.dc-empty__t { font-size: var(--fs-lg); color: var(--c-text-secondary); line-height: 1.6; max-width: 260px; }
+.dc-err { display: flex; align-items: center; justify-content: space-between; margin: 0 var(--page-padding) 8px;
+  padding: 8px 10px; border-radius: var(--r-lg); background: var(--c-tint-pink-soft); }
+.dc-err__t { flex: 1; font-size: var(--fs-base); color: var(--c-romance-700); line-height: 1.4; }
+.dc-err__r { font-size: var(--fs-base); font-weight: 700; color: var(--c-error); }
+
+/* 筛选弹层 FilterDrawer */
+.fd { position: absolute; inset: 0; z-index: 12; background: var(--c-bg-overlay); display: flex; align-items: flex-end; }
+.fd__panel { width: 100%; height: 690px; background: var(--c-bg-container); border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: var(--s-modal); display: flex; flex-direction: column; overflow: hidden; }
+.fd__hdr { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px;
+  border-bottom: 1px solid var(--c-border-light); flex: none; }
+.fd__title { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.fd__close { width: 28px; height: 28px; border-radius: var(--r-full); background: var(--c-bg-surface);
+  display: flex; align-items: center; justify-content: center; color: var(--c-text-secondary); }
+.fd__close svg { width: 14px; height: 14px; }
+.fd__tabs { display: flex; gap: 8px; padding: 8px 16px 4px; flex: none; }
+.fd__tab { display: flex; align-items: center; justify-content: center; min-height: 34px; padding: 0 14px;
+  border-radius: var(--r-full); background: var(--c-bg-page); font-size: var(--fs-base); color: var(--c-text-secondary); }
+.fd__tab--on { background: var(--c-brand-50); border-bottom: 2px solid var(--c-brand-600); font-weight: 700; color: var(--c-brand-600); }
+.fd__body { flex: 1; min-height: 0; overflow: hidden; padding: 0 16px; }
+.fd__sec { padding: 12px 0; border-bottom: 1px solid var(--c-border-light); }
+.fd__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.fd__h { font-size: var(--fs-lg); font-weight: 500; color: var(--c-text-primary); }
+.fd__v { font-size: var(--fs-base); font-weight: 600; color: var(--c-brand-600); }
+.fd__hint { margin-top: 4px; font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.fd__sliders { display: flex; flex-direction: column; gap: 6px; }
+.fd__sl { position: relative; height: 14px; display: flex; align-items: center; }
+.fd__sl i { display: block; width: 100%; height: 3px; border-radius: var(--r-full); background: var(--c-border-default); }
+.fd__sl b { position: absolute; width: 11px; height: 11px; border-radius: 50%; box-shadow: var(--s-sm); }
+.fd__sl--min b { left: 0; background: var(--c-brand-600); }
+.fd__sl--min i { background: linear-gradient(90deg, var(--c-brand) 0%, var(--c-brand) 2%, var(--c-border-default) 2%); }
+.fd__sl--max b { right: 0; background: var(--c-romance); }
+.fd__sl--max i { background: linear-gradient(90deg, var(--c-romance) 0%, var(--c-romance) 98%, var(--c-border-default) 98%); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; padding: 1px 10px; border-radius: var(--r-full);
+  background: var(--c-bg-surface); border: 1px solid var(--c-border-default); font-size: var(--fs-base);
+  font-weight: 500; color: var(--c-text-secondary); }
+.chip--on { background: var(--c-gradient-brand); border-color: transparent; color: var(--c-text-inverse); font-weight: 600; box-shadow: var(--s-brand-sm); }
+.picker { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px;
+  background: var(--c-bg-surface); border-radius: var(--r-lg); border: 1px solid var(--c-border-default); }
+.picker span { font-size: var(--fs-md); color: var(--c-text-tertiary); }
+.picker em { font-style: normal; font-size: var(--fs-2xl); font-weight: 300; color: var(--c-text-tertiary); }
+.kw { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--c-bg-surface);
+  border-radius: var(--r-lg); border: 1px solid var(--c-border-default); }
+.kw svg { width: 15px; height: 15px; color: var(--c-text-placeholder); flex: none; }
+.kw span { font-size: var(--fs-md); color: var(--c-text-tertiary); }
+.fd__foot { flex: none; display: flex; gap: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--c-border-light); }
+.fd__btn { flex: 1; height: var(--btn-height-md); border-radius: var(--r-full); display: flex;
+  align-items: center; justify-content: center; font-size: 15px; font-weight: 600; }
+.fd__btn--r { background: var(--c-bg-container); border: 1px solid var(--c-border-default); color: var(--c-text-secondary); }
+.fd__btn--c { background: var(--c-brand); color: var(--c-neutral-0); box-shadow: var(--s-brand); }
+
+/* §02 圆环位对照件 */
+.ringdemo { position: relative; width: 200px; height: 252px; border-radius: 16px; overflow: hidden;
+  background: var(--c-bg-page); border: 1px solid var(--c-border-light); }
+.ringdemo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ringdemo__txt { position: absolute; left: 0; bottom: 0; width: 60%; padding: 10px;
+  background: linear-gradient(180deg, rgba(13,19,19,0), rgba(10,14,14,.72)); }
+.ringdemo__txt i { display: block; height: 8px; border-radius: var(--r-sm); background: rgba(255,255,255,.55); margin-top: 5px; }
+.ringdemo__txt i:first-child { height: 13px; width: 62%; margin-top: 0; }
+.ringdemo__slot { position: absolute; right: 10px; bottom: 10px; width: 62px; height: 62px; border-radius: 50%;
+  border: 1.5px dashed var(--c-brand-600); background: rgba(255, 255, 255, .12);
+  display: flex; align-items: center; justify-content: center; text-align: center; font-size: 9.5px;
+  line-height: 1.3; color: var(--c-brand-800); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格；筛选漏斗逐字抄 static/assets/svg-spec/03-icons/filter.svg） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-funnel" viewBox="0 0 24 24"><path d="M3 5h18v3l-7 8v5l-4-2v-3L3 8z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 3 8.5c0 2.3 1.5 4.05 3 5.5l6 6z"/></symbol>
+  <symbol id="i-heart-o" viewBox="0 0 24 24"><path d="M18 15.6c1.35-1.32 2.7-2.9 2.7-4.95A4.95 4.95 0 0 0 15.75 5.9c-1.58 0-2.7.45-4.05 1.8-1.35-1.35-2.47-1.8-4.05-1.8A4.95 4.95 0 0 0 2.7 10.65c0 2.05 1.35 3.63 2.7 4.95l6 5.4z"/><path d="M16.4 4.1c1.3-1.4 3.2-2.2 5.1-2.1"/></symbol>
+  <symbol id="i-heart-f" viewBox="0 0 24 24"><path d="M19 14.2c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3.2c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.7c0 2.29 1.51 4.04 3 5.5l7 6.8z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5.5h16v11H13l-4.4 3.2v-3.2H4z"/><circle cx="9.6" cy="11" r="1.1" class="ico--fill" style="fill:currentColor;stroke:none"/><circle cx="14.4" cy="11" r="1.1" class="ico--fill" style="fill:currentColor;stroke:none"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M9.6 20v-5.6h4.8V20"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s6.4-6 6.4-10.4A6.4 6.4 0 0 0 5.6 10.6C5.6 15 12 21 12 21z"/><circle cx="12" cy="10.4" r="2.4"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.2" r="3.6"/><path d="M4.8 20c.6-3.7 3.5-5.6 7.2-5.6s6.6 1.9 7.2 5.6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.2"/><path d="M15.6 15.6 20 20"/></symbol>
+  <symbol id="i-gf" viewBox="0 0 24 24"><circle cx="12" cy="9" r="4.4"/><path d="M12 13.4V20M9.2 17.4h5.6"/></symbol>
+  <symbol id="i-gm" viewBox="0 0 24 24"><circle cx="10" cy="14" r="4.4"/><path d="M13.2 10.8 19 5M15.2 4.6H19.4V8.8"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.6 9.6 17 19 7.4"/></symbol>
+  <symbol id="i-ok-c" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.2 12.4l2.6 2.6 5-5.6"/></symbol>
+  <symbol id="i-school" viewBox="0 0 24 24"><path d="M12 3.2 3 7.4l9 4.2 9-4.2z"/><path d="M6.6 9.6v5.1c0 1.9 2.4 3.4 5.4 3.4s5.4-1.5 5.4-3.4V9.6"/><path d="M21 7.4v6.2"/></symbol>
+  <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-wechat" viewBox="0 0 24 24"><path d="M9.2 4.6c-3.4 0-6.2 2.2-6.2 5 0 1.6.9 3 2.3 3.9L4.8 16l2.6-1.3c.6.2 1.2.3 1.8.3"/><path d="M15 9.2c3.1 0 5.6 2 5.6 4.6 0 1.5-.8 2.8-2.1 3.6l.5 2.2-2.4-1.2c-.5.1-1 .2-1.6.2-3.1 0-5.6-2-5.6-4.6S11.9 9.2 15 9.2z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>寻觅页（匹配卡片） <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">pages/discover/index</code>（主包 · tabbar 第 3 项「匹配」）。
+     本页是全站唯一的「一张卡 + 三个决定」页面：顶部 寻觅♥／漏斗筛选 与 推荐·附近 分段，中部一张
+     MatchCard，下部三键停靠层（跳过 / 打个招呼 / 喜欢），底部 tabbar。
+     理想效果图《寻觅匹配卡片页面.png》右下的 92% 匹配度绿圆环已按裁定 P1-2 撤除——
+     本画板以源码实况为准把该位画成「不渲染」，并把为它保留的 60% 文字列上限一并固化，作为该页的永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>pages/discover/index</b></span>
+    <span>主包 <b>有 tabbar（匹配·选中）</b></span>
+    <span>状态 <b>8 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>理想图 寻觅匹配卡片页面.png（登记表第 4 行）</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 8 屏</h2>
+    <p>推荐 / 附近 / 游客两态 / 等待墙 / 筛选 / 骨架 / 空态 / 错误</p></div>
+  <div class="sec__sub">本页状态机 = <b>4 个互斥主分支 + 3 条横切条件 + 2 个分段</b>，逐条取自源码 <code>v-if</code>：
+    主分支 <code>!isMatchOpen</code> → <code>loading &amp;&amp; cards.length===0</code> →
+    <code>visibleCards.length===0</code> → <code>else（配额行 + MatchCard）</code>（<code>pages/discover/index.vue:331-371</code>）；
+    横切 <code>errorMessage</code> 顶部横幅（:324）、<code>v-if="isMatchOpen &amp;&amp; visibleCards.length&gt;0"</code> 三键停靠层（:381）、
+    <code>v-if="!sessionStore.isLoggedIn"</code> 登录提示胶囊（:391）；分段 <code>activeMode: "recommend" | "nearby"</code>（:55）。
+    帧即视口：超出 812px 的部分裁掉，裁掉什么只写在题注里。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">推荐段 · 已登录 · 有卡（主屏）</span><span class="d">右下匹配度位不渲染 · 卡片以下裁切</span></figcaption>
+      <div class="phone">
+        <div class="scr">
+          <div class="dc-head">
+            <div class="dc-head__top">
+              <div class="dc-head__titles"><span class="dc-head__title">寻觅</span><svg class="dc-head__heart ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></div>
+              <span class="dc-head__filter"><svg><use href="#i-funnel"/></svg></span>
+            </div>
+            <div class="dc-head__tabs">
+              <div class="dc-tab"><span class="dc-tab__t dc-tab__t--on">推荐</span><span class="dc-tab__l"></span></div>
+              <div class="dc-tab"><span class="dc-tab__t">附近</span></div>
+              <span class="dc-head__fav"><svg><use href="#i-heart-o"/></svg></span>
+            </div>
+          </div>
+          <div class="dc-scroll">
+            <div class="dc-quota"><span class="dc-quota__pill"><span class="dc-quota__t">今日剩余 10 次</span></span></div>
+            <div class="dc-cardarea">
+              <div class="mcard">
+                <div class="mcard__ph"><img src="assets/demo/p1.jpg" alt=""></div>
+                <div class="mcard__ovl"></div>
+                <div class="mcard__dist"><span class="mcard__dist-t">2.3km</span></div>
+                <div class="mcard__on"><span class="mcard__on-dot"></span><span class="mcard__on-t">在线</span></div>
+                <div class="mcard__info">
+                  <div class="minfo">
+                    <div class="minfo__row"><span class="minfo__name">星辰</span><span class="minfo__age">25</span>
+                      <span class="minfo__g minfo__g--f"><svg><use href="#i-gf"/></svg></span></div>
+                    <div class="minfo__sch"><b>北京大学</b><i>·</i><i>设计学院</i></div>
+                    <div class="minfo__dist">2.3km · 在线</div>
+                    <div class="minfo__tags"><span class="minfo__tag">旅行</span><span class="minfo__tag">摄影</span><span class="minfo__tag">音乐</span><span class="minfo__tag">电影</span></div>
+                    <div class="minfo__intro"><span class="minfo__q"></span><span class="minfo__i">喜欢慢跑和散步，期待遇见有趣的人</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dc-dock">
+            <div class="macts">
+              <div class="macts__i"><span class="macts__b macts__b--pass"><svg><use href="#i-x"/></svg></span><span class="macts__l">跳过</span></div>
+              <div class="macts__i"><span class="macts__b macts__b--super"><svg><use href="#i-chat"/></svg></span><span class="macts__l">打个招呼</span></div>
+              <div class="macts__i"><span class="macts__b macts__b--like"><svg class="ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></span><span class="macts__l macts__l--like">喜欢</span></div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+            <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+            <div class="tabbar__i tabbar__i--on"><svg><use href="#i-logo"/></svg>匹配</div>
+            <div class="tabbar__i"><svg><use href="#i-chat"/></svg>消息</div>
+            <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">附近段 · 已登录 · 同校优先</span><span class="d">activeMode=nearby · ≤20km 过滤</span></figcaption>
+      <div class="phone">
+        <div class="scr">
+          <div class="dc-head">
+            <div class="dc-head__top">
+              <div class="dc-head__titles"><span class="dc-head__title">寻觅</span><svg class="dc-head__heart ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></div>
+              <span class="dc-head__filter"><svg><use href="#i-funnel"/></svg></span>
+            </div>
+            <div class="dc-head__tabs">
+              <div class="dc-tab"><span class="dc-tab__t">推荐</span></div>
+              <div class="dc-tab"><span class="dc-tab__t dc-tab__t--on">附近</span><span class="dc-tab__l"></span></div>
+              <span class="dc-head__fav"><svg><use href="#i-heart-o"/></svg></span>
+            </div>
+          </div>
+          <div class="dc-scroll">
+            <div class="dc-quota"><span class="dc-quota__pill"><span class="dc-quota__t">今日剩余 10 次</span></span></div>
+            <div class="dc-cardarea">
+              <div class="mcard">
+                <div class="mcard__ph"><img src="assets/demo/p2.jpg" alt=""></div>
+                <div class="mcard__ovl"></div>
+                <div class="mcard__dist"><span class="mcard__dist-t">0.8km</span></div>
+                <div class="mcard__on"><span class="mcard__on-dot"></span><span class="mcard__on-t">在线</span></div>
+                <div class="mcard__info">
+                  <div class="minfo">
+                    <div class="minfo__row"><span class="minfo__name">周岚</span><span class="minfo__age">24</span>
+                      <span class="minfo__g minfo__g--f"><svg><use href="#i-gf"/></svg></span></div>
+                    <div class="minfo__sch"><b>北京大学</b><i>·</i><i>外国语学院</i></div>
+                    <div class="minfo__dist">0.8km · 在线</div>
+                    <div class="minfo__tags"><span class="minfo__tag">阅读</span><span class="minfo__tag">美食</span><span class="minfo__tag">音乐</span><span class="minfo__tag">旅行</span></div>
+                    <div class="minfo__intro"><span class="minfo__q"></span><span class="minfo__i">爱逛展，也爱巷子里的小面馆</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dc-dock">
+            <div class="macts">
+              <div class="macts__i"><span class="macts__b macts__b--pass"><svg><use href="#i-x"/></svg></span><span class="macts__l">跳过</span></div>
+              <div class="macts__i"><span class="macts__b macts__b--super"><svg><use href="#i-chat"/></svg></span><span class="macts__l">打个招呼</span></div>
+              <div class="macts__i"><span class="macts__b macts__b--like"><svg class="ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></span><span class="macts__l macts__l--like">喜欢</span></div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+            <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+            <div class="tabbar__i tabbar__i--on"><svg><use href="#i-logo"/></svg>匹配</div>
+            <div class="tabbar__i"><svg><use href="#i-chat"/></svg>消息</div>
+            <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">未登录 · 卡片可预览 + 登录提示胶囊</span><span class="d">配额行不渲染（v-if isLoggedIn）</span></figcaption>
+      <div class="phone">
+        <div class="scr">
+          <div class="dc-head">
+            <div class="dc-head__top">
+              <div class="dc-head__titles"><span class="dc-head__title">寻觅</span><svg class="dc-head__heart ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></div>
+              <span class="dc-head__filter"><svg><use href="#i-funnel"/></svg></span>
+            </div>
+            <div class="dc-head__tabs">
+              <div class="dc-tab"><span class="dc-tab__t dc-tab__t--on">推荐</span><span class="dc-tab__l"></span></div>
+              <div class="dc-tab"><span class="dc-tab__t">附近</span></div>
+              <span class="dc-head__fav"><svg><use href="#i-heart-o"/></svg></span>
+            </div>
+          </div>
+          <div class="dc-scroll">
+            <div class="dc-cardarea">
+              <div class="mcard">
+                <div class="mcard__ph"><img src="assets/demo/p1.jpg" alt=""></div>
+                <div class="mcard__ovl"></div>
+                <div class="mcard__dist"><span class="mcard__dist-t">2.3km</span></div>
+                <div class="mcard__on"><span class="mcard__on-dot"></span><span class="mcard__on-t">在线</span></div>
+                <div class="mcard__info">
+                  <div class="minfo">
+                    <div class="minfo__row"><span class="minfo__name">星辰</span><span class="minfo__age">25</span>
+                      <span class="minfo__g minfo__g--f"><svg><use href="#i-gf"/></svg></span></div>
+                    <div class="minfo__sch"><b>北京大学</b><i>·</i><i>设计学院</i></div>
+                    <div class="minfo__dist">2.3km · 在线</div>
+                    <div class="minfo__tags"><span class="minfo__tag">旅行</span><span class="minfo__tag">摄影</span><span class="minfo__tag">音乐</span><span class="minfo__tag">电影</span></div>
+                    <div class="minfo__intro"><span class="minfo__q"></span><span class="minfo__i">喜欢慢跑和散步，期待遇见有趣的人</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dc-dock">
+            <div class="macts">
+              <div class="macts__i"><span class="macts__b macts__b--pass"><svg><use href="#i-x"/></svg></span><span class="macts__l">跳过</span></div>
+              <div class="macts__i"><span class="macts__b macts__b--super"><svg><use href="#i-chat"/></svg></span><span class="macts__l">打个招呼</span></div>
+              <div class="macts__i"><span class="macts__b macts__b--like"><svg class="ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></span><span class="macts__l macts__l--like">喜欢</span></div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+            <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+            <div class="tabbar__i tabbar__i--on"><svg><use href="#i-logo"/></svg>匹配</div>
+            <div class="tabbar__i"><svg><use href="#i-chat"/></svg>消息</div>
+            <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+          </div>
+        </div>
+        <div class="dc-loginhint"><span>登录后可与 TA 互动</span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">未登录等待墙 · NotLoggedWaiting</span><span class="d">理想图 等待页面.png 对应态 · 整页顶替</span></figcaption>
+      <div class="phone">
+        <div class="nlw">
+          <div class="nlw__tw">
+            <span class="nlw__t">正在为你寻找</span>
+            <span class="nlw__t">同频的那个人</span>
+            <span class="nlw__st">发现更多同频的人</span>
+          </div>
+          <div class="nlw__orbit">
+            <div class="nlw__ring"></div>
+            <div class="nlw__node" style="left:140px;top:35px"><img class="nlw__av" src="assets/demo/person-01-avatar.png" alt=""><span class="nlw__bd"><svg class="ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></span></div>
+            <div class="nlw__node" style="left:231px;top:87.5px"><img class="nlw__av" src="assets/demo/person-02-avatar.png" alt=""><span class="nlw__bd"><svg class="ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></span></div>
+            <div class="nlw__node" style="left:231px;top:192.5px"><img class="nlw__av" src="assets/demo/person-03-avatar.png" alt=""><span class="nlw__bd"><svg class="ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></span></div>
+            <div class="nlw__node" style="left:140px;top:245px"><img class="nlw__av" src="assets/demo/person-04-avatar.png" alt=""><span class="nlw__bd"><svg class="ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></span></div>
+            <div class="nlw__node" style="left:49px;top:192.5px"><img class="nlw__av" src="assets/demo/person-05-avatar.png" alt=""><span class="nlw__bd"><svg class="ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></span></div>
+            <div class="nlw__node" style="left:49px;top:87.5px"><img class="nlw__av" src="assets/demo/person-06-avatar.png" alt=""><span class="nlw__bd"><svg class="ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></span></div>
+            <img class="nlw__mascot" src="assets/demo/mascot_default.png" alt="">
+          </div>
+          <div class="nlw__hint">登录后即可解锁全部功能</div>
+          <div class="nlw__feats">
+            <div class="nlw__feat"><svg><use href="#i-sprout"/></svg><span>精确匹配</span></div>
+            <div class="nlw__feat"><svg><use href="#i-chat"/></svg><span>聊天互动</span></div>
+            <div class="nlw__feat"><svg><use href="#i-school"/></svg><span>校园趣遇</span></div>
+            <div class="nlw__feat"><svg class="ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg><span>关系成长</span></div>
+          </div>
+          <div class="nlw__btns">
+            <div class="nlw__btn nlw__btn--p"><svg><use href="#i-wechat"/></svg>微信一键登录</div>
+            <div class="nlw__btn nlw__btn--s">手机号登录</div>
+            <div class="nlw__btn nlw__btn--g">稍后再看</div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">筛选弹层 · 基础筛选 Tab（默认值）</span><span class="d">面板 85vh，超出部分被面板裁切</span></figcaption>
+      <div class="phone">
+        <div class="scr">
+          <div class="dc-head">
+            <div class="dc-head__top">
+              <div class="dc-head__titles"><span class="dc-head__title">寻觅</span><svg class="dc-head__heart ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></div>
+              <span class="dc-head__filter"><svg><use href="#i-funnel"/></svg></span>
+            </div>
+            <div class="dc-head__tabs">
+              <div class="dc-tab"><span class="dc-tab__t dc-tab__t--on">推荐</span><span class="dc-tab__l"></span></div>
+              <div class="dc-tab"><span class="dc-tab__t">附近</span></div>
+              <span class="dc-head__fav"><svg><use href="#i-heart-o"/></svg></span>
+            </div>
+          </div>
+          <div class="dc-scroll">
+            <div class="dc-quota"><span class="dc-quota__pill"><span class="dc-quota__t">今日剩余 10 次</span></span></div>
+            <div class="dc-cardarea">
+              <div class="mcard">
+                <div class="mcard__ph"><img src="assets/demo/p1.jpg" alt=""></div>
+                <div class="mcard__ovl"></div>
+              </div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+            <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+            <div class="tabbar__i tabbar__i--on"><svg><use href="#i-logo"/></svg>匹配</div>
+            <div class="tabbar__i"><svg><use href="#i-chat"/></svg>消息</div>
+            <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+          </div>
+        </div>
+        <div class="fd">
+          <div class="fd__panel">
+            <div class="fd__hdr"><span class="fd__title">全部筛选</span>
+              <span class="fd__close"><svg><use href="#i-close"/></svg></span></div>
+            <div class="fd__tabs">
+              <span class="fd__tab fd__tab--on">基础筛选</span>
+              <span class="fd__tab">高级筛选</span>
+            </div>
+            <div class="fd__body">
+              <div class="fd__sec">
+                <div class="fd__head"><span class="fd__h">身高</span><span class="fd__v">120-250cm</span></div>
+                <div class="fd__sliders">
+                  <div class="fd__sl fd__sl--min"><i></i><b></b></div>
+                  <div class="fd__sl fd__sl--max"><i></i><b></b></div>
+                </div>
+                <div class="fd__hint">范围 120-250cm</div>
+              </div>
+              <div class="fd__sec">
+                <div class="fd__head"><span class="fd__h">学历</span><span class="fd__v">不限</span></div>
+                <div class="chips"><span class="chip">高中</span><span class="chip">本科</span><span class="chip">硕士</span><span class="chip">博士</span></div>
+              </div>
+              <div class="fd__sec">
+                <div class="fd__head"><span class="fd__h">感情状态</span><span class="fd__v">不限</span></div>
+                <div class="chips"><span class="chip">未婚</span><span class="chip">曾婚</span><span class="chip">离异</span><span class="chip">丧偶</span></div>
+              </div>
+              <div class="fd__sec">
+                <div class="fd__head"><span class="fd__h">籍贯</span></div>
+                <div class="picker"><span>请选择籍贯</span><em>›</em></div>
+              </div>
+              <div class="fd__sec">
+                <div class="fd__head"><span class="fd__h">未来城市</span></div>
+                <div class="picker"><span>请选择未来城市</span><em>›</em></div>
+              </div>
+              <div class="fd__sec">
+                <div class="fd__head"><span class="fd__h">关键词</span></div>
+                <div class="kw"><svg><use href="#i-search"/></svg><span>搜索昵称/标签/学校</span></div>
+              </div>
+            </div>
+            <div class="fd__foot">
+              <span class="fd__btn fd__btn--r">重置</span>
+              <span class="fd__btn fd__btn--c">确认</span>
+            </div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">加载态 · Skeleton variant=card</span><span class="d">loading &amp;&amp; cards.length===0 · 三键不渲染</span></figcaption>
+      <div class="phone">
+        <div class="scr">
+          <div class="dc-head">
+            <div class="dc-head__top">
+              <div class="dc-head__titles"><span class="dc-head__title">寻觅</span><svg class="dc-head__heart ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></div>
+              <span class="dc-head__filter"><svg><use href="#i-funnel"/></svg></span>
+            </div>
+            <div class="dc-head__tabs">
+              <div class="dc-tab"><span class="dc-tab__t dc-tab__t--on">推荐</span><span class="dc-tab__l"></span></div>
+              <div class="dc-tab"><span class="dc-tab__t">附近</span></div>
+              <span class="dc-head__fav"><svg><use href="#i-heart-o"/></svg></span>
+            </div>
+          </div>
+          <div class="dc-scroll">
+            <div class="sk-card">
+              <div class="sk-img shim"></div>
+              <div class="sk-body">
+                <div class="sk-line shim" style="width:70%"></div>
+                <div class="sk-line shim" style="width:50%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+            <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+            <div class="tabbar__i tabbar__i--on"><svg><use href="#i-logo"/></svg>匹配</div>
+            <div class="tabbar__i"><svg><use href="#i-chat"/></svg>消息</div>
+            <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">空态 · 今日推荐次数已用完</span><span class="d">visibleCards.length===0 · 三键整行不渲染</span></figcaption>
+      <div class="phone">
+        <div class="scr">
+          <div class="dc-head">
+            <div class="dc-head__top">
+              <div class="dc-head__titles"><span class="dc-head__title">寻觅</span><svg class="dc-head__heart ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></div>
+              <span class="dc-head__filter"><svg><use href="#i-funnel"/></svg></span>
+            </div>
+            <div class="dc-head__tabs">
+              <div class="dc-tab"><span class="dc-tab__t dc-tab__t--on">推荐</span><span class="dc-tab__l"></span></div>
+              <div class="dc-tab"><span class="dc-tab__t">附近</span></div>
+              <span class="dc-head__fav"><svg><use href="#i-heart-o"/></svg></span>
+            </div>
+          </div>
+          <div class="dc-scroll">
+            <div class="dc-empty" style="padding-top:150px">
+              <img src="assets/demo/mascot_cry.png" alt="">
+              <div class="dc-empty__t">今日推荐次数已用完，明天再来吧</div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+            <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+            <div class="tabbar__i tabbar__i--on"><svg><use href="#i-logo"/></svg>匹配</div>
+            <div class="tabbar__i"><svg><use href="#i-chat"/></svg>消息</div>
+            <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F08 -->
+    <figure class="frame">
+      <figcaption><b>F08</b><span class="t">错误态 · 顶部横幅 + network 空态</span><span class="d">errorMessage 为横切分支，与空态同屏</span></figcaption>
+      <div class="phone">
+        <div class="scr">
+          <div class="dc-head">
+            <div class="dc-head__top">
+              <div class="dc-head__titles"><span class="dc-head__title">寻觅</span><svg class="dc-head__heart ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></div>
+              <span class="dc-head__filter"><svg><use href="#i-funnel"/></svg></span>
+            </div>
+            <div class="dc-head__tabs">
+              <div class="dc-tab"><span class="dc-tab__t dc-tab__t--on">推荐</span><span class="dc-tab__l"></span></div>
+              <div class="dc-tab"><span class="dc-tab__t">附近</span></div>
+              <span class="dc-head__fav"><svg><use href="#i-heart-o"/></svg></span>
+            </div>
+          </div>
+          <div class="dc-scroll">
+            <div class="dc-err"><span class="dc-err__t">推荐加载失败，请检查网络后重试</span><span class="dc-err__r">重试</span></div>
+            <div class="dc-empty" style="padding-top:96px">
+              <img src="assets/demo/mascot_cry.png" alt="">
+              <div class="dc-empty__t">推荐加载失败，请检查网络后重试</div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+            <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+            <div class="tabbar__i tabbar__i--on"><svg><use href="#i-logo"/></svg>匹配</div>
+            <div class="tabbar__i"><svg><use href="#i-chat"/></svg>消息</div>
+            <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每类交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页的验收重心有两处：<b>右下匹配度位必须为空</b>（第 1 块），以及
+    <b>三键停靠层只在「有卡」时出现</b>（第 2 块）。其余四块是卡片胶囊、顶部分段与两枚入口、筛选件、主分支枚举。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>匹配度位（卡片右下）· 现状 = 不渲染</h3>
+      <p class="hint">虚线圈只是本面板的「该位空着」示意，<b>不得出现在任何 .phone 画框里</b>——
+        源码在该位渲染的是零个节点。文字列 <code>max-width:60%</code> 是为该位保留的让位区，撤环后仍保留不动。</p>
+      <div class="row">
+        <div class="cell"><div class="ringdemo">
+          <img src="assets/demo/p1.jpg" alt="">
+          <div class="ringdemo__txt"><i></i><i style="width:80%"></i><i style="width:45%"></i></div>
+          <div class="ringdemo__slot">圆环位<br>留空</div>
+        </div><span class="lab">现状：空 slot + 60% 让位区</span></div>
+        <div class="cell" style="width:200px">
+          <table class="tbl">
+            <tr><th>档位</th><th>渲染</th></tr>
+            <tr><td>理想图</td><td class="plain">右下绿色细环 + <code class="plain">92%</code> + 「匹配度」</td></tr>
+            <tr><td>现状（基准）</td><td class="plain">无节点、无占位、无底色</td></tr>
+            <tr><td>重建条件</td><td class="plain">后端补真分列后在<b>原位</b>重建 SVG 环</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>卡片三键 · 全状态</h3>
+      <p class="hint">整行受 <code>v-if="isMatchOpen &amp;&amp; visibleCards.length &gt; 0"</code> 约束：
+        骨架态、空态、匹配未开放三态下整行不存在（不是置灰）。禁用条件是 <code>disabled || busy</code> → 整行 opacity .55。</p>
+      <div class="row">
+        <div class="cell"><span class="macts__b macts__b--pass"><svg><use href="#i-x"/></svg></span><span class="lab">跳过 default</span></div>
+        <div class="cell"><span class="macts__b macts__b--super"><svg><use href="#i-chat"/></svg></span><span class="lab">打个招呼 default</span></div>
+        <div class="cell"><span class="macts__b macts__b--like"><svg class="ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></span><span class="lab">喜欢（主 CTA 152rpx）</span></div>
+        <div class="cell"><span class="macts__b macts__b--like" style="transform:scale(.92)"><svg class="ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart-f"/></svg></span><span class="lab">pressed scale .92</span></div>
+        <div class="cell"><span class="macts__b macts__b--pass" style="opacity:.55"><svg><use href="#i-x"/></svg></span><span class="lab">busy / disabled</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>卡片胶囊 · 距离两态 / 在线两态</h3>
+      <p class="hint">在线胶囊 <code>v-if="onlineText"</code>：非在线时整块不渲染（不留灰点占位）。
+        距离无真值时落「距离未知」并把字色从 <code>--c-romance</code> 降到 <code>--c-text-secondary</code>。</p>
+      <div class="row">
+        <div class="cell"><span class="mcard__dist" style="position:static"><span class="mcard__dist-t">2.3km</span></span><span class="lab">距离·有真值</span></div>
+        <div class="cell"><span class="mcard__dist mcard__dist--unknown" style="position:static"><span class="mcard__dist-t">距离未知</span></span><span class="lab">距离·无真值</span></div>
+        <div class="cell"><span class="mcard__on" style="position:static"><span class="mcard__on-dot"></span><span class="mcard__on-t">在线</span></span><span class="lab">在线</span></div>
+        <div class="cell"><span class="mcard__on" style="position:static"><span class="mcard__on-dot" style="background:var(--c-brand-200)"></span><span class="mcard__on-t">在线</span></span><span class="lab">离开（淡绿点）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>顶部分段与两枚入口 · 状态</h3>
+      <p class="hint">分段是页内切换（<code>switchDiscoverMode</code>），不再跳附近页；
+        漏斗与收藏心上下成列，均无底板/有底板各一（漏斗透明、收藏白底投影）。</p>
+      <div class="row">
+        <div class="cell"><div class="dc-tab" style="background:var(--c-bg-surface);padding:6px 14px"><span class="dc-tab__t dc-tab__t--on">推荐</span><span class="dc-tab__l"></span></div><span class="lab">tab active</span></div>
+        <div class="cell"><div class="dc-tab" style="background:var(--c-bg-surface);padding:6px 14px"><span class="dc-tab__t">附近</span></div><span class="lab">tab inactive</span></div>
+        <div class="cell"><span class="dc-head__filter" style="border:1px solid var(--c-border-light)"><svg><use href="#i-funnel"/></svg></span><span class="lab">筛选 default</span></div>
+        <div class="cell"><span class="dc-head__filter" style="opacity:.7;border:1px solid var(--c-border-light)"><svg><use href="#i-funnel"/></svg></span><span class="lab">筛选 pressed .7</span></div>
+        <div class="cell"><span class="dc-head__fav"><svg><use href="#i-heart-o"/></svg></span><span class="lab">收藏入口（→ 已喜欢列表）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>筛选件 · chip / picker / slider / 底部键</h3>
+      <p class="hint">弹层只有「基础 / 高级」两个 Tab；基础 Tab 六段（身高 / 学历 / 感情状态 / 籍贯 / 未来城市 / 关键词）
+        的默认值恒为「不限」与两条 placeholder，<b>不预置任何选中项</b>。</p>
+      <div class="row">
+        <div class="cell"><span class="chip">本科</span><span class="lab">chip 未选</span></div>
+        <div class="cell"><span class="chip chip--on">本科</span><span class="lab">chip 选中（品牌渐变）</span></div>
+        <div class="cell"><div class="picker" style="width:186px"><span>请选择籍贯</span><em>›</em></div><span class="lab">picker 空值</span></div>
+        <div class="cell"><div class="picker" style="width:186px"><span style="color:var(--c-text-primary)">浙江省 · 杭州</span><em>›</em></div><span class="lab">picker 已选</span></div>
+        <div class="cell"><div class="fd__sl fd__sl--min" style="width:186px"><i></i><b></b></div><span class="lab">下限滑块（brand-600）</span></div>
+        <div class="cell"><div class="fd__sl fd__sl--max" style="width:186px"><i></i><b></b></div><span class="lab">上限滑块（romance）</span></div>
+        <div class="cell"><span class="fd__btn fd__btn--r" style="width:120px">重置</span><span class="lab">次键</span></div>
+        <div class="cell"><span class="fd__btn fd__btn--c" style="width:120px">确认</span><span class="lab">主键</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>页面主分支枚举 · 互斥四支 + 横切三支</h3>
+      <p class="hint">条件表达式逐字取自 <code>pages/discover/index.vue:324-393</code>。任何一支画错或缺屏，本表即为判据。</p>
+      <table class="tbl">
+        <tr><th>分支</th><th>条件</th><th>渲染</th><th>三键</th></tr>
+        <tr><td>匹配未开放</td><td><code>!isMatchOpen</code></td><td>EmptyState「匹配功能暂未开放，敬请期待」</td><td>否</td></tr>
+        <tr><td>加载骨架</td><td><code>loading &amp;&amp; cards.length===0</code></td><td>Skeleton variant=card ×1</td><td>否</td></tr>
+        <tr><td>空态</td><td><code>visibleCards.length===0</code></td><td>EmptyState mascot=sad，文案四选一</td><td>否</td></tr>
+        <tr><td>有卡</td><td><code>else</code></td><td>配额行（仅登录）+ MatchCard</td><td>是</td></tr>
+        <tr><td>网络错误</td><td><code>errorMessage</code>（横切）</td><td>顶部粉底盘古 + 重试</td><td>随主分支</td></tr>
+        <tr><td>游客提示</td><td><code>!sessionStore.isLoggedIn</code>（横切）</td><td>悬浮胶囊「登录后可与 TA 互动」</td><td>随主分支</td></tr>
+        <tr><td>筛选弹层</td><td><code>discoverStore.isFilterDrawerOpen</code></td><td>底部抽屉 85vh + 遮罩</td><td>不改变</td></tr>
+      </table>
+      <p class="hint" style="margin-top:12px">空态文案四选一（<code>emptyMessage</code>）：
+        <code>loadFailedTitle</code> / <code>quotaExhaustedTitle</code> / <code>nearbyEmptyTitle</code> / <code>emptyTitle</code>。</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>与 design-variables.scss 一一对应，可直接抄进 SCSS</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用下列档位，未引入任何页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫 <code>--c-romance / --c-love</code></div><div class="sw__u">标题心形 · 分段下划线 · 距离胶囊字 · 喜欢钮 · 性别♀</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色 <code>--c-brand</code></div><div class="sw__u">配额文字 · 在线绿点 · tabbar 选中 · 等待墙主标题</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800 <code>--c-brand-800</code></div><div class="sw__u">在线胶囊文字 · 登录提示胶囊底 · 微信登录渐变起</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3;border:1px solid #A3EBCF"></span><div><div class="sw__n">主色 50/200 <code>--c-brand-50 / -200</code></div><div class="sw__u">配额胶囊底 / 描边 · 收藏心角标底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">一级文本 <code>--c-text-primary</code></div><div class="sw__u">寻觅标题 · 选中分段</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页面底 <code>--c-bg-page</code></div><div class="sw__u">等待墙底 · 卡片兜底底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#5B7FFF"></span><div><div class="sw__n">蓝 400 <code>--c-secondary-blue-400</code></div><div class="sw__u">性别♂ 圆底（源码此处裸写 #54A0FF，见 §04）</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到八档；卡面 28px 名字与 24px 标题是全站最大两档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">56rpx 28/700</span><span class="type__p" style="font-size:28px;font-weight:700">星辰</span></div>
+        <div class="type__i"><span class="type__m">48rpx 24/700</span><span class="type__p" style="font-size:24px;font-weight:700">寻觅</span></div>
+        <div class="type__i"><span class="type__m">36rpx 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">推荐 附近</span></div>
+        <div class="type__i"><span class="type__m">32rpx 16/500</span><span class="type__p" style="font-size:16px;font-weight:500">北京大学 · 设计学院</span></div>
+        <div class="type__i"><span class="type__m">30rpx 15/600</span><span class="type__p" style="font-size:15px;font-weight:600">微信一键登录</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/500</span><span class="type__p" style="font-size:14px;font-weight:500">喜欢慢跑和散步，期待遇见有趣的人</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500">旅行 · 身高 · 请选择籍贯</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/700</span><span class="type__p" style="font-size:11px;font-weight:700">2.3km · 在线 · 今日剩余 10 次</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。卡片 48rpx 圆角介于 <code>--r-card 20px</code> 与 <code>--r-xxl 16px</code> 之间，取源码实值 24px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-1 2rpx</b><i style="width:1px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>页基线 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 错误横幅</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 抽屉顶角</div>
+        <div class="rad__i"><b style="border-radius:24px"></b>卡片 48rpx<br>MatchCard 实值</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>胶囊 / 圆钮</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材与差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与实况的已知差异</h2><p>照片位全部走盘上真演示素材，无灰块</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/p1.jpg" alt="">
+      <div class="asset__b"><b>assets/demo/p1.jpg</b><p>F01 / F03 / F05 卡片主视觉（<code>MatchCard .match-card__photo</code>，aspectFill 满幅裁切）。人像竖版，底部 62% 蒙层压住腰以下，正是像素比对要判的「文字压图」关系。</p><div class="m">343 × 464 视口 · object-fit:cover</div></div></div>
+    <div class="asset"><img src="assets/demo/p2.jpg" alt="">
+      <div class="asset__b"><b>assets/demo/p2.jpg</b><p>F02 附近段卡片主视觉。与 F01 换人是必要的：两段的排序口径不同（附近＝同校→距离升序），同图会被读成同一张卡没换。</p><div class="m">343 × 464 视口 · object-fit:cover</div></div></div>
+    <div class="asset"><img src="assets/demo/person-01-avatar.png" alt="" style="object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>person-01…06-avatar.png</b><p>F04 头像环六个节点，逐一对应 <code>IMAGE_PATHS.PEOPLE.AVATAR_1…6</code>（NotLoggedWaiting.vue:112-119），半径 37.5% 均分 −90° 起。数量与角度都由源码常量决定，不是摆拍。</p><div class="m">48px 圆 · 2px 白描边 · 16px 心动角标</div></div></div>
+    <div class="asset"><img src="assets/demo/mascot_default.png" alt="" style="object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>mascot_default.png / mascot_cry.png</b><p>环心吉祥物绑 <code>ICONS_EMOJI.SPROUT</code>（同一只寻觅吉祥物，real 档可解析）；F07 空态用 <code>EmptyState mascot="sad"</code> 的哭脸档。</p><div class="m">100px · 200rpx 实值</div></div></div>
+  </div>
+
+  <div class="note">
+    <b>与实况的已知差异 / 留空依据（逐条）：</b>
+    <ul>
+      <li><b>右下匹配度绿圆环——画板不画，且该位不存在。</b>理想图此处为「92% 匹配度」绿色细环，
+        产品裁定 P1-2 已撤除，后端无真分字段，画板按留空画。源码依据三处，全部实测命中：
+        ① <code>components/match/MatchCard.vue:120-126</code> 注释「匹配度徽章随 §4.3 撤除 …
+        后端补真分列前不显示任何百分比，就绪后在此原位重建徽章」，其后紧跟一个<b>无默认内容的空槽</b>
+        <code>&lt;slot name="match-score" /&gt;</code>；② 同文件样式段
+        「原 .match-card__score / __score-ring / __score-ring-inner / __score-value / __score-label 五段 … 样式一并删除」，
+        五条类名在 <code>apps/client/src</code> 全库 0 命中；③ 组件文件
+        <code>components/common/XunmiMatchRing.vue</code> 仍在盘上，但
+        <code>grep -rn "XunmiMatchRing" apps/client/src</code> 只命中该文件自身，
+        <b>无任何 import / 标签 / 渲染条件</b> ⇒ 它是未被引用的死件（且其 <code>--ring-pct</code> 从未绑定）。
+        保留的让位痕迹：<code>MatchCard.vue</code> 的 <code>.match-card :deep(.match-info){max-width:60%}</code>
+        注释自陈「匹配度环已撤除，此 60% 上限保留不动」——所以 F01 卡面标签换行、简介两行折行是<b>正确形态</b>，
+        不是排版失误；右下留白即该 60% 上限让出来的带。回归判据：任何一屏出现百分比或圆环 = 退稿。</li>
+      <li><b>人名。</b>理想图为「星野」，不在画板规范 §3.4 演示真名池（小满 / 周岚 / 阿辰 / 星辰 / 小溪）内，
+        按真名池落「星辰」（F02 落「周岚」）。校名沿用理想图真校名「北京大学 · 设计学院」。</li>
+      <li><b>左上距离胶囊底色。</b>理想图是粉底白字，源码 <code>MatchCard.vue</code> 的
+        <code>.match-card__distance</code> 用 <code>--c-overlay-bg-solid</code>（= rgba(255,255,255,.9) 白底）
+        + <code>--c-love</code> 粉字。按 §10「帧与源码冲突时以源码为准」画成白底粉字。</li>
+      <li><b>配额行「今日剩余 10 次」。</b>理想图没有这一行，它是源码新增的横切元素
+        （<code>index.vue:356-360</code>，仅登录渲染）。10 不是编造：
+        <code>remainingCount = dailyLimit + extraQuota − viewedCards.length</code>，
+        <code>DAILY_LIMIT_TOTAL = 10</code>（stores/discover/constants.ts:45）、首屏未看卡 ⇒ 实算 10。
+        游客态（F03）该行不渲染，与理想图一致。</li>
+      <li><b>tabbar 第三项文案。</b>理想图写「寻觅」，<code>pages.json:432</code> 实值写「匹配」，
+        <code>useTabBar(2)</code> 选中它。按源码画「匹配」。</li>
+      <li><b>NotLoggedWaiting 的宿主。</b>登记表注把 等待页面.png / 未登录等待页面.png 记为「寻觅页内嵌态」，
+        实测 <code>pages/discover/index.vue</code> <b>并未引用</b>该组件（全库唯一挂载点是
+        <code>subpackages/discover-extra/likes/index.vue:668</code>）。寻觅页自己的游客态是 F03
+        「卡片可预览 + 登录提示胶囊」。F04 按登记表要求出屏，画成整页顶替、<b>不带 tabbar</b>
+        （其真实宿主是分包页），并在此登记宿主口径待主控裁定。</li>
+      <li><b>MatchScopeTabs 未接线。</b>任务书点名的 <code>components/match/MatchScopeTabs.vue</code>
+        在 <code>apps/client/src</code> 内 0 引用（分段由 <code>index.vue</code> 页内自绘的
+        <code>discover-header__tabs</code> 承担），故本画板不画该组件，F01/F02 的分段按页内实现画。</li>
+      <li><b>性别♂圆底色值。</b>源码 <code>MatchInfo.vue</code> 硬写 <code>#54A0FF</code>，两个令牌登记处均无该档；
+        画板用最近的已登记档 <code>--c-secondary-blue-400</code>（#5B7FFF）替身，仅出现在 §02 面板，
+        主屏 F01–F03 的人设均为♀，不受影响。源码侧裸色值属全站 R2b-L01-D07 同类问题，不在本页修。</li>
+      <li><b>base 缺档 <code>--c-overlay-bg-solid</code>。</b>该令牌在
+        <code>theme/design-variables.scss:742</code> 有真值（rgba(255,255,255,.9)），board-base.css 未登记，
+        画板以 <code>--c-bg-container</code>（不透明白）替身，差异仅为照片透过胶囊的 10%  bleed。</li>
+      <li><b>演示计数口径。</b>本页无「好友头像行 / 共同点 / 匹配进度」类真值位；
+        卡片上的 2.3km、0.8km、25、24 属演示人设数据（随 mock 池），非后端真值，也不参与任何分数裁定。</li>
+      <li><b>哭脸吉祥物素材的烧录小字已抹除（2026-10-27，本条关闭）。</b>原状：<code>assets/demo/mascot_cry.png</code>
+        图内嘴下一行约 6px 的烧录中文标注（素材生成残留，非画板加注），F07 空态与 F08 错误态都会带到
+        （<code>EmptyState</code> 的 <code>mascot="sad"</code> 无条件传入，<code>index.vue:340-345</code>）。
+        处置：不重生成，按实测几何（角色本体止于第 58 行、59..64 全透明、题注为第 65..71 行列 29..41）
+        把第 65..71 行整带 alpha 归零，画布仍 72×72、角色一个像素没动；四处真源（包内 / uploads /
+        full-static 备份 / 本画板 demo 副本）已同步为同一 sha256，<code>app-assets-seed.sql</code> 的 size 元数据
+        跟着改成新字节数。F07、F08 已按新素材重拍。<b>但这不是孤例</b>：同一批 72×72 吉祥物素材里 <code>mascot_hug/party/phone/sleepy/surprised/tearful</code>
+        与 <code>sad.png</code> 的底段几何与 cry 逐像素同型（行 64..71、高 7..8、宽 7..14），已目检 hug 与 sad
+        确认同样烧字 ⇒ 系统性素材缺陷，余下几枚待逐张目检后同法处理。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 寻觅页（匹配卡片）高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1,573,000 px 级，对齐 素材/理想效果图 语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

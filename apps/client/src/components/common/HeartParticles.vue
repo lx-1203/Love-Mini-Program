@@ -231,7 +231,7 @@ function particleStyle(index: number) {
 
 .heart-particles__pause--pressed {
   transform: scale(0.95);
-  background: var(--c-overlay-white-bg-pure, rgba(255, 255, 255, 0.95));
+  background: var(--c-overlay-bg-pure);
 }
 
 .heart-particles__pause-icon {

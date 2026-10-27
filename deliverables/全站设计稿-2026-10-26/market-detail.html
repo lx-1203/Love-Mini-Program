@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 商品详情页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页所需令牌 base 已全部登记，无需镜像补档（BASE_PROBLEM 见 §04） ===== */
+
+/* ===== 本页专属组件 ===== */
+/* 分包页无原生导航栏：白底自绘 nav-bar（88rpx=44px，padding 0 24rpx=12px） */
+.pnb { position: absolute; top: 44px; left: 0; width: 100%; height: 44px; z-index: 5;
+  background: var(--c-bg-container); box-shadow: 0 0.5px 2px var(--c-neutral-shadow-xs);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 12px; }
+.pnb__back { width: 32px; height: 32px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: var(--c-border-card); display: flex; align-items: center; justify-content: center; color: var(--c-text-primary); }
+.pnb__back svg { width: 20px; height: 20px; }
+.pnb__title { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); letter-spacing: 0.2px; }
+.pnb__ph { width: 32px; height: 32px; flex: none; }
+.pnb--ghost { background: transparent; box-shadow: none; }
+
+/* 内容区（状态栏 44 + 导航栏 44 起算） */
+.pcontent { position: absolute; top: 88px; left: 0; width: 100%; bottom: 0; overflow: hidden; }
+
+/* 状态位（封存 / 加载 / 失败 / 空态）—— product-state */
+.pstate { display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 60px 20px; }
+.pstate__spin { width: 28px; height: 28px; border: 2px solid var(--c-neutral-100);
+  border-top-color: var(--c-brand); border-radius: 50%; }
+.pstate__text { font-size: var(--fs-md); color: var(--c-text-tertiary); }
+.pstate__btn { min-height: 48px; padding: 0 16px; border-radius: var(--r-full); background: var(--c-brand-800);
+  display: flex; align-items: center; justify-content: center; }
+.pstate__btn-text { font-size: var(--fs-md); font-weight: 600; color: var(--c-text-inverse); }
+/* 封存卡（product-state--sealed：白卡 + 顶锚，非通栏居中） */
+.pstate--sealed { justify-content: flex-start; flex: none; gap: 6px; margin: 30px 16px; padding: 40px 24px;
+  border-radius: var(--r-xxl); background: var(--c-bg-container); border: var(--c-border-card); }
+.pstate__lock { width: 48px; height: 48px; color: var(--c-text-primary); opacity: 0.55; }
+.pstate__lock svg { width: 48px; height: 48px; }
+.pstate__st { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.pstate__sd { font-size: var(--fs-md); color: var(--c-text-secondary); text-align: center; line-height: 1.6; }
+
+/* 空态组件 EmptyState（icon 120rpx=60px + --fs-xl/600 标题 + --fs-base 副题） */
+.es { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 40px 20px; }
+.es__ic { width: 60px; height: 60px; color: var(--c-text-placeholder); opacity: 0.85; }
+.es__ic svg { width: 60px; height: 60px; }
+.es__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-secondary); }
+.es__d { font-size: var(--fs-base); color: var(--c-text-secondary); text-align: center; }
+
+/* 商品详情主体 */
+.phero { width: 100%; height: 260px; background: var(--c-bg-container); overflow: hidden; }
+.phero img { width: 100%; height: 100%; object-fit: cover; }
+.pmain { margin: 12px; padding: 16px; border-radius: var(--r-xl); background: var(--c-bg-container);
+  box-shadow: 0 1px 8px var(--c-neutral-shadow-xs), 0 0.5px 2px var(--c-neutral-shadow-xs);
+  display: flex; flex-direction: column; gap: 8px; }
+.pmain__name { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); line-height: 1.4; }
+.pmain__pr { display: flex; align-items: baseline; gap: 8px; }
+.pmain__price { font-size: var(--fs-5xl); font-weight: 800; color: var(--c-romance-500); }
+.pmain__oprice { font-size: var(--fs-sm); color: var(--c-text-tertiary); text-decoration: line-through; }
+.pmain__meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pmain__mt { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.pdesc { margin: 0 12px 12px; padding: 16px; border-radius: var(--r-xl); background: var(--c-bg-container);
+  box-shadow: 0 1px 8px var(--c-neutral-shadow-xs), 0 0.5px 2px var(--c-neutral-shadow-xs);
+  display: flex; flex-direction: column; gap: 8px; }
+.pdesc__t { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); }
+.pdesc__b { font-size: var(--fs-base); color: var(--c-text-secondary); line-height: 1.7; }
+
+/* 底部购买栏（fixed：白底 + 渐变主钮 96rpx=48px 全圆） */
+.pbuybar { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 12px 20px;
+  background: var(--c-bg-container); box-shadow: 0 -1px 6px var(--c-neutral-shadow-xs); z-index: 6; }
+.pbuybar__btn { height: 48px; border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
+  box-shadow: 0 2px 8px var(--c-brand-border-tint-stronger);
+  display: flex; align-items: center; justify-content: center; }
+.pbuybar__btn--dis { opacity: 0.5; box-shadow: none; }
+.pbuybar__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-inverse); }
+
+/* toast（uni.showToast 实况形态：底部居中深灰胶囊） */
+.toast { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); z-index: 20;
+  max-width: 300px; padding: 11px 18px; border-radius: var(--r-lg); background: var(--c-overlay-strong);
+  color: var(--c-text-inverse); font-size: var(--fs-md); line-height: 1.4; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格描边；base 已全局设 fill:none / stroke:currentColor） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="11" rx="2.4"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 8.2 12 4l8.5 4.2v7.6L12 20l-8.5-4.2z"/><path d="M3.5 8.2 12 12.4l8.5-4.2"/><path d="M12 12.4V20"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.4h4.2M9.6 12h4.2M11 9v6"/><path d="M14.2 14.6l-1.4-1.4"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>商品详情页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/market/detail/index?id={商品 id}</code>。
+     本页是「逛逛」商品卡的下一层，状态机五态全部由模板 :306-403 的
+     <code>v-if="commerceSealed" / v-else-if="loading" / v-else-if="error" / v-else-if="notFound" / v-else-if="product"</code>
+     链穷举——五态互斥，任一条回归（例如封存态漏 <code>return</code>、或解封补偿 watch 失效致整页空白）都会当场破链。
+     本画板把五态逐屏画全，作为该页的永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>market/detail</b></span>
+    <span>分包 <b>market</b>（无 tabbar）</span>
+    <span>状态 <b>5 屏</b></span>
+    <span>闸门 <b>commerce.enabled（总闸）</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 5 屏</h2>
+    <p>封存 / 加载中 / 加载失败 / 商品不存在 / 商品详情</p></div>
+  <div class="sec__sub">本页状态机有 5 态，来自 <code>market/detail/index.vue:306-403</code> 的
+    <code>v-if="commerceSealed" → v-else-if="loading" → v-else-if="error" → v-else-if="notFound" → v-else-if="product"</code>
+    （互斥链，五者皆为假时模板整体空白——MP-R1-次要24-1 的 <code>watch(commerceSealed)</code> 就是为堵这条洞补的）。
+    页头为白底自绘导航栏（<code>navigationStyle: custom</code>，无原生栏、无 tabbar）。
+    F01 是<strong>当前默认态</strong>：<code>commerce.enabled</code> 缺省 false ⇒ 缺 key 即封存（app-config.ts:67）。
+    F02–F05 画的是<strong>开关开启态</strong>。帧即视口，超出 812px 裁掉，裁切只写在题注里。</div>
+
+  <div class="frames">
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">商业化封存态（当前默认）</span><span class="d">commerce.enabled 缺省 false · 卡顶锚</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pnb"><span class="pnb__back"><svg><use href="#i-back"/></svg></span><span class="pnb__title">商品详情</span><span class="pnb__ph"></span></div>
+        <div class="pcontent">
+          <div class="pstate pstate--sealed">
+            <span class="pstate__lock"><svg><use href="#i-lock"/></svg></span>
+            <span class="pstate__st">功能封存中</span>
+            <span class="pstate__sd">该功能暂未开放，开放时间将另行通知</span>
+            <span class="pstate__btn"><span class="pstate__btn-text">返回</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">开关开启 · 加载中</span><span class="d">onLoad→loadProduct 在途</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pnb"><span class="pnb__back"><svg><use href="#i-back"/></svg></span><span class="pnb__title">商品详情</span><span class="pnb__ph"></span></div>
+        <div class="pcontent">
+          <div class="pstate" style="padding-top:180px">
+            <span class="pstate__spin"></span>
+            <span class="pstate__text">加载中...</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">开关开启 · 加载失败</span><span class="d">非 404 异常 → error · 可重试</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pnb"><span class="pnb__back"><svg><use href="#i-back"/></svg></span><span class="pnb__title">商品详情</span><span class="pnb__ph"></span></div>
+        <div class="pcontent">
+          <div class="pstate" style="padding-top:180px">
+            <span class="pstate__text">商品加载失败，请重试</span>
+            <span class="pstate__btn"><span class="pstate__btn-text">重试</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">开关开启 · 商品不存在/已下架</span><span class="d">404 或 mock 无此 id → notFound</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pnb"><span class="pnb__back"><svg><use href="#i-back"/></svg></span><span class="pnb__title">商品详情</span><span class="pnb__ph"></span></div>
+        <div class="pcontent">
+          <div class="pstate" style="padding-top:150px">
+            <div class="es">
+              <span class="es__ic"><svg><use href="#i-box"/></svg></span>
+              <span class="es__t">商品不存在或已下架</span>
+              <span class="es__d">该商品可能已下架，去看看其他好物吧</span>
+            </div>
+            <span class="pstate__btn"><span class="pstate__btn-text">返回逛逛</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">开关开启 · 商品详情（mock id=1）</span><span class="d">整页 576px 内含于视口 · 无裁切</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pnb"><span class="pnb__back"><svg><use href="#i-back"/></svg></span><span class="pnb__title">商品详情</span><span class="pnb__ph"></span></div>
+        <div class="pcontent" style="bottom:78px">
+          <div class="phero"><img src="assets/demo/circle-cover-music.jpg" alt=""></div>
+          <div class="pmain">
+            <span class="pmain__name">校园音乐节早鸟票</span>
+            <div class="pmain__pr"><span class="pmain__price">¥99</span><span class="pmain__oprice">¥129</span></div>
+            <div class="pmain__meta">
+              <span class="pmain__mt">已售 56</span>
+              <span class="pmain__mt">活动票务</span>
+              <span class="pmain__mt">库存 200</span>
+            </div>
+          </div>
+          <div class="pdesc">
+            <span class="pdesc__t">商品介绍</span>
+            <span class="pdesc__b">校园音乐节早鸟票，热门抢手，手慢无</span>
+          </div>
+        </div>
+        <div class="pbuybar"><div class="pbuybar__btn"><span class="pbuybar__t">立即购买</span></div></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页交互件只有「返回」「重试 / 返回逛逛」「立即购买」三类，外加一条互斥状态链；
+    状态链的第五支（product）之前四条必须全为假，缺一即整页空白。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>状态位 · 五型（互斥链，模板 :306-403）</h3>
+      <p class="hint">顺序即优先级：<code>commerceSealed → loading → error → notFound → product</code>；
+        封存卡是白卡顶锚（<code>:538-547</code> 补的 <code>margin:60rpx var(--page-padding)</code>），不是通栏居中。</p>
+      <div class="row">
+        <div class="cell" style="width:150px"><div class="pstate pstate--sealed" style="margin:0;padding:18px 12px;gap:4px"><span class="pstate__lock" style="width:28px;height:28px"><svg style="width:28px;height:28px"><use href="#i-lock"/></svg></span><span class="pstate__st" style="font-size:var(--fs-md)">功能封存中</span></div><span class="lab">sealed（默认态）</span></div>
+        <div class="cell" style="width:150px"><div class="pstate" style="padding:18px 8px;gap:6px"><span class="pstate__spin"></span><span class="pstate__text">加载中...</span></div><span class="lab">loading</span></div>
+        <div class="cell" style="width:150px"><div class="pstate" style="padding:18px 8px;gap:6px"><span class="pstate__text">商品加载失败，请重试</span><span class="pstate__btn" style="min-height:34px;padding:0 12px"><span class="pstate__btn-text" style="font-size:var(--fs-sm)">重试</span></span></div><span class="lab">error（非 404）</span></div>
+        <div class="cell" style="width:150px"><div class="es" style="padding:14px 6px"><span class="es__ic" style="width:34px;height:34px"><svg style="width:34px;height:34px"><use href="#i-box"/></svg></span><span class="es__t" style="font-size:var(--fs-md)">商品不存在或已下架</span></div><span class="lab">notFound（404 / mock 无 id）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>立即购买 · 三态</h3>
+      <p class="hint">钮底 <code>linear-gradient(135deg,--c-brand,--c-brand-300)</code>（<code>:672</code>）；
+        本按钮<strong>没有禁用分支</strong>——点击恒发 toast（<code>handleBuyNow :252-259</code>），
+        封存分支先于支付分支 return。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="pbuybar__btn"><span class="pbuybar__t">立即购买</span></div><span class="lab">default（开关开启）</span></div>
+        <div class="cell" style="width:186px"><div class="pbuybar__btn" style="transform:scale(0.97)"><span class="pbuybar__t">立即购买</span></div><span class="lab">pressed（hover-class 0.97）</span></div>
+        <div class="cell" style="width:186px"><div class="pbuybar__btn pbuybar__btn--dis"><span class="pbuybar__t">立即购买</span></div><span class="lab">示意：源码无禁用态，画此格仅登记「不得自行加禁用」</span></div>
+      </div>
+      <div class="row" style="margin-top:14px;align-items:center">
+        <div class="cell"><span class="toast" style="position:static;transform:none">支付功能暂未开放</span><span class="lab">tap 后 toast（shop.buyUnavailable）</span></div>
+        <div class="cell"><span class="toast" style="position:static;transform:none">功能封存中，暂不可用</span><span class="lab">封存态 tap toast（commerce.sealedToast）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>价格 / 元信息行 · 分支枚举</h3>
+      <p class="hint"><code>originalPrice</code> 与 <code>categoryLabel</code> 都是 <code>v-if</code> 条件节点，
+        不是恒显：<code>:371</code> 要求 <code>&gt;0</code>，<code>:375</code> 要求分类命中映射表。</p>
+      <table class="tbl">
+        <tr><th>节点</th><th>条件</th><th>假时的实况</th></tr>
+        <tr><td>现价 ¥{price}</td><td>恒显</td><td>—（<code>--c-romance-500</code> / --fs-5xl / 800）</td></tr>
+        <tr><td>划线原价</td><td><code>originalPrice &amp;&amp; &gt; 0</code></td><td>整节点消失，不留空位</td></tr>
+        <tr><td>已售 {n}</td><td>恒显</td><td><code>sales ?? 0</code> ⇒ 兜底显示「已售 0」</td></tr>
+        <tr><td>分类</td><td><code>categoryLabel</code> 非空</td><td>ticket/food/goods/creative 之外的分类不显示</td></tr>
+        <tr><td>库存 {n}</td><td>恒显</td><td><code>stock ?? 0</code> ⇒ 兜底「库存 0」</td></tr>
+        <tr><td>商品介绍</td><td><code>productDescription ||</code> 兜底</td><td>空描述出「暂无商品介绍」</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>商品大图 · 裁切与压图关系</h3>
+      <p class="hint"><code>.product-hero</code> 定高 <code>520rpx=260px</code>、通栏 375px、
+        <code>mode="aspectFill"</code>（<code>:363</code>）——照片按短边铺满后中心裁切，
+        图上是白底盘（<code>--c-bg-container</code>）而非页底 <code>--c-bg-page</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div style="width:186px;height:110px;overflow:hidden;border-radius:var(--r-md)"><img src="assets/demo/circle-cover-music.jpg" style="width:100%;height:100%;object-fit:cover" alt=""></div><span class="lab">aspectFill 中心裁切（画板 186×110 等比缩）</span></div>
+        <div class="cell" style="width:186px"><div style="width:186px;height:110px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;background:var(--c-bg-container);border:var(--c-border-card)"><span style="font-size:var(--fs-sm);color:var(--c-text-placeholder)">SafeImage 加载失败 → 白底盘</span></div><span class="lab">图源缺失态（不得留灰块）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页源码零私有色值；<code>--c-brand-800</code> / <code>--c-neutral-shadow-xs</code> /
+      <code>--c-brand-border-tint-stronger</code> 均在 base 已登记。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫 500<code>--c-romance-500</code></div><div class="sw__u">现价 ¥99（22px/800）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">购买钮渐变起点 · spinner 顶弧</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#75E1B7"></span><div><div class="sw__n">主色 300<code>--c-brand-300</code></div><div class="sw__u">购买钮渐变终点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">状态位动作钮底（R9-L14-D01 收到最深档，0.95 白 6.01:1）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页底<code>--c-bg-page</code></div><div class="sw__u">product-page 平铺底（非渐变）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器白<code>--c-bg-container</code></div><div class="sw__u">导航栏 · 商品卡 · 大图底盘 · 购买栏</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">三级文<code>--c-text-tertiary</code></div><div class="sw__u">划线原价 · 已售/分类/库存 · 状态位说明</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/800</span><span class="type__p" style="font-size:22px;font-weight:800;color:var(--c-romance-500)">¥99</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">校园音乐节早鸟票</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">商品详情</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600·700</span><span class="type__p" style="font-size:15px;font-weight:600">立即购买 · 商品不存在或已下架</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400·600</span><span class="type__p" style="font-size:13px;font-weight:500;color:var(--c-text-tertiary)">商品加载失败，请重试</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-tertiary)">已售 56 · 活动票务 · 库存 200 · ¥129</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px;font-weight:400;color:var(--c-text-secondary)">校园音乐节早鸟票，热门抢手，手慢无</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 高度</h3><p class="hint">rpx ÷ 2 = px；本页几何全部有档。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--card-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 商品卡 / 介绍卡</div>
+        <div class="rad__i"><b style="border-radius:16px"></b>--r-xxl<br>32rpx · 封存卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>购买钮 / 状态位动作</div>
+      </div>
+      <p class="hint" style="margin-top:14px">导航栏高 <code>88rpx=44px</code>、返回盘 <code>64rpx=32px</code>（命中盒经 <code>::after</code> 扩到 88rpx=44px）、
+        大图 <code>520rpx=260px</code>、状态钮 <code>--btn-height-md 96rpx=48px</code>、购买钮 <code>96rpx=48px</code>、底部留白 <code>160rpx=80px</code>。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>照片位走演示池真素材，图标走 lucide 描边替身</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/circle-cover-music.jpg" alt="">
+      <div class="asset__b"><b>product-hero（商品大图）</b>
+        <p>真源是 <code>apps/client/src/static/assets/images/products/ticket-1.jpg</code>（<code>IMAGE_PATHS.PRODUCTS.TICKET_1</code>），
+           该 6 件商品图不在 <code>assets/demo/</code> 池内 ⇒ 画板用池内真照片 <code>circle-music.png</code>（演出/灯光现场，语义与「校园音乐节早鸟票」同档）顶位，
+           以便判 260px 定高下的 aspectFill 裁切与白底盘关系。<b>数字/文案位不受影响。</b></p>
+        <div class="m">NEED_ASSET: apps/client/src/static/assets/images/products/ticket-1.jpg</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:120px;object-fit:contain">
+      <div class="asset__b"><b>ICONS_COMMON.LOCK_SVG → #i-lock</b>
+        <p>封存卡主图标（<code>:307</code> 明确「SVG 锁图标，禁 emoji」）。画板按 §4 用页内 lucide 描边 symbol 替身，
+           尺寸写在宿主节点（<code>96rpx=48px</code> + <code>opacity .55</code>）。</p>
+        <div class="m">48px · opacity 0.55 · 非素材缺口</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:120px;object-fit:contain">
+      <div class="asset__b"><b>EmptyState BOX_SVG → #i-box</b>
+        <p>notFound 分支走公共空态组件（<code>:345</code> 显式传 title/desc），预设图标 <code>120rpx=60px</code>、
+           标题 <code>--fs-xl/600</code>、副题 <code>--fs-base</code>。画板按组件规范用描边替身。</p>
+        <div class="m">60px · 非素材缺口</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异 + 数值口径（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>默认态是封存，画板 F02–F05 画的是开关开启态。</b>判据在 <code>market/detail/index.vue:33</code>
+        <code>commerceSealed = !appConfig.isCommerceOn()</code>，实装于 <code>stores/app-config.ts:64-77</code>：
+        <code>switches["commerce.enabled"] !== true</code> 即封存——缺 key 与 false 同义（缺省封存，与全站其它开关「缺失默认开放」相反，ADR-2）。
+        mock 后端不下发 <code>commerce.*</code> ⇒ 今天巡检到的就是 F01。本页<strong>不因封存而重定向</strong>，
+        封存卡是模板内的一个真实渲染分支，故画进 F01；F02–F05 需 <code>commerce.enabled=true</code> 才可达。</li>
+      <li><b>解封竞态补偿在册：</b><code>:278-282</code> 的 <code>watch(commerceSealed)</code> 保证配置异步拉回后补拉商品；
+        回归测试若删掉它，五支 v-if 全假 ⇒ 整页空白（这条是本基准唯一的「结构不变量」屏）。</li>
+      <li><b>价格 ¥99 / 原价 ¥129 / 已售 56 / 库存 200 = mock 种子</b>（<code>:102-113</code> mockCatalog id=1，
+        与 <code>shop/index.vue:141-204</code> 的本地源同源）。<code>useMock()</code> 为假时走
+        <code>GET /products/{id}</code>，价格/销量/库存以 admin 商品管理维护的后端真值为准 ⇒ 画板数字只是 mock 演示种子，
+        <strong>不得被当成后端真值验收</strong>。分类标签「活动票务」= <code>shop.categoryTicket</code>。</li>
+      <li><b>「立即购买」不收款：</b><code>handleBuyNow</code>（<code>:252-259</code>）只发 toast <code>shop.buyUnavailable</code>
+        「支付功能暂未开放」；封存态则发 <code>commerce.sealedToast</code>。开关开启 ≠ 支付可用，两条口径分开看。</li>
+      <li><b>栈底兜底：</b>无上一页时 <code>goBack</code> 走 <code>switchTab /pages/home/index</code>（<code>:247</code>），
+        与 wallet 的 profile 兜底不同域不同目标——本页画板不表现该跳转。</li>
+      <li><b>BASE_PROBLEM：本页不需要补档</b>——detail 用到的令牌在 <code>board-base.css</code> 里全部已登记
+        （含 <code>--c-neutral-shadow-xs</code> / <code>--c-brand-border-tint-stronger</code> / <code>--c-overlay-strong</code>），
+        故本页 <code>:root</code> 无镜像声明。同域另两页才需要补：<code>market/wallet</code> 缺
+        <code>--c-brand-bg-tint-strong</code>（scss:880 真值 <code>rgba(61,201,148,.12)</code>，其 .vue 兜底写 <code>.35</code> 属过期字面量，
+        按已知机制 §2 不采信）与 <code>--r-2xl</code>（两个登记处均无定义，运行时靠 <code>32rpx</code> 兜底）；
+        vip 三页的 <code>--c-gold</code> 错档见各自画板 §04。本页封存卡走已登记的 <code>--r-xxl 16px</code>，不受断引用影响。</li>
+      <li>本页在 market 分包、<code>navigationStyle: custom</code>：<strong>无原生导航栏、无 tabbar</strong>——画板若出现 tabbar 即为错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 商品详情页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

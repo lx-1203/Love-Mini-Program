@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 我的钱包页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 未登记令牌：按 design-variables.scss 真值 1:1 落地（base 缺档，已回报 BASE_PROBLEM） ===== */
+:root{
+  --c-brand-bg-tint-strong: rgba(61, 201, 148, 0.12); /* scss :880 真值；wallet .vue 兜底写 rgba(.35) 属过期字面量，不采信 */
+  --r-2xl: 16px;                                      /* 断引用：两个登记处均无 --r-2xl，运行时靠 .vue 兜底 32rpx 生效 */
+}
+
+/* ===== 本页专属组件 ===== */
+/* 页头：R9-L14-D12 由 135° 渐变收成 --c-brand-800 纯色 */
+.whdr { position: absolute; top: 0; left: 0; width: 100%; z-index: 5; background: var(--c-brand-800);
+  padding: 52px 16px 6px; display: flex; align-items: center; justify-content: space-between; }
+.whdr__back { position: relative; width: 32px; height: 32px; border-radius: var(--r-full);
+  background: var(--c-bg-container); border: var(--c-border-card);
+  display: flex; align-items: center; justify-content: center; color: var(--c-text-primary); }
+.whdr__back svg { width: 20px; height: 20px; }
+.whdr__title { font-size: var(--fs-5xl); font-weight: 800; color: var(--c-text-inverse); }
+.whdr__spacer { width: 32px; height: 32px; flex: none; }
+
+/* 余额卡 */
+.wbal { margin: 10px 8px; padding: 12px; border-radius: var(--r-2xl);
+  background: linear-gradient(135deg, var(--c-brand-500) 0%, var(--c-brand-400) 100%);
+  box-shadow: 0 8px 20px var(--c-brand-bg-tint-strong);
+  display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.wbal__ic { width: 36px; height: 36px; color: var(--c-text-inverse); }
+.wbal__ic svg { width: 36px; height: 36px; }
+.wbal__label { font-size: var(--fs-sm); color: var(--c-overlay-text-secondary); }
+.wbal__vr { display: flex; align-items: baseline; gap: 2px; }
+.wbal__cur { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-inverse); }
+.wbal__val { font-size: var(--fs-7xl); font-weight: 800; color: var(--c-text-inverse); }
+.wbal__hint { font-size: var(--fs-xs); color: var(--c-overlay-text-secondary); text-align: center; }
+.wbal__recharge { margin-top: 6px; padding: 6px 20px; border-radius: var(--r-full); background: var(--c-text-inverse); }
+.wbal__recharge-text { font-size: var(--fs-base); font-weight: 700; color: var(--c-brand-600); }
+
+/* 收支明细 */
+.wsec { margin: 0 8px; }
+.wsec__t { display: block; font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); margin-bottom: 6px; }
+.wtx { display: flex; flex-direction: column; gap: 1px; }
+.wtx__i { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 8px;
+  border-radius: var(--r-lg); background: var(--c-bg-container); border: 1px solid var(--c-divider-light); }
+.wtx__info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wtx__type { font-size: var(--fs-base); font-weight: 700; color: var(--c-text-primary); }
+.wtx__remark { font-size: var(--fs-xs); color: var(--c-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wtx__amount { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-secondary); flex: none; }
+.wtx__amount--income { color: var(--c-success); }
+.wempty { display: block; padding: 16px 0; text-align: center; font-size: var(--fs-base); color: var(--c-text-tertiary); }
+
+/* 加载失败重试条（MP-R2-次要22-011） */
+.werr { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 10px;
+  padding: 8px 12px; border-radius: 8px; background: var(--c-error-bg-tint); }
+.werr__t { flex: 1; font-size: var(--fs-base); color: var(--c-error); }
+.werr__b { padding: 4px 12px; border-radius: var(--r-full); background: var(--c-brand); }
+.werr__bt { font-size: var(--fs-base); color: var(--c-neutral-0); }
+
+/* 骨架屏（SkeletonBlock variant=list rows=3） */
+.sk { display: flex; gap: 10px; padding: 12px; margin-bottom: 10px; border-radius: var(--r-xl); background: var(--c-bg-container); }
+.sk__av { width: 44px; height: 44px; border-radius: 50%; flex: none; background: var(--c-bg-surface); }
+.sk__lines { flex: 1; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+.sk__l { height: 12px; border-radius: 6px; background: var(--c-bg-surface); }
+
+/* 封存卡 */
+.wsealed { margin: 36px 16px; padding: 16px 12px; border-radius: var(--r-2xl); background: var(--c-bg-container);
+  border: 1px solid var(--c-divider-light); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.wsealed__ic { width: 48px; height: 48px; opacity: 0.55; color: var(--c-text-primary); }
+.wsealed__ic svg { width: 48px; height: 48px; }
+.wsealed__t { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.wsealed__d { font-size: var(--fs-md); color: var(--c-text-tertiary); text-align: center; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="11" rx="2.4"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="6.5" width="18" height="13" rx="3"/><path d="M3 10.5h18"/><circle cx="16.6" cy="14.6" r="1.3" class="ico--fill" style="fill:currentColor;stroke:none"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>我的钱包页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/market/wallet/index</code>（交友币余额 + 收支明细 + 演示充值）。
+     本页状态机 5 态来自 <code>v-if="!commerceSealed"</code>（<code>:162</code>）内的
+     <code>loadFailed</code> 条、<code>transactions.length&gt;0</code> → <code>v-else-if="loading"</code> 骨架 → <code>v-else</code> 空文案三支，
+     加上余额位 <code>(loading || loadFailed) ? '--' : balanceYuan.toFixed(2)</code>（<code>:169</code>）这条三元。
+     逐屏画全作为该页永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>market/wallet</b></span>
+    <span>分包 <b>market</b>（无 tabbar）</span>
+    <span>状态 <b>5 屏</b></span>
+    <span>闸门 <b>commerce.coin 子闸（受总闸管辖）</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 5 屏</h2>
+    <p>封存 / 有流水 / 首拉骨架 / 网络失败 / 空流水</p></div>
+  <div class="sec__sub">本页状态机有 5 态：<code>commerceSealed</code>（<code>:34</code>，判据 <code>!isCommerceOn("coin")</code>）
+    → 开启后 <code>loading</code>（余额 <code>--</code> + 骨架 3 行）→ <code>loadFailed</code>（余额 <code>--</code> + 重试条 + 空文案）
+    → <code>transactions.length&gt;0</code>（两条流水）→ 其余（余额真值 + 「暂无流水记录」）。
+    页头是页面自绘的深绿带（<code>navigationStyle: custom</code>，无原生栏、无 tabbar）。
+    F01 是当前默认态（<code>commerce.coin</code> 缺 key 即封存）；F02–F05 画的是开关开启态。全部五屏内容均在 812px 内，无裁切。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">商业化封存态（当前默认）</span><span class="d">余额/充值/明细三者同隐</span></figcaption>
+      <div class="phone">
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="whdr"><span class="whdr__back"><svg><use href="#i-back"/></svg></span><span class="whdr__title">我的钱包</span><span class="whdr__spacer"></span></div>
+        <div style="position:absolute;top:104px;left:0;width:100%">
+          <div class="wsealed">
+            <span class="wsealed__ic"><svg><use href="#i-lock"/></svg></span>
+            <span class="wsealed__t">功能封存中</span>
+            <span class="wsealed__d">该功能暂未开放，开放时间将另行通知</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">开关开启 · 有流水（mock 种子两条）</span><span class="d">余额 ¥800.00 · 充值钮仅 mock/dev</span></figcaption>
+      <div class="phone">
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="whdr"><span class="whdr__back"><svg><use href="#i-back"/></svg></span><span class="whdr__title">我的钱包</span><span class="whdr__spacer"></span></div>
+        <div style="position:absolute;top:104px;left:0;width:100%">
+          <div class="wbal">
+            <span class="wbal__ic"><svg><use href="#i-wallet"/></svg></span>
+            <span class="wbal__label">交友币余额</span>
+            <div class="wbal__vr"><span class="wbal__cur">¥</span><span class="wbal__val">800.00</span></div>
+            <span class="wbal__hint">解锁私信 / 访客 / 喜欢你 / 悄悄话将消耗交友币</span>
+            <span class="wbal__recharge"><span class="wbal__recharge-text">充值 ¥100</span></span>
+          </div>
+          <div class="wsec">
+            <span class="wsec__t">收支明细</span>
+            <div class="wtx">
+              <div class="wtx__i"><div class="wtx__info"><span class="wtx__type">支出</span><span class="wtx__remark">解锁私信</span></div><span class="wtx__amount">-¥5.00</span></div>
+              <div class="wtx__i"><div class="wtx__info"><span class="wtx__type">收入</span><span class="wtx__remark">签到奖励</span></div><span class="wtx__amount wtx__amount--income">+¥800.00</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">开关开启 · 首拉中</span><span class="d">余额位三元 → -- · 骨架 3 行</span></figcaption>
+      <div class="phone">
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="whdr"><span class="whdr__back"><svg><use href="#i-back"/></svg></span><span class="whdr__title">我的钱包</span><span class="whdr__spacer"></span></div>
+        <div style="position:absolute;top:104px;left:0;width:100%">
+          <div class="wbal">
+            <span class="wbal__ic"><svg><use href="#i-wallet"/></svg></span>
+            <span class="wbal__label">交友币余额</span>
+            <div class="wbal__vr"><span class="wbal__cur">¥</span><span class="wbal__val">--</span></div>
+            <span class="wbal__hint">解锁私信 / 访客 / 喜欢你 / 悄悄话将消耗交友币</span>
+            <span class="wbal__recharge"><span class="wbal__recharge-text">充值 ¥100</span></span>
+          </div>
+          <div class="wsec">
+            <span class="wsec__t">收支明细</span>
+            <div class="sk"><span class="sk__av"></span><div class="sk__lines"><span class="sk__l" style="width:40%"></span><span class="sk__l" style="width:90%"></span><span class="sk__l" style="width:70%"></span></div></div>
+            <div class="sk"><span class="sk__av"></span><div class="sk__lines"><span class="sk__l" style="width:40%"></span><span class="sk__l" style="width:90%"></span><span class="sk__l" style="width:70%"></span></div></div>
+            <div class="sk"><span class="sk__av"></span><div class="sk__lines"><span class="sk__l" style="width:40%"></span><span class="sk__l" style="width:90%"></span><span class="sk__l" style="width:70%"></span></div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">开关开启 · 加载失败</span><span class="d">重试条 + 余额 -- · 与真空账可分</span></figcaption>
+      <div class="phone">
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="whdr"><span class="whdr__back"><svg><use href="#i-back"/></svg></span><span class="whdr__title">我的钱包</span><span class="whdr__spacer"></span></div>
+        <div style="position:absolute;top:104px;left:0;width:100%">
+          <div class="wbal">
+            <span class="wbal__ic"><svg><use href="#i-wallet"/></svg></span>
+            <span class="wbal__label">交友币余额</span>
+            <div class="wbal__vr"><span class="wbal__cur">¥</span><span class="wbal__val">--</span></div>
+            <span class="wbal__hint">解锁私信 / 访客 / 喜欢你 / 悄悄话将消耗交友币</span>
+            <span class="wbal__recharge"><span class="wbal__recharge-text">充值 ¥100</span></span>
+          </div>
+          <div class="wsec">
+            <div class="werr"><span class="werr__t">网络错误</span><span class="werr__b"><span class="werr__bt">重试</span></span></div>
+            <span class="wsec__t">收支明细</span>
+            <span class="wempty">暂无流水记录</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">开关开启 · 空流水（real 无账）</span><span class="d">余额出真值 · 明细真空</span></figcaption>
+      <div class="phone">
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="whdr"><span class="whdr__back"><svg><use href="#i-back"/></svg></span><span class="whdr__title">我的钱包</span><span class="whdr__spacer"></span></div>
+        <div style="position:absolute;top:104px;left:0;width:100%">
+          <div class="wbal">
+            <span class="wbal__ic"><svg><use href="#i-wallet"/></svg></span>
+            <span class="wbal__label">交友币余额</span>
+            <div class="wbal__vr"><span class="wbal__cur">¥</span><span class="wbal__val">0.00</span></div>
+            <span class="wbal__hint">解锁私信 / 访客 / 喜欢你 / 悄悄话将消耗交友币</span>
+          </div>
+          <div class="wsec">
+            <span class="wsec__t">收支明细</span>
+            <span class="wempty">暂无流水记录</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">四类件：余额数字（三元两值 + 兜底 0）、充值钮（环境双条件）、流水行（收/支两色）、
+    明细区（有账 / 骨架 / 空账三态）+ 失败重试条。金额一律「分 ÷ 100 保留两位」。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>余额数字 · 三态</h3>
+      <p class="hint"><code>:169</code> 三元：<code>(loading || loadFailed) ? '--' : balanceYuan.toFixed(2)</code>。
+        MP-R2-次要22-004 的 <code>watch(commerceSealed)</code> 专治「解封后余额兜底 0 元」——
+        <strong>0.00 与 -- 必须可分</strong>，画板 F03/F04 画 <code>--</code>、F05 画 <code>0.00</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:150px"><div class="wbal" style="margin:0;padding:10px"><div class="wbal__vr"><span class="wbal__cur">¥</span><span class="wbal__val">800.00</span></div></div><span class="lab">已加载（mock 种子 80000 分）</span></div>
+        <div class="cell" style="width:150px"><div class="wbal" style="margin:0;padding:10px"><div class="wbal__vr"><span class="wbal__cur">¥</span><span class="wbal__val">--</span></div></div><span class="lab">loading / loadFailed</span></div>
+        <div class="cell" style="width:150px"><div class="wbal" style="margin:0;padding:10px"><div class="wbal__vr"><span class="wbal__cur">¥</span><span class="wbal__val">0.00</span></div></div><span class="lab">真·零余额（real 新账号）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>充值钮 · 出现条件 + 在途锁</h3>
+      <p class="hint"><code>v-if="useMock() || isDev"</code>（<code>:175</code>，R4-00067）——
+        <strong>真实模式下这个入口整块不存在</strong>（F05 即 real 形态），因为它直连 <code>POST /wallet/recharge</code> 无支付流程。
+        在途锁 <code>recharging</code>（MP-R1-C26REQ-002）+ 固定幂等键 <code>RECHARGE-DEMO-{ts}</code>。</p>
+      <div class="row">
+        <div class="cell"><span class="wbal__recharge"><span class="wbal__recharge-text">充值 ¥100</span></span><span class="lab">default（mock/dev）</span></div>
+        <div class="cell"><span class="wbal__recharge" style="opacity:0.6"><span class="wbal__recharge-text">充值 ¥100</span></span><span class="lab">在途（recharging=true，重复点击直接 return）</span></div>
+        <div class="cell"><span style="font-size:var(--fs-md);color:var(--c-text-placeholder);padding:8px 14px;border:1px dashed var(--c-border-default);border-radius:var(--r-full)">real：无此钮</span><span class="lab">真实模式（成功 toast「充值成功 +¥100」也不可达）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>流水行 · 收支两态</h3>
+      <p class="hint">类型文案只二分（<code>isIncome</code>：<code>CREDIT/INCOME</code> 为收入，其余为支出）；
+        <code>remark</code> 空时回退 <code>relatedType</code> 原文，两者皆空则该行为空。</p>
+      <div class="row">
+        <div class="cell" style="width:230px"><div class="wtx__i"><div class="wtx__info"><span class="wtx__type">收入</span><span class="wtx__remark">签到奖励</span></div><span class="wtx__amount wtx__amount--income">+¥800.00</span></div><span class="lab">CREDIT / INCOME → 绿（--c-success）</span></div>
+        <div class="cell" style="width:230px"><div class="wtx__i"><div class="wtx__info"><span class="wtx__type">支出</span><span class="wtx__remark">解锁私信</span></div><span class="wtx__amount">-¥5.00</span></div><span class="lab">DEBIT / EXPENSE → --c-text-secondary</span></div>
+        <div class="cell" style="width:230px"><div class="wtx__i"><div class="wtx__info"><span class="wtx__type">支出</span><span class="wtx__remark">LIKES_UNLOCK</span></div><span class="wtx__amount">-¥3.00</span></div><span class="lab">remark 空 → 回退 relatedType 原文（无中文映射）</span></div>
+      </div>
+      <p class="hint" style="margin-top:10px">扣费金额定价表 <code>UNLOCK_COST_YUAN</code>（<code>stores/coins.ts:51-56</code>）：
+        私信 5 元 / 访客 3 元 / 喜欢你 3 元 / 悄悄话 2 元 —— 画板只取 mock 种子实际出现过的 5 元一条，
+        <strong>不额外编造流水行</strong>。</p>
+    </div>
+
+    <div class="panel">
+      <h3>明细区 · 四型 + 封存卡</h3>
+      <p class="hint">三支互斥（<code>:192-207</code>）：<code>transactions.length&gt;0</code> → <code>v-else-if="loading"</code> 骨架 → <code>v-else</code> 空文案；
+        失败条 <code>v-if="loadFailed"</code> 独立叠在标题之上，可与空文案同屏（F04）。</p>
+      <table class="tbl">
+        <tr><th>状态</th><th>条件</th><th>画面</th></tr>
+        <tr><td>有流水</td><td><code>length &gt; 0</code></td><td>白卡行，圆角 10px，1px <code>--c-divider-light</code> 描边</td></tr>
+        <tr><td>骨架</td><td><code>loading</code> 且无账</td><td>3 张卡：44px 圆盘 + 40/90/70% 三行，底 <code>--c-bg-surface</code></td></tr>
+        <tr><td>空账</td><td>其余</td><td>仅「暂无流水记录」12px 三级文，<strong>无 EmptyState 插图</strong></td></tr>
+        <tr><td>失败条</td><td><code>loadFailed</code></td><td><code>--c-error-bg-tint</code> 底 + 「网络错误」+ <code>--c-brand</code> 重试胶囊</td></tr>
+        <tr><td>sealed</td><td><code>!isCommerceOn("coin")</code></td><td>白卡：锁 48px（opacity .55）+ 功能封存中 + 说明；余额卡与明细整块消失</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">页头取 <code>--c-brand-800</code> 纯色是 R9-L14-D12 的收口结果（0.95 白压 brand-800 = 6.00:1）。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">页头深绿带（原 135° 渐变已撤）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色 500<code>--c-brand-500</code></div><div class="sw__u">余额卡渐变起点 · 重试胶囊底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#55D5A7"></span><div><div class="sw__n">主色 400<code>--c-brand-400</code></div><div class="sw__u">余额卡渐变终点（.vue 兜底 #6fe0b0 是过期字面量）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#2AAE83"></span><div><div class="sw__n">主色 600<code>--c-brand-600</code></div><div class="sw__u">充值胶囊上的「充值 ¥100」字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#10B981"></span><div><div class="sw__n">成功<code>--c-success</code></div><div class="sw__u">收入金额 +¥</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">失败条文案（底 --c-error-bg-tint）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">输入底<code>--c-bg-surface</code></div><div class="sw__u">骨架块底</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/800</span><span class="type__p" style="font-size:28px;font-weight:800">800.00</span></div>
+        <div class="type__i"><span class="type__m">--fs-5xl 22/800</span><span class="type__p" style="font-size:22px;font-weight:800">我的钱包</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">¥</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/700</span><span class="type__p" style="font-size:15px;font-weight:700">功能封存中</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/700</span><span class="type__p" style="font-size:14px;font-weight:700">收支明细 · -¥5.00</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400·700</span><span class="type__p" style="font-size:12px;font-weight:700">支出 · 充值 ¥100 · 暂无流水记录</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-text-secondary)">该功能暂未开放，开放时间将另行通知</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11 / --fs-xs 10</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-tertiary)">交友币余额 · 解锁私信 / 访客 / 喜欢你 / 悄悄话将消耗交友币</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px；本页是 market 三页里唯一「卡缘 8px、页头缘 16px」不同档的一页（在册）。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--sp-10 72rpx</b><i style="width:36px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:8px"></b>8px<br>失败条（16rpx 无档，照源码）</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 流水行</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 骨架卡</div>
+        <div class="rad__i"><b style="border-radius:16px"></b>--r-2xl 断引用<br>兜底 32rpx · 余额卡 / 封存卡</div>
+      </div>
+      <p class="hint" style="margin-top:14px">页头内衬 <code>calc(--sp-4 + --statusbar)</code>；余额卡 <code>margin:--sp-5 --sp-4</code>（上下 10px / 左右 8px）、
+        内衬 <code>--sp-6</code>；封存卡 <code>margin:--sp-10 var(--page-padding)</code>（R9-L14-D16 把左右收到 16px）。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>本页无照片位，三枚图标走描边替身</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:120px;object-fit:contain">
+      <div class="asset__b"><b>ICONS_EMOJI.MONEY → #i-wallet</b>
+        <p>余额卡主图标（<code>:165</code>，<code>72rpx=36px</code>）。源码名带 EMOJI 但实装是 SVG 素材，
+           画板按 §4 用页内 lucide 描边 symbol 替身，尺寸写在宿主节点。</p>
+        <div class="m">36px · --c-text-inverse · 非素材缺口</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:120px;object-fit:contain">
+      <div class="asset__b"><b>ICONS_COMMON.LOCK_SVG → #i-lock</b>
+        <p>封存卡图标（<code>:213</code>，<code>96rpx=48px</code> + <code>opacity .55</code>，注释明确「SVG 锁图标，禁 emoji」）。</p>
+        <div class="m">48px · opacity 0.55 · 非素材缺口</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:120px;object-fit:contain">
+      <div class="asset__b"><b>ICONS_COMMON.BACK → #i-back</b>
+        <p>返回描线 <code>40rpx=20px</code> 压在 32px 白盘上（R9-L14-D14 与 shop/detail 同档）。
+           本页无照片位 ⇒ §8「照片位不许留灰占位」对本页不构成约束，三枚图标位均为图形件。</p>
+        <div class="m">20px · --c-text-primary · 非素材缺口</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异 + 数值口径（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>默认态是封存，F02–F05 画的是开关开启态。</b>判据 <code>market/wallet/index.vue:34</code>
+        <code>commerceSealed = !appConfig.isCommerceOn("coin")</code> —— 与 shop/detail 不同，本页走<strong>子闸</strong>：
+        <code>app-config.ts:74-76</code> 先取 <code>commerce.coin</code>，缺则回退裸 key <code>coin</code>，两者皆缺即封存；
+        且总闸 <code>commerce.enabled !== true</code> 时无视子闸一律封存（<code>:67</code>）。
+        封存态 <code>onShow</code> 直接 return（<code>:74</code>），余额与流水两条请求都不发；本页<strong>不重定向</strong>，白卡是真实渲染分支。</li>
+      <li><b>余额 ¥800.00 与两条流水 = mock 种子</b>：<code>stores/coins.ts:117-121</code>（余额为 0 时置 80000 分）与
+        <code>:220-241</code>（DEBIT 500 分「解锁私信」、CREDIT 80000 分「签到奖励」）。
+        real 模式走 <code>GET /wallet/balance</code> + <code>GET /wallet/transactions?page=0&amp;size=20</code>，
+        以后端钱包真值为准 ⇒ <strong>画板金额是演示种子口径</strong>。注意种子自相矛盾：
+        两条流水的 <code>balanceAfter</code> 分别写 79500 / 80000，而余额位恒显 80000（种子未做流水回放）——
+        画板按页面实际取值（800.00）画，不替种子圆账。</li>
+      <li><b>「充值 ¥100」= 请求体常量</b>：<code>amountCents: 10000</code>（<code>:100</code>），文案 <code>wallet.recharge</code> 逐字；
+        成功 toast 走 <code>wallet.rechargeSuccess</code> 插值 → 「充值成功 +¥100」。该入口仅 <code>useMock() || isDev</code> 出现，
+        F05 画的就是 real 形态（无充值钮）。</li>
+      <li><b>交友币 ≠ 积分 ≠ VIP：</b>本页账本走 <code>/wallet/*</code>（交友币），shop 页积分条走签到（<code>pointsBalance</code>），
+        vip 三页走 <code>/vip/orders</code>。三套金额不得互相校验。</li>
+      <li><b>BASE_PROBLEM（base 缺档，本页按 scss 真值 1:1 落字面量）：</b>
+        <code>--c-brand-bg-tint-strong</code>（scss:880 = <code>rgba(61,201,148,.12)</code>；<code>wallet:334</code> 的 .vue 兜底写 <code>.35</code> 属过期字面量，按已知机制 §2 不采信）、
+        <code>--c-overlay-text-secondary</code>（scss:750 = <code>rgba(255,255,255,.85)</code>）、
+        <code>--r-2xl</code>（两个登记处均无定义，运行时靠 <code>32rpx</code> 兜底 —— 台账「令牌体系」一节已登记为断引用）。</li>
+      <li><b>同域三页卡缘不成档（在册）：</b>本页余额卡左右 <code>--sp-4</code>=8px、明细区同 8px，
+        而页头/封存卡走 <code>--page-padding</code>=16px ⇒ 余额卡比自己的封存卡向左越出 8px。R9-L14-D16 只收了封存卡那一半，画板照实况画。</li>
+      <li>本页在 market 分包、<code>navigationStyle: custom</code>：<strong>无原生导航栏、无 tabbar</strong>；
+        无上一页时 <code>goBack</code> 兜底 <code>switchTab /pages/profile/index</code>（<code>:123</code>）。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 我的钱包页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

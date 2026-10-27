@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 反馈中心（提交页）高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 已登记令牌，rpx ÷ 2 = px；源文件无一条私有色值） ===== */
+
+/* AppShell（variant=standard + fixed=true）：sticky 页头在画板里画成实色吸顶带，
+   滚动帧的正文从其下方穿过（源码 .is-fixed .shell__header{position:sticky;top:0;z-index:100}） */
+.hdrfix { position: absolute; top: 0; left: 0; width: 100%; z-index: 7; background: var(--c-bg-page);
+  padding: 54px var(--page-padding) 10px; }            /* 54 = 状态栏 44 + 头部 padding 20rpx */
+.backpill { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start;
+  min-height: 44px; min-width: 44px; padding: 10px 12px 10px 8px; margin-bottom: 8px;
+  border-radius: var(--r-full); background: var(--c-bg-container); border: 0.5px solid var(--c-border-light);
+  color: var(--c-brand-800); }
+.backpill svg { width: 20px; height: 20px; }
+.backpill span { font-size: var(--fs-base); font-weight: 500; }
+.hdrfix__main { display: flex; flex-direction: column; }
+.hdrfix__title { display: block; font-size: var(--fs-7xl); font-weight: 700; line-height: 1.3; color: var(--c-text-primary); }
+.hdrfix__sub { display: block; margin-top: 4px; font-size: var(--fs-base); line-height: 1.5; color: var(--c-text-secondary); }
+
+/* 帧内长页：整页正文放在 .shot 里，按滚动位 translateY 裁出视口（帧即视口） */
+.shot { position: absolute; left: 0; top: 0; width: 100%; padding: 0 var(--page-padding);
+  padding-top: 190px;                                    /* 页头带 + 其 margin-bottom 28rpx */
+  display: flex; flex-direction: column; gap: var(--sp-6); }
+.shot--up260 { transform: translateY(-260px); }
+.shot--up420 { transform: translateY(-420px); }
+.shot--up330 { transform: translateY(-330px); }
+.fixed-bar-clear { height: 76px; flex: none; }          /* calc(安全区 + 120rpx)，画板取机型安全区 34 */
+
+/* SectionCard（compact） */
+.seccard { display: flex; flex-direction: column; gap: var(--sp-4); padding: var(--sp-7); flex: none;
+  border-radius: var(--r-card); background: var(--c-bg-container);
+  border: var(--c-border-card); box-shadow: var(--card-shadow); }
+.seccard__t { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); }
+
+/* 类型 chip（.chip：height 88rpx + box-sizing，padding 24×28rpx；选中加 2rpx 描边不改盒高） */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+  height: 44px; padding: 12px 14px; border-radius: var(--r-full);
+  background: var(--c-bg-brand); color: var(--c-brand-700); font-size: var(--fs-lg); line-height: 20px; }
+.chip--active { color: var(--c-brand-800); font-weight: 600; border: 1px solid var(--c-brand-700); }
+.chip--press { transform: scale(0.98); opacity: 0.92; }
+
+/* 表单控件：源 .field 只有底色与圆角、无描边（与同域 campus 的 .field 有描边不同档，画板不统一它） */
+.field { width: 100%; min-height: 44px; box-sizing: border-box; padding: 9px; border-radius: var(--r-lg);
+  background: var(--c-bg-surface); font-size: var(--fs-lg); color: var(--c-text-primary); line-height: 1.4;
+  display: flex; align-items: center; }
+.field--ph { color: var(--c-text-placeholder); }
+.field--ta { min-height: 90px; align-items: flex-start; }
+.field-counter { display: block; text-align: right; font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.form-error { display: flex; align-items: center; gap: 4px; padding: 6px 9px; border-radius: var(--r-md);
+  background: var(--c-tint-pink-soft); border: 1px solid var(--c-error); }
+.form-error__text { font-size: var(--fs-sm); color: var(--c-error); line-height: 1.4; }
+
+/* 图片上传区（功能9） */
+.imgup { display: flex; flex-direction: column; gap: 8px; }
+.imgup__hd { display: flex; flex-direction: column; gap: 2px; }
+.imgup__t { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); }
+.imgup__s { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.igrid { display: flex; flex-wrap: wrap; gap: 8px; }
+.icell { position: relative; width: 90px; height: 90px; box-sizing: border-box; flex: none;
+  border-radius: var(--r-lg); overflow: hidden; background: var(--c-bg-surface);
+  border: 1px dashed var(--c-border-default); display: flex; align-items: center; justify-content: center; }
+.icell img { width: 100%; height: 100%; object-fit: cover; }
+.icell svg { width: 24px; height: 24px; color: var(--c-text-placeholder); opacity: 0.55; }
+.icell--up { border-style: solid; }
+.icell--up .spin { width: 20px; height: 20px; border: 2px solid var(--c-border-default);
+  border-top-color: var(--c-brand); border-radius: var(--r-full); }
+.icell__x { position: absolute; top: 0; right: 0; width: 44px; height: 44px; border-radius: var(--r-full);
+  background: var(--c-overlay-mid); display: flex; align-items: center; justify-content: center;
+  color: var(--c-text-inverse); }
+.icell__x svg { width: 14px; height: 14px; color: var(--c-text-inverse); opacity: 1; }
+.icell__x--press { background: var(--c-overlay-strong); transform: scale(0.95); }
+
+/* 反馈历史卡（功能10） */
+.hhead { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; border-bottom: 0.5px solid var(--c-border-light); }
+.hhead__hint { flex: 1; font-size: var(--fs-base); color: var(--c-text-tertiary); }
+.hhead__spacer { flex: 1; }
+.hhead__btn { box-sizing: border-box; min-height: 44px; display: flex; align-items: center; justify-content: center;
+  padding: 5px 10px; border-radius: var(--r-full); background: var(--c-bg-brand);
+  font-size: var(--fs-base); font-weight: 600; color: var(--c-brand-700); }
+.sub { display: flex; flex-direction: column; gap: 5px; padding: 9px 0; border-top: 1px solid var(--c-border-light); }
+.sub__top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.sub__title { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); }
+.sub__sum { font-size: var(--fs-md); color: var(--c-text-secondary); line-height: 1.6; }
+.sub__time { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+
+/* StatusState 药丸（tone 四档，本页真用三档） */
+.pill { display: inline-flex; align-items: center; gap: 3px; width: fit-content; flex: none;
+  padding: 1px 8px; border-radius: var(--r-full); font-size: var(--fs-md); font-weight: 600; line-height: 1.4; }
+.pill svg { width: 14px; height: 14px; }
+.pill--brand { background: var(--c-brand-50); color: var(--c-brand); }
+.pill--success { background: var(--c-success-bg-tint); color: var(--c-success); }
+.pill--warning { background: var(--c-warning-bg-tint); color: var(--c-warning); }
+
+/* EmptyState（type=no-data · hide-sub） */
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
+.empty svg { width: 60px; height: 60px; color: var(--c-text-placeholder); margin-bottom: 8px; }
+.empty__msg { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-secondary); }
+.empty__sub { font-size: var(--fs-md); color: var(--c-text-placeholder); margin-top: 4px; }
+
+/* BottomActionBar（fixed） */
+.bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 90; display: flex;
+  padding: var(--sp-4) var(--page-padding) 42px; background: var(--c-bg-page); }
+.cta { flex: 1; height: 44px; border-radius: var(--r-xl); background: var(--c-brand-800); color: var(--c-text-inverse);
+  font-size: var(--fs-lg); font-weight: 700; display: flex; align-items: center; justify-content: center;
+  gap: 8px; box-shadow: var(--s-brand); }
+.cta--dis { background: var(--c-status-disabled); color: var(--c-text-secondary); box-shadow: none; }
+.spin { width: 16px; height: 16px; border-radius: var(--r-full); border: 2px solid var(--c-overlay-bg-light);
+  border-top-color: var(--c-text-inverse); flex: none; }
+
+/* uni.showToast 两型：icon:"none" 单行胶囊 / icon:"success" 方盒上勾下字 */
+.toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 120;
+  max-width: 64%; padding: 12px var(--sp-7); border-radius: var(--r-lg); background: var(--c-text-primary);
+  color: var(--c-bg-container); font-size: var(--fs-lg); line-height: 1.4; text-align: center; }
+.toast--ic { display: flex; flex-direction: column; align-items: center; gap: 10px;
+  min-width: 116px; padding: 20px 18px 16px; }
+.toast--ic svg { width: 30px; height: 30px; color: var(--c-text-inverse); }
+.homebar { z-index: 95; }
+/* 系统状态栏恒在页面件之上（AppShell 吸顶头带是页面自绘件，不得压住 9:41 与信号格） */
+.sb { z-index: 130; }
+
+/* uni.showModal 系统弹窗层（与 profile-settings.html 同档，令牌全取 base） */
+.mask { position: absolute; inset: 0; background: var(--c-bg-overlay); z-index: 120;
+  display: flex; align-items: center; justify-content: center; }
+.dlg { width: 300px; background: var(--c-bg-container); border-radius: var(--r-xxl);
+  box-shadow: var(--s-modal); overflow: hidden; }
+.dlg__h { font-size: var(--fs-2xl); font-weight: 600; color: var(--c-text-primary);
+  text-align: center; padding: 20px 18px 8px; }
+.dlg__c { font-size: var(--fs-lg); color: var(--c-text-secondary); line-height: 1.65;
+  text-align: center; padding: 0 20px 20px; white-space: pre-line; }
+.dlg__r { display: flex; border-top: 0.5px solid var(--c-border-light); }
+.dlg__b { flex: 1; height: 48px; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-xl); }
+.dlg__b--c { color: var(--c-text-secondary); border-right: 0.5px solid var(--c-border-light); }
+.dlg__b--k { color: var(--c-brand); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格；#i-cam/#i-box/#i-check-c 为本页补的替身，未改 base） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5.5 8 12l7 6.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.6l4.4 4.4L19 7"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8.6h3.1L8.6 6h6.8l1.5 2.6H20a1.6 1.6 0 0 1 1.6 1.6v8A1.6 1.6 0 0 1 20 19.8H4a1.6 1.6 0 0 1-1.6-1.6v-8A1.6 1.6 0 0 1 4 8.6z"/><circle cx="12" cy="14" r="3.3"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M12 3 4 7v10l8 4 8-4V7z"/><path d="M4 7l8 4 8-4"/><path d="M12 11v10"/></symbol>
+  <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/></symbol>
+  <symbol id="i-signal" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>反馈中心 · 提交页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/support/feedback/index</code>。
+     反馈域是一对页：本页负责「新建提交 + 记录摘要」，历史页
+     <code style="font-family:var(--mono);font-size:12.5px">subpackages/profile-extra/feedback/history</code>
+     负责「按类型筛选 + 点开看详情」，两页共用 <code style="font-family:var(--mono);font-size:12.5px">feedbackStore.submissions</code>。
+     注意两页分属<b>不同分包</b>（support ↔ profile-extra），靠 <code style="font-family:var(--mono);font-size:12.5px">uni.navigateTo</code> 跨包跳转。
+     本页状态机有 <b>7</b> 个可见态，全部来自源码分支，逐屏画全作为该页验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>support/feedback</b></span>
+    <span>分包 <b>support</b>（无 tabbar）</span>
+    <span>配套 <b>profile-extra/feedback/history</b></span>
+    <span>状态 <b>7 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无验收基准图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 7 屏</h2>
+    <p>空表单 / 记录空态 / 填写中 / 图片满额 / 上传失败 / 提交中 / 提交成功</p></div>
+  <div class="sec__sub">本页状态机有 <b>7</b> 态，来自这些实际分支：
+    ① <code>:class="{ 'chip--active': activeType === item.value }"</code>（三枚类型 chip，默认 <code>activeType = "feedback"</code>）；
+    ② <code>v-if="errorMessage"</code> 的表单错误条；
+    ③ <code>v-if="canAddImage"</code>（<code>= !isUploading &amp;&amp; attachments.length &lt; 3</code>）决定「＋相机」格在不在；
+    ④ <code>v-for="(url, idx) in form.attachments"</code> 的缩略图 + <code>.image-cell__remove</code>；
+    ⑤ <code>isSubmitting ? common.submitting : common.submit</code> 的 CTA 文案档；
+    ⑥⑦ 记录卡 <code>v-if="submissions.length === 0"</code> 的 EmptyState（<code>hide-sub</code>）与 <code>v-for</code> 的行列表；
+    ⑧ <code>handleRemoveImage()</code> 内的 <code>uni.showModal</code>：系统弹窗、非页面 <code>v-if</code> 分支，故不占屏，在 §02 逐字段枚举。
+    页头是 AppShell 的白胶囊返回 + 标题 + 副标题（<code>fixed</code> 默认 true ⇒ 吸顶），不是渐变带；
+    整页高约 1000px，帧即视口 375×812，滚动位与裁切区间只写在题注 <code>.d</code> 里、不写进画面。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">空表单 · 首次进入</span><span class="d">视口顶 · ↓裁切至「反馈历史」卡上沿</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hdrfix__main">
+          <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+          <span class="hdrfix__title">反馈中心</span>
+          <span class="hdrfix__sub">反馈、建议和活动提案共用一个入口。</span>
+        </div></div>
+        <div class="shot">
+          <div class="seccard">
+            <span class="seccard__t">新建提交</span>
+            <div class="chips">
+              <span class="chip chip--active">反馈</span><span class="chip">建议</span><span class="chip">活动提案</span>
+            </div>
+            <div class="field field--ph">标题</div>
+            <div class="field field--ta field--ph">反馈内容</div>
+            <span class="field-counter">0/5000</span>
+            <div class="field field--ph">选填微信号</div>
+            <div class="imgup">
+              <div class="imgup__hd"><span class="imgup__t">上传图片</span><span class="imgup__s">最多 3 张，每张 ≤ 5MB</span></div>
+              <div class="igrid"><span class="icell"><svg><use href="#i-cam"/></svg></span></div>
+            </div>
+          </div>
+          <div class="seccard">
+            <div class="hhead"><span class="hhead__spacer"></span><span class="hhead__btn">历史记录</span></div>
+            <div class="empty"><svg><use href="#i-box"/></svg><span class="empty__msg">暂无反馈记录</span></div>
+          </div>
+          <div class="fixed-bar-clear"></div>
+        </div>
+        <div class="bar"><span class="cta">提交</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">记录卡 · 空态（hide-sub 只留一句）</span><span class="d">滚动位 −420px · 顶起「反馈历史」卡</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hdrfix__main">
+          <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+          <span class="hdrfix__title">反馈中心</span>
+          <span class="hdrfix__sub">反馈、建议和活动提案共用一个入口。</span>
+        </div></div>
+        <div class="shot shot--up420">
+          <div class="seccard">
+            <span class="seccard__t">新建提交</span>
+            <div class="chips"><span class="chip chip--active">反馈</span><span class="chip">建议</span><span class="chip">活动提案</span></div>
+            <div class="field field--ph">标题</div>
+            <div class="field field--ta field--ph">反馈内容</div>
+            <span class="field-counter">0/5000</span>
+            <div class="field field--ph">选填微信号</div>
+            <div class="imgup">
+              <div class="imgup__hd"><span class="imgup__t">上传图片</span><span class="imgup__s">最多 3 张，每张 ≤ 5MB</span></div>
+              <div class="igrid"><span class="icell"><svg><use href="#i-cam"/></svg></span></div>
+            </div>
+          </div>
+          <div class="seccard">
+            <div class="hhead"><span class="hhead__spacer"></span><span class="hhead__btn">历史记录</span></div>
+            <div class="empty"><svg><use href="#i-box"/></svg><span class="empty__msg">暂无反馈记录</span></div>
+          </div>
+          <div class="fixed-bar-clear"></div>
+        </div>
+        <div class="bar"><span class="cta">提交</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">填写中 · 已传 2 图</span><span class="d">len&lt;3 ⇒ ＋格仍在 · ↓裁切至「反馈历史」卡</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hdrfix__main">
+          <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+          <span class="hdrfix__title">反馈中心</span>
+          <span class="hdrfix__sub">反馈、建议和活动提案共用一个入口。</span>
+        </div></div>
+        <div class="shot">
+          <div class="seccard">
+            <span class="seccard__t">新建提交</span>
+            <div class="chips"><span class="chip chip--active">反馈</span><span class="chip">建议</span><span class="chip">活动提案</span></div>
+            <div class="field">校园活动报名页返回后丢表单</div>
+            <div class="field field--ta">点进详情再返回，报名表单会被清空，希望保留草稿。</div>
+            <span class="field-counter">24/5000</span>
+            <div class="field field--ph">选填微信号</div>
+            <div class="imgup">
+              <div class="imgup__hd"><span class="imgup__t">上传图片</span><span class="imgup__s">最多 3 张，每张 ≤ 5MB</span></div>
+              <div class="igrid">
+                <span class="icell"><img src="assets/demo/post-1.jpg" alt=""><span class="icell__x"><svg><use href="#i-x"/></svg></span></span>
+                <span class="icell"><img src="assets/demo/post-2.jpg" alt=""><span class="icell__x"><svg><use href="#i-x"/></svg></span></span>
+                <span class="icell"><svg><use href="#i-cam"/></svg></span>
+              </div>
+            </div>
+          </div>
+          <div class="seccard">
+            <div class="hhead"><span class="hhead__hint">提交反馈后将在此处显示</span><span class="hhead__btn">历史记录</span></div>
+            <div class="sub"><div class="sub__top"><span class="sub__title">视频主视觉需要稳定兜底</span><span class="pill pill--warning">处理中</span></div></div>
+          </div>
+          <div class="fixed-bar-clear"></div>
+        </div>
+        <div class="bar"><span class="cta">提交</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">图片满额 · 3 张</span><span class="d">canAddImage=false ⇒ ＋格消失 · 无「已达上限」可见提示</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hdrfix__main">
+          <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+          <span class="hdrfix__title">反馈中心</span>
+          <span class="hdrfix__sub">反馈、建议和活动提案共用一个入口。</span>
+        </div></div>
+        <div class="shot">
+          <div class="seccard">
+            <span class="seccard__t">新建提交</span>
+            <div class="chips"><span class="chip chip--active">反馈</span><span class="chip">建议</span><span class="chip">活动提案</span></div>
+            <div class="field">校园活动报名页返回后丢表单</div>
+            <div class="field field--ta">点进详情再返回，报名表单会被清空，希望保留草稿。</div>
+            <span class="field-counter">24/5000</span>
+            <div class="field field--ph">选填微信号</div>
+            <div class="imgup">
+              <div class="imgup__hd"><span class="imgup__t">上传图片</span><span class="imgup__s">最多 3 张，每张 ≤ 5MB</span></div>
+              <div class="igrid">
+                <span class="icell"><img src="assets/demo/post-1.jpg" alt=""><span class="icell__x"><svg><use href="#i-x"/></svg></span></span>
+                <span class="icell"><img src="assets/demo/post-2.jpg" alt=""><span class="icell__x"><svg><use href="#i-x"/></svg></span></span>
+                <span class="icell"><img src="assets/demo/post-3.jpg" alt=""><span class="icell__x"><svg><use href="#i-x"/></svg></span></span>
+              </div>
+            </div>
+          </div>
+          <div class="fixed-bar-clear"></div>
+        </div>
+        <div class="bar"><span class="cta">提交</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">图片上传失败 · 错误条 + toast 双通道</span><span class="d">v-if="errorMessage" · 已留 2 图</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hdrfix__main">
+          <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+          <span class="hdrfix__title">反馈中心</span>
+          <span class="hdrfix__sub">反馈、建议和活动提案共用一个入口。</span>
+        </div></div>
+        <div class="shot">
+          <div class="seccard">
+            <span class="seccard__t">新建提交</span>
+            <div class="chips"><span class="chip chip--active">反馈</span><span class="chip">建议</span><span class="chip">活动提案</span></div>
+            <div class="field">校园活动报名页返回后丢表单</div>
+            <div class="field field--ta">点进详情再返回，报名表单会被清空，希望保留草稿。</div>
+            <span class="field-counter">24/5000</span>
+            <div class="field field--ph">选填微信号</div>
+            <div class="form-error"><span class="form-error__text">图片上传失败</span></div>
+            <div class="imgup">
+              <div class="imgup__hd"><span class="imgup__t">上传图片</span><span class="imgup__s">最多 3 张，每张 ≤ 5MB</span></div>
+              <div class="igrid">
+                <span class="icell"><img src="assets/demo/post-1.jpg" alt=""><span class="icell__x"><svg><use href="#i-x"/></svg></span></span>
+                <span class="icell"><img src="assets/demo/post-2.jpg" alt=""><span class="icell__x"><svg><use href="#i-x"/></svg></span></span>
+                <span class="icell"><svg><use href="#i-cam"/></svg></span>
+              </div>
+            </div>
+          </div>
+          <div class="fixed-bar-clear"></div>
+        </div>
+        <div class="bar"><span class="cta">提交</span></div>
+        <span class="homebar"></span>
+        <div class="toast">图片上传失败</div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">提交中 · isSubmitting</span><span class="d">CTA 文案档 + spinner · 防重入</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hdrfix__main">
+          <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+          <span class="hdrfix__title">反馈中心</span>
+          <span class="hdrfix__sub">反馈、建议和活动提案共用一个入口。</span>
+        </div></div>
+        <div class="shot">
+          <div class="seccard">
+            <span class="seccard__t">新建提交</span>
+            <div class="chips"><span class="chip chip--active">反馈</span><span class="chip">建议</span><span class="chip">活动提案</span></div>
+            <div class="field">校园活动报名页返回后丢表单</div>
+            <div class="field field--ta">点进详情再返回，报名表单会被清空，希望保留草稿。</div>
+            <span class="field-counter">24/5000</span>
+            <div class="field field--ph">选填微信号</div>
+            <div class="imgup">
+              <div class="imgup__hd"><span class="imgup__t">上传图片</span><span class="imgup__s">最多 3 张，每张 ≤ 5MB</span></div>
+              <div class="igrid">
+                <span class="icell"><img src="assets/demo/post-1.jpg" alt=""><span class="icell__x"><svg><use href="#i-x"/></svg></span></span>
+                <span class="icell"><svg><use href="#i-cam"/></svg></span>
+              </div>
+            </div>
+          </div>
+          <div class="fixed-bar-clear"></div>
+        </div>
+        <div class="bar"><span class="cta"><span class="spin"></span>提交中...</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">提交成功 · 记录卡非空</span><span class="d">滚动位 −420px · 表单已在屏外清空</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hdrfix__main">
+          <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+          <span class="hdrfix__title">反馈中心</span>
+          <span class="hdrfix__sub">反馈、建议和活动提案共用一个入口。</span>
+        </div></div>
+        <div class="shot shot--up420">
+          <div class="seccard">
+            <span class="seccard__t">新建提交</span>
+            <div class="chips"><span class="chip chip--active">反馈</span><span class="chip">建议</span><span class="chip">活动提案</span></div>
+            <div class="field field--ph">标题</div>
+            <div class="field field--ta field--ph">反馈内容</div>
+            <span class="field-counter">0/5000</span>
+            <div class="field field--ph">选填微信号</div>
+            <div class="imgup">
+              <div class="imgup__hd"><span class="imgup__t">上传图片</span><span class="imgup__s">最多 3 张，每张 ≤ 5MB</span></div>
+              <div class="igrid"><span class="icell"><svg><use href="#i-cam"/></svg></span></div>
+            </div>
+          </div>
+          <div class="seccard">
+            <div class="hhead"><span class="hhead__hint">提交反馈后将在此处显示</span><span class="hhead__btn">历史记录</span></div>
+            <div class="sub">
+              <div class="sub__top"><span class="sub__title">校园活动报名页返回后丢表单</span><span class="pill pill--brand"><svg><use href="#i-dot"/></svg>已提交</span></div>
+              <span class="sub__sum">你的提交已进入处理队列。</span>
+              <span class="sub__time">2026-10-26 09:41</span>
+            </div>
+            <div class="sub">
+              <div class="sub__top"><span class="sub__title">视频主视觉需要稳定兜底</span><span class="pill pill--warning"><svg><use href="#i-dot"/></svg>处理中</span></div>
+              <span class="sub__sum">兜底逻辑已经纳入客户端壳层处理。</span>
+              <span class="sub__time">2026-05-18 09:18</span>
+            </div>
+            <div class="sub">
+              <div class="sub__top"><span class="sub__title">首页保留讨论和活动入口</span><span class="pill pill--success"><svg><use href="#i-dot"/></svg>已查看</span></div>
+              <span class="sub__sum">已接受，纳入第一版 IA 调整。</span>
+              <span class="sub__time">2026-05-17 18:42</span>
+            </div>
+          </div>
+          <div class="fixed-bar-clear"></div>
+        </div>
+        <div class="bar"><span class="cta">提交</span></div>
+        <span class="homebar"></span>
+        <div class="toast toast--ic"><svg><use href="#i-check"/></svg>提交成功</div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页交互件六类：类型 chip / 三个表单控件（含错误条）/ 图片格 / 记录行与其状态药丸 / 吸底主 CTA / toast。
+    文案一律逐字取 <code>feedback.*</code>、<code>feedbackStatus.*</code>、<code>common.*</code> 现值；
+    列表两行取 <code>services/mocks/fixtures.ts</code> 预置记录（<code>mockData.submissions.*</code>）。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>类型 chip · 三档 × 三枚</h3>
+      <p class="hint">选中条件是 <code>activeType === item.value</code>；三枚 label 取 <code>feedback.typeFeedback / typeSuggestion / typeActivityProposal</code>。
+        盒高 88rpx=44px（R7-L13-D01：显式 height + box-sizing，不用 min-height）；选中档是「浅底深字 + 描边」（R13-L12-D10，原白字压 <code>--c-brand</code> 只有 2.1:1）。</p>
+      <div class="row">
+        <div class="cell"><div class="chip">建议</div><span class="lab">default（未选）</span></div>
+        <div class="cell"><div class="chip chip--active">反馈</div><span class="lab">active（+1px --c-brand-700 描边）</span></div>
+        <div class="cell"><div class="chip chip--active chip--press">活动提案</div><span class="lab">按压 press-feedback--active</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>value</th><th>label（现值）</th><th>提交调用</th></tr>
+        <tr><td><code class="plain">feedback</code></td><td>反馈（初始值）</td><td><code>submitIssue(form)</code></td></tr>
+        <tr><td><code class="plain">suggestion</code></td><td>建议</td><td><code>submitSuggestion(form)</code></td></tr>
+        <tr><td><code class="plain">activity_proposal</code></td><td>活动提案</td><td><code>submitActivityProposal(form)</code></td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>表单控件 · 五档</h3>
+      <p class="hint">源 <code>.field</code> 只有底色与圆角、<b>没有描边</b>（与同域 setup/campus 的 <code>.field</code> 有 <code>--c-border-card</code> 不同档，画板不统一它）。
+        占位色走非 scoped 的 <code>.field-placeholder</code>（R7-L13-D02：scoped 选择器匹配不到输入控件内部的占位节点）。</p>
+      <div class="row">
+        <div class="cell" style="width:240px"><div class="field field--ph">标题</div><span class="lab">标题 · placeholder（与字段名同串）</span></div>
+        <div class="cell" style="width:240px"><div class="field">校园活动报名页返回后丢表单</div><span class="lab">标题 · 已填</span></div>
+        <div class="cell" style="width:240px"><div class="field field--ta field--ph">反馈内容</div><span class="lab">正文 · 空（占位=字段名）</span></div>
+        <div class="cell" style="width:240px"><div class="field field--ta">点进详情再返回，报名表单会被清空，希望保留草稿。</div><span class="lab">正文 · 已填（90px 起）</span></div>
+        <div class="cell" style="width:240px"><span class="field-counter">24/5000</span><span class="lab">字数计数（常驻右对齐）</span></div>
+        <div class="cell" style="width:240px"><div class="form-error"><span class="form-error__text">图片上传失败</span></div><span class="lab">错误条 v-if="errorMessage"</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>图片格 · 四态（其中一态不可达）</h3>
+      <p class="hint">上限 <code>IMAGE_MAX_COUNT = 3</code>、单张 <code>5MB</code>、扩展名 jpg/jpeg/png/webp；格 180rpx=90px，删除钮 88rpx=44px 圆底压 <code>--c-overlay-mid</code>。</p>
+      <div class="row">
+        <div class="cell"><div class="icell"><svg><use href="#i-cam"/></svg></div><span class="lab">＋相机（v-if canAddImage）</span></div>
+        <div class="cell"><div class="icell icell--up"><span class="spin"></span></div><span class="lab">上传中 · 不可达（见注）</span></div>
+        <div class="cell"><div class="icell"><img src="assets/demo/post-1.jpg" alt=""><span class="icell__x"><svg><use href="#i-x"/></svg></span></div><span class="lab">缩略 + 删除钮</span></div>
+        <div class="cell"><div class="icell"><img src="assets/demo/post-2.jpg" alt=""><span class="icell__x icell__x--press"><svg><use href="#i-x"/></svg></span></div><span class="lab">删除钮按压态</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>态</th><th>条件</th><th>画板口径</th></tr>
+        <tr><td>＋格在</td><td><code>!isUploading &amp;&amp; len &lt; 3</code></td><td>F01/F03/F05/F07</td></tr>
+        <tr><td>＋格消失</td><td><code>len === 3</code></td><td>F04（无「已达上限」可见提示）</td></tr>
+        <tr><td>spinner 格</td><td><code>isUploading</code></td><td><b>画面上不存在</b>：<code>canAddImage</code> 已含 <code>!isUploading</code>，<code>v-if</code> 先把整块加格摘掉，模板的 <code>v-if="isUploading"</code> 分支与 <code>.image-cell--uploading</code> 是死代码 ⇒ §01 不为其立屏，此栏仅存档</td></tr>
+        <tr><td>点缩略图</td><td><code>handleImageTap</code> → <code>uni.previewImage</code></td><td>系统全屏层，不占屏</td></tr>
+        <tr><td>移除确认</td><td><code>handleRemoveImage</code> → <code>uni.showModal</code></td><td>标题 <code>feedback.imageRemove</code>「移除」／正文同一句「移除」／按钮 <code>common.cancel</code>「取消」+ <code>common.confirm</code>「确认」</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>记录行 + StatusState 药丸 · 五状态映射</h3>
+      <p class="hint">行结构 <code>submission__top</code>（标题 + 药丸）/ <code>latestReplySummary</code> / <code>formatSubmissionTime</code>（<code>utils/time</code> 'full' 预设 → <code>YYYY-MM-DD HH:mm</code>）；整行 <code>@tap="goDetail(item.id)"</code> 跳历史页并带 <code>?id=</code>。
+        药丸 tone/label 由 <code>view-models/feedback.ts</code> 派生，画板不自行配色。</p>
+      <div class="row">
+        <div class="cell"><span class="pill pill--brand"><svg><use href="#i-dot"/></svg>已提交</span><span class="lab">brand（submitted）</span></div>
+        <div class="cell"><span class="pill pill--warning"><svg><use href="#i-dot"/></svg>处理中</span><span class="lab">warning（processing）</span></div>
+        <div class="cell"><span class="pill pill--success"><svg><use href="#i-dot"/></svg>已查看</span><span class="lab">success（reviewed）</span></div>
+        <div class="cell"><span class="pill pill--warning"><svg><use href="#i-dot"/></svg>已排期</span><span class="lab">warning（planned）</span></div>
+        <div class="cell"><span class="pill pill--success"><svg><use href="#i-dot"/></svg>已转活动</span><span class="lab">success（converted）</span></div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <div class="cell" style="width:300px"><div class="seccard" style="padding:12px">
+          <div class="hhead"><span class="hhead__hint">提交反馈后将在此处显示</span><span class="hhead__btn">历史记录</span></div>
+          <div class="sub"><div class="sub__top"><span class="sub__title">视频主视觉需要稳定兜底</span><span class="pill pill--warning"><svg><use href="#i-dot"/></svg>处理中</span></div>
+            <span class="sub__sum">兜底逻辑已经纳入客户端壳层处理。</span><span class="sub__time">2026-05-18 09:18</span></div>
+        </div><span class="lab">记录卡非空（hint 仅在 length&gt;0 出现）</span></div>
+        <div class="cell" style="width:300px"><div class="seccard" style="padding:12px">
+          <div class="hhead"><span class="hhead__spacer"></span><span class="hhead__btn">历史记录</span></div>
+          <div class="empty" style="padding:20px 20px"><svg><use href="#i-box"/></svg><span class="empty__msg">暂无反馈记录</span></div>
+        </div><span class="lab">记录卡空态（spacer 顶位 · hide-sub 无副标题）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>吸底主 CTA · 三态（无禁用档）</h3>
+      <p class="hint">BottomActionBar 传 <code>fixed</code>；label 由 <code>isSubmitting ? common.submitting : common.submit</code> 决定。
+        本页 CTA <b>没有</b> <code>:disabled</code>——缺必填时靠点下去的 toast 反馈，常亮是设计口径。</p>
+      <div class="row">
+        <div class="cell" style="width:240px"><div class="cta">提交</div><span class="lab">default · 常亮</span></div>
+        <div class="cell" style="width:240px"><div class="cta"><span class="spin"></span>提交中...</div><span class="lab">isSubmitting（spinner + 换字）</span></div>
+        <div class="cell" style="width:240px"><div class="cta cta--dis">提交</div><span class="lab">禁用档本页不存在 · 仅备查</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Toast / 系统层 · 全枚举</h3>
+      <p class="hint"><code>icon:"none"</code> 是居中胶囊，<code>icon:"success"</code> 是方盒上勾下字；画板两型都画。</p>
+      <table class="tbl">
+        <tr><th>触发条件</th><th>i18n key</th><th>文案现值</th><th>型</th></tr>
+        <tr><td><code>!form.title.trim() || !form.content.trim()</code></td><td><code>feedback.submitFailed</code></td><td>提交失败，请稍后重试</td><td>none</td></tr>
+        <tr><td><code>ok === true</code></td><td><code>feedback.submitSuccess</code></td><td>提交成功</td><td>success</td></tr>
+        <tr><td><code>ok === false</code>（store 无 errorMessage 时）</td><td><code>feedback.submitFailed</code></td><td>提交失败，请稍后重试</td><td>none</td></tr>
+        <tr><td><code>len &gt;= 3</code> 仍点＋格</td><td><code>feedback.imageMaxLimit</code></td><td>最多只能上传 3 张图片</td><td>none</td></tr>
+        <tr><td><code>size &gt; 5MB</code></td><td><code>feedback.imageSizeLimit</code></td><td>图片大小不能超过 5MB</td><td>none</td></tr>
+        <tr><td>选图/上传异常</td><td><code>feedback.imageUploadFailed</code></td><td>图片上传失败</td><td>none + 错误条</td></tr>
+        <tr><td>隐私协议未同意</td><td><code>feedback.privacyImageDenied</code></td><td>需同意隐私协议后才能选择图片</td><td>none</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位，与 design-variables.scss 一一对应</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">页内零私有色值；源文件 <code>var(--x, 十六进制)</code> 的兜底值一律不进画板。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-page)"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">AppShell 底 · 吸顶头带 · 吸底条底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-container);border:1px solid var(--c-border-default)"></span><div><div class="sw__n">容器白<code>--c-bg-container</code></div><div class="sw__u">SectionCard · 返回胶囊 · 弹窗</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-surface)"></span><div><div class="sw__n">输入底<code>--c-bg-surface</code></div><div class="sw__u">三个表单控件 · 图片格</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-brand)"></span><div><div class="sw__n">主色浅底<code>--c-bg-brand</code></div><div class="sw__u">chip 底 · 历史记录按钮底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand)"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">已提交药丸字 · 弹窗确认字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-700)"></span><div><div class="sw__n">主色 700<code>--c-brand-700</code></div><div class="sw__u">chip 未选字 · 历史记录字 · 选中描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-800)"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">主 CTA 底 · 选中 chip 字 · 返回文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-romance-300)"></span><div><div class="sw__n">浪漫 300<code>--c-romance-300</code></div><div class="sw__u">仅封面渐变末段，画面内不出现</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-error)"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">错误条字与描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-tint-pink-soft)"></span><div><div class="sw__n">粉底浅档<code>--c-tint-pink-soft</code></div><div class="sw__u">错误条底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-warning)"></span><div><div class="sw__n">警告<code>--c-warning</code></div><div class="sw__u">处理中/已排期药丸字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-warning-bg-tint)"></span><div><div class="sw__n">警告浅底<code>--c-warning-bg-tint</code></div><div class="sw__u">处理中/已排期药丸底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-success)"></span><div><div class="sw__n">成功<code>--c-success</code></div><div class="sw__u">已查看/已转活动药丸字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-success-bg-tint)"></span><div><div class="sw__n">成功浅底<code>--c-success-bg-tint</code></div><div class="sw__u">已查看/已转活动药丸底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-overlay-mid)"></span><div><div class="sw__n">图上遮罩<code>--c-overlay-mid</code></div><div class="sw__u">缩略图删除钮圆底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-text-placeholder)"></span><div><div class="sw__n">占位字<code>--c-text-placeholder</code></div><div class="sw__u">placeholder · 相机图标 · 空态副句</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到七档；页头主标题取真值 <code>--fs-7xl</code>（56rpx=28px，R10-L07-D08 升档后口径）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/700</span><span class="type__p" style="font-size:28px;font-weight:700">反馈中心</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">新建提交 · 反馈历史</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">校园活动报名页返回后丢表单</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/600</span><span class="type__p" style="font-size:13px;font-weight:600">处理中 · 已提交（药丸）</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-text-secondary)">兜底逻辑已经纳入客户端壳层处理。</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500;color:var(--c-text-tertiary)">提交反馈后将在此处显示 · 历史记录</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-tertiary)">最多 3 张，每张 ≤ 5MB · 24/5000 · 2026-05-18 09:18</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-1 2rpx</b><i style="width:1px"></i></div>
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>12rpx · 错误条</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 输入框 · 图片格</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 主 CTA</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · SectionCard</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>chip · 药丸 · 删除钮</div>
+      </div>
+      <p class="hint" style="margin-top:14px">热区口径：chip / 历史记录按钮 / 删除钮全部按仓内 <code>AppShell.vue:334</code> 的 88rpx=44px 档落屏（.field 亦 88rpx）。
+        源文件里 <code>--r-lg</code> 的兜底写的是 18rpx/16rpx，与令牌真值 20rpx=10px 不同——画板取令牌真值，兜底值不采纳。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 · 与实况的已知差异</h2><p>照片位取 assets/demo 真素材；缺陷只登记不修</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/post-1.jpg" alt="">
+      <div class="asset__b"><b>assets/demo/post-1.jpg … post-3.jpg</b>
+        <p>缩略图位（180rpx=90px · aspectFill）用盘上真演示素材，以便判裁切、密度与 <code>--c-overlay-mid</code> 遮罩压图关系。
+           真机上该位是用户截图，无对应素材时 §8 才允许灰底；本画板不取灰底。</p>
+        <div class="m">90×90 · --r-lg · 1px dashed --c-border-default（虚线只给＋格）</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-avatar.png" alt="" style="object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_COMMON.CAMERA / CLOSE_WHITE_SVG / BOX_SVG</b>
+        <p>＋格的相机（48rpx=24px，opacity .55）、缩略图右上白叉（28rpx=14px）、EmptyState 的 no-data 立方体（120rpx=60px）三枚均走工程既有图标体系；
+           画板用同几何的 lucide 描边替身，尺寸写在宿主节点上（R10-L05-D11 口径）。</p>
+        <div class="m">24px / 14px / 60px · 白叉压 --c-overlay-mid</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>反馈两页的衔接（本域口径）：</b>本页 <code>goHistory()</code> → <code>uni.navigateTo("/subpackages/profile-extra/feedback/history")</code>（<b>跨分包</b>：support → profile-extra）；
+        行点击 <code>goDetail(id)</code> → 同一 URL 带 <code>?id=</code>，历史页 <code>loadQueryId()</code> 在 300ms 后自动 <code>toggleExpand(id)</code>。
+        历史页 <code>goBack()</code> 是 <code>navigateBack</code>（回本页，页面栈与表单值都保留），失败才 <code>switchTab</code> 到「我的」。
+        两页共用 <code>feedbackStore.submissions</code>，本页提交成功即把新记录 unshift 进列表 ⇒ F07 的新行同时出现在历史页。完整对偶见 feedback-history.html §04。</li>
+      <li><b>「上传中」在画面上不存在（缺陷，登记不圆场）：</b><code>canAddImage = !isUploading &amp;&amp; len &lt; 3</code> 使 <code>v-if="canAddImage"</code> 的加格在上传中整块消失，
+        模板里的 <code>.image-cell__spinner</code> 分支与 <code>.image-cell--uploading</code> 类永不渲染 ⇒ 用户点完相机只见＋格凭空消失、无任何进度反馈。已在 §02 存档。</li>
+      <li><b>必填校验失败与真失败同串（缺陷）：</b><code>!title || !content</code> 守卫弹的是 <code>feedback.submitFailed</code>「提交失败，请稍后重试」，
+        与接口失败文案一字不差 ⇒ 用户无从知道是自己没填。画板如实照画，不改成「请填写标题与内容」。</li>
+      <li>正文占位取 <code>feedback.labelContent</code>「反馈内容」＝字段名本身；源码注释里给的完整引导句「请描述遇到的问题或建议，10-500 字」需要新增键 <code>feedback.placeholderContent</code>，尚未落 locale。
+        且该句的「10-500 字」与真值 <code>FEEDBACK_CONTENT_MAX = 5000</code>（计数显示 0/5000）口径互相矛盾——两处都属并行车道，画板按源码实际值画。</li>
+      <li>三个输入项的字段名都只挂在 <code>&lt;label class="sr-only"&gt;</code> 上，画面上没有可见标签，标题框的 placeholder 就是「标题」二字；这是可达性口径问题，不在本页修。</li>
+      <li><b>标题框未传 <code>maxlength</code></b>：微信 <code>&lt;input&gt;</code> 不写 maxlength 时按 140 字静默截断且无提示（正文 textarea 传了 5000），画面上看不出这条隐形上限。</li>
+      <li>移除确认弹窗的标题与正文都是同一句「移除」（<code>uni.showModal</code> 无说明句），点缩略图走系统 <code>previewImage</code> 全屏层：两者都不是页面 <code>v-if</code> 分支，故不占 §01 屏，只在 §02 枚举。</li>
+      <li><b>演示数据口径：</b>列表两行逐字取 <code>services/mocks/fixtures.ts</code> 的预置记录（标题/摘要来自 <code>mockData.submissions.title1|2 / reply1|2</code>，
+        submittedAt 为 ISO 串，时间显示按 <code>utils/time</code> 'full' 预设算成 <code>YYYY-MM-DD HH:mm</code>）；F07 新增行的摘要取 <code>mockData.submissions.queueReply</code>、状态取 <code>createSubmission</code> 写死的 <code>submitted</code>。
+        表单里正在输入的标题/正文是演示人设输入串（非盘上真值、非真值位），画板上无任何分数/百分比。</li>
+      <li>「选填微信号」的已填态在盘上无真值可取 ⇒ 各屏一律保持 placeholder 档，不编造微信号。</li>
+      <li><code>page { background: --c-bg-container }</code>（R16 纯白口径）被 AppShell <code>.shell</code> 的 <code>--c-bg-page</code> 覆盖，实测页面底与吸顶头带、吸底条同为 #EEF7F2 连成一片。</li>
+      <li>系统弹窗（<code>uni.showModal</code>）确认钮在真机是微信原生蓝，base 未登记该档 ⇒ 画板按站内主操作档 <code>--c-brand</code> 画替身（见回报 BASE_PROBLEM）。</li>
+      <li>本页在 support 分包，<b>无 tabbar</b>、无原生导航栏（AppShell 传 <code>:show-tab-bar="false"</code>）；画板若出现 tabbar 即为错。</li>
+      <li>动效与机型环境项不入静态画板：chip/按钮的 <code>press-feedback</code> 缩放、脉冲、键盘弹起（<code>cursor-spacing="20"</code>）、吸底条安全区（画板按 34px 系统几何留位）。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 反馈中心（提交页）高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1,572,192 px，对齐 素材/理想效果图 语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

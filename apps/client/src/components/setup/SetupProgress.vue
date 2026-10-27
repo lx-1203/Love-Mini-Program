@@ -37,15 +37,11 @@ import { IMAGE_PATHS } from "../../config/images";
  * 组件 props。
  */
 const props = withDefaults(defineProps<{
-  /** 当前步骤（1-based）。full=真实链路编号；student/non-student 仍兼容 2026-08-07
-   *  旧表编号（见 LEGACY_STEP_MAP），组件内映射到含「时间安排」的真实链路。 */
+  /** 当前步骤（1-based），取**真实链路位置**；越界自动 clamp 到本分支的步骤数 */
   currentStep: number;
-  /** 总步骤数（仅 variant="full" 时生效，默认 5） */
-  totalSteps?: number;
-  /** 身份分支：full=完整 5 步 / student=学生 4 步 / non-student=非学生 3 步 */
-  variant?: "full" | "student" | "non-student";
+  /** 身份分支：full=完整 5 步 / student=学生 5 步（与 full 同值） / non-student=非学生 4 步 */
+  variant?: SetupVariant;
 }>(), {
-  totalSteps: 5,
   variant: "full",
 });
 
@@ -124,26 +120,7 @@ const stepDefs = computed<ReadonlyArray<SetupStepDef>>(() => {
 /**
  * 当前身份分支的总步骤数。
  */
-const effectiveTotal = computed<number>(() => {
-  if (props.variant === "student") return STEP_DEFS_STUDENT.length;
-  if (props.variant === "non-student") return STEP_DEFS_NON_STUDENT.length;
-  return Math.max(1, props.totalSteps);
-});
-
-/**
- * 旧表编号 → 真实链路位置。
- * R11-L12-D15：三个消费页（profile:753 / campus:219 / recommend-pref:33）仍按
- * 2026-08-07 的缺「时间安排」旧表传 currentStep：
- * - 学生旧表 [基本信息, 校园认证, 推荐偏好, 完成]，推荐偏好=3；
- * - 非学生旧表 [基本信息, 推荐偏好, 完成]，推荐偏好=2。
- * 补入「时间安排」后必须把旧编号映射到新位置，否则推荐偏好页会被标成
- * 「时间安排」并继续少算一步。页面文件不在本车道可改集（硬规矩 1），
- * 因此把兼容映射收在组件内，所有消费页立刻得到正确的 n/total 与当前步骤名。
- */
-const LEGACY_STEP_MAP: Record<Exclude<SetupVariant, "full">, Record<number, number>> = {
-  student: { 1: 1, 2: 2, 3: 4, 4: 5 },
-  "non-student": { 1: 1, 2: 3, 3: 4 },
-};
+const effectiveTotal = computed<number>(() => stepDefs.value.length);
 
 /**
  * 安全的当前步骤（clamp 到 [1, effectiveTotal]，非数字时回退到 1）。
@@ -152,12 +129,7 @@ const safeCurrentStep = computed<number>(() => {
   const raw = Number(props.currentStep);
   if (!Number.isFinite(raw)) return 1;
   const step = Math.floor(raw);
-  const variant = props.variant;
-  const mapped =
-    variant === "full" ? step : (LEGACY_STEP_MAP[variant][step] ?? step);
-  const min = 1;
-  const max = effectiveTotal.value;
-  return Math.min(max, Math.max(min, mapped));
+  return Math.min(effectiveTotal.value, Math.max(1, step));
 });
 
 /**
@@ -269,7 +241,7 @@ const currentStepLabel = computed(() => {
   padding: var(--sp-4) var(--sp-5);
   background: var(--c-bg-container);
   border-radius: var(--r-lg);
-  box-shadow: var(--s-card-sm);
+  box-shadow: var(--s-sm);
 }
 
 /* ========== 顶部文案 ========== */

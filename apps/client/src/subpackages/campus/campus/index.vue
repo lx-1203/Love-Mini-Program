@@ -47,6 +47,15 @@ const RECOMMEND_CIRCLES = [
 function goCircles() {
   openAppPath("/subpackages/circles/circles/index");
 }
+
+/**
+ * 具名条目头像首字兜底（与 circles/topics.vue 的同名 initialOf 同口径）：
+ * author.avatar 为空串时头像外壳画 name 首字符，name 也为空时出 "?"，
+ * 避免模板对空串取 [0] 得 undefined、外壳塌成一个纯色空圈。
+ */
+function initialOf(name?: string | null): string {
+  return name && name.length > 0 ? name.charAt(0) : "?";
+}
 const { t } = useI18n();
 const {
   activeCategory,
@@ -384,9 +393,13 @@ onMounted(async () => {
                    R10-L05-D03（P2 · 素材缺失）：帧上这个 40rpx 头像位整块空白、作者名被
                    space-between 推到卡片水平中心。根因是尺寸走 custom-class 跨不过 data-v 边界
                    （已知机制 §1）：宿主 scoped 的 .topic-card__avatar{width/height:40rpx} 命中 0 个节点，
-                   根节点退化成 :host 的 width:100% 空盒。现把类挪到组件标签（宿主节点）上，
-                   头像位重新有 40×40 的确定锚点；src 取不到时由 SafeImage 的
-                   fallback=/static/assets/default-avatar.jpg 兜底（real 包内在盘：
+                   根节点退化成 :host 的 width:100% 空盒。40×40 的锚点只写在宿主面（现在的
+                   外壳是原生 view，内层 <SafeImage> 用标签上的 .topic-card__avatar-img 铺满）。
+                   ⚠️ 更正此前一句：SafeImage 的 fallback=/static/assets/default-avatar.jpg
+                   只在「src 有值但加载失败」（onError 降级）时才生效；本页 avatar 为空串时
+                   v-if 直接不成立，组件根本不创建，既不画图也不走 fallback ⇒「有名字但头像
+                   为空」这一档此前是纯空白。现按 topic-detail.vue:225-234 / topics.vue:690-701
+                   的既有写法补首字外壳（real 包内 fallback 图在盘：
                    dist/build/mp-weixin-real/static/assets/default-avatar.jpg）。 -->
               <!-- R15-L05-D03（P2 · 位置）：卡片底栏原为「头像 / 作者名 / 回复胶囊」三子项
                    space-between 平铺 ⇒ 作者名被顶到卡片水平中心，与左侧头像脱开约 140px，
@@ -394,12 +407,17 @@ onMounted(async () => {
                    现头像 + 作者名包进 .topic-card__author-row 左聚簇（gap 8rpx），
                    底栏只剩两子项，space-between 把回复胶囊单独推右。 -->
               <view class="topic-card__author-row">
-                <SafeImage
-                  v-if="!topic.isAnonymous && topic.author?.avatar"
-                  class="topic-card__avatar"
-                  :src="resolveMediaUrl(topic.author.avatar)"
-                  mode="aspectFill"
-                />
+                <!-- 具名条目：外壳常挂，内层二选一（有 avatar 出图 / 没有出 name 首字）。
+                     匿名条目维持原状——什么都不画（产品只裁定「有名字但头像为空」这档补首字）。 -->
+                <view v-if="!topic.isAnonymous" class="topic-card__avatar">
+                  <SafeImage
+                    v-if="topic.author?.avatar"
+                    class="topic-card__avatar-img"
+                    :src="resolveMediaUrl(topic.author.avatar)"
+                    mode="aspectFill"
+                  />
+                  <text v-else class="topic-card__avatar-char">{{ initialOf(topic.author?.name) }}</text>
+                </view>
                 <text class="topic-card__author">
                   {{ topic.isAnonymous ? t('campus.index.anonymousAuthor') : topic.author.name }}
                 </text>
@@ -891,17 +909,39 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   color: $text-secondary;
   font-weight: 500;
 }
+/* 具名条目的头像外壳（原生 view，宿主 scoped 规则直接命中）。
+   先例：topic-detail.vue:516-539 / circles/topics.vue:1145-1168 的「外壳常挂 + 内层二选一」。
+   底色走 --c-bg-brand→--c-bg-romance 渐变令牌（浅色档是浅薄荷→浅粉，深色档由 tokens.scss
+   的 dark 块自动翻转），本块不新增硬编码色值（R6）。 */
 .topic-card__avatar {
-  /* R10-L05-D03：本类现在挂在 <SafeImage> 标签（宿主节点）上才命中（已知机制 §1）。
-     宿主补 overflow:hidden —— 组件根 .safe-image 自己那份 overflow:hidden 只裁到方角，
-     圆形要靠宿主这一层把 40×40 的方图裁成圆。 */
   overflow: hidden;
   width: 40rpx;
   height: 40rpx;
-  border-radius: 50%;
+  border-radius: var(--r-circle, 50%);
+  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   /* R15-L05-D03：横距改由 .topic-card__author-row 的 gap 8rpx 提供；
      留着原 margin-right 会变成 8+8=16rpx 双份，作者名反而离头像更远。 */
   flex-shrink: 0;
+}
+
+/* 内层 <SafeImage>：类写在组件标签（宿主节点）上才跨得过 data-v 边界（已知机制 §1），
+   尺寸取外壳的 100%，圆角由外壳这层裁。 */
+.topic-card__avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-full);
+}
+
+/* 无头像档的首字：40rpx 位比 circles 的 44rpx 小、底又是浅色 tint，字色取 --c-brand-700
+   （比先例 --c-brand-500 深一档，压浅薄荷底约 4.3:1；500 档只有约 2.5:1）。 */
+.topic-card__avatar-char {
+  font-size: var(--fs-sm, 22rpx);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--c-brand-700);
 }
 
 .topic-card__replies {

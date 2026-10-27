@@ -1484,7 +1484,7 @@ onShareAppMessage(() => {
   width: 44rpx;
   height: 44rpx;
   border-radius: var(--r-full);
-  border: 2rpx solid var(--c-border);
+  border: 2rpx solid var(--c-border-default);
   background: var(--c-bg-container);
   display: flex;
   align-items: center;
@@ -1627,7 +1627,7 @@ onShareAppMessage(() => {
   width: 44rpx;
   height: 44rpx;
   border-radius: var(--r-full);
-  border: 2rpx solid var(--c-border);
+  border: 2rpx solid var(--c-border-default);
   background: var(--c-bg-container);
   display: flex;
   align-items: center;

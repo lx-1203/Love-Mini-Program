@@ -20,6 +20,8 @@ import { getToken } from "../../services/http";
 import { useMock } from "../../stores/helpers/use-mock";
 import { openAppPath, openUserProfile, setTabBarHidden } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
+// 2026-10-26：新增裁切素材（收藏心形弧尾图标）走解析器（§1.6 铁律 3）
+import { resolveMediaUrl } from "../../utils/media";
 import { toMatchCardUser } from "../../view-models/match";
 import MatchCard from "../../components/match/MatchCard.vue";
 import MatchActions from "../../components/match/MatchActions.vue";
@@ -269,7 +271,9 @@ onUnload(() => {
           @tap="discoverStore.openFilterDrawer()"
         >
           <view class="discover-header__filter">
-            <image class="discover-header__filter-icon" :src="IMAGE_PATHS.ICONS_V2.SLIDERS" mode="aspectFit" alt="" />
+            <!-- 2026-10-26 对齐理想图（寻觅匹配卡片页面.png）：筛选入口为黑色描边漏斗图标
+                 （无底板），原 ICONS_V2.SLIDERS 齿轮/光圈状图标 + 白色圆底板撤除 -->
+            <image class="discover-header__filter-icon" :src="IMAGE_PATHS.FILTER_FUNNEL" mode="aspectFit" alt="" />
           </view>
         </view>
       </view>
@@ -300,8 +304,9 @@ onUnload(() => {
           <text class="discover-header__tab-text" :class="{ 'discover-header__tab-text--active': activeMode === 'nearby' }">{{ t('discover.nearby') }}</text>
           <view v-if="activeMode === 'nearby'" class="discover-header__tab-line" />
         </view>
-        <!-- R2b-L01-D04：右侧第二行收藏入口（描边心形），margin-left:auto 推到行末，
-             与第一行漏斗筛选键上下成列 -->
+        <!-- R2b-L01-D04：右侧第二行收藏入口，margin-left:auto 推到行末，
+             与第一行漏斗筛选键上下成列。
+             2026-10-26 对齐理想图：描边心形右上带一道小弧尾（原 icons/heart.svg 标准心形） -->
         <view
           class="discover-header__fav"
           hover-class="discover-header__fav--pressed"
@@ -310,7 +315,7 @@ onUnload(() => {
           :aria-label="t('discover.collect')"
           @tap="goFavorites"
         >
-          <image class="discover-header__fav-icon" :src="IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE" mode="aspectFit" alt="" />
+          <image class="discover-header__fav-icon" :src="resolveMediaUrl(IMAGE_PATHS.FAV_HEART_SWOOSH)" mode="aspectFit" alt="" />
         </view>
       </view>
     </view>
@@ -518,12 +523,14 @@ onUnload(() => {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--c-bg-container, #ffffff);
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  /* 2026-10-26 对齐理想图：筛选为无底板裸图标（撤白色圆底与阴影），保留 72rpx 盒
+     维持热区几何与 R1-B23/R14-L01-D05 的像素口径不变 */
+  background: transparent;
+  box-shadow: none;
   /* R1-B23（R1-L01-D05）：胶囊避让量原落在此钮 margin-right。R14-L01-D05 把热区
      外包到 .discover-header__filter-hit 后，避让量随之上移到热区层（见上），本钮
-     只保留 72rpx 视觉圆（背景/阴影/圆角/居中图标），不再自持 margin-right。
-     残余 3px 上缘交叠说明仍适用：落点在圆钮顶部弧带，图标与点击中心不受影响。 */
+     只保留 72rpx 视觉盒（居中图标），不再自持 margin-right。
+     残余 3px 上缘交叠说明仍适用：落点在盒顶部弧带，图标与点击中心不受影响。 */
 }
 
 .discover-header__filter--pressed {

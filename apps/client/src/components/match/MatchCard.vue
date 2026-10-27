@@ -117,18 +117,13 @@ const distanceDisplay = computed(() => distanceText.value || t("discover.distanc
         </view>
       </slot>
 
-      <!-- 匹配度徽章：右下角实心粉圆（R21：mp-weixin 对内联 conic-gradient 支持不稳，
-           曾致样式串被当文本渲染；理想图本就是实心圆环徽章，percent+label 全部收进圆内） -->
-      <slot name="match-score">
-        <view class="match-card__score">
-          <view class="match-card__score-ring">
-            <view class="match-card__score-ring-inner">
-              <text class="match-card__score-value">{{ user.matchScore }}%</text>
-              <text class="match-card__score-label">{{ t('matchV1.matchScore') }}</text>
-            </view>
-          </view>
-        </view>
-      </slot>
+      <!-- 匹配度徽章随 §4.3（reports/audit/2026-10-25-mini-program-review.md）撤除：
+           user.matchScore 由 view-models/match.ts 的 computeMatchScore（constants/match.ts
+           的 80+n×5 常量式）派生，不是后端真分——共同圈缺失归一为 0 时读数仍恒 80%
+           （真实游客实帧即此裸常量）。CardSwiper（R11-L08-D18/D29）与 MatchSuccess
+           （R11-L06-D05）已同批撤除，本卡同步；后端补真分列前不显示任何百分比，
+           就绪后在此原位重建徽章。 -->
+      <slot name="match-score" />
 
       <slot name="info">
         <view class="match-card__info">
@@ -262,68 +257,9 @@ const distanceDisplay = computed(() => distanceText.value || t("discover.distanc
   color: var(--c-brand-800, #156B51);
 }
 
-/* 匹配度徽章：右下角实心粉圆（R21：conic-gradient 在 mp-weixin 内联样式不稳，弃用） */
-.match-card__score {
-  position: absolute;
-  right: 28rpx;
-  bottom: 20rpx;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6rpx;
-}
-
-.match-card__score-ring {
-  position: relative;
-  /* R3：128→160rpx，label 18→22rpx —— 原尺寸下「匹配度」糊化不可读（judged 截图证据） */
-  width: 160rpx;
-  height: 160rpx;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* MP-R1-PAGES-DISCOVER-INDEX-011：等值渐变 token 写法保持，
-     R8-L01-D07（颜色族错配 P1）：档口由 --c-gradient-romance(#FF6B81→#FF8DA1) 换成
-     --c-gradient-brand(#36C99A→#55D5A7, design-variables.scss:171) —— 匹配度属「成功/在线」语义绿系，
-     与 XunmiMatchRing.vue:44 的 conic 绿环同两档，romance 粉只留给「喜欢」指示。 */
-  background: var(--c-gradient-brand, linear-gradient(135deg, #36C99A 0%, #55D5A7 100%));
-  /* R8-L01-D07：投影同步换绿系，消掉 rgba(255,90,145,.3) 这笔粉投影字面量
-     —— 直接取既有令牌 --s-brand（= $shadow-brand, design-variables.scss:508），不再需要新增 token。 */
-  box-shadow: var(--s-brand, 0 8rpx 32rpx rgba(54, 201, 154, 0.25));
-}
-
-.match-card__score-ring-inner {
-  position: absolute;
-  /* R3：内圈 104→132rpx（文字实际容器），value/label 同步放大后「匹配度」不再糊化 */
-  width: 132rpx;
-  height: 132rpx;
-  border-radius: 50%;
-  /* R8-L01-D07 连带项：绿环中心的底由黑色 scrim 换成白罩档 --c-overlay-bg-solid（同 TodayRecommendationCard.vue:244 口径）。
-     原因：换绿后若沿用 --c-black-shadow-lg(rgba(0,0,0,.12))，中心实测 #2FB188，
-     白字只有 2.71:1（连大字号 3:1 线都不过），深色字压中绿也只有 6.2:1 一档、发闷；
-     白罩后中心实测 ≈#ECFAF5，配 --c-brand-800 文字 = 5.96:1（≥4.5:1），环体读成「绿环 + 白心 + 绿字」。 */
-  background: var(--c-overlay-bg-solid, rgba(255, 255, 255, 0.9));
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.match-card__score-value {
-  font-size: 40rpx;
-  font-weight: 700;
-  /* R8-L01-D07：白字改 --c-brand-800 #156B51（对 0.9 白罩中心实测 5.96:1 ≥4.5:1；
-     原白字在绿心白罩上只有 1.07:1，换绿即不可读） */
-  color: var(--c-brand-800, #156B51);
-  line-height: 1.1;
-}
-
-.match-card__score-label {
-  font-size: 22rpx;
-  font-weight: 500;
-  /* R8-L01-D07：同上，rgba(255,255,255,0.95) 字面量 → 同档绿深令牌（小字号需 ≥4.5:1） */
-  color: var(--c-brand-800, #156B51);
-}
+/* 匹配度徽章样式随 §4.3 撤除（原 .match-card__score / __score-ring / __score-ring-inner /
+   __score-value / __score-label 五段，同 CardSwiper R11-L08-D18/D29「样式一并删除」口径）；
+   后端补真分列后在此原位重建。 */
 
 .match-card__info {
   position: absolute;
@@ -338,7 +274,9 @@ const distanceDisplay = computed(() => distanceText.value || t("discover.distanc
 
 .match-card :deep(.match-info) {
   /* R11-L01-D16：文字列收到约 60%（内容盒 686rpx → 412rpx），
-     让右下 160rpx 匹配度环不再与简介末行争同一带 */
+     让右下 160rpx 匹配度环不再与简介末行争同一带。
+     §4.3（2026-10-26）：匹配度环已撤除，此 60% 上限保留不动——本轮只撤假读数，
+     不连带重排文字列；真分列重建徽章时此上限继续为右下角让位。 */
   width: 100%;
   max-width: 60%;
 }

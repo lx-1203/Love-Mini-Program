@@ -109,7 +109,30 @@ async function onScrollToLower() {
 // 通过 activityStore.enrolling 全局禁用 + 本地 submittingId 精准定位当前点击项。
 const submittingId = ref<string>("");
 
+/**
+ * 活动是否已失去报名入口（ended / closed）。
+ *
+ * 与 subpackages/tools/activities/detail.vue 的同名函数 `isActivityEnrollClosed`
+ * 是**同一口径的两份实现**（按约定不新建共享文件；改一处必须同步另一处）。
+ * 修的是：卡片模板此前从不引用 item.status，于是列表/日历里已结束、已关闭的活动
+ * 照旧给出「感兴趣」报名入口 —— 与点进详情页后看到的状态胶囊（「已结束」）自相矛盾。
+ * 判定只认 ended / closed 两枚后端枚举（stores/activity.ts 的 ActivityItem["status"]），
+ * 其余（open / ongoing / upcoming / status 缺省）一律放行，既有行为不变。
+ */
+function isActivityEnrollClosed(item: ActivityItem): boolean {
+  return item.status === "ended" || item.status === "closed";
+}
+
+/** 报名钮文案：状态收敛时显示与详情页状态胶囊同源的「已结束」，否则维持既有「感兴趣 / 已感兴趣」语义 */
+function enrollBtnLabel(item: ActivityItem): string {
+  if (isActivityEnrollClosed(item)) return t("home.activityStatusClosed");
+  return item.isEnrolled ? t("activities.interestedDone") : t("activities.interested");
+}
+
 async function toggleEnroll(activityId: string) {
+  // 状态收敛兜底：卡片上的钮已由 :disabled 撤下，此处逻辑层再拦一道，防止别的调用点绕过
+  const target = activityStore.activities.find((a) => a.id === activityId);
+  if (target && isActivityEnrollClosed(target)) return;
   if (activityStore.enrolling || submittingId.value === activityId) return;
   submittingId.value = activityId;
   try {
@@ -455,14 +478,17 @@ defineExpose({ toggleEnroll });
             </view>
 
             <!-- catchtap：阻止冒泡到卡片跳转详情，避免误触发 -->
+            <!-- 状态收敛（与 tools/activities/detail.vue 的 isActivityEnrollClosed 同一口径）：
+                 ended/closed 的卡片沿用本页既有「:disabled 撤下动作」惯例（该属性原已用于在途防重），
+                 文案同步换成「已结束」⇒ 入口留在原位但点不动，不再与详情页的状态胶囊打架。 -->
             <button
               class="enroll-btn"
               :class="{ 'enroll-btn--active': item.isEnrolled }"
-              :disabled="activityStore.enrolling || submittingId === item.id"
+              :disabled="activityStore.enrolling || submittingId === item.id || isActivityEnrollClosed(item)"
   @tap.stop="toggleEnroll(item.id)"
             >
               <text v-if="submittingId === item.id" class="enroll-btn__loading">...</text>
-              <text v-else>{{ item.isEnrolled ? t('activities.interestedDone') : t('activities.interested') }}</text>
+              <text v-else>{{ enrollBtnLabel(item) }}</text>
             </button>
           </view>
         </view>
@@ -591,7 +617,13 @@ defineExpose({ toggleEnroll });
                 <!-- R4（2026-08-09）：活动分类标签（场景展示） -->
                 <text v-if="item.category" class="row-category-tag">{{ t(`activities.category.${item.category}`) }}</text>
               </view>
-              <view v-if="(item.enrollmentCount ?? item.enrollCount ?? 0) > 0" class="row-enrollment">
+              <!-- 与上方列表视图卡片同一段模板的复制件，但 R13-L13-D07（改为恒渲染「0 人已报名」
+                   占位，理由：计数为 0 时整块撤掉会让同列卡片 .row-header 右缘取档不一、
+                   标题行右侧留白逐卡漂移）只改了列表那份，这份 v-if 是 2026-05-28 的原样残留、
+                   没有任何在册理由 ⇒ 判定为无意的口径不一致，此处一并按同一条口径恒渲染。
+                   注意区分：日历格子里那枚 .calendar-cell__count 的 v-if 查的是「这一天有没有活动」
+                   （activitiesByDate[...].length），不是 0 计数，属有意条件，不动。 -->
+              <view class="row-enrollment">
                 <text class="enrollment-count">{{ item.enrollmentCount ?? item.enrollCount ?? 0 }}</text>
                 <text class="enrollment-label">{{ t("activities.enrolledLabel") }}</text>
               </view>
@@ -611,14 +643,17 @@ defineExpose({ toggleEnroll });
             </view>
 
             <!-- catchtap：阻止冒泡到卡片跳转详情，避免误触发 -->
+            <!-- 状态收敛（与 tools/activities/detail.vue 的 isActivityEnrollClosed 同一口径）：
+                 ended/closed 的卡片沿用本页既有「:disabled 撤下动作」惯例（该属性原已用于在途防重），
+                 文案同步换成「已结束」⇒ 入口留在原位但点不动，不再与详情页的状态胶囊打架。 -->
             <button
               class="enroll-btn"
               :class="{ 'enroll-btn--active': item.isEnrolled }"
-              :disabled="activityStore.enrolling || submittingId === item.id"
+              :disabled="activityStore.enrolling || submittingId === item.id || isActivityEnrollClosed(item)"
   @tap.stop="toggleEnroll(item.id)"
             >
               <text v-if="submittingId === item.id" class="enroll-btn__loading">...</text>
-              <text v-else>{{ item.isEnrolled ? t('activities.interestedDone') : t('activities.interested') }}</text>
+              <text v-else>{{ enrollBtnLabel(item) }}</text>
             </button>
           </view>
 

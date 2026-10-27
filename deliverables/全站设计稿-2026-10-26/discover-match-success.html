@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 匹配成功页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 令牌） ===== */
+.ms { position: absolute; inset: 0; overflow: hidden;
+  background: linear-gradient(180deg, var(--c-brand-50) 0%, #FFFFFF 60%, var(--c-brand-50) 100%); }
+.ms__nav { position: absolute; top: 52px; left: 0; width: 100%; padding: 0 16px;
+  display: flex; align-items: center; justify-content: space-between; z-index: 6; }
+.ms__back { font-size: 30px; line-height: 1; color: var(--c-text-primary); font-weight: 700; }
+.ms__scan { width: 34px; height: 34px; border-radius: 50%; background: #fff; box-shadow: var(--s-md);
+  display: flex; align-items: center; justify-content: center; color: var(--c-text-primary); }
+.ms__scan svg { width: 18px; height: 18px; }
+
+.ms__titlerow { position: absolute; top: 116px; left: 0; width: 100%; display: flex; align-items: center;
+  justify-content: center; gap: 8px; }
+.ms__title { font-size: var(--fs-7xl); font-weight: 800; color: var(--c-brand-700); letter-spacing: 1px; }
+.ms__th { color: var(--c-romance); }
+.ms__th svg { width: 26px; height: 26px; }
+.ms__th--g { color: var(--c-brand); position: relative; }
+.ms__th--g svg { width: 22px; height: 22px; }
+.ms__thgroup { position: relative; width: 30px; height: 26px; }
+.ms__thgroup .big { position: absolute; left: 0; top: 0; color: var(--c-romance); }
+.ms__thgroup .big svg { width: 26px; height: 26px; }
+.ms__thgroup .mini { position: absolute; right: -4px; bottom: -2px; color: var(--c-brand); }
+.ms__thgroup .mini svg { width: 15px; height: 15px; }
+
+.ms__sub { position: absolute; top: 168px; left: 0; width: 100%; text-align: center;
+  font-size: var(--fs-2xl); color: var(--c-text-secondary); }
+.ms__sub b { color: var(--c-text-primary); font-weight: 700; }
+.ms__sub2 { position: absolute; top: 198px; left: 0; width: 100%; text-align: center;
+  font-size: var(--fs-2xl); color: var(--c-text-secondary); }
+
+.ms__stage { position: absolute; top: 236px; left: 0; width: 100%; height: 200px; }
+.ms__ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  border-radius: 50%; border: 1px dashed var(--c-brand-200); }
+.ms__ring--1 { width: 240px; height: 240px; opacity: .6; }
+.ms__ring--2 { width: 176px; height: 176px; opacity: .45; }
+.ms__avs { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.ms__av { width: 120px; height: 120px; border-radius: 50%; overflow: hidden; background: var(--c-border-light);
+  border: 4px solid #fff; box-shadow: 0 8px 22px rgba(15,23,42,.12); z-index: 2; }
+.ms__av img { width: 100%; height: 100%; object-fit: cover; }
+.ms__av--left { margin-right: -12px; }
+.ms__av--right { margin-left: -12px; }
+.ms__heart { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 3;
+  width: 66px; height: 66px; border-radius: 50%; background: var(--c-gradient-romance);
+  box-shadow: 0 8px 20px rgba(255,107,129,.4); display: flex; align-items: center; justify-content: center; }
+.ms__heart svg { width: 34px; height: 34px; color: #fff; }
+
+.ms__deco { position: absolute; color: var(--c-romance-300); opacity: .5; z-index: 1; }
+.ms__deco svg { width: 100%; height: 100%; }
+.ms__deco--g { color: var(--c-brand-300); }
+
+/* 共同点卡 —— 真值位：骨架空态（R15-L06-D01） */
+.ms__card { position: absolute; left: 16px; right: 16px; top: 452px; background: #fff;
+  border-radius: var(--r-card); padding: 18px 18px 20px; box-shadow: var(--s-lg); z-index: 4; }
+.ms__card-h { font-size: var(--fs-2xl); font-weight: 800; color: var(--c-text-primary); margin-bottom: 16px; }
+.ms__skel { display: flex; align-items: center; gap: 10px; }
+.ms__skel + .ms__skel { margin-top: 14px; }
+.ms__skel-box { width: 30px; height: 30px; border-radius: 9px; flex: none; background: var(--c-neutral-100); }
+.ms__skel-bar { flex: 1; height: 12px; border-radius: var(--r-full); background: var(--c-neutral-100); }
+.ms__skel-bar--short { flex: none; width: 52%; }
+
+.ms__primary { position: absolute; left: 16px; right: 16px; top: 626px; height: 52px; border-radius: var(--r-full);
+  background: var(--c-brand); color: #fff; font-size: var(--fs-3xl); font-weight: 700;
+  display: flex; align-items: center; justify-content: center; box-shadow: var(--s-brand); z-index: 4; }
+.ms__secondary { position: absolute; left: 16px; right: 16px; top: 690px; height: 52px; border-radius: var(--r-full);
+  background: #fff; color: var(--c-text-secondary); font-size: var(--fs-3xl); font-weight: 600;
+  display: flex; align-items: center; justify-content: center; box-shadow: var(--s-md); z-index: 4; }
+.ms__share { position: absolute; left: 0; right: 0; top: 762px; display: flex; align-items: center;
+  justify-content: center; gap: 6px; font-size: var(--fs-lg); color: var(--c-text-tertiary); z-index: 4; }
+.ms__share svg { width: 16px; height: 16px; }
+.homebar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  width: 134px; height: 5px; border-radius: 3px; background: rgba(26,30,28,.85); z-index: 9; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M3 12h18"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>匹配成功页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/discover-extra/discover/match-success</code>。
+     本页是匹配命中后的庆祝页，由 <code>MatchSuccess.vue</code> 渲染。共同点卡按后端真理由 <code>reasons</code>
+     开关：<code>displayReasons.length &gt; 0</code> 出真理由卡，否则出骨架空态。真值列（<code>match_reasons</code>）
+     与匹配度真分列（§12.3 在册缺列）未就绪 ⇒ 本页状态机以「共同点卡」两态为准，画板按当前真值就绪前的
+     <b>骨架空态</b>出 1 屏作为验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>discover/match-success</b></span>
+    <span>分包 <b>discover-extra</b>（无 tabbar）</span>
+    <span>状态 <b>1 屏</b>（共同点卡空态）</span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>已有理想效果图 匹配成功页面.png</b></span>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 1 屏</h2>
+    <p>匹配成功 · 共同点卡骨架空态</p></div>
+  <div class="sec__sub">纵向顺序（导航 → 标题 → 双副标题 → 双头像 → 共同点卡 → 三动作）取自
+    <code>MatchSuccess.vue</code> 模板。返回键为无底纯黑 chevron（‹），右上为取景框/扫描图标（白圆底），
+    与源码 2026-10-26 对齐裁定一致。本页无原生导航栏、无 tabbar（分包页）。
+    <b>共同点卡画成骨架空态，不填任何共同点内容、不写百分比</b>——这是登记表的真值位（R15-L06-D01）。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">匹配成功 · 共同点卡空态</span><span class="d">骨架占位 · 无内容无数值</span></figcaption>
+      <div class="phone">
+        <div class="ms">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+
+          <span class="ms__deco" style="left:30px; top:230px; width:20px; height:20px;"><svg class="ico--fill"><use href="#i-heart"/></svg></span>
+          <span class="ms__deco ms__deco--g" style="right:36px; top:150px; width:16px; height:16px;"><svg class="ico--fill"><use href="#i-heart"/></svg></span>
+          <span class="ms__deco" style="right:60px; top:360px; width:14px; height:14px;"><svg class="ico--fill"><use href="#i-heart"/></svg></span>
+          <span class="ms__deco ms__deco--g" style="left:56px; top:400px; width:15px; height:15px;"><svg class="ico--fill"><use href="#i-heart"/></svg></span>
+
+          <div class="ms__nav">
+            <span class="ms__back">‹</span>
+            <span class="ms__scan"><svg><use href="#i-scan"/></svg></span>
+          </div>
+
+          <div class="ms__titlerow">
+            <span class="ms__thgroup"><span class="big"><svg class="ico--fill"><use href="#i-heart"/></svg></span><span class="mini"><svg class="ico--fill"><use href="#i-heart"/></svg></span></span>
+            <span class="ms__title">匹配成功</span>
+            <span class="ms__th--g"><svg class="ico--fill"><use href="#i-heart"/></svg></span>
+          </div>
+          <div class="ms__sub">你和 <b>星野</b> 互相喜欢上了</div>
+          <div class="ms__sub2">快去打个招呼吧~</div>
+
+          <div class="ms__stage">
+            <div class="ms__ring ms__ring--1"></div>
+            <div class="ms__ring ms__ring--2"></div>
+            <div class="ms__avs">
+              <div class="ms__av ms__av--left"><img src="assets/demo/person-01.png" alt=""></div>
+              <div class="ms__heart"><svg class="ico--fill"><use href="#i-heart"/></svg></div>
+              <div class="ms__av ms__av--right"><img src="assets/demo/xiaoman-avatar.png" alt=""></div>
+            </div>
+          </div>
+
+          <div class="ms__card">
+            <div class="ms__card-h">我们正在分享你们的共同点</div>
+            <div class="ms__skel"><span class="ms__skel-box"></span><span class="ms__skel-bar"></span></div>
+            <div class="ms__skel"><span class="ms__skel-box"></span><span class="ms__skel-bar ms__skel-bar--short"></span></div>
+          </div>
+
+          <div class="ms__primary">立即聊天</div>
+          <div class="ms__secondary">继续探索</div>
+          <div class="ms__share"><svg><use href="#i-upload"/></svg>分享喜悦</div>
+          <div class="homebar"></div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>共同点卡两态 + 动作区枚举</p></div>
+  <div class="sec__sub">共同点卡是唯一有内容开关的组件（<code>v-if="displayReasons.length &gt; 0"</code>）；
+    动作三钮恒定渲染。真值列就绪前线上只会命中「骨架空态」，故 §01 出该态；真理由态一并登记于此。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>共同点卡 · 两态</h3>
+      <p class="hint">R15-L06-D01：真值（<code>match_reasons</code>）未就绪时给「卡头标题 + 骨架行」空态占位，
+        不写理由文案、不写百分比、不占用 <code>__score-card</code> 类名（ops 用例 MS10 断言成立）。
+        <b>理想图为真理由态（慢跑爱好/音乐品味/… + 匹配度 90%…），属真值位，画板按留空画。</b></p>
+      <div class="row">
+        <div class="cell" style="width:200px"><div class="ms__card" style="position:static;box-shadow:var(--s-md)"><div class="ms__card-h" style="font-size:14px">我们正在分享你们的共同点</div><div class="ms__skel"><span class="ms__skel-box"></span><span class="ms__skel-bar"></span></div><div class="ms__skel"><span class="ms__skel-box"></span><span class="ms__skel-bar ms__skel-bar--short"></span></div></div><span class="lab">空态（骨架）· 当前基准</span></div>
+        <div class="cell" style="width:200px"><div class="ms__card" style="position:static;box-shadow:var(--s-md)"><div class="ms__card-h" style="font-size:14px">我们正在分享你们的共同点</div><div class="ms__skel" style="gap:10px"><span class="ms__skel-box" style="background:var(--c-brand-50)"></span><span style="font-size:13px;color:var(--c-text-primary);font-weight:600">真理由文案</span></div><div class="ms__skel" style="gap:10px"><span class="ms__skel-box" style="background:var(--c-romance-50)"></span><span style="font-size:13px;color:var(--c-text-primary);font-weight:600">真理由文案</span></div></div><span class="lab">真理由态（待后端 match_reasons）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>动作区 · 三钮</h3>
+      <p class="hint">主钮绿实心「立即聊天」（<code>matchSuccess.sayHi</code>）、次钮白底「继续探索」（<code>matchSuccess.explore</code>）、
+        文字链「分享喜悦」（源码硬编码文案 + <code>upload</code> 图标，非 i18n）。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="ms__primary" style="position:static;height:44px;font-size:15px">立即聊天</div><span class="lab">primary</span></div>
+        <div class="cell" style="width:186px"><div class="ms__secondary" style="position:static;height:44px;font-size:15px">继续探索</div><span class="lab">secondary</span></div>
+        <div class="cell" style="width:186px"><div class="ms__share" style="position:static;top:auto;padding:12px 0"><svg><use href="#i-upload"/></svg>分享喜悦</div><span class="lab">share 文字链</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>顶部导航 · 两枚</h3>
+      <p class="hint">返回为无底纯黑 chevron（撤白圆底，2026-10-26 对齐裁定）；右上为取景框/扫描图标（白圆底），原相机字形用错已改。</p>
+      <div class="row">
+        <div class="cell"><span class="ms__back" style="font-size:34px">‹</span><span class="lab">返回（纯黑）</span></div>
+        <div class="cell"><span class="ms__scan"><svg><use href="#i-scan"/></svg></span><span class="lab">扫描/截图（白圆底）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>标题双心组合</h3>
+      <p class="hint">2026-10-26 对齐理想图：标题左侧为「粉大心 + 紧贴绿小心」双心组合，右侧一枚绿心。</p>
+      <div class="row">
+        <div class="cell"><div class="ms__titlerow" style="position:static;justify-content:flex-start"><span class="ms__thgroup"><span class="big"><svg class="ico--fill"><use href="#i-heart"/></svg></span><span class="mini"><svg class="ico--fill"><use href="#i-heart"/></svg></span></span><span class="ms__title" style="font-size:20px">匹配成功</span><span class="ms__th--g"><svg class="ico--fill"><use href="#i-heart"/></svg></span></div><span class="lab">左双心 · 右单心</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用五档，未引入页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#1F8D6A"></span><div><div class="sw__n">主色 700<code>--c-brand-700</code></div><div class="sw__u">「匹配成功」标题</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">立即聊天 · 中央心渐变 · 绿心</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫<code>--c-romance</code></div><div class="sw__u">标题双心 · 中央心渐变</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF2F0;border:1px solid #DDE3E0"></span><div><div class="sw__n">中性 100<code>--c-neutral-100</code></div><div class="sw__u">共同点卡骨架行</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3;border:1px solid #DDE3E0"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">页面渐变底</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到四档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/800</span><span class="type__p" style="font-size:28px;font-weight:800;color:var(--c-brand-700)">匹配成功</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/800</span><span class="type__p" style="font-size:16px;font-weight:800">我们正在分享你们的共同点</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">立即聊天</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/400</span><span class="type__p" style="font-size:16px;color:var(--c-text-secondary)">你和 星野 互相喜欢上了</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>圆角 / 阴影</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="rad" style="margin-top:4px">
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 共同点卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>动作钮 · 骨架条</div>
+        <div class="rad__i"><b style="border-radius:9px"></b>骨架图标底<br>18rpx</div>
+      </div>
+      <p class="hint" style="margin-top:14px">主按钮 <code>--s-brand</code>、卡片 <code>--s-lg</code>、次钮 <code>--s-md</code>。</p>
+    </div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 &amp; 与实况的已知差异</h2><p>头像走工程既有演示素材</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/person-01.png" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>myAvatar · person-01</b><p>左侧「我」的头像，取 <code>assets/demo/</code> 真人像演示素材（§8 禁灰块）。</p><div class="m">120px · 圆 50%</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-avatar.png" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>partnerAvatar · xiaoman</b><p>右侧对方头像，演示人设「星野」；副标题姓名与之一致。</p><div class="m">120px · 圆 50%</div></div></div></div>
+  </div>
+  <div class="note">
+    <b>与理想图 / 源码的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>真值位（登记表第 6 行）：</b>理想图共同点卡为「慢跑爱好 / 音乐品味 / 电影偏好 / 生活方式」四行 + 每行「匹配度 90% / 85% / 80% / 79%」，
+        产品裁定真值（后端 <code>match_reasons</code>）与匹配度真分列（§12.3 在册缺列）就绪前不回填，
+        画板按留空画——<b>共同点卡画成骨架空态（卡头标题 + 骨架行），不填共同点内容、不写百分比</b>（R15-L06-D01）。</li>
+      <li>理想图副标题「你和 星野 互相喜欢了彼此」，i18n 真值 <code>matchSuccess.matchedWith</code> = 「你和 {name} 互相喜欢上了」；
+        画板按 §3.1 取 i18n 逐字，姓名取演示人设「星野」。</li>
+      <li>「分享喜悦」为源码硬编码文案（非 i18n key），画板照源码呈现。</li>
+      <li>本页在 discover-extra 分包，无原生导航栏、无 tabbar——画板若出现 tabbar 即为错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 匹配成功页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（对齐 素材/理想效果图 语料 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

@@ -43,9 +43,6 @@ export const UI_LIMITS = {
   /** 单条消息最大长度（字符） */
   MESSAGE_MAX_LENGTH: 1000,
 
-  /** 帖子内容最大长度（字符） */
-  POST_MAX_LENGTH: 1000,
-
   /** 反馈内容最大长度（字符） */
   FEEDBACK_MAX_LENGTH: 500,
 

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 隐私权限设置 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，不写私有色值） ===== */
+.phone--pr { background: var(--c-bg-page); }
+
+/* 页头：深绿渐变带（--c-brand-700 → --c-brand-800）+ 深色芯片「‹」+ 标题/副标题两行 */
+.pr-head { position: absolute; top: 0; left: 0; width: 100%; z-index: 6; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: space-between; padding: 52px 8px 6px;
+  background: linear-gradient(135deg, var(--c-brand-700) 0%, var(--c-brand-800) 100%); }
+.pr-back { width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center; }
+.pr-back__c { width: 32px; height: 32px; border-radius: var(--r-full); background: var(--c-overlay-strong);
+  border: 1px solid var(--c-overlay-border-light); display: flex; align-items: center; justify-content: center; }
+.pr-back__g { font-size: var(--fs-3xl); line-height: 1; color: var(--c-text-inverse); }
+.pr-titles { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+.pr-title { font-size: var(--fs-7xl); font-weight: 700; color: var(--c-text-inverse); }
+.pr-sub { font-size: var(--fs-lg); color: var(--c-text-inverse); }
+.pr-spacer { width: 44px; height: 44px; flex: none; }
+
+/* 开关卡 */
+.pr-sec { margin: 10px 16px; background: var(--c-bg-container); border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow); overflow: hidden; }
+.pr-sec--entries { margin-top: 0; }
+.pr-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px;
+  border-bottom: 0.5px solid var(--c-divider-light); }
+.pr-item:last-child, .pr-entry:last-child { border-bottom: none; }
+.pr-item__info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pr-item__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-primary); }
+.pr-item__d { font-size: var(--fs-lg); color: var(--c-text-tertiary); line-height: 1.5; }
+
+/* 自绘开关（R11-L10-D11：弃原生 switch，OFF 轨道 --c-status-disabled + 深描边、ON 轨道 --c-brand-800） */
+.pr-chip { flex: none; display: flex; align-items: center; justify-content: center; padding: 1px 4px;
+  border-radius: var(--r-full); background: var(--c-brand-50); border: 1px solid var(--c-brand-300);
+  box-sizing: border-box; }
+.pr-tg { position: relative; width: 44px; height: 24px; box-sizing: border-box; border-radius: var(--r-full);
+  background: var(--c-status-disabled); border: 1px solid var(--c-text-tertiary); }
+.pr-tg__k { position: absolute; top: 50%; left: 2px; width: 17px; height: 17px; box-sizing: border-box;
+  transform: translateY(-50%); border-radius: 50%; background: var(--c-bg-container);
+  border: 1px solid var(--c-text-tertiary); }
+.pr-tg--on { background: var(--c-brand-800); border-color: var(--c-brand-800); }
+.pr-tg--on .pr-tg__k { left: calc(100% - 19px); border-color: var(--c-brand-800); }
+
+/* 后域入口行 */
+.pr-gt { margin: 12px 16px 6px; font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-secondary); }
+.pr-entry { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px;
+  border-bottom: 0.5px solid var(--c-divider-light); }
+.pr-entry__info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pr-entry__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-primary); }
+.pr-entry__d { font-size: var(--fs-lg); color: var(--c-text-tertiary); line-height: 1.5; }
+.pr-entry__a { flex: none; font-size: var(--fs-3xl); line-height: 1; color: var(--c-text-tertiary); }
+
+/* 事实说明卡 */
+.pr-note { margin: 10px 16px 0; padding: 10px; border-radius: var(--card-radius);
+  background: var(--c-bg-container); box-shadow: var(--card-shadow); }
+.pr-note__t { font-size: var(--fs-lg); line-height: 1.6; color: var(--c-text-secondary); }
+
+/* 平台原生 toast（源码 uni.showToast，几何非本页 CSS） */
+.pr-toast { position: absolute; left: 50%; bottom: 132px; transform: translateX(-50%); z-index: 20;
+  padding: 10px 18px; border-radius: var(--r-lg); background: var(--c-overlay-strong);
+  color: var(--c-text-inverse); font-size: var(--fs-lg); white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.2 4.8 6v6.1c0 4.2 3 7.2 7.2 8.7 4.2-1.5 7.2-4.5 7.2-8.7V6z"/><path d="M9.4 12.2l1.9 1.9 3.5-3.9"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6.4 3.4h7.2L18.6 8v12.6H6.4z"/><path d="M13.4 3.6V8.2h4.8"/><path d="M9.2 12.4h6M9.2 15.8h6"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10.5c0 5.2-8 12-8 12s-8-6.8-8-12a8 8 0 1 1 16 0z"/><circle cx="12" cy="10.3" r="2.8"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.6 2.3c-.8.4-1.2 1-1.2 1.8v.4"/><path d="M12 17.1h.01"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>隐私权限设置 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/profile-extra/profile/privacy</code>。
+     个人页「更多功能 · 隐私权限设置」的下钻页。模板段内<b>没有任何 v-if</b>——页面结构恒定，
+     唯一的可变位是两枚自绘开关的 ON/OFF（<code>privacy-toggle--on</code> 类切换）与它们触发的原生 toast。
+     页头以下依次是：两枚同校开关卡 → 「隐私安全」分组标题 → 四条后域入口行 → 一段事实说明卡。
+     本页状态机有 2 态，本页此前无理想效果图，版式按源码实况。</p>
+  <div class="cover__meta">
+    <span>路由 <b>profile-extra/privacy</b></span>
+    <span>分包 <b>profile-extra</b>（无 tabbar）</span>
+    <span>状态 <b>2 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 2 屏</h2>
+    <p>默认态（推荐关 / 接收开） / 开启推荐后（含本机保存 toast）</p></div>
+  <div class="sec__sub">本页状态机有 2 态，来自 <code>:class="{ 'privacy-toggle--on': allowRecommend }"</code> 与
+    <code>:class="{ 'privacy-toggle--on': receiveInfo }"</code> 两条类切换（模板内 v-if 命中 0 次，结构恒定）。
+    出厂默认值取 <code>stores/profile.ts:243-244</code>：<code>allowSameSchoolRecommend: false</code>、
+    <code>receiveSameSchoolInfo: true</code>——即 F01 的「一关一开」不是画板随手摆的。
+    两屏均一屏装下（含 120rpx=60px footer-space），无视口裁切。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">默认态 · 推荐 OFF / 接收 ON</span><span class="d">store 出厂值 · 无 toast</span></figcaption>
+      <div class="phone phone--pr">
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pr-head">
+          <span class="pr-back"><span class="pr-back__c"><span class="pr-back__g">‹</span></span></span>
+          <div class="pr-titles"><span class="pr-title">隐私权限设置</span><span class="pr-sub">控制你的信息展示范围</span></div>
+          <span class="pr-spacer"></span>
+        </div>
+        <div style="position:absolute;top:128px;left:0;width:100%;z-index:2">
+          <div class="pr-sec">
+            <div class="pr-item">
+              <div class="pr-item__info"><span class="pr-item__t">允许将我推荐给本校学生</span><span class="pr-item__d">开启后，你的信息可能推荐给本校学生</span></div>
+              <span class="pr-chip"><span class="pr-tg"><span class="pr-tg__k"></span></span></span>
+            </div>
+            <div class="pr-item">
+              <div class="pr-item__info"><span class="pr-item__t">接收同校信息</span><span class="pr-item__d">关闭后将不再收到同校学生的推荐</span></div>
+              <span class="pr-chip"><span class="pr-tg pr-tg--on"><span class="pr-tg__k"></span></span></span>
+            </div>
+          </div>
+          <div class="pr-gt">隐私安全</div>
+          <div class="pr-sec pr-sec--entries">
+            <div class="pr-entry"><div class="pr-entry__info"><span class="pr-entry__t">安全中心</span><span class="pr-entry__d">账号安全与隐私保护</span></div><span class="pr-entry__a">›</span></div>
+            <div class="pr-entry"><div class="pr-entry__info"><span class="pr-entry__t">隐私政策</span><span class="pr-entry__d">了解我们如何保护你的个人信息</span></div><span class="pr-entry__a">›</span></div>
+            <div class="pr-entry"><div class="pr-entry__info"><span class="pr-entry__t">我的位置</span><span class="pr-entry__d">调整定位与地图选点</span></div><span class="pr-entry__a">›</span></div>
+            <div class="pr-entry"><div class="pr-entry__info"><span class="pr-entry__t">帮助与客服</span><span class="pr-entry__d">常见问题与在线客服</span></div><span class="pr-entry__a">›</span></div>
+          </div>
+          <div class="pr-note"><span class="pr-note__t">两项开关目前仅在本机保存，后端同校推荐策略接入后才会改变实际推荐结果；位置与账号设备权限请从上方入口分别管理。</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">开启「允许推荐」后 · 两枚均 ON</span><span class="d">setter 触发原生 toast「已在本机保存」</span></figcaption>
+      <div class="phone phone--pr">
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pr-head">
+          <span class="pr-back"><span class="pr-back__c"><span class="pr-back__g">‹</span></span></span>
+          <div class="pr-titles"><span class="pr-title">隐私权限设置</span><span class="pr-sub">控制你的信息展示范围</span></div>
+          <span class="pr-spacer"></span>
+        </div>
+        <div style="position:absolute;top:128px;left:0;width:100%;z-index:2">
+          <div class="pr-sec">
+            <div class="pr-item">
+              <div class="pr-item__info"><span class="pr-item__t">允许将我推荐给本校学生</span><span class="pr-item__d">开启后，你的信息可能推荐给本校学生</span></div>
+              <span class="pr-chip"><span class="pr-tg pr-tg--on"><span class="pr-tg__k"></span></span></span>
+            </div>
+            <div class="pr-item">
+              <div class="pr-item__info"><span class="pr-item__t">接收同校信息</span><span class="pr-item__d">关闭后将不再收到同校学生的推荐</span></div>
+              <span class="pr-chip"><span class="pr-tg pr-tg--on"><span class="pr-tg__k"></span></span></span>
+            </div>
+          </div>
+          <div class="pr-gt">隐私安全</div>
+          <div class="pr-sec pr-sec--entries">
+            <div class="pr-entry"><div class="pr-entry__info"><span class="pr-entry__t">安全中心</span><span class="pr-entry__d">账号安全与隐私保护</span></div><span class="pr-entry__a">›</span></div>
+            <div class="pr-entry"><div class="pr-entry__info"><span class="pr-entry__t">隐私政策</span><span class="pr-entry__d">了解我们如何保护你的个人信息</span></div><span class="pr-entry__a">›</span></div>
+            <div class="pr-entry"><div class="pr-entry__info"><span class="pr-entry__t">我的位置</span><span class="pr-entry__d">调整定位与地图选点</span></div><span class="pr-entry__a">›</span></div>
+            <div class="pr-entry"><div class="pr-entry__info"><span class="pr-entry__t">帮助与客服</span><span class="pr-entry__d">常见问题与在线客服</span></div><span class="pr-entry__a">›</span></div>
+          </div>
+          <div class="pr-note"><span class="pr-note__t">两项开关目前仅在本机保存，后端同校推荐策略接入后才会改变实际推荐结果；位置与账号设备权限请从上方入口分别管理。</span></div>
+        </div>
+        <div class="pr-toast">已在本机保存</div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页只有一类真交互件（自绘开关），但它是全站弃用原生 <code>switch</code> 的第一例，
+    OFF 态轨道/滑块边界必须自己画出来——两态缺一即回归。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>自绘开关 · OFF / ON / press 三态（含芯片环）</h3>
+      <p class="hint">R11-L10-D11：原生 switch 的 OFF 轨道由平台写死（<code>color</code> 只作用 ON 态），实测轨道仅 (243..246) 灰、白滑块压白卡，Δlum≤12。改自绘后 OFF 轨道 <code>--c-status-disabled</code> + <code>--c-text-tertiary</code> 深描边、白滑块同描边，ON 轨道 <code>--c-brand-800</code> + 白滑块，边界均 ≥3:1。外圈 <code>--c-brand-50</code> 芯片是「这是一枚可点控件」的示能层。</p>
+      <div class="row">
+        <div class="cell"><span class="pr-chip"><span class="pr-tg"><span class="pr-tg__k"></span></span></span><span class="lab">OFF（轨道浅、描边深）</span></div>
+        <div class="cell"><span class="pr-chip"><span class="pr-tg pr-tg--on"><span class="pr-tg__k"></span></span></span><span class="lab">ON（滑块右移 19px）</span></div>
+        <div class="cell"><span class="pr-chip" style="opacity:.72"><span class="pr-tg pr-tg--on"><span class="pr-tg__k"></span></span></span><span class="lab">press（hover-class）</span></div>
+        <div class="cell"><span class="pr-chip" style="background:var(--c-bg-surface);border-color:var(--c-border-default)"><span class="pr-tg"><span class="pr-tg__k"></span></span></span><span class="lab">反例：芯片描边走灰档 ⇒ 示能丢失（退稿）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>开关行 / 入口行 · 同构两支</h3>
+      <p class="hint">两行共用 <code>padding: var(--sp-5)</code> + 0.5px <code>--c-divider-light</code> 下描边，<b>末行不画描边</b>（卡壳 <code>overflow:hidden</code>）。左列两行文字（--fs-xl/600 标题 + --fs-lg 三级描述），右列一枚控件。</p>
+      <table class="tbl">
+        <tr><th>行型</th><th>右列控件</th><th>行高来源</th><th>出现屏</th></tr>
+        <tr><td>开关行</td><td>芯片 + 自绘开关（44×24px）</td><td>两行文字 + 上下 10px</td><td>F01 / F02 各两行</td></tr>
+        <tr><td>入口行</td><td>文字箭头「›」（--fs-3xl 三级色）</td><td>两行文字 + 上下 10px</td><td>F01 / F02 各四行</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>页头返回钮 · 两支</h3>
+      <p class="hint">R7-L10-D13：热区 88rpx=44px，视觉圆底 64rpx=32px 移进 <code>__back-circle</code>。圆底取深色遮罩档 <code>--c-overlay-strong</code>(0.7) 而非更浓的白——原 20% 白圆底只比绿头亮 Δ(16,5,8)，「可点圆钮」被压成脏印；深芯片 + 白「‹」在绿头与白字之间同时拉开两级对比。</p>
+      <div class="row">
+        <div class="cell" style="background:linear-gradient(135deg,var(--c-brand-700),var(--c-brand-800));padding:8px;border-radius:14px"><span class="pr-back"><span class="pr-back__c"><span class="pr-back__g">‹</span></span></span><span class="lab">default（深芯片 + 白字形）</span></div>
+        <div class="cell" style="background:linear-gradient(135deg,var(--c-brand-700),var(--c-brand-800));padding:8px;border-radius:14px"><span class="pr-back" style="opacity:.72"><span class="pr-back__c"><span class="pr-back__g">‹</span></span></span><span class="lab">press</span></div>
+        <div class="cell" style="background:linear-gradient(135deg,var(--c-brand-700),var(--c-brand-800));padding:8px;border-radius:14px"><span class="pr-back"><span class="pr-back__c" style="background:var(--c-overlay-bg-light);border-color:var(--c-overlay-border-light)"><span class="pr-back__g">‹</span></span></span><span class="lab">反例：20% 白圆底（改前，≈1.2:1）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>分组与说明卡 · 恒定两支</h3>
+      <p class="hint">「隐私安全」分组标题（<code>settings.privacySection</code>）是本页唯一的段间标题；说明卡 R10-L10-D13 已从 <code>--c-brand-50</code>（与页面底 ΔR6/ΔG3/ΔB1 肉眼不可辨）改回白底 + 卡片阴影。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="pr-gt" style="margin:0">隐私安全</div><span class="lab">分组标题</span></div>
+        <div class="cell" style="width:186px"><div class="pr-note" style="margin:0"><span class="pr-note__t" style="font-size:var(--fs-sm)">两项开关目前仅在本机保存…</span></div><span class="lab">说明卡（白底 + 阴影）</span></div>
+        <div class="cell" style="width:186px"><div class="pr-note" style="margin:0;background:var(--c-brand-50);box-shadow:none"><span class="pr-note__t" style="font-size:var(--fs-sm);color:var(--c-text-tertiary)">两项开关目前仅在本机保存…</span></div><span class="lab">反例：--c-brand-50 底（改前，与页面底不可辨）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用九档，未引入任何页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#1F8D6A"></span><div><div class="sw__n">主色 700<code>--c-brand-700</code></div><div class="sw__u">页头渐变起点（R10-L10-D12 深档收口）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">页头渐变终点 · 开关 ON 轨道</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">整页底（R7 清掉 #f4f6fa 假兜底）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器白<code>--c-bg-container</code></div><div class="sw__u">两张卡 · 说明卡 · 滑块</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">开关芯片环底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#75E1B7"></span><div><div class="sw__n">主色 300<code>--c-brand-300</code></div><div class="sw__u">芯片环描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#DCE5E2"></span><div><div class="sw__n">禁用档<code>--c-status-disabled</code></div><div class="sw__u">开关 OFF 轨道</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">三级文字<code>--c-text-tertiary</code></div><div class="sw__u">描述行 · 箭头 · OFF 描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(15,23,42,0.7)"></span><div><div class="sw__n">强遮罩<code>--c-overlay-strong</code></div><div class="sw__u">返回圆底 · 原生 toast 底</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到五档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/700</span><span class="type__p" style="font-size:28px;font-weight:700">隐私权限设置</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/400</span><span class="type__p" style="font-size:18px;font-weight:400">‹ · ›</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600</span><span class="type__p" style="font-size:15px;font-weight:600">允许将我推荐给本校学生</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/400</span><span class="type__p" style="font-size:14px;font-weight:400;color:var(--c-text-tertiary)">控制你的信息展示范围 · 开关描述行</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600;color:var(--c-text-secondary)">隐私安全</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · toast</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--card-radius<br>40rpx · 两张卡 · 说明卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>芯片环 · 开关轨道</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>本页零照片位、零图片位</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>无图片依赖</b><p>本页模板段内 <code>&lt;image&gt;</code> 命中 0 次：入口行右列是文字箭头「›」，返回是文字「‹」，开关是纯 view 自绘。因此本页不存在 §8 的照片位缺口，也不引 assets/demo 任何文件。</p><div class="m">0 素材 · 0 断链</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>入口行图标位（未使用）</b><p>四条入口行源码里没有图标列——本页刻意保持「两行文字 + 箭头」的紧凑行，避免与同分包其它页的图标行混档。§02 备的四枚描边 symbol 仅登记语义，不进口。</p><div class="m">安全中心 · 隐私政策 · 我的位置 · 帮助与客服</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>toast 是平台件</b>：F02 的「已在本机保存」来自 <code>uni.showToast({ title: t("profile.privacySavedLocal"), icon: "none" })</code>，字号/圆底/停留时长由微信容器决定，<b>不在本页 CSS 里</b>。文案逐字取 i18n 真值，几何只作示意，不作为像素断言项。</li>
+      <li><b>「我的位置」入口行标题是模板字面量</b>：源码沿用 location.vue 自己页头的「我的位置」，本页 locale 无对应键（R7-L10-D11 明确不新增 locale）；副标「调整定位与地图选点」同理。画板按模板逐字，不套 i18n。</li>
+      <li><b>开关只写本机</b>：MP-R1-PRIVACY-001——后端偏好接口未接入，开关不改变服务端推荐结果。说明卡那段文字就是这条事实，画板不得把它简化成「已同步」。</li>
+      <li><b>令牌缺口</b>：<code>.privacy-page__back-circle</code> 的描边引 <code>--c-overlay-border-stronger</code>，该档在 board-base.css 未登记，画板就近取 <code>--c-overlay-border-light</code>；<code>--card-radius</code>/<code>--card-shadow</code> 两档 base 已登记，直接引用。已回报 BASE_PROBLEM。</li>
+      <li><b>本页在 profile-extra 分包，无 tabbar、无原生导航栏</b>——页头是页面自己画的深绿渐变带。画板若出现 tabbar 即为错。</li>
+      <li><b>无分数类真值位</b>：本页不显示合拍度/匹配度/共同点。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 隐私权限设置页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

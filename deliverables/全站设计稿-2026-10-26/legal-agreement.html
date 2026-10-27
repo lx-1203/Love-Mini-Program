@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 用户协议页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的 --*- 令牌） ===== */
+/* 唯一一枚 base 未登记的工程真令牌：--c-text-warning-dark = #92400E（真源 design-variables.scss，见 §04 差异 8）。
+   色值字面量全页只在这里落一次，其余位置一律引用同名变量；base 补登记后本页自动等价，不必回改。 */
+:root { --c-text-warning-dark: #92400E; }
+/* 页壳：AppShell variant=standard（默认）+ fixed（默认 true）—— 浅色 --c-bg-page 底的吸顶行，
+   不是品牌渐变带；分包页无原生导航栏、无 tabbar。 */
+.lhd { position: absolute; top: 0; left: 0; width: 100%; z-index: 5; box-sizing: border-box;
+  padding: calc(44px + var(--sp-5)) var(--page-padding) var(--sp-5); background: var(--c-bg-page); }
+.lback { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: 44px; min-width: 44px;
+  padding: var(--sp-5) var(--sp-6) var(--sp-5) var(--sp-4); margin-bottom: var(--sp-4);
+  border-radius: var(--r-full); background: var(--c-bg-container); border: 1px solid var(--c-border-light); }
+.lback svg { width: 20px; height: 20px; color: var(--c-brand-800); }
+.lback__t { font-size: var(--fs-base); color: var(--c-brand-800); font-weight: 500; }
+.ltitle { display: block; font-size: var(--fs-7xl); font-weight: 700; color: var(--c-text-primary); line-height: 1.4; }
+
+/* 内容列：AppShell 已给 32rpx gutter；.legal-page 是 flex 列，正文 flex:1，
+   吸底条出流后由 padding-bottom 等高占位（88rpx+--sp-4+--sp-6 = 64px）顶住下沿 */
+.lbody { position: absolute; top: 169px; left: 0; width: 100%; bottom: 64px; box-sizing: border-box;
+  padding: 0 var(--page-padding); display: flex; flex-direction: column; overflow: hidden; }
+/* 兜底态吸底条多一行披露小字（line-height 28rpx + margin-bottom --sp-2 = 18px），占位同源加高 */
+.lbody--fb { bottom: 82px; }
+
+/* 卡片头：与正文卡同一张白卡的两半（上圆角 / 下圆角），中间无隙 */
+.lcard-hd { flex: none; margin-top: var(--sp-4); padding: var(--sp-6) var(--page-padding);
+  background: var(--c-bg-container); border-radius: var(--r-card) var(--r-card) 0 0; box-shadow: var(--card-shadow); }
+.lcard-hd--meta-only { padding-bottom: var(--sp-3); }
+.lcard-hd__title { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); line-height: 1.4; }
+.lmeta { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; }
+.lpill { font-size: var(--fs-xs); padding: var(--sp-1) var(--sp-3); border-radius: var(--r-full);
+  background: var(--c-bg-brand); color: var(--c-brand-700); }
+.lpill--warn { font-size: var(--fs-base); background: var(--c-warning-bg-tint); color: var(--c-text-warning-dark); }
+.lupdated { font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+
+/* 三态块：loading / error / empty —— 源码里 .legal-state--* 三个修饰符没有任何样式规则，几何同源 */
+.lstate { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--sp-4); padding: var(--sp-8) var(--sp-6); }
+.lstate__spin { width: 24px; height: 24px; border: var(--sp-2) solid var(--c-border-default);
+  border-top-color: var(--c-brand); border-radius: var(--r-full); }
+.lstate__t { font-size: var(--fs-md); color: var(--c-text-tertiary); text-align: center; line-height: 1.6; }
+.lstate__btn { padding: var(--sp-3) var(--sp-6); border-radius: var(--r-md); background: var(--c-brand);
+  font-size: var(--fs-sm); color: var(--c-neutral-0); }
+
+/* 正文卡：--fs-xl 15px / 行高 1.75 / pre-wrap（i18n 里的 \n\n 就是段落间隙的唯一来源） */
+.lcontent { flex: 1; box-sizing: border-box; padding: var(--page-padding); background: var(--c-bg-container);
+  border-radius: 0 0 var(--r-card) var(--r-card); box-shadow: var(--card-shadow); overflow: hidden; }
+.lcontent__t { display: block; font-size: var(--fs-xl); color: var(--c-text-primary); line-height: 1.75;
+  white-space: pre-wrap; word-break: break-word; }
+/* 后端正文未就绪时的空骨架：条高 + 下距 = 正文行距 1.75×15px≈26px 的同节律
+   （11 + --sp-6 = 23px 行内、段间换 --sp-9 空一行），保证它替的是「版式」不是「字」 */
+.lskel .l { display: block; height: 11px; border-radius: var(--r-sm); background: var(--c-neutral-100);
+  margin-bottom: var(--sp-6); }
+.lskel .l--p { margin-bottom: var(--sp-9); }
+.lskel .l--end { margin-bottom: 0; }
+
+/* 吸底条：三态常驻（loading/error/empty 也保留，确保用户可返回） */
+.lfoot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; background: var(--c-bg-page);
+  padding: var(--sp-4) var(--page-padding) var(--sp-6); }
+.lfoot__fb { display: block; font-size: var(--fs-xs); line-height: 14px; margin-bottom: var(--sp-2); color: var(--c-text-warning-dark); }
+.lfoot__btn { height: 44px; border-radius: var(--r-xl); background: var(--c-brand-800); color: var(--c-neutral-0);
+  display: flex; align-items: center; justify-content: center; font-size: var(--fs-lg); font-weight: 600;
+  box-shadow: var(--s-float-btn); }
+/* 按压反馈：hover-class="press-feedback--active"（global.scss:339 → scale(.98) + opacity .92，60ms） */
+.press { transform: scale(0.98); opacity: 0.92; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 描边风格，与工程 IMAGE_PATHS 体系一致） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5.5 8.5 12l6.5 6.5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.2 5 5.9v5.4c0 4 2.9 7.3 7 8.5 4.1-1.2 7-4.5 7-8.5V5.9z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>用户协议页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/legal/agreement/index</code>。
+     页面本体只有 20 行——它是一个壳，入参只有两行：
+     <code style="font-family:var(--mono);font-size:12.5px">:legal-type="LegalTextType.USER_AGREEMENT"</code> 与
+     <code style="font-family:var(--mono);font-size:12.5px">i18n-prefix="legal.userAgreement"</code>；
+     本页 95% 的结构、五态机与两处同源披露都住在
+     <b>components/common/LegalTextPage.vue</b>（682 行，template 在 :271-354）里，
+     所以本画板的重心不是这张壳，而是那个组件——它与隐私政策页共用同一份基准，
+     两页画板的 §02（组件全状态枚举）与 §03（令牌）因此逐字相同，只有页头那三个字与 F03 的正文不同。</p>
+  <div class="cover__meta">
+    <span>路由 <b>legal/agreement</b></span>
+    <span>分包 <b>legal</b>（无 tabbar）</span>
+    <span>状态 <b>5 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 5 屏</h2>
+    <p>加载中 / CMS 已取到 / 回退本地文案 / 加载失败 / 空文档</p></div>
+  <div class="sec__sub">本页状态机有 5 屏，来自 <code>loadState === 'loading' | 'error' | 'empty'</code> 的
+    v-if / v-else-if 三分 + <code>v-else</code>（成功），而成功支又被
+    <code>isLocalFallback = legalText?.version === 'local-fallback'</code> 切成「后端 CMS 正文」与
+    「回退 i18n 本地文案」两张脸——两屏版式相同、只有卡片头那一行元信息不同，这正是 R11-L13-D19 要钉的地方。
+    页头由 AppShell（standard 变体 + fixed 吸顶）画，不是页面自绘的渐变带；
+    卡片头 <code>.legal-header</code> 出不出由 <code>showHeader = !!cardTitle || showMeta</code> 决定：
+    loading / error / empty 三态 <code>legalText</code> 为 null ⇒ 整张卡片头不渲染，画面里没有第二条标题。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">加载中 · 后端未回</span><span class="d">卡片头不出 · 吸底条常驻</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lhd">
+          <span class="lback"><svg><use href="#i-back"/></svg><span class="lback__t">返回</span></span>
+          <span class="ltitle">用户协议</span>
+        </div>
+        <div class="lbody">
+          <div class="lstate">
+            <span class="lstate__spin"></span>
+            <span class="lstate__t">加载中...</span>
+          </div>
+        </div>
+        <div class="lfoot">
+          <div class="lfoot__btn">我已阅读并同意</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">后端 CMS 已取到正文</span><span class="d">元信息真值不在盘上 · ↓裁切</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lhd">
+          <span class="lback"><svg><use href="#i-back"/></svg><span class="lback__t">返回</span></span>
+          <span class="ltitle">用户协议</span>
+        </div>
+        <div class="lbody">
+          <div class="lcard-hd lcard-hd--meta-only">
+            <div class="lmeta">
+              <span class="lpill">—</span>
+              <span class="lupdated">最后更新：—</span>
+            </div>
+          </div>
+          <div class="lcontent lskel">
+            <span class="l" style="width:96%"></span><span class="l" style="width:92%"></span><span class="l" style="width:88%"></span>
+            <span class="l l--p" style="width:54%"></span>
+            <span class="l" style="width:94%"></span><span class="l" style="width:97%"></span><span class="l" style="width:90%"></span>
+            <span class="l" style="width:93%"></span><span class="l" style="width:86%"></span><span class="l" style="width:71%"></span>
+            <span class="l l--p" style="width:38%"></span>
+            <span class="l" style="width:95%"></span><span class="l" style="width:89%"></span><span class="l" style="width:92%"></span>
+            <span class="l" style="width:96%"></span><span class="l" style="width:64%"></span>
+            <span class="l l--p" style="width:29%"></span>
+            <span class="l" style="width:91%"></span><span class="l" style="width:87%"></span><span class="l" style="width:94%"></span>
+            <span class="l l--end" style="width:47%"></span>
+          </div>
+        </div>
+        <div class="lfoot">
+          <div class="lfoot__btn">我已阅读并同意</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">后端不可达 · 回退 i18n 本地文案</span><span class="d">两处披露同源在场 · ↓裁切至第 3 条</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lhd">
+          <span class="lback"><svg><use href="#i-back"/></svg><span class="lback__t">返回</span></span>
+          <span class="ltitle">用户协议</span>
+        </div>
+        <div class="lbody lbody--fb">
+          <div class="lcard-hd lcard-hd--meta-only">
+            <div class="lmeta">
+              <span class="lpill lpill--warn">本地兜底文本 · 非正式版本</span>
+            </div>
+          </div>
+          <div class="lcontent"><span class="lcontent__t">欢迎使用校园恋爱小程序（以下简称“本服务”）。本协议是您与校园恋爱运营方（以下简称“我们”）就使用本服务所订立的契约。
+
+1. 协议范围与接受：您通过点击“同意并继续”或开始使用本服务，即视为您已充分理解并同意本协议全部条款。如不同意，请勿使用本服务。
+
+2. 账号注册：您须年满 18 周岁且为在校大学生或毕业 3 年内学生，使用真实身份注册，同一手机号或微信账号仅能注册一个本服务账号。您应妥善保管账号，不得出借、转让、售卖。
+
+3. 用户行为规范：您不得发布违反法律法规、危害国家安全、散布谣言、淫秽色情、侮辱诽谤他人、含广告营销或恶意代码的内容；不得冒用他人身份、从事欺诈诈骗、骚扰威胁他人、刷量刷单、攻击本服务技术基础设施。
+
+4. 内容规范：您发布的内容应为您原创或已获合法授权，不侵犯第三方知识产权、肖像权、隐私权等合法权益。</span></div>
+        </div>
+        <div class="lfoot">
+          <span class="lfoot__fb">本地兜底文本 · 非正式版本</span>
+          <div class="lfoot__btn">我已阅读并同意</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">加载失败 · error</span><span class="d">重试按钮出现 · 卡片头不出</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lhd">
+          <span class="lback"><svg><use href="#i-back"/></svg><span class="lback__t">返回</span></span>
+          <span class="ltitle">用户协议</span>
+        </div>
+        <div class="lbody">
+          <div class="lstate">
+            <span class="lstate__t">法律文本加载失败，请稍后重试</span>
+            <span class="lstate__btn">重试</span>
+          </div>
+        </div>
+        <div class="lfoot">
+          <div class="lfoot__btn">我已阅读并同意</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">CMS 返回空文档 · empty</span><span class="d">与 F04 同字同形 · 见 §04 差异 3</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lhd">
+          <span class="lback"><svg><use href="#i-back"/></svg><span class="lback__t">返回</span></span>
+          <span class="ltitle">用户协议</span>
+        </div>
+        <div class="lbody">
+          <div class="lstate">
+            <span class="lstate__t">法律文本加载失败，请稍后重试</span>
+            <span class="lstate__btn">重试</span>
+          </div>
+        </div>
+        <div class="lfoot">
+          <div class="lfoot__btn">我已阅读并同意</div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>LegalTextPage.vue 的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">这一节记录的不是这张 20 行的壳，而是它背后的共用组件 <b>components/common/LegalTextPage.vue</b>：
+    隐私政策页与用户协议页共用同一套状态、同一套令牌、同一句披露文案，因此两页画板的 §02 逐字相同，
+    差异只有两处入参——<code>legal-type</code> 与 <code>i18n-prefix</code>。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>五态全枚举 · loadState × isLocalFallback</h3>
+      <p class="hint">状态源：<code>type LoadState = "loading" | "success" | "error" | "empty"</code>，初值 <code>loading</code>。
+        <code>getLegalText</code> 内部已兜底、永不抛错 ⇒ <code>error</code> 是防御支，<code>empty</code>（后端通了但正文空）才是真会走到的岔路。
+        <code>isLocalFallback = legalText?.version === 'local-fallback'</code> 把 success 再切两半，共 5 屏。</p>
+      <table class="tbl">
+        <tr><th>屏</th><th>分支条件</th><th>上屏文案（逐字 + key）</th><th>卡片头</th><th>重试</th></tr>
+        <tr><td>F01</td><td><code>loadState === 'loading'</code></td><td>加载中... <code>common.loading</code></td><td>不渲染</td><td>无</td></tr>
+        <tr><td>F02</td><td><code>v-else</code> 且非兜底</td><td>后端 CMS 正文（盘上无真值）</td><td>meta-only：版本 + 日期</td><td>无</td></tr>
+        <tr><td>F03</td><td><code>v-else</code> 且 <code>isLocalFallback</code></td><td>i18n 本地正文（标点已归一）</td><td>meta-only：只有药丸</td><td>无</td></tr>
+        <tr><td>F04</td><td><code>loadState === 'error'</code></td><td><code>errorMessage || legal.loadFailed</code></td><td>不渲染</td><td>重试 <code>common.retry</code></td></tr>
+        <tr><td>F05</td><td><code>loadState === 'empty'</code></td><td><code>legal.loadFailed</code></td><td>不渲染</td><td>重试 <code>common.retry</code></td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>状态块 · 三态几何同源</h3>
+      <p class="hint"><code>.legal-state--loading</code> / <code>--error</code> / <code>--empty</code> 三个修饰符在 <code>&lt;style&gt;</code> 里
+        没有一条规则（定点 grep 只命中模板），三屏几何完全一致：居中列、gap <code>--sp-4</code>、内距 <code>--sp-8/--sp-6</code>。
+        所以差异只可能来自文案与「重试钮的有无」，别在成图里找颜色区别。</p>
+      <div class="row">
+        <div class="cell" style="width:150px"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 12px;background:var(--c-bg-page);border-radius:var(--r-card)">
+          <span class="lstate__spin"></span><span class="lstate__t">加载中...</span></div><span class="lab">loading（无钮）</span></div>
+        <div class="cell" style="width:186px"><div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 12px;background:var(--c-bg-page);border-radius:var(--r-card)">
+          <span class="lstate__t">法律文本加载失败，请稍后重试</span><span class="lstate__btn">重试</span></div><span class="lab">error / empty</span></div>
+        <div class="cell" style="width:110px"><div style="display:flex;justify-content:center;padding:16px 12px;background:var(--c-bg-page);border-radius:var(--r-card)">
+          <span class="lstate__btn press">重试</span></div><span class="lab">重试 · 按压</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>卡片头 .legal-header · 四分支</h3>
+      <p class="hint">出不出由 <code>showHeader = !!cardTitle || showMeta</code> 决定；
+        <code>cardTitle</code> 是 R6-L16-D13 裁定的「二选一」结果——<b>只在后端 title 与页头 i18n title 不同文时才渲染</b>，
+        真档两者逐字相同 ⇒ 卡片头不再出第二条大标题，元信息行仍在。页头那行永远取 i18n（<code>shellTitle</code>），后端改标题也不动。</p>
+      <table class="tbl">
+        <tr><th>条件</th><th>渲染</th><th>字号档</th></tr>
+        <tr><td>loading / error / empty</td><td>整张不渲染（不留空带）</td><td>—</td></tr>
+        <tr><td>CMS · 后端 title ＝ i18n</td><td><code>--meta-only</code>：版本药丸 + 最后更新</td><td><code>--fs-xs</code> 10px</td></tr>
+        <tr><td>CMS · 后端 title ≠ i18n</td><td>标题 + 元信息行（上下无额外间隙，源码未给 margin）</td><td><code>--fs-2xl</code> 16px/700</td></tr>
+        <tr><td>local-fallback</td><td><code>--meta-only</code>：只有披露药丸</td><td><code>--fs-base</code> 12px</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>披露药丸 · 两处同源（R11-L13-D19 / R14-L13-D06）</h3>
+      <p class="hint">同一个 <code>fallbackBadgeText</code>、同一句字面，挂在卡片头与吸底条两处——
+        正文滚到第 7 条时 header 出屏，但按下「我已阅读并同意」那一刻吸底条这句必须在场。
+        字号两处不同是裁定过的（header 12px 是状态标识、footer 10px 是免责小字，R15-L13-D10）；
+        en 侧同 computed 分支出 "Local fallback text · unofficial"，mp-weixin 端 locale 恒 zh-CN。</p>
+      <div class="row">
+        <div class="cell"><span class="lpill lpill--warn">本地兜底文本 · 非正式版本</span><span class="lab">.legal-header__fallback 12px</span></div>
+        <div class="cell"><span class="lfoot__fb" style="margin-bottom:0">本地兜底文本 · 非正式版本</span><span class="lab">.legal-footer__fallback 10px</span></div>
+        <div class="cell"><span class="lpill">—</span><span class="lab">版本药丸（仅 CMS 态出）</span></div>
+        <div class="cell"><span class="lupdated">最后更新：—</span><span class="lab">日期行（兜底态恒不出）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>吸底主按钮 · 三态常驻 + 按压</h3>
+      <p class="hint">loading / error / empty 也保留这条，确保用户可返回（模板注释已写明）。
+        底色取 <code>--c-brand-800</code> #156B51 而非 <code>--c-brand</code>：白字压 #36C99A 只有 2.10:1，
+        压 brand-800 才 6.45:1；前景归位 <code>--c-neutral-0</code>，不再借用图片遮罩档 <code>--c-text-inverse</code>。
+        高度 88rpx=44px 是源码硬写（全站吸底钮与 BottomActionBar 同一档，<code>--btn-height-md</code> 保持 48px 未动）。</p>
+      <div class="row">
+        <div class="cell"><div class="lfoot__btn" style="width:186px">我已阅读并同意</div><span class="lab">default</span></div>
+        <div class="cell"><div class="lfoot__btn press" style="width:186px">我已阅读并同意</div><span class="lab">按压 scale(.98)/.92</span></div>
+        <div class="cell" style="width:186px"><div style="background:var(--c-bg-page);padding:8px 8px 12px;border-radius:var(--r-xl)">
+          <span class="lfoot__fb">本地兜底文本 · 非正式版本</span><div class="lfoot__btn">我已阅读并同意</div></div>
+          <span class="lab">兜底态 · 条高 +18px</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>正文上屏形态 · normalizeLegalPunctuation</h3>
+      <p class="hint">病灶在数据源（i18n 里以 <code>\\"</code> 转义写死的半角直引号与同页全角混排）。
+        键值文件不在该车道可写集，故在消费点归一；两条正则幂等，对 CMS 正文同样生效——
+        已用全角的原样返回，一个字不改。不用 lookbehind 是平台兼容裁定（mp-weixin iOS 走 JavaScriptCore）。</p>
+      <table class="tbl">
+        <tr><th>源文（i18n 里）</th><th>上屏</th><th>规则</th></tr>
+        <tr><td><code>我们（"校园恋爱"运营方）</code></td><td>我们（“校园恋爱”运营方）</td><td>① 成对半角双引号 → 全角弯引号</td></tr>
+        <tr><td><code>以下简称"本服务"</code></td><td>以下简称“本服务”</td><td>① 同上（协议页第 1 段）</td></tr>
+        <tr><td><code>通过反馈中心申诉</code></td><td>通过「反馈中心」申诉</td><td>② 入口名统一带「」，已带的不动</td></tr>
+        <tr><td>段落分隔 <code>\n\n</code></td><td>空一行（无 &lt;p&gt; 结构）</td><td>靠 <code>white-space: pre-wrap</code>，正文是单个 <code>&lt;text&gt;</code></td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">除 §04 差异 8 那枚 base 未登记的 <code>--c-text-warning-dark</code>
+      （本页在 <code>:root</code> 单点落一次 <code>#92400E</code>，其余位置全走变量）外，全页零页内色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">页壳吸顶行 · 吸底条底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">白卡<code>--c-bg-container</code></div><div class="sw__u">卡片头 + 正文同一张卡 · 返回胶囊</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">spinner 顶边 · 重试钮底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">吸底主按钮（6.45:1）· 返回箭头与字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1F8D6A"></span><div><div class="sw__n">主色 700<code>--c-brand-700</code></div><div class="sw__u">版本药丸字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FBF2;border:1px solid #DDE3E0"></span><div><div class="sw__n">品牌浅底<code>--c-bg-brand</code></div><div class="sw__u">版本药丸底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(245,158,11,0.1);border:1px solid #DDE3E0"></span><div><div class="sw__n">警告浅底<code>--c-warning-bg-tint</code></div><div class="sw__u">兜底披露药丸底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#92400E"></span><div><div class="sw__n">警告深档<code>--c-text-warning-dark</code></div><div class="sw__u">两处披露药丸/小字（base 未登记）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">正文<code>--c-text-primary</code></div><div class="sw__u">法务正文 · 页头大标题 · 卡片头标题</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">三级字<code>--c-text-tertiary</code></div><div class="sw__u">状态文案 · 更新日期</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#DDE3E0"></span><div><div class="sw__n">边框<code>--c-border-default</code></div><div class="sw__u">spinner 环（<code>--c-border-light</code> 描返回胶囊）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF2F0"></span><div><div class="sw__n">中性 100<code>--c-neutral-100</code></div><div class="sw__u">F02 正文空骨架条</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">七档全在本页上屏；正文 15px/1.75 是三轮裁定后的定档（R10-L13-D07 + R6-L16-D14）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/700</span><span class="type__p" style="font-size:28px;font-weight:700">用户协议</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">用户协议（后端异文才出）</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/400 · lh1.75</span><span class="type__p" style="font-size:15px">欢迎使用校园恋爱小程序（以下简称“本服务”）</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;color:var(--c-text-tertiary)">法律文本加载失败，请稍后重试</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">我已阅读并同意</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500;color:var(--c-brand-800)">‹ 返回 · 本地兜底文本 · 非正式版本</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px">重试</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/400</span><span class="type__p" style="font-size:10px;color:var(--c-text-tertiary)">最后更新 · v—</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 投影</h3><p class="hint">rpx ÷ 2 = px。水平 gutter 与卡内距同吃 <code>--page-padding</code>（32rpx=16px），
+      所以白卡左右各缩 16px、正文墨迹再进 16px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-8 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>12rpx · 重试钮</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 吸底钮</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 白卡上下两半</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>药丸 · 返回胶囊</div>
+      </div>
+      <p class="hint" style="margin-top:16px">投影两枚：<code>--card-shadow</code>（卡片头/正文卡，R10-L13-D08 与全站法务卡同档）、
+        <code>--s-float-btn</code>（吸底钮）。页面底 <code>--c-bg-page</code> 一条通铺，卡片头与正文卡之间无水平缝。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>本页只有 1 枚图标、0 张照片位</p></div>
+  <div class="assets">
+    <div class="asset"><svg style="width:100%;height:190px;box-sizing:border-box;padding:70px;color:var(--c-brand-800)"><use href="#i-back"/></svg>
+      <div class="asset__b"><b>IMAGE_PATHS.ICONS_COMMON.BACK</b>
+        <p>AppShell <code>.shell__back-icon</code> 的返回箭头，本页唯一图形件。描边版在画板里用 lucide symbol <code>#i-back</code> 表达，
+          工程侧是 image 资源——同一几何、同一 40rpx 档。</p>
+        <div class="m">40rpx → 20px · --c-brand-800 · 胶囊 min 88rpx（44px）触摸目标</div></div></div>
+    <div class="asset"><svg style="width:100%;height:190px;box-sizing:border-box;padding:70px;color:var(--c-text-placeholder)"><use href="#i-shield"/></svg>
+      <div class="asset__b"><b>照片位 · 无</b>
+        <p>法务长文页没有任何头像/封面/配图位，因此本页不引用 <code>assets/demo/</code> 池，也没有素材缺口。
+          正文占位（F02）用的是骨架条而非灰块——它标的是「后端字段未就绪」，不是「素材没给」。</p>
+        <div class="m">NEED_ASSET：无</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li>派单口径里的「加载骨架」在源码里其实是<b>居中 spinner + 「加载中...」</b>，本页没有骨架屏
+        （<code>Skeleton.vue</code> / <code>SkeletonBlock.vue</code> 均未被本页引用）。F01 按源码实况画。</li>
+      <li><code>.legal-state--loading / --error / --empty</code> 三个修饰符在 <code>&lt;style&gt;</code> 里零规则 ⇒ 三屏几何完全同源；
+        像素比对时不要把这三屏当三种视觉。</li>
+      <li><b>empty 态复用了「加载失败」句</b>：CMS 正常响应但正文为空，上屏却是
+        <code>legal.loadFailed</code>「法律文本加载失败，请稍后重试」，且 F04/F05 同字同形、用户与验收都无法区分两种成因。
+        按源码逐字画，语义错位登记给文案车道。</li>
+      <li>error 态优先上屏 <code>errorMessage</code>（= <code>error.message</code> 异常原文），盘上无真值 ⇒ F04 画的是 i18n 兜底句。
+        另记一条风险：合规页把原始异常串直接上屏会暴露实现细节，且必然不达 i18n 口径。</li>
+      <li><b>F02 的版本药丸与「最后更新」两处用 <code>—</code> 与骨架条画</b>：版本/日期/正文三项真值都由后端 CMS 供给，
+        盘上查无（<code>apps/api</code> 全库对 legal 文本 0 命中，i18n 亦无版本字段）——按规范第 3 条不回填。
+        把 F03 的 i18n 正文抄进 F02 当 CMS 正文，等于把两个供给源混成一个，故 F02 只钉版式不钉字。</li>
+      <li>真档卡片头<b>不出第二条大标题</b>（<code>cardTitle</code> 判定后端 title 与 i18n 逐字相同 ⇒ 返回空串），
+        F02/F03 均按 <code>--meta-only</code> 画；成图里若出现第二条「用户协议」，即为 R6-L16-D13 回归。</li>
+      <li>兜底态<b>不印日期</b>：<code>config/legal-texts.ts:142</code> 的 <code>updatedAt</code> 是渲染当天 <code>new Date()</code> 现造的，
+        <code>displayUpdatedAt</code> 在兜底支恒空 ⇒ F03 元信息行只剩药丸一行，没有「最后更新」。</li>
+      <li><code>--c-text-warning-dark</code> #92400E 在 <code>board-base.css</code> 未登记（与 campus-post-topic.html 同一先例），
+        本页两处披露字色都吃它 ⇒ 已写进回报 BASE_PROBLEM，等主控补进共享载体，本页不自改 base。</li>
+      <li>吸底钮高 88rpx=44px 是源码硬写，base 的 <code>--btn-height-md</code> 仍为 48px（R15-L13-D09 只收本页，未动令牌）。</li>
+      <li><b>状态块「重试」钮的对比度没跟着吸底钮同治</b>：<code>.legal-state__btn</code> 底取 <code>--c-brand</code> #36C99A、
+        字取 <code>--c-text-inverse</code>（rgba(255,255,255,.95)），11px 白字压主色只有 2.10:1——
+        与 R10-L07-D08 判吸底钮那条是同一把尺、同一个结论（应走 <code>--c-brand-800</code> + <code>--c-neutral-0</code>），
+        但那条裁定只收了 <code>.legal-footer__btn</code> 一个件。画板按源码实况画（F04/F05 与 §02 的重试钮均为主色底），登记不修。</li>
+      <li>本页在 <b>legal 分包：无 tabbar、无原生导航栏</b>。页头是 AppShell（standard + fixed）的浅色吸顶行
+        ——白胶囊「‹ 返回」+ 28px 大标题，<b>不是</b>品牌渐变带；画成渐变带即为错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 用户协议页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（deviceScaleFactor 2.273，对齐语料 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 任务中心 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，不写私有色值） ===== */
+.phone--tsk { background: var(--c-bg-page); }
+
+/* 页头：baseline 行（白圆「‹」 + 标题 + 右端完成度），右侧预留胶囊安全距 7+104px */
+.tsk-head { position: absolute; top: 44px; left: 0; width: 100%; height: 56px; z-index: 6; box-sizing: border-box;
+  display: flex; align-items: baseline; padding: 12px 111px 0 16px; }
+.tsk-back { width: 44px; height: 44px; flex: none; align-self: center; margin-left: -6px;
+  display: flex; align-items: center; justify-content: center; }
+.tsk-back__c { width: 32px; height: 32px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: var(--c-border-card); display: flex; align-items: center; justify-content: center; }
+.tsk-back__g { font-size: 26px; font-weight: 700; line-height: 1; color: var(--c-text-primary); }
+.tsk-title { font-size: var(--fs-7xl); font-weight: 700; color: var(--c-text-primary); margin-left: var(--sp-4); }
+.tsk-count { margin-left: auto; font-size: var(--fs-md); color: var(--c-text-secondary);
+  font-variant-numeric: tabular-nums; }
+
+.tsk-body { position: absolute; top: 112px; left: 0; width: 100%; padding: 0 16px; box-sizing: border-box; z-index: 2; }
+.tsk-card { background: var(--c-bg-container); border-radius: var(--r-xl); box-shadow: var(--s-card-soft); }
+
+/* 积分概览卡 */
+.tsk-sum { padding: var(--sp-6) var(--sp-8); margin-bottom: var(--sp-6); }
+.tsk-sum__row { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--sp-4); }
+.tsk-sum__l { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); }
+.tsk-sum__p { font-size: var(--fs-xl); font-weight: 700; color: var(--c-brand-800);
+  font-variant-numeric: tabular-nums; }
+.tsk-bar { height: 8px; border-radius: var(--r-full); background: var(--c-neutral-100); overflow: hidden; }
+.tsk-bar__f { height: 100%; border-radius: var(--r-full); background: var(--c-gradient-brand); }
+
+/* 骨架 */
+.tsk-shim { background: linear-gradient(90deg, var(--c-border-light) 25%, var(--c-border-default) 50%, var(--c-border-light) 75%); }
+.tsk-sk { display: flex; flex-direction: column; gap: var(--section-gap); }
+.tsk-sk__card { display: flex; align-items: center; gap: var(--sp-5); padding: var(--sp-6) var(--sp-8);
+  background: var(--c-bg-container); border-radius: var(--r-xl); box-shadow: var(--s-card-soft); }
+.tsk-sk__ic { width: 36px; height: 36px; border-radius: var(--r-xl); flex: none; }
+.tsk-sk__ls { flex: 1; display: flex; flex-direction: column; gap: var(--sp-3); }
+.tsk-sk__l { height: 12px; border-radius: var(--r-md); }
+.w40 { width: 40%; } .w90 { width: 90%; } .w70 { width: 70%; }
+
+/* 任务行 */
+.tsk-list { display: flex; flex-direction: column; gap: var(--section-gap); }
+.tsk-item { display: flex; align-items: center; gap: var(--sp-5); padding: var(--sp-6) var(--sp-8); }
+.tsk-item__ic { width: 36px; height: 36px; border-radius: var(--r-xl); background: var(--c-bg-brand);
+  flex: none; display: flex; align-items: center; justify-content: center; color: var(--c-brand); }
+.tsk-item__ic svg { width: 20px; height: 20px; }
+.tsk-item__c { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.tsk-item__tr { display: flex; align-items: baseline; gap: var(--sp-3); }
+.tsk-item__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-primary); }
+.tsk-item__p { font-size: var(--fs-md); font-weight: 600; color: var(--c-brand-800);
+  font-variant-numeric: tabular-nums; flex: none; }
+.tsk-item__d { font-size: var(--fs-sm); color: var(--c-text-tertiary); overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.tsk-st { display: flex; align-items: center; justify-content: center; gap: var(--sp-1); flex: none;
+  min-height: 44px; padding: var(--sp-2) var(--sp-5); border-radius: var(--r-full); }
+.tsk-st--go { background: var(--c-brand-800); }
+.tsk-st--done { background: var(--c-bg-brand); }
+.tsk-st span { font-size: var(--fs-lg); font-weight: 600; }
+.tsk-st--go span { color: var(--c-neutral-0); }
+.tsk-st--done span { color: var(--c-brand-800); }
+.tsk-st__ck { width: 14px; height: 14px; color: var(--c-brand-800); flex: none; }
+.tsk-st__ck svg { width: 14px; height: 14px; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M16.6 3.9a2.1 2.1 0 0 1 3 3L9.4 17.1l-4.1 1.1 1.1-4.1z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5.2v13.6M5.2 12h13.6"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20.4 11.6a7.6 7.6 0 0 1-11 6.8l-4.4 1.2 1.2-4.3a7.6 7.6 0 1 1 14.2-3.7z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.6 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M8.4 12.3l2.5 2.5 4.7-5.1"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>任务中心 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/profile-extra/profile/tasks</code>。
+     个人页「更多功能 · 任务中心」的下钻页，四条任务对应完善资料 / 每日签到 / 发布首条动态 / 校园认证四条真实链路。
+     形态 = baseline 页头（含 <code>N/4 已完成</code>）+ 积分概览卡（进度条）+ 任务行列表。
+     任务行右列一枚胶囊，由 <code>claimable</code> 与 <code>isTaskClaimed</code> 两个判据分成「领取 / 已完成 / 去完成」三支。
+     本页状态机有 3 态，本页此前无理想效果图，版式按源码实况。</p>
+  <div class="cover__meta">
+    <span>路由 <b>profile-extra/tasks</b></span>
+    <span>分包 <b>profile-extra</b>（无 tabbar）</span>
+    <span>状态 <b>3 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 3 屏</h2>
+    <p>real 首拉中（骨架） / 混合态（领取 + 已完成 + 去完成） / 全部未完成（首进）</p></div>
+  <div class="sec__sub">本页状态机有 3 态：模板级 <code>v-if="loadingRealTasks &amp;&amp; realTasks === null"</code>（骨架）对
+    <code>v-else</code>（列表），列表内每行再按 <code>!task.claimable &amp;&amp; isTaskClaimed(task)</code> 与
+    <code>taskStatusText</code> 的 <code>claimable → 领取 / claimed → 已完成 / 否则 → 去完成</code> 三分配出两种整页形态。
+    <b>概览卡与页头完成度不在 v-if 链内，加载屏也照样渲染</b>——因为 <code>tasks = realTasks ?? localTasks</code>，
+    首拉期它按本地四档兜底算出「0/4 · 0 积分 · 0%」，与 F03 同值。三屏均一屏装下，无视口裁切。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">real 首拉中 · 列表骨架</span><span class="d">概览卡不空：按 localTasks 兜底出 0%</span></figcaption>
+      <div class="phone phone--tsk">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="tsk-head"><span class="tsk-back"><span class="tsk-back__c"><span class="tsk-back__g">‹</span></span></span><span class="tsk-title">任务中心</span><span class="tsk-count">0/4 已完成</span></div>
+        <div class="tsk-body">
+          <div class="tsk-card tsk-sum">
+            <div class="tsk-sum__row"><span class="tsk-sum__l">累计获得 0 积分</span><span class="tsk-sum__p">0%</span></div>
+            <div class="tsk-bar"><div class="tsk-bar__f" style="width:0%"></div></div>
+          </div>
+          <div class="tsk-sk">
+            <div class="tsk-sk__card"><span class="tsk-sk__ic tsk-shim"></span><div class="tsk-sk__ls"><span class="tsk-sk__l tsk-shim w40"></span><span class="tsk-sk__l tsk-shim w90"></span><span class="tsk-sk__l tsk-shim w70"></span></div></div>
+            <div class="tsk-sk__card"><span class="tsk-sk__ic tsk-shim"></span><div class="tsk-sk__ls"><span class="tsk-sk__l tsk-shim w40"></span><span class="tsk-sk__l tsk-shim w90"></span><span class="tsk-sk__l tsk-shim w70"></span></div></div>
+            <div class="tsk-sk__card"><span class="tsk-sk__ic tsk-shim"></span><div class="tsk-sk__ls"><span class="tsk-sk__l tsk-shim w40"></span><span class="tsk-sk__l tsk-shim w90"></span><span class="tsk-sk__l tsk-shim w70"></span></div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">混合态 · 领取 / 已完成 / 去完成同屏</span><span class="d">2/4 · 55 积分 · 31%</span></figcaption>
+      <div class="phone phone--tsk">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="tsk-head"><span class="tsk-back"><span class="tsk-back__c"><span class="tsk-back__g">‹</span></span></span><span class="tsk-title">任务中心</span><span class="tsk-count">2/4 已完成</span></div>
+        <div class="tsk-body">
+          <div class="tsk-card tsk-sum">
+            <div class="tsk-sum__row"><span class="tsk-sum__l">累计获得 55 积分</span><span class="tsk-sum__p">31%</span></div>
+            <div class="tsk-bar"><div class="tsk-bar__f" style="width:31%"></div></div>
+          </div>
+          <div class="tsk-list">
+            <div class="tsk-card tsk-item">
+              <span class="tsk-item__ic"><svg><use href="#i-edit"/></svg></span>
+              <div class="tsk-item__c">
+                <div class="tsk-item__tr"><span class="tsk-item__t">完善个人资料</span><span class="tsk-item__p">+50 积分</span></div>
+                <span class="tsk-item__d">上传头像、昵称与学校，提升匹配率</span>
+              </div>
+              <span class="tsk-st tsk-st--done"><i class="tsk-st__ck"><svg><use href="#i-check-circle"/></svg></i><span>已完成</span></span>
+            </div>
+            <div class="tsk-card tsk-item">
+              <span class="tsk-item__ic"><svg><use href="#i-plus"/></svg></span>
+              <div class="tsk-item__c">
+                <div class="tsk-item__tr"><span class="tsk-item__t">每日签到</span><span class="tsk-item__p">+5 积分</span></div>
+                <span class="tsk-item__d">坚持每日签到，养成好习惯</span>
+              </div>
+              <span class="tsk-st tsk-st--go"><span>领取</span></span>
+            </div>
+            <div class="tsk-card tsk-item">
+              <span class="tsk-item__ic"><svg><use href="#i-chat"/></svg></span>
+              <div class="tsk-item__c">
+                <div class="tsk-item__tr"><span class="tsk-item__t">发布首条动态</span><span class="tsk-item__p">+20 积分</span></div>
+                <span class="tsk-item__d">在圈子分享你的校园生活瞬间</span>
+              </div>
+              <span class="tsk-st tsk-st--go"><span>去完成</span></span>
+            </div>
+            <div class="tsk-card tsk-item">
+              <span class="tsk-item__ic"><svg><use href="#i-star"/></svg></span>
+              <div class="tsk-item__c">
+                <div class="tsk-item__tr"><span class="tsk-item__t">完成校园认证</span><span class="tsk-item__p">+100 积分</span></div>
+                <span class="tsk-item__d">认证后获得专属徽章与更多权益</span>
+              </div>
+              <span class="tsk-st tsk-st--go"><span>去完成</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">全部未完成 · 首进</span><span class="d">0/4 · 0 积分 · 进度条 0 填充</span></figcaption>
+      <div class="phone phone--tsk">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="tsk-head"><span class="tsk-back"><span class="tsk-back__c"><span class="tsk-back__g">‹</span></span></span><span class="tsk-title">任务中心</span><span class="tsk-count">0/4 已完成</span></div>
+        <div class="tsk-body">
+          <div class="tsk-card tsk-sum">
+            <div class="tsk-sum__row"><span class="tsk-sum__l">累计获得 0 积分</span><span class="tsk-sum__p">0%</span></div>
+            <div class="tsk-bar"><div class="tsk-bar__f" style="width:0%"></div></div>
+          </div>
+          <div class="tsk-list">
+            <div class="tsk-card tsk-item">
+              <span class="tsk-item__ic"><svg><use href="#i-edit"/></svg></span>
+              <div class="tsk-item__c">
+                <div class="tsk-item__tr"><span class="tsk-item__t">完善个人资料</span><span class="tsk-item__p">+50 积分</span></div>
+                <span class="tsk-item__d">上传头像、昵称与学校，提升匹配率</span>
+              </div>
+              <span class="tsk-st tsk-st--go"><span>去完成</span></span>
+            </div>
+            <div class="tsk-card tsk-item">
+              <span class="tsk-item__ic"><svg><use href="#i-plus"/></svg></span>
+              <div class="tsk-item__c">
+                <div class="tsk-item__tr"><span class="tsk-item__t">每日签到</span><span class="tsk-item__p">+5 积分</span></div>
+                <span class="tsk-item__d">坚持每日签到，养成好习惯</span>
+              </div>
+              <span class="tsk-st tsk-st--go"><span>去完成</span></span>
+            </div>
+            <div class="tsk-card tsk-item">
+              <span class="tsk-item__ic"><svg><use href="#i-chat"/></svg></span>
+              <div class="tsk-item__c">
+                <div class="tsk-item__tr"><span class="tsk-item__t">发布首条动态</span><span class="tsk-item__p">+20 积分</span></div>
+                <span class="tsk-item__d">在圈子分享你的校园生活瞬间</span>
+              </div>
+              <span class="tsk-st tsk-st--go"><span>去完成</span></span>
+            </div>
+            <div class="tsk-card tsk-item">
+              <span class="tsk-item__ic"><svg><use href="#i-star"/></svg></span>
+              <div class="tsk-item__c">
+                <div class="tsk-item__tr"><span class="tsk-item__t">完成校园认证</span><span class="tsk-item__p">+100 积分</span></div>
+                <span class="tsk-item__d">认证后获得专属徽章与更多权益</span>
+              </div>
+              <span class="tsk-st tsk-st--go"><span>去完成</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页两类件：任务行右列胶囊（三支，判据两条）与行首图标（四枚互不相同）。
+    概览卡的百分比不是评分位，它是本页四行积分的纯函数，画板必须与行内数字自洽。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>任务行状态胶囊 · 三支 + press</h3>
+      <p class="hint">类名判据 <code>!task.claimable &amp;&amp; isTaskClaimed(task) ? --done : --go</code>，文案判据 <code>claimable → 领取 / claimed → 已完成 / 否则 → 去完成</code>。两条不同源 ⇒「领取」走 <code>--go</code> 深绿实底而不是 <code>--done</code> 浅底，这是本页最容易画错的一格。勾选图标只在 <code>--done</code> 支出现。</p>
+      <div class="row">
+        <div class="cell"><span class="tsk-st tsk-st--go"><span>领取</span></span><span class="lab">claimable · 深绿实底白字</span></div>
+        <div class="cell"><span class="tsk-st tsk-st--done"><i class="tsk-st__ck"><svg><use href="#i-check-circle"/></svg></i><span>已完成</span></span><span class="lab">claimed · 浅绿底深字 + 勾</span></div>
+        <div class="cell"><span class="tsk-st tsk-st--go"><span>去完成</span></span><span class="lab">未完成 · 深绿实底白字</span></div>
+        <div class="cell"><span class="tsk-st tsk-st--go" style="opacity:.72"><span>去完成</span></span><span class="lab">press（hover-class）</span></div>
+        <div class="cell"><span class="tsk-st tsk-st--done"><span>已完成</span></span><span class="lab">反例：--done 少勾（退稿）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>行首图标 · 四枚互不相同</h3>
+      <p class="hint">MP-R1-TASKS-007 + R11-L11-D04：SafeImage 的 <code>custom-class</code> 打不到内层 image ⇒ 四枚全零尺寸不可见，改原生 image 直引；签到位原用绿对勾，与已完成态的 check-circle 撞语义，换成不带完成语义的加号。四枚描边恒为 <code>--c-brand</code> #36C99A 实色，格底 <code>--c-bg-brand</code>。</p>
+      <table class="tbl">
+        <tr><th>任务 id</th><th>IMAGE_PATHS</th><th>图形</th><th>不得复用</th></tr>
+        <tr><td>profile</td><td><code>ICONS_EMOJI.EDIT</code></td><td>✎ 铅笔</td><td>—</td></tr>
+        <tr><td>checkin</td><td><code>ICONS_EMOJI.PLUS</code></td><td>＋ 加号</td><td>不得用 ✓（与 :476 已完成态撞语义）</td></tr>
+        <tr><td>first-post</td><td><code>ICONS_TABBAR.CHAT_ACTIVE</code></td><td>💬 对话气泡</td><td>—</td></tr>
+        <tr><td>verify</td><td><code>ICONS_EMOJI.STAR</code></td><td>☆ 五角星</td><td>未知 id 也兜底到这枚</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>积分概览卡 · 三档 + 与行内数字自洽</h3>
+      <p class="hint"><code>progressPercent = round(earnedPoints / totalPoints × 100)</code>，其中 totalPoints 是四行积分之和 = 50+5+20+100 = 175，earnedPoints 只累加「claimable 或 claimed」的行。R12-L11-D02 把百分比从 <code>--c-brand</code>（压白卡 2.10:1）收到 <code>--c-brand-800</code>（6.45:1）。</p>
+      <table class="tbl">
+        <tr><th>屏</th><th>完成行</th><th>earnedPoints</th><th>读数</th></tr>
+        <tr><td>F01 / F03</td><td>0 行</td><td>0</td><td>累计获得 0 积分 · 0% · 条 0 填充</td></tr>
+        <tr><td>F02</td><td>完善资料 50 + 签到 5</td><td>55</td><td>累计获得 55 积分 · 31% · 条 31% 填充</td></tr>
+        <tr><td>满档（未画屏）</td><td>四行全完成</td><td>175</td><td>累计获得 175 积分 · 100% · 条满填充</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>页头返回钮与完成度 · 各恒定</h3>
+      <p class="hint">R14-L10-D27/D28：热区 88rpx=44px 与视觉圆底 64rpx=32px 分离，字形换 52rpx=26px 深色「‹」（原 40rpx 蓝灰 PNG 实测墨色 ≈1.6:1 读不出方向）。完成度 <code>tasksCompletedCount</code> 真值形态是「{done}/{total} 已完成」，斜杠两侧不留空格。</p>
+      <div class="row">
+        <div class="cell"><span class="tsk-back"><span class="tsk-back__c"><span class="tsk-back__g">‹</span></span></span><span class="lab">default</span></div>
+        <div class="cell"><span class="tsk-back"><span class="tsk-back__c" style="opacity:.72"><span class="tsk-back__g">‹</span></span></span><span class="lab">press</span></div>
+        <div class="cell" style="width:200px"><div class="tsk-head" style="position:static;height:32px;padding:0;width:100%"><span class="tsk-title" style="margin-left:0;font-size:var(--fs-lg)">任务中心</span><span class="tsk-count">2/4 已完成</span></div><span class="lab">完成度顶右端（安全距 +104px）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用八档，未引入任何页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">整页底（R11-L11-D05 从渐变归口恒色）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器白<code>--c-bg-container</code></div><div class="sw__u">返回圆底 · 概览卡 · 任务行</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">领取/去完成实底 · 百分比 · 积分值 · 已完成文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">四枚行首图标描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FBF2"></span><div><div class="sw__n">品牌浅底<code>--c-bg-brand</code></div><div class="sw__u">图标格底 · 已完成胶囊底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:linear-gradient(135deg,#36C99A,#55D5A7)"></span><div><div class="sw__n">品牌渐变<code>--c-gradient-brand</code></div><div class="sw__u">进度条填充</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF2F0"></span><div><div class="sw__n">中性 100<code>--c-neutral-100</code></div><div class="sw__u">进度条轨道</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">三级文字<code>--c-text-tertiary</code></div><div class="sw__u">任务说明行</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到五档，任务行内是 15/13/11 三级读法（R14-L10-D30）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/700</span><span class="type__p" style="font-size:28px;font-weight:700">任务中心</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/700</span><span class="type__p" style="font-size:15px;font-weight:700">31%</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600</span><span class="type__p" style="font-size:15px;font-weight:600">完善个人资料</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">去完成 · 领取 · 已完成</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">累计获得 55 积分</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/600</span><span class="type__p" style="font-size:13px;font-weight:600;color:var(--c-brand-800)">+100 积分</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-tertiary)">坚持每日签到，养成好习惯</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-1 2rpx</b><i style="width:1px"></i></div>
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-8 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>12rpx · 骨架行</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 卡片 · 图标格</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>圆底 · 胶囊 · 进度条</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>本页零照片位，四枚行首图标为图形件</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_EMOJI.EDIT / PLUS / STAR · ICONS_TABBAR.CHAT_ACTIVE</b><p>四枚 40rpx=20px 描边图标，格底 72rpx=36px。真值全部是 #36C99A 实色（逐字等于 --c-brand），CHAT_ACTIVE 那枚是 tabbar 选中态的实心绿气泡栅格图。四枚 SVG/PNG 在工程 /static 树内、不属演示素材池，画板按 §4 以同形态 lucide 描边 symbol 复刻，色档与尺寸一致。</p><div class="m">20px · --c-brand · 格底 --c-bg-brand</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_EMOJI.CHECK_CIRCLE</b><p>已完成胶囊内的 28rpx=14px 勾选圈。同上以描边 symbol 复刻，色档取 <code>--c-brand-800</code> 与同胶囊文字同源。</p><div class="m">14px · --c-brand-800</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>积分与百分比不是评分位</b>：§3.3 留空的是合拍度/匹配度/共同点这类需要后端真值的评分。本页 <code>progressPercent</code> 是本页四行积分的纯函数（55/175→31%），任何审阅者都能从画面上的四个数字复算一遍，故照常回填；画板不出现任何「算不出来」的数字。</li>
+      <li><b>加载屏的概览卡有值</b>：概览卡在 <code>v-if</code> 链之外，首拉期 <code>tasks</code> 回落 <code>localTasks</code> ⇒ F01 的「0/4 · 0 积分 · 0%」与 F03 同值。若画板把 F01 的概览卡画成空白骨架，即为与源码不符。</li>
+      <li><b>四行任务名/说明/积分全部逐字取 i18n</b>：<code>profile.taskProfile(Desc)</code> / <code>taskCheckin(Desc)</code> / <code>taskFirstPost(Desc)</code> / <code>taskVerify(Desc)</code> / <code>taskPoints</code>「+{n} 积分」。积分数值 50/5/20/100 取自源码 <code>localTasks</code> 常量，不是画板编的。</li>
+      <li><b>「领取」的反馈是 toast</b>：<code>taskClaimSuccess</code>「领取成功！+{n} 积分」/ <code>taskClaimFailed</code>「领取失败，请重试」由 <code>uni.showToast</code> 渲染，几何非本页 CSS，故不占屏、不进 §01。</li>
+      <li><b>令牌缺口</b>：<code>.task-item__status--go</code> 与 <code>.album-add-btn</code> 等处的 <code>--c-brand-800</code> 深绿实底在 base 已登记，无缺口；本页未遇到需要替身的未登记档。</li>
+      <li><b>本页在 profile-extra 分包，无 tabbar、无原生导航栏</b>——页头是页面自己画的 baseline 行。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 任务中心页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

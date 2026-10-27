@@ -2,10 +2,14 @@
 /**
  * 推荐偏好设置页（功能5：推荐偏好）。
  *
- * 跳转链路（2026-08-07 流程重构，按身份分支）：
- *   学生：profile(1) → campus(2) → recommend-pref(3) → 完成(4)
- *   非学生：profile(1) → recommend-pref(2) → 完成(3)
- * 保存成功后进入 /pages/discover/index（对应「完成」步骤）。
+ * 跳转链路（真实链序；2026-08-08 P0-35 把「时间安排」补回主流程后按身份分支）：
+ *   学生：  profile(1) → campus(2) → schedule(3) → recommend-pref(4) → 完成(5)
+ *   非学生：profile(1) → schedule(2) → recommend-pref(3) → 完成(4)
+ * 入口实测：setup/campus 的 save()/skip() → SCHEDULE；setup/schedule:98 保存 →
+ * RECOMMEND_PREF；本页保存 → /pages/discover/index（对应「完成」步骤）。
+ *
+ * 本页传给 SetupProgress 的是**真实链序**（学生 4 / 非学生 3；2026-10-27 组件契约收敛，
+ * 旧表映射已删），画面读数即上表的 4/5 与 3/4（传值见下方 setupCurrentStep）。
  */
 import { computed, onMounted, ref } from "vue";
 // MP-R7-GUEST-LANDING：游客进引导流程也要被引导到登录/注册（裁定：setup 不豁免），需要 onLoad 入口
@@ -14,7 +18,8 @@ import { useI18n } from "vue-i18n";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
 import BottomActionBar from "../../../components/common/BottomActionBar.vue";
-// 功能5：引导流程进度条（推荐偏好，学生分支步骤 3、非学生分支步骤 2）
+// 功能5：引导流程进度条（推荐偏好，旧表序号：学生分支 3、非学生分支 2；
+// 组件映射后实得真实链序 4/5 与 3/4）
 import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import { request } from "../../../services/http";
 import { useSessionStore } from "../../../stores/session";
@@ -27,10 +32,14 @@ import { guideGuestToLogin } from "../../../guards/guest-access";
 // P2-12：文案全部走 i18n（key 见 locales/zh-CN.ts / en-US.ts 的 recommendPref 命名空间）
 const { t } = useI18n();
 
-/** 当前身份（学生 4 步 / 非学生 3 步），驱动步骤进度条 */
+/** 当前身份（真实链序：学生 5 步 / 非学生 4 步），驱动步骤进度条 */
 const identity = loadIdentity();
-/** 学生分支当前步骤 = 3（/4）；非学生分支当前步骤 = 2（/3） */
-const setupCurrentStep = computed(() => (identity === "non_student" ? 2 : 3));
+/**
+ * 本页向 SetupProgress 传**真实链路位置**（2026-10-27 组件契约收敛，旧表映射已删）：
+ * 学生链 基本信息→校园认证→时间安排→推荐偏好→完成 = 第 4/5 屏；
+ * 非学生 基本信息→时间安排→推荐偏好→完成 = 第 3/4 屏。
+ */
+const setupCurrentStep = computed(() => (identity === "non_student" ? 3 : 4));
 const setupVariant = computed(() => (identity === "non_student" ? "non-student" : "student"));
 
 // ==================== 类型定义 ====================
@@ -177,7 +186,7 @@ onMounted(() => {
 
 <template>
   <AppShell :title="t('recommendPref.title')" :show-tab-bar="false" show-back>
-    <!-- 功能5：引导流程进度条（推荐偏好；学生分支步骤 3/4，非学生分支步骤 2/3） -->
+    <!-- 功能5：引导流程进度条（推荐偏好；传旧表序号 3/2，组件映射后实得学生 4/5、非学生 3/4） -->
     <SetupProgress :current-step="setupCurrentStep" :variant="setupVariant" />
 
     <!-- 加载状态 -->

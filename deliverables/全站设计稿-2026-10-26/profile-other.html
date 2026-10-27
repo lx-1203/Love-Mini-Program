@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 他人主页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 令牌；语义浅底按样板口径以页内色补齐） ===== */
+.op { position: absolute; inset: 0; overflow: hidden; background: var(--c-bg-page); }
+.op__cover { position: relative; height: 250px; }
+.op__coverimg { position: absolute; inset: 0; background-size: cover; background-position: center 28%; }
+.op__coverimg--fb { background: linear-gradient(135deg, var(--c-brand-100), var(--c-brand-300)); }
+.op__scrim { position: absolute; top: 0; left: 0; right: 0; height: 96px;
+  background: linear-gradient(180deg, rgba(15,23,42,.34), rgba(15,23,42,0)); }
+.op__nav { position: absolute; top: 50px; left: 0; width: 100%; padding: 0 12px;
+  display: flex; align-items: center; justify-content: space-between; z-index: 6; }
+.op__navbtn { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.82);
+  box-shadow: var(--s-sm); display: flex; align-items: center; justify-content: center;
+  font-size: 22px; line-height: 1; color: var(--c-text-primary); font-weight: 700; }
+.op__navbtn--dots { font-size: 20px; letter-spacing: 1px; }
+
+.op__scroll { padding: 0 12px 84px; }
+.op__id { position: relative; margin-top: -46px; background: #fff; border-radius: var(--r-card);
+  padding: 14px 14px 14px 14px; box-shadow: 0 8px 24px rgba(0,0,0,.06); }
+.op__idrow { display: flex; gap: 12px; }
+.op__avatar { width: 72px; height: 72px; border-radius: 50%; overflow: hidden; flex: none;
+  border: 3px solid #fff; box-shadow: 0 4px 12px rgba(0,0,0,.12); background: var(--c-brand-50);
+  display: flex; align-items: center; justify-content: center; margin-top: -34px; }
+.op__avatar img { width: 100%; height: 100%; object-fit: cover; }
+.op__avatar--fb { font-size: 26px; font-weight: 700; color: var(--c-brand-700); }
+.op__info { flex: 1; min-width: 0; }
+.op__namerow { display: flex; align-items: center; gap: 6px; }
+.op__name { font-size: var(--fs-5xl); font-weight: 800; color: var(--c-text-primary); }
+.op__g { width: 16px; height: 16px; border-radius: 50%; background: var(--c-romance-50); color: var(--c-romance);
+  font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.op__g--unk { background: var(--c-neutral-100); color: var(--c-text-tertiary); font-size: 9px; width: auto; padding: 0 5px; border-radius: 999px; }
+.op__online { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px;
+  background: var(--c-brand-50); color: var(--c-brand-700); font-size: var(--fs-xs); font-weight: 700; }
+.op__online i { width: 6px; height: 6px; border-radius: 50%; background: var(--c-brand); }
+.op__online--off { background: var(--c-neutral-100); color: var(--c-text-tertiary); }
+.op__online--off i { background: var(--c-text-placeholder); }
+.op__match { margin-top: 4px; font-size: var(--fs-base); font-weight: 700; color: var(--c-brand); }
+.op__meta { margin-top: 5px; font-size: var(--fs-md); color: var(--c-text-tertiary); }
+.op__dist { margin-top: 3px; font-size: var(--fs-md); color: var(--c-text-placeholder); }
+.op__acts { display: flex; flex-direction: column; gap: 8px; flex: none; }
+.op__pill { display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 999px;
+  font-size: var(--fs-md); font-weight: 700; }
+.op__pill svg { width: 14px; height: 14px; }
+.op__pill--like { background: var(--c-romance-50); color: var(--c-romance); }
+.op__pill--hello { background: var(--c-brand-50); color: var(--c-brand-700); }
+
+.op__card { margin-top: 12px; background: #fff; border-radius: var(--r-card); padding: 16px 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.06); }
+.op__bio { display: flex; gap: 8px; align-items: flex-start; }
+.op__bio .q { font-size: 22px; line-height: 1; color: var(--c-text-placeholder); }
+.op__bio .tx { flex: 1; font-size: var(--fs-md); line-height: 1.6; color: var(--c-text-secondary); }
+.op__bio .tx--empty { color: var(--c-text-placeholder); }
+.op__sec-t { display: block; font-size: var(--fs-xl); font-weight: 800; color: #333A37; margin-bottom: 12px; }
+.op__tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.op__tag { padding: 5px 14px; border-radius: 999px; font-size: var(--fs-md); font-weight: 500;
+  background: var(--c-brand-50); color: var(--c-brand-700); }
+.op__tag--warm { background: var(--c-apricot-50); color: var(--c-apricot-500); }
+.op__tag--cool { background: var(--c-neutral-100); color: var(--c-text-secondary); }
+.op__empty { font-size: var(--fs-md); color: var(--c-text-placeholder); }
+
+.op__common-h { display: flex; align-items: baseline; gap: 4px; font-size: var(--fs-xl); font-weight: 800; color: #333A37; margin-bottom: 12px; }
+.op__common-h b { color: var(--c-brand); font-size: var(--fs-2xl); }
+.op__cgrid { display: flex; gap: 6px; }
+.op__ccard { flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; padding: 8px 6px;
+  border-radius: var(--r-lg); background: var(--c-bg-surface); }
+.op__cic { width: 26px; height: 26px; border-radius: 50%; flex: none; background: #fff; box-shadow: var(--s-sm);
+  display: flex; align-items: center; justify-content: center; color: var(--c-brand); }
+.op__cic svg { width: 14px; height: 14px; }
+.op__cic--pink { color: var(--c-romance); }
+.op__ctxt { min-width: 0; flex: 1; }
+.op__ct { display: block; font-size: var(--fs-sm); font-weight: 700; color: var(--c-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op__cs { display: block; font-size: 10px; color: var(--c-text-placeholder); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.op__gal { display: flex; gap: 8px; }
+.op__gcell { flex: 1; min-width: 0; aspect-ratio: 1/1; border-radius: var(--r-lg); overflow: hidden; background: var(--c-border-light); }
+.op__gcell img { width: 100%; height: 100%; object-fit: cover; }
+.op__gcell--empty { display: flex; align-items: center; justify-content: center; background: var(--c-neutral-100); }
+.op__gcell--empty span { font-size: var(--fs-xs); color: var(--c-text-placeholder); }
+
+.op__mhead { display: flex; align-items: center; justify-content: space-between; }
+.op__mhead .dots { font-size: 18px; color: var(--c-text-placeholder); letter-spacing: 1px; }
+.op__post { margin-top: 12px; }
+.op__post-h { display: flex; align-items: center; gap: 8px; }
+.op__post-av { width: 30px; height: 30px; border-radius: 50%; overflow: hidden; background: var(--c-border-light); }
+.op__post-av img { width: 100%; height: 100%; object-fit: cover; }
+.op__post-n { font-size: var(--fs-md); font-weight: 700; color: var(--c-text-primary); }
+.op__post-s { font-size: var(--fs-sm); color: var(--c-text-placeholder); }
+.op__post-c { margin-top: 8px; font-size: var(--fs-md); color: var(--c-text-secondary); line-height: 1.5; }
+.op__post-imgs { display: flex; gap: 6px; margin-top: 8px; }
+.op__post-imgs i { flex: 1; min-width: 0; height: 56px; border-radius: var(--r-md); background-size: cover; background-position: center; }
+.op__post-f { display: flex; gap: 16px; margin-top: 10px; font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.op__post-f span { display: inline-flex; align-items: center; gap: 4px; }
+.op__post-f svg { width: 14px; height: 14px; }
+
+.op__cta { position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; display: flex; gap: 10px;
+  padding: 10px 14px 20px; background: rgba(255,255,255,.96); border-top: 0.5px solid var(--c-border-light);
+  box-shadow: 0 -2px 10px rgba(15,23,42,.04); }
+.op__ctabtn { flex: 1; height: 44px; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+  gap: 6px; font-size: var(--fs-lg); font-weight: 700; }
+.op__ctabtn svg { width: 16px; height: 16px; }
+.op__ctabtn--like { background: var(--c-romance-50); color: var(--c-romance); }
+.op__ctabtn--hello { background: var(--c-brand); color: #fff; box-shadow: var(--s-brand-sm); flex: 1.25; }
+.op__ctabtn--follow { background: #fff; border: 1px solid var(--c-border-default); color: var(--c-brand); }
+.op__ctabtn--on { background: var(--c-brand-50); color: var(--c-brand-700); border-color: var(--c-brand-200); }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.5 8.5 0 0 1-3.8-.9L3 20l1-4.1A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"/></symbol>
+  <symbol id="i-plane" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+  <symbol id="i-cat" viewBox="0 0 24 24"><path d="M12 5c-3 0-5 1.5-5 1.5V9c0 3.5 2 6 5 6s5-2.5 5-6V6.5S15 5 12 5z"/><path d="M7 6.5 5 4v4M17 6.5 19 4v4"/><path d="M10 11h.01M14 11h.01"/><path d="M12 13v1.5"/><path d="M9 20c1-1 5-1 6 0"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8L6.6 19.6l1-6L3.3 9.4l6-.9z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>他人主页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/profile-extra/profile/other</code>。
+     本页由 <code>ProfileShell(mode="public") → PublicProfile</code> 组合 8 个子件渲染
+     （Hero / Identity / Bio / Interest / Common / Gallery / Moment / RelationshipCTA）。
+     本页状态机有 3 屏：完整资料·陌生人态（对齐理想图）、互喜态（底栏主钮切「发消息」，来自
+     <code>RelationshipCTA</code> 的 <code>matched</code> 分支）、资料未完善·空态（各节 <code>v-if</code> 空态兜底）。</p>
+  <div class="cover__meta">
+    <span>路由 <b>profile/other</b></span>
+    <span>分包 <b>profile-extra</b>（无 tabbar）</span>
+    <span>状态 <b>3 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>已有理想效果图 他人显示主页.png</b></span>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 3 屏</h2>
+    <p>陌生人 / 互喜 / 资料未完善</p></div>
+  <div class="sec__sub">页头为封面全出血 + 白色圆底返回 ‹ 与右上 ···（<code>other-header</code>，非原生导航栏）。
+    身份卡浮起叠在封面下沿。分区自上而下：身份 → 简介 → 兴趣标签 → 共同点 → 生活瞬间 → 最近动态，
+    底部为固定动作条（喜欢 / 打招呼 / 关注）。<b>匹配度 80% 是后端 <code>relation.matchScore</code> 真字段，照画</b>
+    （与首页 92% 演示值不同性质）。帧即视口，超出 812px 的最近动态尾部按视口裁切。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">完整资料 · 陌生人态</span><span class="d">匹配度 80% 真字段 · ↓裁切至最近动态</span></figcaption>
+      <div class="phone">
+        <div class="op">
+          <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="op__cover">
+            <div class="op__coverimg" style="background-image:url('assets/demo/xiaoman-photo-2.png')"></div>
+            <div class="op__scrim"></div>
+            <div class="op__nav"><span class="op__navbtn">‹</span><span class="op__navbtn op__navbtn--dots">···</span></div>
+          </div>
+          <div class="op__scroll">
+            <div class="op__id">
+              <div class="op__idrow">
+                <div class="op__avatar"><img src="assets/demo/xiaoman-avatar.png" alt=""></div>
+                <div class="op__info">
+                  <div class="op__namerow"><span class="op__name">星野</span><span class="op__g">♀</span>
+                    <span class="op__online"><i></i>在线</span></div>
+                  <div class="op__match">匹配度 80%</div>
+                  <div class="op__meta">21岁 · 北京大学 · 北京</div>
+                  <div class="op__dist">2.3km</div>
+                </div>
+                <div class="op__acts">
+                  <span class="op__pill op__pill--like"><svg class="ico--fill"><use href="#i-heart"/></svg>喜欢</span>
+                  <span class="op__pill op__pill--hello"><svg><use href="#i-chat"/></svg>打招呼</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="op__card">
+              <div class="op__bio"><span class="q">❝</span><span class="tx">喜欢摄影和拍照，也喜欢深夜的聊天<br>希望找到一起探索世界的你🌏</span></div>
+            </div>
+
+            <div class="op__card">
+              <span class="op__sec-t">兴趣标签</span>
+              <div class="op__tags">
+                <span class="op__tag">旅行</span><span class="op__tag">摄影</span><span class="op__tag">音乐</span>
+                <span class="op__tag">电影</span><span class="op__tag op__tag--warm">美食</span><span class="op__tag op__tag--cool">猫咪</span>
+              </div>
+            </div>
+
+            <div class="op__card">
+              <div class="op__common-h">我们有 <b>3</b> 个共同点</div>
+              <div class="op__cgrid">
+                <div class="op__ccard"><span class="op__cic"><svg><use href="#i-plane"/></svg></span><span class="op__ctxt"><span class="op__ct">都喜欢旅行</span><span class="op__cs">去过 12 个国家</span></span></div>
+                <div class="op__ccard"><span class="op__cic"><svg><use href="#i-music"/></svg></span><span class="op__ctxt"><span class="op__ct">都喜欢音乐</span><span class="op__cs">听网易云音乐</span></span></div>
+                <div class="op__ccard"><span class="op__cic op__cic--pink"><svg><use href="#i-cat"/></svg></span><span class="op__ctxt"><span class="op__ct">都喜欢猫猫</span><span class="op__cs">家里有 2 只猫</span></span></div>
+              </div>
+            </div>
+
+            <div class="op__card">
+              <span class="op__sec-t">生活瞬间</span>
+              <div class="op__gal">
+                <div class="op__gcell"><img src="assets/demo/xiaoman-photo-1.png" alt=""></div>
+                <div class="op__gcell"><img src="assets/demo/xiaoman-photo-2.png" alt=""></div>
+                <div class="op__gcell"><img src="assets/demo/xiaoman-photo-3.png" alt=""></div>
+                <div class="op__gcell"><img src="assets/demo/xiaoman-photo-4.png" alt=""></div>
+              </div>
+            </div>
+
+            <div class="op__card">
+              <div class="op__mhead"><span class="op__sec-t" style="margin:0">最近动态</span><span class="dots">···</span></div>
+              <div class="op__post">
+                <div class="op__post-h">
+                  <span class="op__post-av"><img src="assets/demo/xiaoman-avatar.png" alt=""></span>
+                  <span><span class="op__post-n">星野 ♀</span><br><span class="op__post-s">3天前 · 北京</span></span>
+                </div>
+                <div class="op__post-c">周末和朋友去了海边，日落超美～</div>
+                <div class="op__post-imgs">
+                  <i style="background-image:url('assets/demo/xiaoman-photo-3.png')"></i>
+                  <i style="background-image:url('assets/demo/xiaoman-photo-1.png')"></i>
+                  <i style="background-image:url('assets/demo/xiaoman-photo-4.png')"></i>
+                </div>
+                <div class="op__post-f"><span><svg class="ico--fill"><use href="#i-heart"/></svg>128</span><span><svg><use href="#i-msg"/></svg>23</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="op__cta">
+            <span class="op__ctabtn op__ctabtn--like"><svg class="ico--fill"><use href="#i-heart"/></svg>喜欢</span>
+            <span class="op__ctabtn op__ctabtn--hello"><svg><use href="#i-chat"/></svg>打招呼</span>
+            <span class="op__ctabtn op__ctabtn--follow"><svg><use href="#i-star"/></svg>关注</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">互喜态 · 底栏主钮切「发消息」</span><span class="d">matched=true · following=true</span></figcaption>
+      <div class="phone">
+        <div class="op">
+          <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="op__cover">
+            <div class="op__coverimg" style="background-image:url('assets/demo/xiaoman-photo-2.png')"></div>
+            <div class="op__scrim"></div>
+            <div class="op__nav"><span class="op__navbtn">‹</span><span class="op__navbtn op__navbtn--dots">···</span></div>
+          </div>
+          <div class="op__scroll">
+            <div class="op__id">
+              <div class="op__idrow">
+                <div class="op__avatar"><img src="assets/demo/xiaoman-avatar.png" alt=""></div>
+                <div class="op__info">
+                  <div class="op__namerow"><span class="op__name">星野</span><span class="op__g">♀</span>
+                    <span class="op__online"><i></i>在线</span></div>
+                  <div class="op__match">匹配度 80%</div>
+                  <div class="op__meta">21岁 · 北京大学 · 北京</div>
+                  <div class="op__dist">2.3km</div>
+                </div>
+                <div class="op__acts">
+                  <span class="op__pill op__pill--like"><svg class="ico--fill"><use href="#i-heart"/></svg>喜欢</span>
+                  <span class="op__pill op__pill--hello"><svg><use href="#i-chat"/></svg>打招呼</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="op__card">
+              <div class="op__bio"><span class="q">❝</span><span class="tx">喜欢摄影和拍照，也喜欢深夜的聊天<br>希望找到一起探索世界的你🌏</span></div>
+            </div>
+
+            <div class="op__card">
+              <span class="op__sec-t">兴趣标签</span>
+              <div class="op__tags">
+                <span class="op__tag">旅行</span><span class="op__tag">摄影</span><span class="op__tag">音乐</span>
+                <span class="op__tag">电影</span><span class="op__tag op__tag--warm">美食</span><span class="op__tag op__tag--cool">猫咪</span>
+              </div>
+            </div>
+
+            <div class="op__card">
+              <div class="op__common-h">我们有 <b>3</b> 个共同点</div>
+              <div class="op__cgrid">
+                <div class="op__ccard"><span class="op__cic"><svg><use href="#i-plane"/></svg></span><span class="op__ctxt"><span class="op__ct">都喜欢旅行</span><span class="op__cs">去过 12 个国家</span></span></div>
+                <div class="op__ccard"><span class="op__cic"><svg><use href="#i-music"/></svg></span><span class="op__ctxt"><span class="op__ct">都喜欢音乐</span><span class="op__cs">听网易云音乐</span></span></div>
+                <div class="op__ccard"><span class="op__cic op__cic--pink"><svg><use href="#i-cat"/></svg></span><span class="op__ctxt"><span class="op__ct">都喜欢猫猫</span><span class="op__cs">家里有 2 只猫</span></span></div>
+              </div>
+            </div>
+
+            <div class="op__card">
+              <span class="op__sec-t">生活瞬间</span>
+              <div class="op__gal">
+                <div class="op__gcell"><img src="assets/demo/xiaoman-photo-1.png" alt=""></div>
+                <div class="op__gcell"><img src="assets/demo/xiaoman-photo-2.png" alt=""></div>
+                <div class="op__gcell"><img src="assets/demo/xiaoman-photo-3.png" alt=""></div>
+                <div class="op__gcell"><img src="assets/demo/xiaoman-photo-4.png" alt=""></div>
+              </div>
+            </div>
+
+            <div class="op__card">
+              <div class="op__mhead"><span class="op__sec-t" style="margin:0">最近动态</span><span class="dots">···</span></div>
+              <div class="op__post">
+                <div class="op__post-h">
+                  <span class="op__post-av"><img src="assets/demo/xiaoman-avatar.png" alt=""></span>
+                  <span><span class="op__post-n">星野 ♀</span><br><span class="op__post-s">3天前 · 北京</span></span>
+                </div>
+                <div class="op__post-c">周末和朋友去了海边，日落超美～</div>
+                <div class="op__post-imgs">
+                  <i style="background-image:url('assets/demo/xiaoman-photo-3.png')"></i>
+                  <i style="background-image:url('assets/demo/xiaoman-photo-1.png')"></i>
+                  <i style="background-image:url('assets/demo/xiaoman-photo-4.png')"></i>
+                </div>
+                <div class="op__post-f"><span><svg class="ico--fill"><use href="#i-heart"/></svg>128</span><span><svg><use href="#i-msg"/></svg>23</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="op__cta">
+            <span class="op__ctabtn op__ctabtn--like"><svg class="ico--fill"><use href="#i-heart"/></svg>已喜欢</span>
+            <span class="op__ctabtn op__ctabtn--hello"><svg><use href="#i-chat"/></svg>发消息</span>
+            <span class="op__ctabtn op__ctabtn--follow op__ctabtn--on"><svg><use href="#i-star"/></svg>已关注</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">资料未完善 · 各节空态</span><span class="d">无匹配度 · 恒渲染兜底</span></figcaption>
+      <div class="phone">
+        <div class="op">
+          <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="op__cover">
+            <div class="op__coverimg op__coverimg--fb"></div>
+            <div class="op__scrim"></div>
+            <div class="op__nav"><span class="op__navbtn">‹</span><span class="op__navbtn op__navbtn--dots">···</span></div>
+          </div>
+          <div class="op__scroll">
+            <div class="op__id">
+              <div class="op__idrow">
+                <div class="op__avatar op__avatar--fb">星</div>
+                <div class="op__info">
+                  <div class="op__namerow"><span class="op__name">星野</span><span class="op__g op__g--unk">未填写</span>
+                    <span class="op__online op__online--off"><i></i>未知</span></div>
+                  <div class="op__meta">资料暂未完善</div>
+                  <div class="op__dist">距离待更新</div>
+                </div>
+                <div class="op__acts">
+                  <span class="op__pill op__pill--like"><svg class="ico--fill"><use href="#i-heart"/></svg>喜欢</span>
+                  <span class="op__pill op__pill--hello"><svg><use href="#i-chat"/></svg>打招呼</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="op__card">
+              <div class="op__bio"><span class="q">❝</span><span class="tx tx--empty">TA 还没有填写简介</span></div>
+            </div>
+
+            <div class="op__card">
+              <span class="op__sec-t">兴趣标签</span>
+              <span class="op__empty">TA 还没有填写兴趣标签</span>
+            </div>
+
+            <div class="op__card">
+              <div class="op__common-h">我们还没有共同点</div>
+              <span class="op__empty">还没有匹配到的共同点，先打个招呼聊聊看</span>
+            </div>
+
+            <div class="op__card">
+              <span class="op__sec-t">生活瞬间</span>
+              <div class="op__gal">
+                <div class="op__gcell op__gcell--empty"><span>暂无照片</span></div>
+                <div class="op__gcell op__gcell--empty"><span>暂无照片</span></div>
+                <div class="op__gcell op__gcell--empty"><span>暂无照片</span></div>
+                <div class="op__gcell op__gcell--empty"><span>暂无照片</span></div>
+              </div>
+            </div>
+
+            <div class="op__card">
+              <div class="op__mhead"><span class="op__sec-t" style="margin:0">最近动态</span></div>
+              <div class="op__post" style="margin-top:12px"><span class="op__empty">TA 还没有发布过动态</span></div>
+            </div>
+          </div>
+
+          <div class="op__cta">
+            <span class="op__ctabtn op__ctabtn--like"><svg class="ico--fill"><use href="#i-heart"/></svg>喜欢</span>
+            <span class="op__ctabtn op__ctabtn--hello"><svg><use href="#i-chat"/></svg>打招呼</span>
+            <span class="op__ctabtn op__ctabtn--follow"><svg><use href="#i-star"/></svg>关注</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>底栏状态机 + 在线三态 + 各节空态兜底</p></div>
+  <div class="sec__sub">本页唯一有内容开关的交互件是底部动作条 <code>RelationshipCTA</code>（按 liked/matched/following/blocked 切文案）；
+    在线胶囊按后端真值三态恒渲染；简介 / 兴趣 / 共同点 / 生活瞬间 / 最近动态五节恒定渲染标题 + 空态兜底（R2b-L06-D18，撑出真实页面高度）。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>底部动作条 · 状态机</h3>
+      <p class="hint">来自 <code>RelationshipCTA.vue</code>：likeLabel / helloLabel / followLabel 三枚 computed。</p>
+      <table class="tbl">
+        <tr><th>条件</th><th>左钮</th><th>中钮</th><th>右钮</th></tr>
+        <tr><td>陌生人</td><td>喜欢</td><td>打招呼</td><td>关注</td></tr>
+        <tr><td><code>liked</code></td><td>已喜欢</td><td>打招呼</td><td>关注</td></tr>
+        <tr><td><code>matched</code></td><td>已喜欢</td><td><b>发消息</b>（绿实心）</td><td>关注</td></tr>
+        <tr><td><code>following</code></td><td>喜欢</td><td>打招呼</td><td>已关注（浅绿底）</td></tr>
+        <tr><td><code>blocked</code></td><td>已屏蔽（禁用）</td><td>打招呼</td><td>关注</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>在线胶囊 · 三态恒渲染</h3>
+      <p class="hint">R11-L10-D01：<code>online</code> true=在线 / false=离线 / 无值=未知，三态都渲染一枚胶囊，不再用「在线」兜底编造、也不整块消失。</p>
+      <div class="row">
+        <div class="cell"><span class="op__online"><i></i>在线</span><span class="lab">true · 绿</span></div>
+        <div class="cell"><span class="op__online op__online--off"><i></i>离线</span><span class="lab">false · 灰</span></div>
+        <div class="cell"><span class="op__online op__online--off"><i></i>未知</span><span class="lab">无值 · 灰</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>匹配度行 · 真字段</h3>
+      <p class="hint"><code>PublicIdentity.vue:69</code> <code>v-if="profile.relation.matchScore"</code>。
+        后端 <code>buildMatchScore</code> 真字段（登记表第 10 行点名），<b>非演示伪造值</b>，有值即照画「匹配度 80%」；
+        无值（0/未就绪）时该行不渲染（见 F03）。与首页 92% 合拍度徽章（演示值，须留空）不同性质。</p>
+      <div class="row">
+        <div class="cell"><span class="op__match" style="margin:0">匹配度 80%</span><span class="lab">matchScore 有值</span></div>
+        <div class="cell"><span class="op__empty">—（该行不渲染）</span><span class="lab">matchScore 为 0</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>五节空态兜底 · 恒渲染</h3>
+      <p class="hint">R2b-L06-D18：无数据时保留标题 + 明确空态文案，不让整节从文档流消失。</p>
+      <table class="tbl">
+        <tr><th>节</th><th>有数据</th><th>空态文案</th></tr>
+        <tr><td>简介</td><td>bio 正文</td><td>TA 还没有填写简介</td></tr>
+        <tr><td>兴趣标签</td><td>标签胶囊流</td><td>TA 还没有填写兴趣标签</td></tr>
+        <tr><td>共同点</td><td>N 张卡</td><td>还没有匹配到的共同点，先打个招呼聊聊看</td></tr>
+        <tr><td>生活瞬间</td><td>4 图</td><td>暂无照片（灰骨架格）</td></tr>
+        <tr><td>最近动态</td><td>帖子卡</td><td>TA 还没有发布过动态</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">语义浅底（在线/喜欢/关注胶囊）按样板口径以 base 令牌补齐。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">匹配度 · 关注文字 · 共同点图标 · 打招呼主钮</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1F8D6A"></span><div><div class="sw__n">主色 700<code>--c-brand-700</code></div><div class="sw__u">在线胶囊文字 · 打招呼胶囊文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3;border:1px solid #DDE3E0"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">在线/打招呼胶囊底 · 兴趣标签底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫<code>--c-romance</code></div><div class="sw__u">喜欢文字 · 性别符 · 猫图标</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFECEF;border:1px solid #DDE3E0"></span><div><div class="sw__n">浪漫 50<code>--c-romance-50</code></div><div class="sw__u">喜欢胶囊底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">白卡之下的浅灰绿底</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到六档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/800</span><span class="type__p" style="font-size:22px;font-weight:800">星野</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/800</span><span class="type__p" style="font-size:15px;font-weight:800">兴趣标签 · 生活瞬间</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/800</span><span class="type__p" style="font-size:16px;font-weight:800">我们有 <span style="color:var(--c-brand)">3</span> 个共同点</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;color:var(--c-text-secondary)">21岁 · 北京大学 · 北京</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/700</span><span class="type__p" style="font-size:12px;font-weight:700;color:var(--c-brand)">匹配度 80%</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/700</span><span class="type__p" style="font-size:11px;font-weight:700">都喜欢旅行</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-4 8rpx</b><i style="width:4px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-9 48rpx</b><i style="width:24px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>帖子图</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>共同点卡 · 相册格</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 各白卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>胶囊 · 底栏钮</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 &amp; 与实况的已知差异</h2><p>头像 / 生活瞬间走工程既有演示素材</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/xiaoman-photo-2.png" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>封面 · xiaoman-photo-2</b><p><code>profile.media.cover</code> 全出血封面，取 <code>assets/demo/</code> 真素材（§8 禁灰块）。F03 无封面时回退品牌渐变。</p><div class="m">高 250px · aspectFill</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-avatar.png" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>头像 / 帖子头像 · xiaoman-avatar</b><p>身份卡头像（浮起叠封面）与最近动态作者头像同一素材。</p><div class="m">72px / 30px · 圆 50%</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-photo-1.png" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>生活瞬间 · xiaoman-photo-1..4</b><p>「生活瞬间」固定 4 格横排，帖子配图取同池素材（<code>PublicGallery</code> CELLS=4）。F03 无图时回灰骨架「暂无照片」。</p><div class="m">4 格 · 1:1</div></div></div>
+  </div>
+  <div class="note">
+    <b>与理想图 / 源码的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>匹配度 80%（登记表第 10 行点名）：</b>该值是后端 <code>buildMatchScore</code> 产出的 <code>relation.matchScore</code> 真字段，
+        <b>可照画</b>——与首页 92% 合拍度徽章（演示值、真值位须留空）不同性质，故本页不为其留空。无值时该行不渲染（F03）。</li>
+      <li>理想图第三行为「2.3km · 在线」，源码 R2b-L06-D12 已把「在线」从距离行撤除（只在姓名行渲染一次），
+        第三行只留「2.3km」；在线状态在姓名行以胶囊呈现。按源码画。</li>
+      <li>「我们有 3 个共同点」的 3 为 <code>commonInterests.length</code> 数据驱动，副标题（去过 12 个国家 / 听网易云音乐 / 家里有 2 只猫）
+        来自 <code>relation.commonInterests</code> 的「标签/副标题」约定（真字段，非伪造分数），随演示数据；<b>本页共同点非真值位，照图渲染</b>。</li>
+      <li>生活瞬间 / 最近动态（含赞 128 / 评 23 计数）随演示帖数据渲染，属演示计数，非真值。</li>
+      <li>本页在 profile-extra 分包，无原生导航栏（页头是封面 + 自绘 ‹/··· 圆底钮）、无 tabbar——画板若出现 tabbar 即为错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 他人主页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（对齐 素材/理想效果图 语料 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

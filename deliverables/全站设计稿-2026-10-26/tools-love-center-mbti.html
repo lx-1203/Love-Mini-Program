@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 恋爱中心·MBTI 人格测试 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，不写私有色值） ===== */
+/* .content-page：100vh + overflow hidden，滚动锁在内部 scroll-view（R6-L10-D13） */
+.pg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--c-bg-page);
+  display: flex; flex-direction: column; overflow: hidden; }
+/* .content-header：brand-500→brand-400 亮绿渐变带（mbti.vue:295），标题深墨 --c-brand-900 */
+.ch { display: flex; align-items: center; gap: 6px; padding: 52px 8px 6px; flex: none;
+  background: linear-gradient(135deg, var(--c-brand-500) 0%, var(--c-brand-400) 100%); }
+.ch__back { width: 44px; height: 44px; border-radius: 50%; background: var(--c-overlay-bg-light);
+  display: flex; align-items: center; justify-content: center; flex: none; }
+.ch__back svg { width: 20px; height: 20px; color: var(--c-brand-900); }
+.ch__t { font-size: var(--fs-5xl); font-weight: 700; color: var(--c-brand-900); }
+.scroll { flex: 1; height: 0; overflow: hidden; }
+.sec-i { margin: 10px 16px; }
+.sec-i__t { display: block; font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); margin-bottom: 1px; }
+.sec-i__d { display: block; font-size: var(--fs-base); color: var(--c-text-secondary); line-height: 1.6; margin-bottom: 8px; }
+
+/* 4 维度 chip */
+.dims { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.dim { display: flex; align-items: center; gap: 3px; background: var(--c-bg-brand); padding: 3px 6px; border-radius: var(--r-full); }
+.dim__c { font-size: var(--fs-base); font-weight: 700; color: var(--c-brand-700); }
+.dim__l { font-size: var(--fs-xs); color: var(--c-text-secondary); }
+
+/* 16 型速览网格：4 列等宽 */
+.tg { display: flex; flex-wrap: wrap; gap: 4px; }
+.tc { width: calc(25% - 3px); box-sizing: border-box; display: flex; flex-direction: column; align-items: center;
+  gap: 2px; padding: 6px 0; border-radius: var(--card-radius); background: var(--c-bg-container); box-shadow: var(--card-shadow); }
+.tc__c { font-size: var(--fs-base); font-weight: 700; color: var(--c-brand-700); }
+.tc__n { font-size: var(--fs-xs); color: var(--c-text-secondary); text-align: center; line-height: 1.3; }
+
+/* 题目卡 */
+.quiz { display: flex; flex-direction: column; gap: 6px; }
+.q { padding: 8px; border-radius: var(--card-radius); background: var(--c-bg-container); box-shadow: var(--card-shadow); }
+.q__t { display: block; font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); margin-bottom: 6px; }
+.q__opts { display: flex; flex-direction: column; gap: 4px; }
+.opt { min-height: 44px; box-sizing: border-box; display: flex; align-items: center; padding: 6px 8px;
+  border-radius: var(--r-lg); border: 1px solid var(--c-border-light); background: var(--c-bg-surface); }
+.opt span { font-size: var(--fs-xl); color: var(--c-text-primary); }
+.opt--sel { border-color: var(--c-brand-700); background: var(--c-bg-brand); }
+.opt--sel span { color: var(--c-brand-700); font-weight: 600; }
+.opt--pressed { opacity: 0.72; transform: scale(0.985); }
+.submit { display: flex; align-items: center; justify-content: center; height: 44px; border-radius: var(--r-full);
+  background: var(--c-brand-800); margin-top: 8px; }
+.submit span { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-inverse); }
+.submit--dis { background: var(--c-status-disabled); }
+
+/* web-view 态：全屏接管（无页头、无返回键，唯一系统件是胶囊） */
+.web { position: absolute; inset: 0; background: var(--c-bg-container); }
+
+/* 结果弹层（mbti.vue:529-678） */
+.mask { position: absolute; inset: 0; z-index: 9; background: var(--c-overlay-strong);
+  display: flex; align-items: center; justify-content: center; padding: 20px; }
+.panel { width: 100%; max-width: 320px; background: var(--c-bg-container); border-radius: var(--r-xl);
+  padding: 12px 16px; display: flex; flex-direction: column; align-items: center; box-shadow: var(--s-modal); }
+.panel__t { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); margin-bottom: 8px; }
+.panel__type { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-bottom: 8px; }
+.panel__code { font-size: 36px; font-weight: 800; letter-spacing: 0.06em; line-height: 1.1;
+  background: var(--c-gradient-brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.panel__name { font-size: var(--fs-base); font-weight: 600; color: var(--c-brand-700); }
+.panel__tip { font-size: var(--fs-base); font-weight: 600; color: var(--c-text-secondary); align-self: flex-start; margin-bottom: 4px; }
+.adv { width: 100%; display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.adv__i { display: flex; align-items: flex-start; gap: 4px; padding: 4px 6px; border-radius: var(--r-md); background: var(--c-bg-surface); }
+.adv__d { width: 6px; height: 6px; border-radius: 50%; background: var(--c-brand-500); margin-top: 6px; flex: none; }
+.adv__t { font-size: var(--fs-base); color: var(--c-text-primary); line-height: 1.6; }
+.acts { width: 100%; display: flex; gap: 6px; }
+.abtn { flex: 1; display: flex; align-items: center; justify-content: center; height: 40px; border-radius: var(--r-full); }
+.abtn span { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); }
+.abtn--ghost { background: var(--c-bg-surface); border: 0.5px solid var(--c-overlay-border-light); }
+.abtn--primary { background: var(--c-gradient-brand); }
+.abtn--primary span { color: var(--c-text-inverse); }
+
+/* toast（uni.showToast icon:"none"） */
+.toast { position: absolute; left: 50%; bottom: 180px; transform: translateX(-50%); z-index: 9;
+  background: var(--c-overlay-strong); color: var(--c-text-inverse); font-size: var(--fs-md);
+  padding: 12px 18px; border-radius: var(--r-lg); max-width: 260px; text-align: center; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 6.5 9 12l5.5 5.5"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>恋爱中心 · MBTI 人格测试 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/tools/love-center/mbti</code>。
+     由恋爱中心 hub「恋爱测试」区的「MBTI 人格测试」进入（<code>ROUTES.LOVE_CENTER.MBTI</code>）。
+     本页有两条内容源：后台配了 H5 地址时整页交给 <code>&lt;web-view&gt;</code>；没配时落本地示例内容
+     （16 型速览 + 4 题简化测试 + 结果弹层）。<b>结果只有类型代码，没有任何分数或维度百分比</b>——
+     这个结论是查过真值源后写死的，见 §04 第一条。</p>
+  <div class="cover__meta">
+    <span>路由 <b>tools/love-center/mbti</b></span>
+    <span>分包 <b>tools</b>（无 tabbar）</span>
+    <span>状态 <b>5 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 5 屏</h2>
+    <p>未作答 / 已作答 / 校验未过 / 结果弹层 / web-view 接管</p></div>
+  <div class="sec__sub">本页状态机有 <b>5 态</b>，条件全部来自源码：
+    ① <code>&lt;web-view v-if="webUrl"&gt;</code>（:141）与 <code>&lt;template v-else&gt;</code> 本地内容（:144）互斥，
+    <code>webUrl = contentPageUrls.mbtiUrl ?? ""</code>（:36），而该配置项现值恒为空（R4-00243 把硬编码外链改成空默认）；
+    ② 本地内容内 <code>answers[index] === 0 | 1</code> 决定单选项的 <code>--selected</code> 档（:191、:203）；
+    ③ <code>submitTest()</code> 的 <code>unanswered</code> 分支弹 toast「请完成所有题目」（:90-94）；
+    ④ <code>v-if="showResult"</code> 结果弹层（:228）。四态本地 + 一态外部，共 5 屏。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">本地内容 · 未作答（默认档）</span><span class="d">滚动锁在 scroll-view · ↓裁切至第 3 题</span></figcaption>
+      <div class="phone">
+        <div class="pg">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="ch"><span class="ch__back"><svg><use href="#i-back"/></svg></span><span class="ch__t">MBTI 人格测试</span></div>
+          <div class="scroll">
+            <div class="sec-i">
+              <span class="sec-i__t">16 型人格速览</span>
+              <span class="sec-i__d">了解四种性格维度，认识自己和他人。</span>
+              <div class="dims">
+                <div class="dim"><span class="dim__c">E/I</span><span class="dim__l">外向/内向</span></div>
+                <div class="dim"><span class="dim__c">S/N</span><span class="dim__l">实感/直觉</span></div>
+                <div class="dim"><span class="dim__c">T/F</span><span class="dim__l">思考/情感</span></div>
+                <div class="dim"><span class="dim__c">J/P</span><span class="dim__l">判断/知觉</span></div>
+              </div>
+              <div class="tg">
+                <div class="tc"><span class="tc__c">ENFP</span><span class="tc__n">竞选者</span></div>
+                <div class="tc"><span class="tc__c">ENTP</span><span class="tc__n">辩论家</span></div>
+                <div class="tc"><span class="tc__c">ENTJ</span><span class="tc__n">指挥官</span></div>
+                <div class="tc"><span class="tc__c">ENFJ</span><span class="tc__n">主人公</span></div>
+                <div class="tc"><span class="tc__c">INFP</span><span class="tc__n">调停者</span></div>
+                <div class="tc"><span class="tc__c">INTP</span><span class="tc__n">逻辑学家</span></div>
+                <div class="tc"><span class="tc__c">INTJ</span><span class="tc__n">建筑师</span></div>
+                <div class="tc"><span class="tc__c">INFJ</span><span class="tc__n">提倡者</span></div>
+                <div class="tc"><span class="tc__c">ESFP</span><span class="tc__n">表演者</span></div>
+                <div class="tc"><span class="tc__c">ESTP</span><span class="tc__n">冒险家</span></div>
+                <div class="tc"><span class="tc__c">ESFJ</span><span class="tc__n">执政官</span></div>
+                <div class="tc"><span class="tc__c">ESTJ</span><span class="tc__n">总经理</span></div>
+                <div class="tc"><span class="tc__c">ISFP</span><span class="tc__n">探险家</span></div>
+                <div class="tc"><span class="tc__c">ISTP</span><span class="tc__n">鉴赏家</span></div>
+                <div class="tc"><span class="tc__c">ISFJ</span><span class="tc__n">守卫者</span></div>
+                <div class="tc"><span class="tc__c">ISTJ</span><span class="tc__n">物流师</span></div>
+              </div>
+            </div>
+            <div class="sec-i">
+              <span class="sec-i__t">简化测试（4 题）</span>
+              <div class="quiz">
+                <div class="q"><span class="q__t">周末更愿意怎么过？</span>
+                  <div class="q__opts"><div class="opt"><span>约朋友出去玩</span></div><div class="opt"><span>一个人安静休息</span></div></div>
+                </div>
+                <div class="q"><span class="q__t">你更关注什么？</span>
+                  <div class="q__opts"><div class="opt"><span>具体的事实细节</span></div><div class="opt"><span>未来的可能性</span></div></div>
+                </div>
+                <div class="q"><span class="q__t">做决定时更依赖？</span>
+                  <div class="q__opts"><div class="opt"><span>逻辑分析</span></div><div class="opt"><span>内心感受</span></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">本地内容 · 四题已作答</span><span class="d">滚至测试区 · 提交钮为可点态</span></figcaption>
+      <div class="phone">
+        <div class="pg">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="ch"><span class="ch__back"><svg><use href="#i-back"/></svg></span><span class="ch__t">MBTI 人格测试</span></div>
+          <div class="scroll">
+            <div class="sec-i">
+              <span class="sec-i__t">简化测试（4 题）</span>
+              <div class="quiz">
+                <div class="q"><span class="q__t">周末更愿意怎么过？</span>
+                  <div class="q__opts"><div class="opt opt--sel"><span>约朋友出去玩</span></div><div class="opt"><span>一个人安静休息</span></div></div>
+                </div>
+                <div class="q"><span class="q__t">你更关注什么？</span>
+                  <div class="q__opts"><div class="opt"><span>具体的事实细节</span></div><div class="opt opt--sel"><span>未来的可能性</span></div></div>
+                </div>
+                <div class="q"><span class="q__t">做决定时更依赖？</span>
+                  <div class="q__opts"><div class="opt"><span>逻辑分析</span></div><div class="opt opt--sel"><span>内心感受</span></div></div>
+                </div>
+                <div class="q"><span class="q__t">更喜欢哪种生活方式？</span>
+                  <div class="q__opts"><div class="opt opt--sel"><span>提前规划</span></div><div class="opt"><span>随性灵活</span></div></div>
+                </div>
+              </div>
+              <div class="submit"><span>提交并查看结果</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">校验未过 · 漏答提交</span><span class="d">toast 档 · 不进入结果态</span></figcaption>
+      <div class="phone">
+        <div class="pg">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="ch"><span class="ch__back"><svg><use href="#i-back"/></svg></span><span class="ch__t">MBTI 人格测试</span></div>
+          <div class="scroll">
+            <div class="sec-i">
+              <span class="sec-i__t">简化测试（4 题）</span>
+              <div class="quiz">
+                <div class="q"><span class="q__t">周末更愿意怎么过？</span>
+                  <div class="q__opts"><div class="opt opt--sel"><span>约朋友出去玩</span></div><div class="opt"><span>一个人安静休息</span></div></div>
+                </div>
+                <div class="q"><span class="q__t">你更关注什么？</span>
+                  <div class="q__opts"><div class="opt"><span>具体的事实细节</span></div><div class="opt"><span>未来的可能性</span></div></div>
+                </div>
+                <div class="q"><span class="q__t">做决定时更依赖？</span>
+                  <div class="q__opts"><div class="opt"><span>逻辑分析</span></div><div class="opt"><span>内心感受</span></div></div>
+                </div>
+                <div class="q"><span class="q__t">更喜欢哪种生活方式？</span>
+                  <div class="q__opts"><div class="opt"><span>提前规划</span></div><div class="opt"><span>随性灵活</span></div></div>
+                </div>
+              </div>
+              <div class="submit"><span>提交并查看结果</span></div>
+            </div>
+          </div>
+          <div class="toast">请完成所有题目</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">结果弹层 · 类型 ENFP</span><span class="d">读数止于类型 + 4 条建议 · 无分数</span></figcaption>
+      <div class="phone">
+        <div class="pg">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="ch"><span class="ch__back"><svg><use href="#i-back"/></svg></span><span class="ch__t">MBTI 人格测试</span></div>
+          <div class="scroll">
+            <div class="sec-i">
+              <span class="sec-i__t">简化测试（4 题）</span>
+              <div class="quiz">
+                <div class="q"><span class="q__t">周末更愿意怎么过？</span>
+                  <div class="q__opts"><div class="opt opt--sel"><span>约朋友出去玩</span></div><div class="opt"><span>一个人安静休息</span></div></div>
+                </div>
+                <div class="q"><span class="q__t">你更关注什么？</span>
+                  <div class="q__opts"><div class="opt"><span>具体的事实细节</span></div><div class="opt opt--sel"><span>未来的可能性</span></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mask">
+            <div class="panel">
+              <span class="panel__t">你的测试结果</span>
+              <div class="panel__type">
+                <span class="panel__code">ENFP</span>
+                <span class="panel__name">竞选者</span>
+              </div>
+              <span class="panel__tip">恋爱建议</span>
+              <div class="adv">
+                <div class="adv__i"><span class="adv__d"></span><span class="adv__t">外向型：主动约 TA 见面，线下相处更容易擦出火花</span></div>
+                <div class="adv__i"><span class="adv__d"></span><span class="adv__t">直觉型：多聊想法和未来，精神共鸣是你们的关键</span></div>
+                <div class="adv__i"><span class="adv__d"></span><span class="adv__t">感性型：多表达关心和感受，情感回应比讲道理更重要</span></div>
+                <div class="adv__i"><span class="adv__d"></span><span class="adv__t">随性型：保持灵活和惊喜，随遇而安的约会更有趣</span></div>
+              </div>
+              <div class="acts">
+                <div class="abtn abtn--ghost"><span>重新测试</span></div>
+                <div class="abtn abtn--primary"><span>知道了</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">web-view 接管态 · 后台已配 H5</span><span class="d">页头/返回键全部不渲染 · 内容非本仓真值域</span></figcaption>
+      <div class="phone">
+        <div class="web"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+
+  <div class="note" style="margin-top:24px">
+    <b>本页与恋爱中心其余三页的对应关系：</b>
+    入口 = hub 画板 <code>tools-love-center.html</code> §01 的<b>「恋爱测试」区「MBTI 人格测试」行</b>（跳转序号 5，
+    <code>onTestTap()</code> → <code>ROUTES.LOVE_CENTER.MBTI</code> = <code>/subpackages/tools/love-center/mbti</code>）。
+    注意 hub 的<b>快捷入口区在 F02 档只有「附近的人」与「恋爱咨询课程」两行，没有 MBTI</b>
+    ——R10-P2-014 已把重复的 MBTI 入口从快捷入口撤掉（index.vue:50），本页只有那一个入口。
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页交互件只有单选项、提交钮、结果弹层三族；但每一族的<b>「有值/无值」边界</b>都直接决定会不会画出伪造读数。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>单选项 · 四态</h3>
+      <p class="hint">每题两选项、单选、<code>role="radio"</code> + <code>aria-checked</code>；<code>answers</code> 初值 <code>[null,null,null,null]</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:200px"><div class="opt"><span>约朋友出去玩</span></div><span class="lab">未选（<code>--c-bg-surface</code> + <code>--c-border-light</code>）</span></div>
+        <div class="cell" style="width:200px"><div class="opt opt--sel"><span>约朋友出去玩</span></div><span class="lab">已选（<code>--c-bg-brand</code> + <code>--c-brand-700</code> 描边）</span></div>
+        <div class="cell" style="width:200px"><div class="opt opt--pressed"><span>约朋友出去玩</span></div><span class="lab">按压</span></div>
+        <div class="cell" style="width:200px"><div class="opt"><span>一个人安静休息</span></div><span class="lab">同题另一选项（互斥，只能一个 sel）</span></div>
+      </div>
+      <p class="hint" style="margin-top:12px">热区下限 44px（R6-L10-D11 由 31px 提档）。<b>无「禁用」档</b>——源码里没有 disabled 分支，画禁用态 = 错。</p>
+    </div>
+
+    <div class="panel">
+      <h3>提交钮 · 两态 + 校验</h3>
+      <p class="hint">只有一个视觉档：可点。<code>submitTest()</code> 在漏答时<b>不改按钮态</b>，而是弹 toast 并 <code>return</code>（:90-94）——
+        「按钮置灰直到答完」这种常见形态在本页源码里不存在。</p>
+      <div class="row">
+        <div class="cell" style="width:220px"><div class="submit"><span>提交并查看结果</span></div><span class="lab">default（<code>--c-brand-800</code>，R10-L08-D19 由渐变收成实色）</span></div>
+        <div class="cell" style="width:220px"><div class="submit submit--dis"><span>提交并查看结果</span></div><span class="lab">画板对照档：源码<b>无</b>此态，仅登记不可误画</span></div>
+      </div>
+      <table class="tbl" style="margin-top:14px">
+        <tr><th>条件</th><th>行为</th><th>读数</th></tr>
+        <tr><td>有任一题 <code>answers[i]===null</code></td><td>toast「请完成所有题目」，不弹层</td><td>无</td></tr>
+        <tr><td>四题全选</td><td><code>resultType = letters.join("")</code>，<code>showResult=true</code></td><td>4 字母类型代码 + 类型名 + 4 条建议</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>结果弹层 · 读数构成（本页判点）</h3>
+      <p class="hint">弹层里<b>只有四样东西</b>：标题、类型代码、类型名、恋爱建议列表（+两钮）。
+        没有分数、没有维度百分比、没有进度条、没有「合拍度」。</p>
+      <table class="tbl">
+        <tr><th>读数</th><th>真值源</th><th>画板处置</th></tr>
+        <tr><td>类型代码 ENFP</td><td class="plain">本地计算：<code>dimension.charAt(choice)</code>（:96-102），每题一维、二选一</td><td>照画，口径见 §04</td></tr>
+        <tr><td>类型名 竞选者</td><td class="plain">i18n <code>contentPages.mbti.types.ENFP</code></td><td>照画</td></tr>
+        <tr><td>4 条恋爱建议</td><td class="plain">i18n <code>advice{E|N|F|P}</code>，按字母逐条拼（:107-114）</td><td>照画，条数恒等于 4</td></tr>
+        <tr><td><b>维度百分比</b></td><td class="plain"><b>无任何真值源</b>（后端仅 <code>user_basic_profile.mbti</code> 一个字符串列）</td><td><b>不画</b>，理由见 §04 第一条</td></tr>
+        <tr><td><b>总分 / 得分</b></td><td class="plain"><b>无任何真值源</b></td><td><b>不画</b></td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>页头 · 两型互斥（决定返回出口是否存在）</h3>
+      <p class="hint">本地态页头是 <code>brand-500→brand-400</code> 亮绿渐变带 + 深墨标题（<code>--c-brand-900</code> 22px/700，
+        R10-L08-D16 由白字 1.89:1 收深到 4.87:1）；返回是 44px 半透明白圆 + 20px 深墨图标（MP-R1-LMBTI-101 移到标题左侧，避开微信胶囊）。</p>
+      <div class="row">
+        <div class="cell" style="width:300px"><div class="ch" style="padding:8px;border-radius:10px"><span class="ch__back"><svg><use href="#i-back"/></svg></span><span class="ch__t">MBTI 人格测试</span></div><span class="lab">本地内容态（webUrl 为空，现网默认）</span></div>
+        <div class="cell" style="width:120px"><div style="height:58px;border-radius:10px;background:var(--c-bg-container);border:1px solid var(--c-border-light)"></div><span class="lab">web-view 态：整页无页头</span></div>
+      </div>
+      <p class="hint" style="margin-top:12px">web-view 态下页内<b>没有返回出口</b>（唯一出口是微信胶囊的「更多/关闭」），
+        这是 <code>v-if</code> 分支的必然结果，不是缺陷；F05 因此只有一片白。</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>与 design-variables.scss 一一对应，可直接抄进 SCSS</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用这些档，未引入页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">品牌 500<code>--c-brand-500</code></div><div class="sw__u">页头渐变起点 · 建议圆点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#55D5A7"></span><div><div class="sw__n">品牌 400<code>--c-brand-400</code></div><div class="sw__u">页头渐变终点 · 类型代码渐变首段</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#0B4A38"></span><div><div class="sw__n">品牌 900<code>--c-brand-900</code></div><div class="sw__u">页头标题 · 返回图标</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1F8D6A"></span><div><div class="sw__n">品牌 700<code>--c-brand-700</code></div><div class="sw__u">维度代码 · 16 型代码 · 选中描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">品牌 800<code>--c-brand-800</code></div><div class="sw__u">提交钮面</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FBF2;border:1px solid #DDE3E0"></span><div><div class="sw__n">品牌浅底<code>--c-bg-brand</code></div><div class="sw__u">维度 chip · 选中项底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">浅底<code>--c-bg-surface</code></div><div class="sw__u">未选项 · 建议行底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(15,23,42,.7)"></span><div><div class="sw__n">压层<code>--c-overlay-strong</code></div><div class="sw__u">弹层遮罩 · toast 底</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页八档，注意两处「层级倒置」是源码事实（§04）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 44/700</span><span class="type__p" style="font-size:22px;font-weight:700;color:var(--c-brand-900)">MBTI 人格测试</span></div>
+        <div class="type__i"><span class="type__m">36px/800 固定</span><span class="type__p" style="font-size:27px;font-weight:800;background:var(--c-gradient-brand);-webkit-background-clip:text;background-clip:text;color:transparent">ENFP</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 36/700</span><span class="type__p" style="font-size:18px;font-weight:700">16 型人格速览</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 30/400</span><span class="type__p" style="font-size:15px;font-weight:400">约朋友出去玩</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 28/600</span><span class="type__p" style="font-size:14px;font-weight:600">周末更愿意怎么过？</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 24/400</span><span class="type__p" style="font-size:12px;font-weight:400;color:var(--c-text-secondary)">了解四种性格维度，认识自己和他人。</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 20/400</span><span class="type__p" style="font-size:10px;font-weight:400;color:var(--c-text-secondary)">外向/内向 · 竞选者</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:20px"></b>--card-radius<br>40rpx · 类型格 · 题目卡（R11-L08-D25 归口）</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 单选项 · toast</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 结果弹层面板</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>chip · 提交钮 · 弹层钮</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>本页零照片位，无素材缺口</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_V2.BACK · 唯一图标依赖</b><p>返回钮素材（单色 #333333 位图，R10-L08-D09 换档理由见 mbti.vue:27-33）。
+        画板按 §4 用描边符号 <code>#i-back</code> 表达同形，色取 <code>--c-brand-900</code> 与源码标题同源。
+        除此之外本页不引用任何图片素材——16 型网格与弹层都是纯文字。</p>
+        <div class="m">20px · 44px 半透明白圆底之上</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>演示人设 · 本页不使用</b><p>MBTI 页没有任何用户位（无头像、无照片、无昵称），
+        故规范 §8 的照片位条件在本页不触发，也不引用 <code>assets/demo/*</code>。
+        结果弹层里的「ENFP」是<b>答案推导语</b>，不是演示人设属性。</p>
+        <div class="m">无 NEED_ASSET</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>测评分数/维度百分比：查过真值源，结论是「无真值源」，故不画。</b>三条证据：
+        ① 结果面板的 DOM 只有 <code>resultType</code> + <code>types.{code}</code> + <code>resultAdvice</code> 三处读数（mbti.vue:235-247），
+        模板里<b>不存在</b>百分比节点；
+        ② 类型是本地推导：<code>letters.push(q.dimension.charAt(choice))</code>（:96-102），每题只答一次、每维只有 A/B 两档，
+        所以任何「E 70% / I 30%」都只能写成常量——真画出来就是伪造（规范 §3.3、§7 通用规则第 0 条）；
+        ③ 后端全仓 <code>mbti</code> 只有一处真值：<code>UserBasicProfile.java:143</code> 的 <code>@Column(name="mbti", length=8)</code> 字符串列，
+        经 <code>UserProfileDTO.Identity</code>（:59）与 <code>RecommendedPersonView.mbti</code>（:93）透出为<b>类型代码</b>；
+        没有任何测评端点、没有分数列、没有维度百分比列（<code>apps/api</code> 全量 grep <code>mbti</code> 命中 10 个文件，逐处都是字符串透传）。
+        另需登记：本页的作答<b>不写回后端</b>（<code>submitTest()</code> 只改本地 ref），所以连「用户已测出 ENFP」这件事都不入库。</li>
+      <li>本页在 <code>subpackages/tools</code> 分包，<b>无 tabbar</b>、无原生导航栏；画板出现 tabbar 即为错。</li>
+      <li>F05 的空白不是漏画：<code>contentPageUrls.mbtiUrl</code> 现值为空字符串（R4-00243 把第三方外链改成空默认，
+        白名单候选 <code>https://www.16types.com</code> 尚未下发），所以 F05 是<b>潜伏态</b>；一旦配置下发，
+        整页由外部 H5 接管，其内容不在本仓真值域内，画板不伪造外部页面。</li>
+      <li>两处层级倒置是源码事实，画板照画：<b>选项 15px &gt; 题干 14px</b>（R11-L08-D27 只升了选项，未回头调题干）、
+        <b>弹层标题 14px &lt; 弹层内正文 15px 档</b>（<code>.mbti-result-panel__title</code> 取 <code>--fs-lg</code>）。全站页头档另有规定，不在本页修。</li>
+      <li>结果弹层的类型代码在源码是 <code>72rpx</code>=36px 硬写值（注释自陈无对应令牌），画板同值照画并登记为「固定布局尺寸」；
+        渐变字用 <code>--c-gradient-brand</code> + <code>background-clip:text</code>，与源码一致。</li>
+      <li>F01/F02/F03 是同一条 <code>scroll-view</code> 的不同滚动位（页头常驻不随滚，R6-L10-D13 的修复要点）；
+        三屏各取一个视口，不做「滚动后」注记。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 恋爱中心·MBTI 人格测试高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（画框 375 × 812，2.273×）
+</footer>
+
+</div>
+</body>
+</html>

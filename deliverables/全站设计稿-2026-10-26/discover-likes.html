@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 匹配列表页（喜欢我的 / 我发出的喜欢 / 访客）高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 已登记令牌；源页私有档位见 §04 note） ===== */
+
+/* ---------- 画框内页面壳（帧即视口：块级流 + 溢出由 .phone overflow:hidden 裁） ---------- */
+.lk-page { position: absolute; left: 0; top: 0; width: 100%; height: 100%; padding: 56px var(--sp-8) 0; overflow: hidden; }
+.lk-page > * { position: relative; z-index: 1; }
+.lk-page--guest { padding: 0; background: var(--c-bg-page); }
+.lk-overlay { position: absolute; left: 0; top: 0; width: 100%; height: 150px; z-index: 0; pointer-events: none;
+  background: linear-gradient(180deg, var(--c-brand-50) 0%, transparent 100%); }
+
+/* ---------- 页头（子包自定义导航：无渐变带，白圆返回 + 深色标题） ---------- */
+.lk-hdr { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
+  row-gap: var(--sp-3); padding-right: 103px; margin-bottom: var(--section-gap); }
+.lk-hdr--guest { padding: 56px 119px var(--sp-4) var(--sp-8); margin-bottom: 0; background: var(--c-bg-page); }
+.lk-hdr__left { display: flex; align-items: center; gap: var(--sp-3); }
+.lk-back { position: relative; width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center; }
+.lk-back::before { content: ''; position: absolute; left: 6px; top: 6px; width: 32px; height: 32px;
+  border-radius: var(--r-full); background: var(--c-bg-container); border: var(--c-border-card); }
+.lk-back__i { position: relative; font-size: 20px; line-height: 1; color: var(--c-text-primary); }
+.lk-title { font-size: var(--fs-5xl); font-weight: 700; color: var(--c-text-primary); white-space: nowrap; }
+.lk-hdr__actions { display: flex; align-items: center; gap: var(--sp-3); margin-left: auto; flex: none; }
+.lk-signal { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-3) var(--sp-6);
+  border-radius: var(--r-full); background: var(--c-romance-50); flex: none; white-space: nowrap; }
+.lk-signal svg { width: 16px; height: 16px; color: var(--c-romance); }
+.lk-signal__t { font-size: var(--fs-base); font-weight: 600; color: var(--c-romance); }
+.lk-signal__dot { width: var(--sp-4); height: var(--sp-4); border-radius: var(--r-full); background: var(--c-romance); }
+.lk-manage { padding: var(--sp-3) var(--sp-4); border-radius: var(--r-full); background: var(--c-bg-container);
+  box-shadow: var(--s-card-soft); border: var(--c-border-card); display: flex; align-items: center;
+  justify-content: center; min-height: 44px; flex: none; white-space: nowrap; }
+.lk-manage__t { font-size: var(--fs-md); font-weight: 600; color: var(--c-brand-800); }
+
+/* ---------- 搜索框 ---------- */
+.lk-search { margin-bottom: var(--section-gap); }
+.lk-search__box { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-5);
+  background: var(--c-bg-container); border-radius: var(--r-full); box-shadow: var(--s-card-soft); border: var(--c-border-card); }
+.lk-search__box svg { width: 16px; height: 16px; color: var(--c-text-tertiary); flex: none; }
+.lk-search__i { flex: 1; font-size: var(--fs-md); color: var(--c-text-primary); line-height: 1.5; }
+.lk-search__i--ph { color: var(--c-text-placeholder); }
+.lk-search__x { width: 20px; height: 20px; border-radius: var(--r-full); background: var(--c-border-light);
+  display: flex; align-items: center; justify-content: center; flex: none; }
+.lk-search__x span { font-size: 14px; line-height: 1; font-weight: 700; color: var(--c-text-tertiary); }
+
+/* ---------- 标签页（BaseTabs · pill · equal-split） ---------- */
+.lk-tabscard { margin-bottom: var(--section-gap); background: var(--c-bg-container); border-radius: var(--r-xl);
+  padding: var(--sp-2); box-shadow: var(--s-card-soft); border: var(--c-border-card); }
+.lk-tabs { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-4) var(--sp-6); }
+.lk-tab { flex: 1 1 0; display: flex; align-items: center; justify-content: center; padding: var(--sp-3) var(--sp-7);
+  border-radius: var(--r-full); background: var(--c-bg-page); }
+.lk-tab__l { font-size: var(--fs-md); color: var(--c-text-secondary); white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; min-width: 0; }
+.lk-tab__b { margin-left: var(--sp-2); flex: none; min-width: 16px; height: 16px; padding: 0 var(--sp-2);
+  border-radius: var(--r-lg); font-size: var(--fs-sm); line-height: 16px; text-align: center; font-weight: 600;
+  color: var(--c-bg-container); background: var(--c-brand-800); }
+.lk-tab--on { background: var(--c-brand-800); }
+.lk-tab--on .lk-tab__l { color: var(--c-bg-container); font-weight: 600; }
+.lk-tab--on .lk-tab__b { background: var(--c-bg-container); color: var(--c-brand-800); }
+
+/* ---------- 骨架屏（Skeleton variant=list · count=4） ---------- */
+.lk-loading { display: flex; flex-direction: column; gap: var(--sp-4); padding: var(--sp-10) 0; }
+.lk-skel { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-6);
+  background: var(--c-bg-container); border-radius: var(--r-xl); }
+.lk-shim { background: linear-gradient(90deg, var(--c-border-light) 25%, var(--c-border-default) 50%, var(--c-border-light) 75%); }
+.lk-skel__av { width: 44px; height: 44px; border-radius: var(--r-full); flex: none; }
+.lk-skel__ls { flex: 1; display: flex; flex-direction: column; gap: var(--sp-3); }
+.lk-skel__l { height: 12px; border-radius: var(--r-sm); }
+.w60 { width: 60%; } .w40 { width: 40%; } .w100 { width: 100%; }
+
+/* ---------- 错误态 / 空态（ErrorState · EmptyState） ---------- */
+.lk-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
+.lk-state svg { width: 60px; height: 60px; }
+.lk-state__ic { margin-bottom: var(--sp-4); }
+.lk-state__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-secondary); text-align: center; }
+.lk-state__d { font-size: var(--fs-base); color: var(--c-text-secondary); margin-top: var(--sp-2); text-align: center; }
+.lk-state__t--err { font-size: var(--fs-lg); }
+.lk-state__d--err { color: var(--c-text-placeholder); }
+.lk-retry { margin-top: var(--sp-7); padding: var(--sp-4) var(--sp-10); border-radius: var(--r-full); background: var(--c-brand-400); }
+.lk-retry span { color: var(--c-text-inverse); font-size: var(--fs-md); font-weight: 600; }
+
+/* ---------- 列表卡 ---------- */
+.lk-list { display: flex; flex-direction: column; gap: var(--section-gap); }
+.lk-card { display: flex; align-items: center; gap: var(--sp-6); padding: var(--sp-7); background: var(--c-bg-container);
+  border-radius: var(--r-card); border: var(--c-border-card); box-shadow: var(--s-card-soft); }
+.lk-card--mutual { border-color: var(--c-romance-300); background: linear-gradient(135deg, var(--c-romance-50) 0%, var(--c-bg-container) 100%); }
+.lk-card--batch { padding-left: var(--sp-4); }
+.lk-card--sel { border-color: var(--c-brand); background: linear-gradient(135deg, var(--c-brand-50) 0%, var(--c-bg-container) 100%); }
+.lk-check { width: 22px; height: 22px; border-radius: var(--r-full); border: 1px solid var(--c-border-strong);
+  background: var(--c-bg-container); display: flex; align-items: center; justify-content: center; flex: none; }
+.lk-check--on { background: var(--c-brand); border-color: var(--c-brand); }
+.lk-check svg { width: 14px; height: 14px; color: var(--c-bg-container); }
+.lk-av { position: relative; width: 52px; height: 52px; border-radius: var(--r-full); flex: none;
+  background: linear-gradient(135deg, var(--c-brand-50), var(--c-brand-100)); border: 1px solid var(--c-brand-50);
+  display: flex; align-items: center; justify-content: center; }
+.lk-av__i { font-size: var(--fs-4xl); font-weight: 700; color: var(--c-brand); line-height: 1; }
+.lk-av--photo { background: var(--c-bg-page); }
+.lk-av--blur { filter: blur(7px); }
+.lk-lock { position: absolute; right: -2px; bottom: -2px; width: 20px; height: 20px; border-radius: var(--r-full);
+  background: var(--c-text-primary); display: flex; align-items: center; justify-content: center; z-index: 2; }
+.lk-lock svg { width: 12px; height: 12px; color: var(--c-bg-container); }
+.lk-newdot { position: absolute; top: var(--sp-1); right: var(--sp-1); width: var(--sp-6); height: var(--sp-6);
+  border-radius: var(--r-full); background: var(--c-romance); border: 1px solid var(--c-bg-container); }
+.lk-wrap { position: relative; flex: none; }
+.lk-info { flex: 1; display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.lk-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); }
+.lk-namewrap { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; flex: 1; }
+.lk-name { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.lk-name--hidden { color: var(--c-text-tertiary); }
+.lk-time { font-size: var(--fs-base); color: var(--c-text-tertiary); flex: none; background: var(--c-bg-surface);
+  padding: var(--sp-1) var(--sp-3); border-radius: var(--r-full); }
+.lk-headline { font-size: var(--fs-md); color: var(--c-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lk-arrow { flex: none; padding-left: var(--sp-2); width: var(--sp-10); height: var(--sp-10); border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-brand-50), var(--c-brand-100)); display: flex; align-items: center; justify-content: center; }
+.lk-arrow span { font-size: var(--fs-3xl); line-height: 1; color: var(--c-brand); font-weight: 600; }
+.lk-arrow--mutual { background: linear-gradient(135deg, var(--c-romance-300), var(--c-romance-50)); }
+.lk-arrow--mutual span { color: var(--c-romance); }
+.lk-vb { display: inline-flex; align-items: center; gap: var(--sp-1); border-radius: var(--r-full); flex: none;
+  padding: var(--sp-1) var(--sp-2); white-space: nowrap; border: 0.5px solid var(--c-brand-200);
+  background: var(--c-brand-50); color: var(--c-brand-700); }
+.lk-vb svg { width: 10px; height: 10px; }
+.lk-vb span { font-size: var(--fs-xs); font-weight: 600; line-height: 1; }
+.lk-vb--mail { border-color: var(--c-status-info); background: var(--c-bg-container); color: var(--c-status-info); }
+.lk-vb--id { border-color: var(--c-warning); background: var(--c-bg-container); color: var(--c-warning); }
+
+/* ---------- 页底固定件（批量栏 / 解锁栏 / 已选数胶囊；三选一由 v-if 决定） ---------- */
+.lk-batchbar { position: absolute; left: 0; bottom: 0; width: 100%; box-sizing: border-box; display: flex;
+  align-items: center; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-4) var(--sp-6);
+  background: var(--c-bg-container); border-top: 0.5px solid var(--c-border-light); z-index: 100; }
+.lk-batchbar__l { display: flex; align-items: center; gap: var(--sp-3); flex: none; }
+.lk-batchbar__t { font-size: var(--fs-md); color: var(--c-text-primary); font-weight: 600; }
+.lk-batchbar__r { display: flex; align-items: center; gap: var(--sp-3); flex: 1; justify-content: flex-end; }
+.lk-bbtn { padding: var(--sp-3) var(--sp-5); border-radius: var(--r-full); display: flex; align-items: center; justify-content: center; }
+.lk-bbtn span { font-size: var(--fs-md); font-weight: 600; }
+.lk-bbtn--like { background: linear-gradient(135deg, var(--c-brand), var(--c-brand-700)); }
+.lk-bbtn--like span { color: var(--c-text-inverse); }
+.lk-bbtn--skip { background: var(--c-border-light); }
+.lk-bbtn--skip span { color: var(--c-text-primary); }
+.lk-bbtn--cancel { background: var(--c-romance); }
+.lk-bbtn--cancel span { color: var(--c-text-inverse); }
+.lk-bbtn--dis { opacity: 0.5; }
+.lk-count { position: absolute; left: 50%; transform: translateX(-50%); bottom: 60px; padding: var(--sp-2) var(--sp-5);
+  background: var(--c-text-primary); border-radius: var(--r-full); z-index: 101; }
+.lk-count span { font-size: var(--fs-sm); color: var(--c-text-inverse); }
+.lk-unlockbar { position: absolute; left: 0; bottom: 0; width: 100%; box-sizing: border-box; display: flex;
+  flex-direction: column; align-items: center; gap: var(--sp-2); padding: var(--sp-4) var(--sp-8) var(--sp-5);
+  background: var(--c-bg-container); border-top: 0.5px solid var(--c-border-light); z-index: 30; }
+.lk-ubtn { width: 100%; height: 44px; border-radius: var(--r-full); background: linear-gradient(135deg, var(--c-brand), var(--c-brand-400));
+  display: flex; align-items: center; justify-content: center; }
+.lk-ubtn span { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-inverse); }
+.lk-ubtn--dis { background: var(--c-status-disabled); }
+.lk-uhint { font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+
+/* ---------- 游客登录墙（NotLoggedWaiting） ---------- */
+.lk-wall { display: flex; flex-direction: column; align-items: center; width: 100%; box-sizing: border-box;
+  padding: 36px var(--sp-8) 30px; background: var(--c-bg-page); overflow: hidden; }
+.lk-wall__tw { width: 100%; text-align: left; margin-bottom: var(--sp-7); }
+.lk-wall__t { display: block; font-size: var(--fs-5xl); font-weight: 800; color: var(--c-brand); line-height: 1.4; }
+.lk-wall__s { display: block; margin-top: var(--sp-2); font-size: var(--fs-md); font-weight: 500; color: var(--c-text-primary); opacity: 0.7; }
+.lk-orbit { position: relative; width: 280px; height: 280px; margin-bottom: var(--sp-1); }
+.lk-orbit__ring { position: absolute; left: 50%; top: 50%; width: 210px; height: 210px; transform: translate(-50%, -50%);
+  border: 1px dashed var(--c-brand-300); border-radius: 50%; }
+.lk-orbit__n { position: absolute; transform: translate(-50%, -50%); }
+.lk-orbit__av { display: block; width: 48px; height: 48px; border-radius: 50%; background: var(--c-border-light);
+  border: 2px solid var(--c-bg-container); box-shadow: var(--s-sm); }
+.lk-orbit__bg { position: absolute; right: -3px; bottom: -3px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--c-bg-container); display: flex; align-items: center; justify-content: center; }
+.lk-orbit__bg svg { width: 10px; height: 10px; color: var(--c-romance); }
+.lk-orbit__ms { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px;
+  display: flex; align-items: center; justify-content: center; color: var(--c-brand); }
+.lk-orbit__ms svg { width: 88px; height: 88px; }
+.lk-wall__hint { font-size: var(--fs-base); color: var(--c-text-secondary); margin-bottom: var(--sp-7); }
+.lk-wall__fs { display: flex; justify-content: space-between; width: 100%; padding: 0 var(--sp-1); margin-bottom: var(--sp-7); }
+.lk-wall__f { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); }
+.lk-wall__f svg { width: 32px; height: 32px; color: var(--c-brand-700); }
+.lk-wall__f span { font-size: var(--fs-base); color: var(--c-text-secondary); text-align: center; }
+.lk-wall__bs { width: 100%; display: flex; flex-direction: column; gap: var(--sp-4); }
+.lk-wbtn { width: 100%; height: 48px; border-radius: var(--r-full); display: flex; align-items: center;
+  justify-content: center; gap: var(--sp-3); box-sizing: border-box; }
+.lk-wbtn--pri { background: var(--c-brand-800); box-shadow: var(--s-brand); }
+.lk-wbtn--sec { background: var(--c-bg-container); border: 1px solid var(--c-brand); }
+.lk-wbtn--gho { background: transparent; }
+.lk-wbtn--gho::before, .lk-wbtn--gho::after { content: ''; flex: 1; height: 0.5px; background: var(--c-border-light); }
+.lk-wbtn svg { width: 16px; height: 16px; color: var(--c-bg-container); }
+.lk-wbtn__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-primary); letter-spacing: 1px; }
+.lk-wbtn__t--pri { color: var(--c-bg-container); }
+.lk-wbtn__t--gho { color: var(--c-text-secondary); font-weight: 500; }
+
+/* ---------- §02 面板内的小样 ---------- */
+.mini { display: flex; flex-direction: column; gap: var(--sp-4); }
+.mini .lk-card { width: 100%; }
+.stack { display: flex; flex-direction: column; gap: var(--sp-6); }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 描边风格，与工程 ICONS_* 体系同形） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20.4 20.4 16.3 16.3"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5C2 10.8 3.5 12.5 5 14l7 7.5z"/></symbol>
+  <symbol id="i-heart-f" viewBox="0 0 24 24"><path d="M12 21 3.6 12.9A5.4 5.4 0 0 1 12 6.1a5.4 5.4 0 0 1 8.4 6.8z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="11" rx="2.4"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.6 9.6 17 19 6.8"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-6.6 10-6.6S22 12 22 12s-3.6 6.6-10 6.6S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20.5 11.6c0 4.1-3.8 7.4-8.5 7.4-1.2 0-2.4-.2-3.5-.6L4 20l1.4-3.7A7 7 0 0 1 3.5 11.6c0-4.1 3.8-7.4 8.5-7.4s8.5 3.3 8.5 7.4z"/></symbol>
+  <symbol id="i-school" viewBox="0 0 24 24"><path d="M12 3.2 3 7.4l9 4.2 9-4.2z"/><path d="M6.6 9.6v5.1c0 1.9 2.4 3.4 5.4 3.4s5.4-1.5 5.4-3.4V9.6"/><path d="M21 7.4v6.2"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="4.6"/><circle cx="12" cy="12" r="1"/></symbol>
+  <symbol id="i-card" viewBox="0 0 24 24"><rect x="2.6" y="5" width="18.8" height="14" rx="2.6"/><path d="M7 14.4h4"/><path d="M15.6 9.6h2.4"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>匹配列表页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/discover-extra/likes/index</code>。
+     这是 discover「回访钩子」落地的列表页：页头标题是 <code>likes.title</code>「匹配列表」，
+     标签页实际是 <b>三档</b>（喜欢我的 / 我发出的喜欢 / 访客，来自 <code>likesTabs</code>），
+     不是两档；再叠加登录墙、骨架、错误、空态、搜索无结果、批量模式、解锁栏七类分支。
+     本画板把状态机逐屏画全，作为该页的验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>discover-extra/likes</b></span>
+    <span>分包 <b>discover-extra</b>（无 tabbar）</span>
+    <span>状态 <b>9 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1845</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>仅 F01 有语料（未登录等待页面.png）· 余 8 屏此前无基准</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 9 屏</h2>
+    <p>登录墙 / 骨架 / 错误 / 三档列表 / 空态 / 搜索无结果 / 批量模式</p></div>
+  <div class="sec__sub">本页状态机有 9 屏，分支全部取自 <code>&lt;template&gt;</code>：
+    ① <code>v-if="!sessionStore.isLoggedIn"</code> → 登录墙（页头常驻，R8-L06-D23）；
+    ② 已登录内部 <code>v-if="loading"</code> → 骨架；③ <code>v-else-if="errorMessage"</code> → ErrorState；
+    ④ <code>v-else-if="activeTab === 'likedBy' | 'myLikes' | 'visitors'"</code> 三档，每档再分
+    <code>displayLikedBy.length === 0</code>（空态，标题按 <code>isSearchEmpty</code> 二次分档）与列表；
+    ⑤ 卡片态由 <code>isItemUnlocked(item)</code> / <code>isMutualMatch(item.userId)</code> / <code>batchMode</code> /
+    <code>item.isNew</code> / <code>verificationBadgeLevel !== 'none'</code> 组合；
+    ⑥ 页底固定件互斥：<code>v-if="batchMode"</code> 出批量栏 + 已选胶囊，
+    <code>v-if="hasLockedItems &amp;&amp; !batchMode &amp;&amp; commerceCoinOn"</code> 出解锁栏。
+    帧即视口 375×812，超出部分裁掉，被裁掉什么写在题注里。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">游客 · 登录墙（页头常驻）</span><span class="d">墙体实高约 728px > 视口余量 704px，「稍后再看」下沿裁掉约 24px</span></figcaption>
+      <div class="phone"><div class="lk-page lk-page--guest">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lk-hdr lk-hdr--guest">
+          <div class="lk-hdr__left">
+            <div class="lk-back"><span class="lk-back__i">‹</span></div>
+            <span class="lk-title">匹配列表</span>
+          </div>
+        </div>
+        <div class="lk-wall">
+          <div class="lk-wall__tw">
+            <span class="lk-wall__t">正在为你寻找</span>
+            <span class="lk-wall__t">同频的那个人</span>
+            <span class="lk-wall__s">发现更多同频的人</span>
+          </div>
+          <div class="lk-orbit">
+            <div class="lk-orbit__ring"></div>
+            <div class="lk-orbit__n" style="left:50%;top:12.5%"><span class="lk-orbit__av"></span><span class="lk-orbit__bg"><svg class="ico--fill"><use href="#i-heart-f"/></svg></span></div>
+            <div class="lk-orbit__n" style="left:82.48%;top:31.25%"><span class="lk-orbit__av"></span><span class="lk-orbit__bg"><svg class="ico--fill"><use href="#i-heart-f"/></svg></span></div>
+            <div class="lk-orbit__n" style="left:82.48%;top:68.75%"><span class="lk-orbit__av"></span><span class="lk-orbit__bg"><svg class="ico--fill"><use href="#i-heart-f"/></svg></span></div>
+            <div class="lk-orbit__n" style="left:50%;top:87.5%"><span class="lk-orbit__av"></span><span class="lk-orbit__bg"><svg class="ico--fill"><use href="#i-heart-f"/></svg></span></div>
+            <div class="lk-orbit__n" style="left:17.52%;top:68.75%"><span class="lk-orbit__av"></span><span class="lk-orbit__bg"><svg class="ico--fill"><use href="#i-heart-f"/></svg></span></div>
+            <div class="lk-orbit__n" style="left:17.52%;top:31.25%"><span class="lk-orbit__av"></span><span class="lk-orbit__bg"><svg class="ico--fill"><use href="#i-heart-f"/></svg></span></div>
+            <div class="lk-orbit__ms"><svg><use href="#i-logo"/></svg></div>
+          </div>
+          <span class="lk-wall__hint">登录后即可解锁全部功能</span>
+          <div class="lk-wall__fs">
+            <div class="lk-wall__f"><svg><use href="#i-target"/></svg><span>精确匹配</span></div>
+            <div class="lk-wall__f"><svg><use href="#i-chat"/></svg><span>聊天互动</span></div>
+            <div class="lk-wall__f"><svg><use href="#i-school"/></svg><span>校园趣遇</span></div>
+            <div class="lk-wall__f"><svg class="ico--fill"><use href="#i-heart-f"/></svg><span>关系成长</span></div>
+          </div>
+          <div class="lk-wall__bs">
+            <div class="lk-wbtn lk-wbtn--pri"><svg><use href="#i-chat"/></svg><span class="lk-wbtn__t lk-wbtn__t--pri">微信一键登录</span></div>
+            <div class="lk-wbtn lk-wbtn--sec"><span class="lk-wbtn__t">手机号登录</span></div>
+            <div class="lk-wbtn lk-wbtn--gho"><span class="lk-wbtn__t lk-wbtn__t--gho">稍后再看</span></div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">已登录 · loading · 骨架屏</span><span class="d">条件 <code>v-if="loading"</code> · 4 条骨架 · 视口未裁切</span></figcaption>
+      <div class="phone"><div class="lk-page">
+        <div class="lk-overlay"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lk-hdr">
+          <div class="lk-hdr__left">
+            <div class="lk-back"><span class="lk-back__i">‹</span></div>
+            <span class="lk-title">匹配列表</span>
+          </div>
+          <div class="lk-hdr__actions">
+            <div class="lk-manage"><span class="lk-manage__t">管理</span></div>
+          </div>
+        </div>
+        <div class="lk-search">
+          <div class="lk-search__box"><svg><use href="#i-search"/></svg><span class="lk-search__i lk-search__i--ph">搜索昵称、学校、城市</span></div>
+        </div>
+        <div class="lk-tabscard">
+          <div class="lk-tabs">
+            <div class="lk-tab lk-tab--on"><span class="lk-tab__l">喜欢我的</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">我发出的喜欢</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">访客</span></div>
+          </div>
+        </div>
+        <div class="lk-loading">
+          <div class="lk-skel"><span class="lk-skel__av lk-shim"></span><div class="lk-skel__ls"><span class="lk-skel__l lk-shim w60"></span><span class="lk-skel__l lk-shim w40"></span></div></div>
+          <div class="lk-skel"><span class="lk-skel__av lk-shim"></span><div class="lk-skel__ls"><span class="lk-skel__l lk-shim w60"></span><span class="lk-skel__l lk-shim w40"></span></div></div>
+          <div class="lk-skel"><span class="lk-skel__av lk-shim"></span><div class="lk-skel__ls"><span class="lk-skel__l lk-shim w60"></span><span class="lk-skel__l lk-shim w40"></span></div></div>
+          <div class="lk-skel"><span class="lk-skel__av lk-shim"></span><div class="lk-skel__ls"><span class="lk-skel__l lk-shim w60"></span><span class="lk-skel__l lk-shim w40"></span></div></div>
+        </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">已登录 · errorMessage · 错误态</span><span class="d">ErrorState type="network" · 重试重拉三源 · 列表整块不渲染</span></figcaption>
+      <div class="phone"><div class="lk-page">
+        <div class="lk-overlay"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lk-hdr">
+          <div class="lk-hdr__left">
+            <div class="lk-back"><span class="lk-back__i">‹</span></div>
+            <span class="lk-title">匹配列表</span>
+          </div>
+          <div class="lk-hdr__actions">
+            <div class="lk-manage"><span class="lk-manage__t">管理</span></div>
+          </div>
+        </div>
+        <div class="lk-search">
+          <div class="lk-search__box"><svg><use href="#i-search"/></svg><span class="lk-search__i lk-search__i--ph">搜索昵称、学校、城市</span></div>
+        </div>
+        <div class="lk-tabscard">
+          <div class="lk-tabs">
+            <div class="lk-tab lk-tab--on"><span class="lk-tab__l">喜欢我的</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">我发出的喜欢</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">访客</span></div>
+          </div>
+        </div>
+        <div class="lk-state">
+          <span class="lk-state__ic"><svg style="color:var(--c-text-tertiary)"><use href="#i-search"/></svg></span>
+          <span class="lk-state__t lk-state__t--err">网络连接失败</span>
+          <span class="lk-state__d lk-state__d--err">请检查网络后重试</span>
+          <span class="lk-retry"><span>重试</span></span>
+        </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">喜欢我的 · 列表（含心动信号丸 + 解锁栏）</span><span class="d">第 6 条沉入固定解锁栏 · hasLockedItems=true</span></figcaption>
+      <div class="phone"><div class="lk-page">
+        <div class="lk-overlay"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lk-hdr">
+          <div class="lk-hdr__left">
+            <div class="lk-back"><span class="lk-back__i">‹</span></div>
+            <span class="lk-title">匹配列表</span>
+          </div>
+          <div class="lk-hdr__actions">
+            <div class="lk-signal"><svg><use href="#i-heart"/></svg><span class="lk-signal__t">心动信号</span><span class="lk-signal__dot"></span></div>
+            <div class="lk-manage"><span class="lk-manage__t">管理</span></div>
+          </div>
+        </div>
+        <div class="lk-search">
+          <div class="lk-search__box"><svg><use href="#i-search"/></svg><span class="lk-search__i lk-search__i--ph">搜索昵称、学校、城市</span></div>
+        </div>
+        <div class="lk-tabscard">
+          <div class="lk-tabs">
+            <div class="lk-tab lk-tab--on"><span class="lk-tab__l">喜欢我的</span><span class="lk-tab__b">6</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">我发出的喜欢</span><span class="lk-tab__b">4</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">访客</span><span class="lk-tab__b">5</span></div>
+          </div>
+        </div>
+        <div class="lk-list">
+          <div class="lk-card lk-card--mutual">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">满</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">小满</span><span class="lk-vb"><svg><use href="#i-check"/></svg><span>已认证</span></span></div>
+                <span class="lk-time">刚刚</span>
+              </div>
+              <span class="lk-headline">北京大学</span>
+            </div>
+            <div class="lk-arrow lk-arrow--mutual"><span>›</span></div>
+          </div>
+          <div class="lk-card">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">岚</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">周岚</span></div>
+                <span class="lk-time">12分钟前</span>
+              </div>
+              <span class="lk-headline">复旦大学</span>
+            </div>
+            <div class="lk-arrow"><span>›</span></div>
+          </div>
+          <div class="lk-card">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">?</span></div><span class="lk-lock"><svg><use href="#i-lock"/></svg></span></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name lk-name--hidden">匿名用户</span></div>
+                <span class="lk-time">3小时前</span>
+              </div>
+            </div>
+            <div class="lk-arrow"><span>›</span></div>
+          </div>
+          <div class="lk-card">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">辰</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">阿辰</span><span class="lk-vb lk-vb--id"><svg><use href="#i-card"/></svg><span>实名认证</span></span></div>
+                <span class="lk-time">2天前</span>
+              </div>
+              <span class="lk-headline">浙江大学</span>
+            </div>
+            <div class="lk-arrow"><span>›</span></div>
+          </div>
+          <div class="lk-card">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">辰</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">星辰</span><span class="lk-vb lk-vb--mail"><svg><use href="#i-chat"/></svg><span>邮箱认证</span></span></div>
+                <span class="lk-time">10月21日</span>
+              </div>
+              <span class="lk-headline">南京大学</span>
+            </div>
+            <div class="lk-arrow"><span>›</span></div>
+          </div>
+          <div class="lk-card">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">溪</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">小溪</span></div>
+                <span class="lk-time">10月18日</span>
+              </div>
+              <span class="lk-headline">武汉大学</span>
+            </div>
+            <div class="lk-arrow"><span>›</span></div>
+          </div>
+        </div>
+        <div class="lk-unlockbar">
+          <div class="lk-ubtn"><span>消耗 3 交友币解锁全部</span></div>
+          <span class="lk-uhint">解锁后查看全部列表</span>
+        </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">喜欢我的 · 空态</span><span class="d">displayLikedBy.length === 0 且非搜索态</span></figcaption>
+      <div class="phone"><div class="lk-page">
+        <div class="lk-overlay"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lk-hdr">
+          <div class="lk-hdr__left">
+            <div class="lk-back"><span class="lk-back__i">‹</span></div>
+            <span class="lk-title">匹配列表</span>
+          </div>
+          <div class="lk-hdr__actions">
+            <div class="lk-manage"><span class="lk-manage__t">管理</span></div>
+          </div>
+        </div>
+        <div class="lk-search">
+          <div class="lk-search__box"><svg><use href="#i-search"/></svg><span class="lk-search__i lk-search__i--ph">搜索昵称、学校、城市</span></div>
+        </div>
+        <div class="lk-tabscard">
+          <div class="lk-tabs">
+            <div class="lk-tab lk-tab--on"><span class="lk-tab__l">喜欢我的</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">我发出的喜欢</span><span class="lk-tab__b">4</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">访客</span><span class="lk-tab__b">5</span></div>
+          </div>
+        </div>
+        <div class="lk-state">
+          <span class="lk-state__ic"><svg style="color:var(--c-romance-300)"><use href="#i-heart"/></svg></span>
+          <span class="lk-state__t">还没有人喜欢我</span>
+          <span class="lk-state__d">多去看看推荐的人，增加曝光机会吧</span>
+        </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">喜欢我的 · 搜索无结果</span><span class="d">isSearchEmpty=true · 角标仍 6（绑未过滤数组）</span></figcaption>
+      <div class="phone"><div class="lk-page">
+        <div class="lk-overlay"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lk-hdr">
+          <div class="lk-hdr__left">
+            <div class="lk-back"><span class="lk-back__i">‹</span></div>
+            <span class="lk-title">匹配列表</span>
+          </div>
+          <div class="lk-hdr__actions">
+            <div class="lk-signal"><svg><use href="#i-heart"/></svg><span class="lk-signal__t">心动信号</span><span class="lk-signal__dot"></span></div>
+            <div class="lk-manage"><span class="lk-manage__t">管理</span></div>
+          </div>
+        </div>
+        <div class="lk-search">
+          <div class="lk-search__box">
+            <svg><use href="#i-search"/></svg>
+            <span class="lk-search__i">北京大学</span>
+            <span class="lk-search__x"><span>×</span></span>
+          </div>
+        </div>
+        <div class="lk-tabscard">
+          <div class="lk-tabs">
+            <div class="lk-tab lk-tab--on"><span class="lk-tab__l">喜欢我的</span><span class="lk-tab__b">6</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">我发出的喜欢</span><span class="lk-tab__b">4</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">访客</span><span class="lk-tab__b">5</span></div>
+          </div>
+        </div>
+        <div class="lk-state">
+          <span class="lk-state__ic"><svg style="color:var(--c-romance-300)"><use href="#i-heart"/></svg></span>
+          <span class="lk-state__t">未找到匹配的用户</span>
+          <span class="lk-state__d">多去看看推荐的人，增加曝光机会吧</span>
+        </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">我发出的喜欢 · 列表</span><span class="d">activeTab='myLikes' · hasHeartSignal=false → 信号丸整枚不渲染</span></figcaption>
+      <div class="phone"><div class="lk-page">
+        <div class="lk-overlay"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lk-hdr">
+          <div class="lk-hdr__left">
+            <div class="lk-back"><span class="lk-back__i">‹</span></div>
+            <span class="lk-title">匹配列表</span>
+          </div>
+          <div class="lk-hdr__actions">
+            <div class="lk-manage"><span class="lk-manage__t">管理</span></div>
+          </div>
+        </div>
+        <div class="lk-search">
+          <div class="lk-search__box"><svg><use href="#i-search"/></svg><span class="lk-search__i lk-search__i--ph">搜索昵称、学校、城市</span></div>
+        </div>
+        <div class="lk-tabscard">
+          <div class="lk-tabs">
+            <div class="lk-tab"><span class="lk-tab__l">喜欢我的</span><span class="lk-tab__b">6</span></div>
+            <div class="lk-tab lk-tab--on"><span class="lk-tab__l">我发出的喜欢</span><span class="lk-tab__b">4</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">访客</span><span class="lk-tab__b">5</span></div>
+          </div>
+        </div>
+        <div class="lk-list">
+          <div class="lk-card lk-card--mutual">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">辰</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">星辰</span></div>
+                <span class="lk-time">刚刚</span>
+              </div>
+              <span class="lk-headline">南京大学</span>
+            </div>
+            <div class="lk-arrow lk-arrow--mutual"><span>›</span></div>
+          </div>
+          <div class="lk-card">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">满</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">小满</span><span class="lk-vb"><svg><use href="#i-check"/></svg><span>已认证</span></span></div>
+                <span class="lk-time">3小时前</span>
+              </div>
+              <span class="lk-headline">北京大学</span>
+            </div>
+            <div class="lk-arrow"><span>›</span></div>
+          </div>
+          <div class="lk-card">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">岚</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">周岚</span></div>
+                <span class="lk-time">2天前</span>
+              </div>
+              <span class="lk-headline">武汉大学</span>
+            </div>
+            <div class="lk-arrow"><span>›</span></div>
+          </div>
+          <div class="lk-card">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">溪</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">小溪</span></div>
+                <span class="lk-time">10月18日</span>
+              </div>
+              <span class="lk-headline">浙江大学</span>
+            </div>
+            <div class="lk-arrow"><span>›</span></div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F08 -->
+    <figure class="frame">
+      <figcaption><b>F08</b><span class="t">访客 · 列表（新访客点 + 未解锁）</span><span class="d">activeTab='visitors' · isNew 仅本档渲染 · ↓第 5 条沉入解锁栏</span></figcaption>
+      <div class="phone"><div class="lk-page">
+        <div class="lk-overlay"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lk-hdr">
+          <div class="lk-hdr__left">
+            <div class="lk-back"><span class="lk-back__i">‹</span></div>
+            <span class="lk-title">匹配列表</span>
+          </div>
+          <div class="lk-hdr__actions">
+            <div class="lk-signal"><svg><use href="#i-heart"/></svg><span class="lk-signal__t">心动信号</span><span class="lk-signal__dot"></span></div>
+            <div class="lk-manage"><span class="lk-manage__t">管理</span></div>
+          </div>
+        </div>
+        <div class="lk-search">
+          <div class="lk-search__box"><svg><use href="#i-search"/></svg><span class="lk-search__i lk-search__i--ph">搜索昵称、学校、城市</span></div>
+        </div>
+        <div class="lk-tabscard">
+          <div class="lk-tabs">
+            <div class="lk-tab"><span class="lk-tab__l">喜欢我的</span><span class="lk-tab__b">6</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">我发出的喜欢</span><span class="lk-tab__b">4</span></div>
+            <div class="lk-tab lk-tab--on"><span class="lk-tab__l">访客</span><span class="lk-tab__b">5</span></div>
+          </div>
+        </div>
+        <div class="lk-list">
+          <div class="lk-card">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">辰</span></div><span class="lk-newdot"></span></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">阿辰</span></div>
+                <span class="lk-time">刚刚</span>
+              </div>
+              <span class="lk-headline">中山大学</span>
+            </div>
+            <div class="lk-arrow"><span>›</span></div>
+          </div>
+          <div class="lk-card">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">?</span></div><span class="lk-newdot"></span><span class="lk-lock"><svg><use href="#i-lock"/></svg></span></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name lk-name--hidden">匿名用户</span></div>
+                <span class="lk-time">12分钟前</span>
+              </div>
+            </div>
+            <div class="lk-arrow"><span>›</span></div>
+          </div>
+          <div class="lk-card">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">岚</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">周岚</span><span class="lk-vb lk-vb--mail"><svg><use href="#i-chat"/></svg><span>邮箱认证</span></span></div>
+                <span class="lk-time">1小时前</span>
+              </div>
+              <span class="lk-headline">清华大学</span>
+            </div>
+            <div class="lk-arrow"><span>›</span></div>
+          </div>
+          <div class="lk-card">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">?</span></div><span class="lk-lock"><svg><use href="#i-lock"/></svg></span></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name lk-name--hidden">匿名用户</span></div>
+                <span class="lk-time">2天前</span>
+              </div>
+            </div>
+            <div class="lk-arrow"><span>›</span></div>
+          </div>
+          <div class="lk-card">
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">溪</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">小溪</span></div>
+                <span class="lk-time">10月12日</span>
+              </div>
+              <span class="lk-headline">南京大学</span>
+            </div>
+            <div class="lk-arrow"><span>›</span></div>
+          </div>
+        </div>
+        <div class="lk-unlockbar">
+          <div class="lk-ubtn"><span>消耗 3 交友币解锁全部</span></div>
+          <span class="lk-uhint">解锁后查看全部列表</span>
+        </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F09 -->
+    <figure class="frame">
+      <figcaption><b>F09</b><span class="t">喜欢我的 · 批量模式</span><span class="d">batchMode=true · 解锁栏与箭头整块隐藏 · 第 5 条沉入批量栏</span></figcaption>
+      <div class="phone"><div class="lk-page">
+        <div class="lk-overlay"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lk-hdr">
+          <div class="lk-hdr__left">
+            <div class="lk-back"><span class="lk-back__i">‹</span></div>
+            <span class="lk-title">匹配列表</span>
+          </div>
+          <div class="lk-hdr__actions">
+            <div class="lk-signal"><svg><use href="#i-heart"/></svg><span class="lk-signal__t">心动信号</span><span class="lk-signal__dot"></span></div>
+            <div class="lk-manage"><span class="lk-manage__t">完成</span></div>
+          </div>
+        </div>
+        <div class="lk-search">
+          <div class="lk-search__box"><svg><use href="#i-search"/></svg><span class="lk-search__i lk-search__i--ph">搜索昵称、学校、城市</span></div>
+        </div>
+        <div class="lk-tabscard">
+          <div class="lk-tabs">
+            <div class="lk-tab lk-tab--on"><span class="lk-tab__l">喜欢我的</span><span class="lk-tab__b">6</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">我发出的喜欢</span><span class="lk-tab__b">4</span></div>
+            <div class="lk-tab"><span class="lk-tab__l">访客</span><span class="lk-tab__b">5</span></div>
+          </div>
+        </div>
+        <div class="lk-list">
+          <div class="lk-card lk-card--batch lk-card--sel">
+            <span class="lk-check lk-check--on"><svg><use href="#i-check"/></svg></span>
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">满</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">小满</span><span class="lk-vb"><svg><use href="#i-check"/></svg><span>已认证</span></span></div>
+                <span class="lk-time">刚刚</span>
+              </div>
+              <span class="lk-headline">北京大学</span>
+            </div>
+          </div>
+          <div class="lk-card lk-card--batch lk-card--sel">
+            <span class="lk-check lk-check--on"><svg><use href="#i-check"/></svg></span>
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">岚</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">周岚</span></div>
+                <span class="lk-time">12分钟前</span>
+              </div>
+              <span class="lk-headline">复旦大学</span>
+            </div>
+          </div>
+          <div class="lk-card lk-card--batch">
+            <span class="lk-check"></span>
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">?</span></div><span class="lk-lock"><svg><use href="#i-lock"/></svg></span></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name lk-name--hidden">匿名用户</span></div>
+                <span class="lk-time">3小时前</span>
+              </div>
+            </div>
+          </div>
+          <div class="lk-card lk-card--batch">
+            <span class="lk-check"></span>
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">辰</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">阿辰</span></div>
+                <span class="lk-time">2天前</span>
+              </div>
+              <span class="lk-headline">浙江大学</span>
+            </div>
+          </div>
+          <div class="lk-card lk-card--batch">
+            <span class="lk-check"></span>
+            <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">辰</span></div></div>
+            <div class="lk-info">
+              <div class="lk-row">
+                <div class="lk-namewrap"><span class="lk-name">星辰</span></div>
+                <span class="lk-time">10月21日</span>
+              </div>
+              <span class="lk-headline">南京大学</span>
+            </div>
+          </div>
+        </div>
+        <div class="lk-count"><span>已选 2 项</span></div>
+        <div class="lk-batchbar">
+          <div class="lk-batchbar__l">
+            <span class="lk-check"></span>
+            <span class="lk-batchbar__t">全选</span>
+          </div>
+          <div class="lk-batchbar__r">
+            <div class="lk-bbtn lk-bbtn--like"><span>喜欢</span></div>
+            <div class="lk-bbtn lk-bbtn--skip"><span>跳过</span></div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页共六类交互件：标签页、列表卡、认证徽章、心动信号丸、管理/批量栏、解锁栏。
+    「回关 / 打招呼 / 在线标」在本页<b>不存在</b>——互相喜欢项的唯一提示是粉色卡框 + 粉色箭头（点进去即聊天），
+    详见 §04 注记。</div>
+
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>标签页 · BaseTabs（pill · equal-split）· 五态</h3>
+      <p class="hint">三档等分（<code>flex:1 1 0</code>），label 单行省略；角标 = 对应数组长度，为 0 时不渲染（<code>badge: list.length || undefined</code>）；&gt;99 显示 <code>99+</code>。</p>
+      <div class="row">
+        <div class="cell"><div class="lk-tabs" style="width:200px"><div class="lk-tab lk-tab--on"><span class="lk-tab__l">喜欢我的</span><span class="lk-tab__b">6</span></div></div><span class="lab">选中 + 角标（角标反相：白片深字）</span></div>
+        <div class="cell"><div class="lk-tabs" style="width:200px"><div class="lk-tab"><span class="lk-tab__l">访客</span><span class="lk-tab__b">5</span></div></div><span class="lab">未选中 + 角标</span></div>
+        <div class="cell"><div class="lk-tabs" style="width:200px"><div class="lk-tab lk-tab--on"><span class="lk-tab__l">喜欢我的</span></div></div><span class="lab">选中 + 无数据（角标消失）</span></div>
+        <div class="cell"><div class="lk-tabs" style="width:200px"><div class="lk-tab"><span class="lk-tab__l">我发出的喜欢</span></div></div><span class="lab">未选中 + 无角标</span></div>
+        <div class="cell"><div class="lk-tabs" style="width:200px"><div class="lk-tab"><span class="lk-tab__l">喜欢我的</span><span class="lk-tab__b">99+</span></div></div><span class="lab">角标溢出档（formatBadge）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>列表卡 · 八态（缺一不可）</h3>
+      <p class="hint">同一张 <code>.likes-card</code> 上叠五个修饰符：<code>--mutual</code> / <code>--batch</code> / <code>--selected</code> / 头像 <code>--blur</code> / 名 <code>--hidden</code>。</p>
+      <table class="tbl">
+        <tr><th>态</th><th>源码条件</th><th>视觉差异</th></tr>
+        <tr><td>已解锁</td><td><code>isItemUnlocked(item)</code></td><td>首字头像 + 昵称 + 校名摘要 + 绿箭头</td></tr>
+        <tr><td>未解锁</td><td><code>item.unlocked !== true</code></td><td>头像模糊（有图）或「?」（无图）+ 右下锁角标 + 昵称「匿名用户」+ <b>摘要整行不渲染</b></td></tr>
+        <tr><td>互相喜欢</td><td><code>isMutualMatch(userId)</code></td><td>romance-300 边框 + romance-50→白 渐变底 + 粉箭头（点→聊天页）</td></tr>
+        <tr><td>非互相喜欢</td><td>同上取反</td><td>白卡 + 绿箭头（点→他人主页）</td></tr>
+        <tr><td>新访客</td><td><code>v-if="item.isNew"</code>（仅 visitors 档）</td><td>头像右上 12px romance 实心点，白描边</td></tr>
+        <tr><td>带头·无认证</td><td><code>!item.avatar</code></td><td>走 <code>.likes-card__avatar-placeholder</code>：brand-50→100 渐变 + 首字</td></tr>
+        <tr><td>批量未选</td><td><code>batchMode</code></td><td>左侧 22px 空勾选圈 + <code>padding-left</code> 收到 8px + 箭头隐藏</td></tr>
+        <tr><td>批量已选</td><td><code>batchMode &amp;&amp; selectedIds.includes(userId)</code></td><td>勾选圈实心 brand + 白勾 + brand 边框 + brand-50→白 渐变底</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>卡片实拍 · 四种常见组合</h3>
+      <p class="hint">宽度为面板内缩略档（非画框档），几何与 F04/F08 一致。</p>
+      <div class="mini">
+        <div class="lk-card lk-card--mutual">
+          <div class="lk-wrap"><div class="lk-av lk-av--photo lk-av--blur"><span class="lk-av__i">辰</span></div><span class="lk-lock"><svg><use href="#i-lock"/></svg></span></div>
+          <div class="lk-info">
+            <div class="lk-row"><div class="lk-namewrap"><span class="lk-name lk-name--hidden">匿名用户</span></div><span class="lk-time">3小时前</span></div>
+          </div>
+          <div class="lk-arrow"><span>›</span></div>
+        </div>
+        <div class="lk-card lk-card--mutual">
+          <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">满</span></div></div>
+          <div class="lk-info">
+            <div class="lk-row"><div class="lk-namewrap"><span class="lk-name">小满</span><span class="lk-vb"><svg><use href="#i-check"/></svg><span>已认证</span></span></div><span class="lk-time">刚刚</span></div>
+            <span class="lk-headline">北京大学</span>
+          </div>
+          <div class="lk-arrow lk-arrow--mutual"><span>›</span></div>
+        </div>
+        <div class="lk-card lk-card--batch lk-card--sel">
+          <span class="lk-check lk-check--on"><svg><use href="#i-check"/></svg></span>
+          <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">溪</span></div><span class="lk-newdot"></span></div>
+          <div class="lk-info">
+            <div class="lk-row"><div class="lk-namewrap"><span class="lk-name">小溪</span></div><span class="lk-time">刚刚</span></div>
+            <span class="lk-headline">浙江大学</span>
+          </div>
+        </div>
+        <div class="lk-card lk-card--batch">
+          <span class="lk-check"></span>
+          <div class="lk-wrap"><div class="lk-av"><span class="lk-av__i">岚</span></div></div>
+          <div class="lk-info">
+            <div class="lk-row"><div class="lk-namewrap"><span class="lk-name">周岚</span></div><span class="lk-time">12分钟前</span></div>
+            <span class="lk-headline">复旦大学</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>认证徽章 VerificationBadge（size="sm"）· 四档</h3>
+      <p class="hint">条件是 <code>isItemUnlocked(item) &amp;&amp; item.verificationBadgeLevel !== 'none'</code>：未解锁项<b>一律不显示徽章</b>；<code>none</code> 档 <code>:show-cta-when-none="false"</code>，不渲染「去认证」CTA。</p>
+      <div class="row">
+        <div class="cell"><span class="lk-vb"><svg><use href="#i-check"/></svg><span>已认证</span></span><span class="lab">school（brand-200 描边）</span></div>
+        <div class="cell"><span class="lk-vb lk-vb--mail"><svg><use href="#i-chat"/></svg><span>邮箱认证</span></span><span class="lab">email（info 蓝档）</span></div>
+        <div class="cell"><span class="lk-vb lk-vb--id"><svg><use href="#i-card"/></svg><span>实名认证</span></span><span class="lab">idcard（warning 橙档）</span></div>
+        <div class="cell"><span class="lk-name" style="font-size:var(--fs-2xl)">周岚</span><span class="lab">none → 整枚不渲染</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>心动信号丸 · 两态 + 契约 status 四值</h3>
+      <p class="hint">本页唯一消费点是 <code>hasHeartSignal = heartSignals.length &gt; 0</code>；<code>HeartSignalStatus</code> 本身<b>不在本页渲染</b>（渲染在 heart-signals 页）。</p>
+      <div class="row" style="margin-bottom:14px">
+        <div class="cell"><div class="lk-signal"><svg><use href="#i-heart"/></svg><span class="lk-signal__t">心动信号</span><span class="lk-signal__dot"></span></div><span class="lab">hasHeartSignal=true</span></div>
+        <div class="cell"><div class="lk-manage"><span class="lk-manage__t">管理</span></div><span class="lab">=false → 整枚 v-if 不渲染</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>status</th><th>映射来源</th><th>本页表现</th></tr>
+        <tr><td>pending</td><td><code>mapToHeartSignal</code> 兜底档</td><td>计入 <code>heartSignals.length</code> → 丸 + 脉冲红点</td></tr>
+        <tr><td>accepted</td><td><code>raw.status === 'accepted'</code></td><td>同上（本页不区分，红点无档位差）</td></tr>
+        <tr><td>declined</td><td><code>raw.status === 'declined'</code>（MP-R1-HSIGNALS-101 扩档）</td><td>同上——<b>本页不给「已拒绝」任何专属视觉</b>，登记给 heart-signals 页</td></tr>
+        <tr><td>expired</td><td><code>raw.status === 'expired'</code></td><td>同上</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>管理 / 完成 胶囊 + 批量操作栏 · 全组合</h3>
+      <p class="hint">胶囊文案由 <code>batchMode ? t('likes.finish') : t('likes.manage')</code> 给；栏内按钮按 <code>activeTab</code> 换整套键。</p>
+      <div class="row" style="margin-bottom:14px">
+        <div class="cell"><div class="lk-manage"><span class="lk-manage__t">管理</span></div><span class="lab">默认（88rpx 热区）</span></div>
+        <div class="cell"><div class="lk-manage"><span class="lk-manage__t">完成</span></div><span class="lab">批量态</span></div>
+        <div class="cell"><div class="lk-count" style="position:static;transform:none"><span>已选 2 项</span></div><span class="lab">selectedCount 胶囊</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>Tab</th><th>栏内按钮</th><th>batchProcessing=true</th></tr>
+        <tr><td>likedBy</td><td>全选（或取消） · <b>喜欢</b> · <b>跳过</b></td><td>两键 opacity .5，文案改「处理中...」</td></tr>
+        <tr><td>myLikes</td><td>全选（或取消） · <b>取消喜欢</b>（粉）</td><td>同上</td></tr>
+        <tr><td>visitors</td><td>仅全选（两枚 <code>v-if</code> 都不成立 → 右区空）</td><td>—</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>解锁栏 likes-unlock-bar · 三态</h3>
+      <p class="hint">显隐条件 <code>hasLockedItems &amp;&amp; !batchMode &amp;&amp; commerceCoinOn</code>；单价取 <code>UNLOCK_COST_YUAN</code>（LIKES/VISITORS 均 3），文案 <code>likesVisitors.unlockBtn</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:200px"><div class="lk-ubtn"><span>消耗 3 交友币解锁全部</span></div><span class="lab">在售（commerce.coin=on）</span></div>
+        <div class="cell" style="width:200px"><div class="lk-ubtn lk-ubtn--dis"><span>消耗 3 交友币解锁全部</span></div><span class="lab">VIP 会员：扣费前 0（文案不变，走 unlockVipFree toast）</span></div>
+        <div class="cell" style="width:200px"><div class="lk-state__t" style="font-size:var(--fs-md)">（整条不渲染）</div><span class="lab">封存态 commerce.coin=off → 连 spacer 一起消失；单条点击仅 toast「功能封存中，暂不可用」</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>空态 EmptyState · 四档文案</h3>
+      <p class="hint">标题三元 <code>isSearchEmpty ? t('likes.searchEmpty') : t('likes.empty*')</code>；三档各配自己的 desc，图标三档不同素材。</p>
+      <table class="tbl">
+        <tr><th>分支</th><th>标题</th><th>副标题</th></tr>
+        <tr><td>likedBy 空</td><td>还没有人喜欢我</td><td>多去看看推荐的人，增加曝光机会吧</td></tr>
+        <tr><td>myLikes 空</td><td>还没有喜欢的人</td><td>在 discover 卡片右滑，给心动的人点个赞</td></tr>
+        <tr><td>visitors 空</td><td>暂无访客</td><td>完善资料，让更多人发现你</td></tr>
+        <tr><td>搜索无结果（三档共用）</td><td>未找到匹配的用户</td><td>沿用当前 Tab 的 desc（不换成搜索副标）</td></tr>
+      </table>
+      <p class="hint" style="margin-top:12px">另：错误态 <code>&lt;ErrorState type="network"&gt;</code> 文案固定为「网络连接失败 / 请检查网络后重试 / 重试」，与空态互斥（<code>v-else-if</code> 链）。</p>
+    </div>
+
+    <div class="panel">
+      <h3>搜索框 · 三态</h3>
+      <p class="hint">300ms 防抖写 <code>store.searchQuery</code>；清空钮 <code>v-if="searchInput"</code>；切 Tab 由 <code>watch(activeTab)</code> 强制清空。</p>
+      <div class="row">
+        <div class="cell" style="width:200px"><div class="lk-search__box"><svg><use href="#i-search"/></svg><span class="lk-search__i lk-search__i--ph">搜索昵称、学校、城市</span></div><span class="lab">placeholder</span></div>
+        <div class="cell" style="width:200px"><div class="lk-search__box"><svg><use href="#i-search"/></svg><span class="lk-search__i">北京</span><span class="lk-search__x"><span>×</span></span></div><span class="lab">已填 + 可清空</span></div>
+        <div class="cell" style="width:200px"><div class="lk-search__box"><svg><use href="#i-search"/></svg><span class="lk-search__i">北京大</span></div><span class="lab">防抖窗口内（尚未过滤）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>与 design-variables.scss 一一对应，可直接抄进 SCSS</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用以下档位；源页引用到的未登记档位见 §04 的替换对照。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">解锁钮起点 · 选中卡边框 · 箭头字 · 登录墙标题</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#55D5A7"></span><div><div class="sw__n">主色 400<code>--c-brand-400</code></div><div class="sw__u">解锁钮渐变终点 · 重试按钮底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1F8D6A"></span><div><div class="sw__n">主色 700<code>--c-brand-700</code></div><div class="sw__u">批量「喜欢」渐变终点 · school 徽章字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">选中 Tab 胶囊 · 角标底 · 管理字 · 登录墙主钮</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">头像底/描边 · 选中卡渐变 · 页头氛围带</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫 500<code>--c-romance</code></div><div class="sw__u">心动信号丸 · 新访客点 · 批量「取消喜欢」</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF8DA1"></span><div><div class="sw__n">浪漫 300<code>--c-romance-300</code></div><div class="sw__u">mutual 卡边框 · 粉箭头 · 头像环虚线</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFECEF"></span><div><div class="sw__n">浪漫 50<code>--c-romance-50</code></div><div class="sw__u">mutual 卡渐变起点 · 信号丸底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">.phone 底 · 未选中 Tab 胶囊 · 游客页底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6"></span><div><div class="sw__n">表面<code>--c-bg-surface</code></div><div class="sw__u">时间胶囊底（替 --c-neutral-50）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF2F0"></span><div><div class="sw__n">浅边框<code>--c-border-light</code></div><div class="sw__u">跳过钮 · 清空钮底 · 固定栏上边框</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#C2CAC6"></span><div><div class="sw__n">强边框<code>--c-border-strong</code></div><div class="sw__u">未勾选 checkbox 描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#4D8DFF"></span><div><div class="sw__n">信息<code>--c-status-info</code></div><div class="sw__u">email 徽章档（组件内 --c-badge-email-* 的最近登记档）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F59E0B"></span><div><div class="sw__n">警告<code>--c-warning</code></div><div class="sw__u">idcard 徽章档（同上）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">文字主色<code>--c-text-primary</code></div><div class="sw__u">标题/昵称 · 锁角标底 · 已选数胶囊底</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到九档（rpx ÷ 2 = px）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/700</span><span class="type__p" style="font-size:22px;font-weight:700">匹配列表 · 正在为你寻找</span></div>
+        <div class="type__i"><span class="type__m">--fs-4xl 20/700</span><span class="type__p" style="font-size:20px">满 · 岚 · ?</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px">小满 · 周岚 · 匿名用户</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600</span><span class="type__p" style="font-size:15px;font-weight:600">还没有人喜欢我 · 微信一键登录</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/700</span><span class="type__p" style="font-size:14px;font-weight:700">消耗 3 交友币解锁全部</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/500</span><span class="type__p" style="font-size:13px;font-weight:600">喜欢我的 · 管理 · 北京大学</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px;font-weight:400;color:var(--c-text-tertiary)">刚刚 · 12分钟前 · 心动信号</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-tertiary)">Tab 角标 · 已选 2 项</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/400</span><span class="type__p" style="font-size:10px;font-weight:400;color:var(--c-text-tertiary)">已认证 · 解锁后查看全部列表</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 阴影</h3><p class="hint">rpx ÷ 2 = px。<code>--section-gap</code> 24rpx 同时是页头/搜索/Tab 卡/列表的行距。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-1 2rpx</b><i style="width:1px"></i></div>
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--sp-10 72rpx</b><i style="width:36px"></i></div>
+        <div class="space__i"><b>--section-gap 24rpx</b><i style="width:12px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:4px"></b>--r-sm<br>12rpx · 骨架行</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · Tab 角标</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · Tab 卡 / 骨架卡</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 列表卡</div>
+        <div class="rad__i"><b style="border-radius:999px;width:64px;height:32px"></b>--r-full<br>胶囊 · 头像 / 钮 / 角标</div>
+      </div>
+      <div class="row" style="margin-top:18px;gap:18px">
+        <div class="cell"><div class="lk-card" style="width:186px;padding:10px"><span class="lk-av__i" style="font-size:var(--fs-sm)">卡</span></div><span class="lab">--s-card-soft + --c-border-card</span></div>
+        <div class="cell"><div class="lk-wbtn lk-wbtn--pri" style="width:186px;height:36px"><span class="lk-wbtn__t lk-wbtn__t--pri" style="font-size:var(--fs-md)">微信一键登录</span></div><span class="lab">--s-brand（登录墙主钮）</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>本页图标全部走工程既有 ICONS_* 体系，无新素材缺口</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_EMOJI.SEARCH / LOCK</b><p>搜索框放大镜、未解锁锁角标。二者是位图/外链 SVG，<code>&lt;image&gt;</code> 吃不到 currentColor，画板按 lucide 同形描边档重绘。</p><div class="m">16px / 12px · --c-text-tertiary · --c-bg-container</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_COMMON.CHECK_WHITE_SVG</b><p>批量勾选内的白勾（<code>v-if="selectedIds.includes(userId)"</code> 才挂）。画板用同形描边勾，白字压 --c-brand。</p><div class="m">14px · --c-bg-container</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_COMMON.HEART / ICONS_SOCIAL.VISITOR / HEART_SIGNAL</b><p>空态图标与心动信号丸前缀。工程侧是彩色插画（不走 EmptyState 的 <code>--preset</code> 归色 filter），画板按同形矢量单色档绘制。</p><div class="m">60px / 16px · --c-romance-300 · --c-romance</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>用户实拍 · 头像 / 登录墙头像环</b><p>头像位是用户上传（<code>resolveMediaUrl(item.avatar)</code>），设计稿不得放示例或网图。画板统一走源码 <code>v-else</code> 首字占位分支；登录墙 6 枚演示头像用灰底圆 + 心动角标占位。</p><div class="m">52px / 48px · 非素材缺口</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异 + 档位替换对照（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>标签页是 3 档不是 2 档。</b>任务描述写「喜欢我的 / 我喜欢的人」两档，源码 <code>likesTabs</code> 给三档：<code>likedBy / myLikes / visitors</code>（第三档访客懒加载 <code>fetchVisitors</code>）。画板按源码画三档。页标题也不是「喜欢我的」而是 <code>likes.title</code>「匹配列表」。</li>
+      <li><b>本页没有「在线标 / 已匹配徽标 / 回关 / 打招呼」。</b>源码里 <code>likes-card--mutual</code> 只改卡框与箭头配色，无文字标签；打招呼/发消息在他人主页（<code>profile.otherMessage</code>）与聊天页，不在这张卡上。画板不补不存在的件。</li>
+      <li><b><code>HeartSignalStatus</code>（pending / accepted / expired / declined）不在本页渲染。</b>本页只读 <code>heartSignals.length &gt; 0</code> 决定信号丸显隐，四档 status 的专属视觉属 heart-signals 页，画板只在 §02 列表登记，不在帧内造 UI。</li>
+      <li><b>不显示匹配度/合拍度。</b>按产品裁定真值就绪前不回填，画板帧内没有任何百分比；卡片第二行是契约真字段 <code>headline ← LikedUserView.campusName</code>（校名），不是算法分。</li>
+      <li><b>Tab 角标是计数，属「示意值，非真值」。</b>角标绑 <code>likedBy / likes / visitors</code> 三个数组的 <code>length</code>（0 时隐藏，&gt;99 显示 99+），画板内取演示条数 6 / 4 / 5。帧内未出现「X 人查看过你」一类浮层计数——源码里没有这个件。</li>
+      <li><b>角标绑的是未过滤数组。</b><code>likesTabs</code> 取 <code>likedBy.value.length</code> 而非 <code>displayLikedBy.length</code> ⇒ F06 搜索无结果时列表空、角标仍是 6（画板按实况保留这一对不一致，验收时不要当成画板错）。</li>
+      <li><b>错误态图标沿用放大镜。</b><code>ErrorState type="network"</code> 的 <code>iconSrc</code> 映射到 <code>ICONS_COMMON.SEARCH</code>（组件内既有口径，R12-L11-D08 只改了 EmptyState 的 network 档）⇒ 帧上「网络连接失败」配一枚放大镜，语义不贴，登记不改码。</li>
+      <li><b>演示人设：</b>小满（北京大学）、周岚（复旦大学 / 清华大学）、阿辰（浙江大学 · 实名认证 / 中山大学）、星辰（南京大学 · 邮箱认证）、小溪（武汉大学 / 浙江大学）；时间文案逐字取 <code>common.justNow / minutesAgo / hoursAgo / daysAgo</code> 与 <code>likes.monthDay</code>。</li>
+      <li><b>未登记档位替换对照</b>（源页 <code>&lt;style&gt;</code> 引用了 base 未收录的 <code>--c-*</code>，画板改用最接近的已登记档）：<code>--c-neutral-50</code>→<code>--c-bg-surface</code>（时间胶囊底）；<code>--c-neutral-100</code>→<code>--c-border-light</code>（同值 #EEF2F0：跳过钮 / 清空钮 / 固定栏上边框）；<code>--c-neutral-200</code>→<code>--c-border-default</code>（骨架 shimmer 中段）；<code>--c-neutral-300</code>→<code>--c-border-strong</code>（checkbox 描边）；<code>--c-bg-brand</code> #E8FBF2→<code>--c-brand-50</code>（头像底/描边、选中卡、箭头渐变）；<code>--c-brand-900</code> #0B4A38→<code>--c-brand-800</code>（登录墙主钮渐变塌成单色实底）；<code>--c-romance-100/200</code>→<code>--c-romance-50 / --c-romance-300</code>（信号丸底、粉箭头渐变）；<code>--c-romance-700</code> #CC4A5F→<code>--c-romance</code>（mutual 箭头字形，R14-L06-D12 的 3.05:1 达标值在画板上退一档，真机仍以源码为准）；<code>--c-romance-500</code>→<code>--c-romance</code>（同值）；<code>--c-quaternary/neutral-400</code>→<code>--c-text-placeholder</code>（ErrorState 副标）；<code>--c-overlay-strong(er)</code>→<code>--c-text-primary</code>（锁角标底、已选数胶囊底）；<code>--c-badge-email-*</code>→<code>--c-status-info</code>、<code>--c-badge-idcard-*</code>→<code>--c-warning</code>（VerificationBadge 组件内档位）。</li>
+      <li><b>渐变/阴影档位对照：</b><code>--c-gradient-page</code> #DFF3EA→#EEF7F2→画板用 <code>--c-bg-page</code> 实底；<code>--c-gradient-brand-overlay</code>（brand @ 8%→透明）→<code>--c-brand-50</code>→透明；<code>--c-gradient-brand</code>→<code>linear-gradient(--c-brand, --c-brand-400)</code>；<code>--s-romance</code> 与 <code>--c-black-shadow-sm</code>（固定栏上浮影）base 未登记→画板省略阴影、只留 0.5px 上边框；<code>--r-card 40rpx</code> 与 <code>--card-radius</code> 同值，画板用 <code>--r-card</code>。</li>
+      <li><b>帧内可见的两处结构性事实（验收要判）：</b>① 游客态登录墙实高约 728px，而「视口 − 页头带」只有 704px，末钮「稍后再看」下沿被 <code>.likes-page--guest{height:100vh;overflow:hidden}</code> 裁掉约 24px（R10-L06-D25 收口后仍差一档，题注已记，画面无注记）；② 列表末条沉入固定解锁栏（页底 <code>padding-bottom: calc(env + 160rpx)</code> 的 spacer 只在 <code>hasLockedItems</code> 时给）。</li>
+      <li><b>对比度遗留（登记不改码）：</b>心动信号丸 12px/600 的 <code>--c-romance-500</code> 字压 <code>--c-romance-50</code> 底 ≈ 2.4:1；批量「取消喜欢」白字压 <code>--c-romance-500</code> ≈ 2.7:1（同栏「喜欢」用 brand→brand-700 已达标）。两处的收口口径与 R14-L06-D11 相同（落 romance 档最深可用值），画板按源页原样呈现，便于比对时一眼定位。</li>
+      <li>本页在 <code>discover-extra</code> 分包、<code>navigationStyle: custom</code>，<b>无 tabbar、无原生导航栏</b>；页头是页面自绘的白圆返回「‹」+ 深色标题（R10-L06-D26 / R13-L06-D09 口径），右侧为微信胶囊预留 <code>--capsule-right + 96px</code> 空带——画板里这段空带保持空白，不得填入任何控件。</li>
+      <li><b>页头在有心动信号丸时会折行</b>（<code>flex-wrap: wrap</code> + MP-R1-LIKES-001 的换行让位口径）：F04 / F06 / F08 / F09 的「心动信号 + 管理」整体落到标题下方第二行右对齐，F02 / F03 / F05 / F07（无信号丸）则与标题同行。这是源码行为，不是画板排版失误。</li>
+      <li><b>本页可下拉刷新</b>（<code>enablePullDownRefresh: true</code>）：三源并发重拉 <code>fetchLikes / fetchHeartSignals / fetchVisitors</code>，画板不画下拉态（非静态可视态）。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 匹配列表页（喜欢我的 / 我发出的喜欢 / 访客）高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1845（面积 1,571,940 px，对齐 素材/理想效果图 语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

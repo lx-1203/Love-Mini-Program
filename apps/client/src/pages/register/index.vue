@@ -157,6 +157,7 @@ const formComplete = computed(() =>
   confirmPassword.value === password.value &&
   nickname.value.trim().length >= 1 &&
   !!birthDate.value &&
+  isAdult(birthDate.value) &&
   agreed.value,
 );
 

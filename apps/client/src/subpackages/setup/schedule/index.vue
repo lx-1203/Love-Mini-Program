@@ -12,7 +12,7 @@
  * 推荐偏好；非学生：基本资料→日程→推荐偏好）。完成度链路：
  * 基本资料30 + 校园30(学生) + 日程20 = 80 → profileCompleted=true → 解锁全部功能。
  */
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { IMAGE_PATHS } from "../../../config/images";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
@@ -22,10 +22,17 @@ import SetupProgress from "../../../components/setup/SetupProgress.vue";
 import { useProfileStore } from "../../../stores/profile";
 import { replaceAppPath } from "../../../utils/navigation";
 import { SUBPACKAGE_ROUTES } from "../../../constants/routes";
+import { loadIdentity } from "../../../config/identity";
 // R4-batch2: 页面文案 i18n 化
 import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
+
+/* 进度条读数随身份切（与 recommend-pref 同一写法、同一真值源 loadIdentity）：
+   学生第 3/5 屏，非学生跳过校园认证后是第 2/4 屏。 */
+const identity = loadIdentity();
+const setupCurrentStep = computed(() => (identity === "non_student" ? 2 : 3));
+const setupVariant = computed(() => (identity === "non_student" ? "non-student" : "student"));
 
 const profileStore = useProfileStore();
 // R4-00045/46 修复：注册流程表单不再预填示例值（"图书馆和北草坪"/["今晚","本周"]/设计课课表），
@@ -120,17 +127,10 @@ async function save() {
          两张卡套一层普通 view 作纵向堆叠容器——不给 SectionCard 标签本身写宿主页 scoped 类，
          因为 uni-app mp-weixin 把子组件编译成自定义组件，宿主 scoped 选择器落在组件根上不可靠
          （SafeImage 同型前例，见共享基件车道结论）。 -->
-    <!-- R15-L12-D08（位置 P2）：campus:221 与 recommend-pref:181 在本页同一位置
-         （页头副标题之下、正文首卡之上）都有这一块；本页此前直接起「偏好设置」卡，
-         学生在第 3/5 步看不到任何进度指示。按另两页同一组件、同一 5 步表补回
-         （shell__body 已是 flex 列 + 24rpx gap，无需另写间距）。
-         偏离卡上 `variant="student"` 一字：SetupProgress.vue:143-146 的 LEGACY_STEP_MAP.student
-         是旧表 {1:1,2:2,3:4,4:5}，**没有任何键映射到新位置 3**——按卡传 student+3 会被
-         映射成 4「推荐偏好」，画面会把第 3 步报成 4/5。本页传的是真实链路序号（3=时间安排），
-         故走 variant="full"（STEP_DEFS_FULL 与 STEP_DEFS_STUDENT 在 :79-97 逐条同值，
-         圆点/连线/计数口径与另两页完全一致），实得「第 3/5 步 · 时间安排」。
-         改 LEGACY_STEP_MAP 属组件车道，不在本车道可写集。 -->
-    <SetupProgress :current-step="3" variant="full" />
+    <!-- 进度条传**真实链路位置**（2026-10-27 组件契约收敛后不再做旧表映射）：
+         学生链 基本信息→校园认证→时间安排→推荐偏好→完成，本页是第 3/5 屏；
+         非学生跳过校园认证，本页是其第 2/4 屏，故 variant 也要随身份切。 -->
+    <SetupProgress :current-step="setupCurrentStep" :variant="setupVariant" />
 
     <view class="card-stack">
       <SectionCard :title="t('setup.schedule.prefTitle')" compact>
@@ -238,6 +238,7 @@ async function save() {
    否则「+ 添加时段」盒会被 CTA 盖住。 */
 .cta-spacer {
   height: calc(152rpx + env(safe-area-inset-bottom));
+  flex-shrink: 0;
 }
 
 /* R11-L12-D13：可见字段名，档位与同流程 campus 的 .form-row__label 逐条同值。

@@ -1437,7 +1437,7 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   background: rgba(54, 201, 154, 0.12);
 }
 .status-chatting .chat-item__status-text {
-  color: var(--c-text-success, #36C99A);
+  color: var(--c-text-brand);
 }
 .status-new {
   background: rgba(154, 163, 159, 0.12);
@@ -1451,13 +1451,13 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   background: rgba(60, 201, 154, 0.12);
 }
 .status-mutual .chat-item__status-text {
-  color: var(--c-text-success, #3CC99A);
+  color: var(--c-text-brand);
 }
 .status-ambiguous {
   background: rgba(255, 107, 129, 0.12);
 }
 .status-ambiguous .chat-item__status-text {
-  color: var(--c-text-error, #FF6B81);
+  color: var(--c-text-romance);
 }
 .chat-item__status-text {
   font-size: 20rpx;

@@ -20,10 +20,17 @@ defineEmits<{ (e: "invite"): void }>();
       <text class="invite-banner__title">{{ t('home.inviteTitle') }}</text>
       <text class="invite-banner__desc">{{ t('home.inviteSubtitle') }}</text>
     </view>
+    <!-- 2026-10-26 对齐理想图（首页.png 邀请横幅）：完整带翅膀爱心插画置于「去邀请」按钮左侧
+         （原为右下角露出一角的 HeartFilled 装饰，素材取自理想图裁切，见 IN_PACKAGE_ASSETS 登记表） -->
+    <image
+      class="invite-banner__wing"
+      :src="resolveMediaUrl(IMAGE_PATHS.INVITE_WINGED_HEART)"
+      mode="aspectFit"
+      alt=""
+    />
     <view class="invite-banner__btn">
       <text class="invite-banner__btn-text">去邀请</text>
     </view>
-    <image class="invite-banner__wing" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED)" mode="aspectFit" alt="" />
   </view>
 </template>
 
@@ -83,7 +90,7 @@ defineEmits<{ (e: "invite"): void }>();
   color: #A98F94;
 }
 
-/* CTA 压在装饰层之上：装饰 wing 定位 right/bottom -16rpx，此前 DOM 序在按钮之后 → 后绘覆盖「去邀请」右缘 */
+/* 2026-10-26：装饰插画已改为文档流内元素，CTA 不再依赖 z-index 抗覆盖（保留层级以防重叠回归） */
 .invite-banner__btn {
   position: relative;
   z-index: 1;
@@ -99,19 +106,13 @@ defineEmits<{ (e: "invite"): void }>();
   font-weight: 600;
 }
 
+/* 2026-10-26：完整带翅膀爱心插画，文档流内置于按钮左侧（不再 absolute 露角） */
 .invite-banner__wing {
-  position: absolute;
-  right: -16rpx;
-  bottom: -16rpx;
-  width: 80rpx;
-  height: 80rpx;
-  color: #FFC9D2;
-  opacity: 0.6;
+  width: 88rpx;
+  height: 56rpx;
+  flex-shrink: 0;
   /* MP-R2VIS-PAGES-HOME-INDEX-002（使用说明 §1.6 第 6 条）：纯装饰 image 不得参与 hit-test，
-     否则 mp-weixin iOS WebView 原生 <image> 吞掉「去邀请」CTA 右缘热区。
-     注：必须写在 WXSS 里——同页 RelationActivity 用的 pointer-events="none" 属性形式在 WXML
-     中只是未知 attribute，不改变渲染层 hit-test（CSS 形式才是生效的那一条）。 */
+     否则 mp-weixin iOS WebView 原生 <image> 吞掉「去邀请」CTA 热区。必须写 CSS 形式。 */
   pointer-events: none;
-  z-index: 0;
 }
 </style>

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 逛逛商城页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 未登记令牌：按 design-variables.scss 真值 1:1 落地（base 缺档，已回报 BASE_PROBLEM） ===== */
+:root{
+  --c-vip-from: #C9A36A;                        /* scss :46/:309 · 积分条渐变起点 */
+  --c-vip-border-tint: rgba(201, 163, 106, 0.35);/* scss :869 · 积分条投影 */
+  --c-neutral-400: #9AA39F;                     /* scss :355（与 base 的 --c-text-quaternary 同值）*/
+  --c-tint-gray-50: #F3F4F6;                    /* scss :831 */
+}
+
+/* ===== 本页专属组件 ===== */
+/* 页头：无导航栏组件，标题行自带返回盘（2026-08-09 补） */
+.sheader { position: absolute; top: 0; left: 0; width: 100%; z-index: 5; background: transparent;
+  padding: 56px 16px 12px; display: flex; align-items: center; gap: 6px; }
+.sheader__back { width: 32px; height: 32px; flex: none; border-radius: var(--r-full);
+  background: var(--c-bg-container); border: 1px solid var(--c-neutral-500);
+  display: flex; align-items: center; justify-content: center; color: var(--c-text-primary); }
+.sheader__back svg { width: 20px; height: 20px; }
+.sheader__title { font-size: var(--fs-5xl); font-weight: 800; color: var(--c-brand-800); letter-spacing: 0.3px; }
+
+/* 积分条（Task D） */
+.pbar { margin: 0 12px 10px; padding: 10px 14px; border-radius: var(--r-xl);
+  background: linear-gradient(135deg, var(--c-vip-from) 0%, var(--c-vip-border-light) 100%);
+  box-shadow: 0 2px 8px var(--c-vip-border-tint);
+  display: flex; align-items: center; justify-content: space-between; }
+.pbar__l { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.pbar__ic { width: 20px; height: 20px; flex: none; color: var(--c-text-inverse); }
+.pbar__ic svg { width: 20px; height: 20px; }
+.pbar__label { font-size: var(--fs-md); font-weight: 700; color: var(--c-text-inverse); }
+.pbar__r { display: flex; align-items: baseline; gap: 6px; flex: none; }
+.pbar__value { font-size: var(--fs-4xl); font-weight: 800; color: var(--c-text-inverse); line-height: 1; }
+.pbar__hint { font-size: var(--fs-xs); font-weight: 500; color: var(--c-overlay-text-secondary); white-space: nowrap; }
+
+/* 分类 chip */
+.cbar { padding: 0 12px 12px; }
+.clist { display: flex; gap: 8px; }
+.citem { flex: none; padding: 8px 16px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: 1px solid transparent; box-shadow: 0 1px 8px var(--c-black-shadow-xs); }
+.citem__t { font-size: var(--fs-md); color: var(--c-neutral-500); font-weight: 500; }
+.citem--on { background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 100%);
+  box-shadow: 0 2px 8px var(--c-brand-border-tint-stronger); }
+.citem--on .citem__t { color: var(--c-text-inverse); font-weight: 700; }
+
+/* 状态位 */
+.sstate { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 60px 20px; }
+.sstate__spin { width: 28px; height: 28px; border: 2px solid var(--c-neutral-100); border-top-color: var(--c-brand); border-radius: 50%; }
+.sstate__text { font-size: var(--fs-md); color: var(--c-text-tertiary); }
+.sstate__btn { min-height: 48px; padding: 0 16px; border-radius: var(--r-full); background: var(--c-brand);
+  display: flex; align-items: center; justify-content: center; }
+.sstate__btn-text { font-size: var(--fs-md); font-weight: 600; color: var(--c-text-inverse); }
+/* 封存卡（shop-sealed：margin 60rpx var(--page-padding) / padding var(--card-padding) / --r-xxl） */
+.sealed { margin: 30px 16px; padding: 16px; border-radius: var(--r-xxl); background: var(--c-bg-container);
+  border: var(--c-border-card); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.sealed__ic { width: 48px; height: 48px; opacity: 0.55; color: var(--c-text-primary); }
+.sealed__ic svg { width: 48px; height: 48px; }
+.sealed__t { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.sealed__d { font-size: var(--fs-md); color: var(--c-text-secondary); text-align: center; line-height: 1.6; }
+
+/* 商品网格 */
+.sgrid { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 12px; }
+.scard { width: 165px; background: var(--c-bg-container); border-radius: var(--r-xl); overflow: hidden;
+  box-shadow: 0 1px 8px var(--c-black-shadow-xs); }
+.scard__imgw { position: relative; width: 100%; height: 150px; background: var(--c-bg-page); }
+.scard__imgw img { width: 100%; height: 100%; object-fit: cover; }
+.scard__tag { position: absolute; top: 8px; left: 8px; padding: 4px 8px; border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-romance-500) 0%, var(--c-romance-400) 100%);
+  box-shadow: var(--s-romance-md); }
+.scard__tag span { font-size: var(--fs-xs); color: var(--c-text-inverse); font-weight: 700; }
+.scard__info { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+.scard__title { font-size: var(--fs-md); color: var(--c-text-primary); font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scard__pr { display: flex; align-items: center; gap: 6px; }
+.scard__price { font-size: var(--fs-3xl); font-weight: 800; color: var(--c-romance-500); }
+.scard__oprice { font-size: var(--fs-sm); color: var(--c-neutral-400); text-decoration: line-through; }
+.scard__sales { font-size: var(--fs-sm); color: var(--c-neutral-400); }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10.5" width="16" height="11" rx="2.4"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><rect x="3.5" y="9" width="17" height="4" rx="1.2"/><path d="M5.2 13v6.2a1.4 1.4 0 0 0 1.4 1.4h10.8a1.4 1.4 0 0 0 1.4-1.4V13"/><path d="M12 9v11.6"/><path d="M12 9S10.6 4.6 8.4 4.6a2.2 2.2 0 0 0 0 4.4zM12 9s1.4-4.4 3.6-4.4a2.2 2.2 0 0 1 0 4.4z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>逛逛商城页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/market/shop/index</code>（站内名「逛逛」：校内商品 / 票务 / 优惠券）。
+     本页状态机 5 态 = 外层 <code>v-if="!commerceSealed"</code>（<code>:292</code>）与内层
+     <code>shopLoading → shopError → filteredItems.length===0 → 网格</code>（<code>:327-376</code>）两级串联，
+     逐屏画全作为该页永久验收基准。积分条、分类 chip、商品卡三件的分支条件（<code>item.tag</code> 非空、
+     <code>originalPrice &gt; 0</code>）也在 §02 枚举。</p>
+  <div class="cover__meta">
+    <span>路由 <b>market/shop</b></span>
+    <span>分包 <b>market</b>（无 tabbar）</span>
+    <span>状态 <b>5 屏</b></span>
+    <span>闸门 <b>commerce.enabled（总闸，无子闸）</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 5 屏</h2>
+    <p>封存 / 加载中 / 加载失败 / 分类空态 / 商品网格</p></div>
+  <div class="sec__sub">本页状态机有 5 态，来自 <code>market/shop/index.vue:292 + :327-376</code> 的
+    <code>v-if="!commerceSealed"</code> 与内层 <code>v-if="shopLoading" / v-else-if="shopError" / v-else-if="filteredItems.length===0" / v-else 网格</code>。
+    页头是页面自绘的「返回盘 + 逛逛」标题行（<code>navigationStyle: custom</code>，无原生栏、无 tabbar）；
+    封存态下积分条与分类条一并被外层 <code>template</code> 吞掉（<code>:292-381</code>），只剩页头 + 白卡。
+    F01 是当前默认态（总闸缺省 false）；F02–F05 画的是开关开启态。帧即视口，超出 812px 裁掉，裁切只写在题注里。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">商业化封存态（当前默认）</span><span class="d">积分条/分类条同隐 · 仅页头+白卡</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="sheader"><span class="sheader__back"><svg><use href="#i-back"/></svg></span><span class="sheader__title">逛逛</span></div>
+        <div style="position:absolute;top:100px;left:0;width:100%">
+          <div class="sealed">
+            <span class="sealed__ic"><svg><use href="#i-lock"/></svg></span>
+            <span class="sealed__t">功能封存中</span>
+            <span class="sealed__d">该功能暂未开放，开放时间将另行通知</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">开关开启 · 加载中</span><span class="d">积分条已出 · 网格未出</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="sheader"><span class="sheader__back"><svg><use href="#i-back"/></svg></span><span class="sheader__title">逛逛</span></div>
+        <div style="position:absolute;top:100px;left:0;width:100%">
+          <div class="pbar">
+            <span class="pbar__l"><span class="pbar__ic"><svg><use href="#i-gift"/></svg></span><span class="pbar__label">我的积分</span></span>
+            <span class="pbar__r"><span class="pbar__value">100</span><span class="pbar__hint">积分可在商城兑换权益</span></span>
+          </div>
+          <div class="cbar"><div class="clist">
+            <span class="citem citem--on"><span class="citem__t">全部</span></span>
+            <span class="citem"><span class="citem__t">活动票务</span></span>
+            <span class="citem"><span class="citem__t">餐饮美食</span></span>
+            <span class="citem"><span class="citem__t">校园周边</span></span>
+            <span class="citem"><span class="citem__t">文创周边</span></span>
+          </div></div>
+          <div class="sstate" style="padding-top:120px"><span class="sstate__spin"></span><span class="sstate__text">加载中...</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">开关开启 · 加载失败</span><span class="d">catch → shopError · 可重试</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="sheader"><span class="sheader__back"><svg><use href="#i-back"/></svg></span><span class="sheader__title">逛逛</span></div>
+        <div style="position:absolute;top:100px;left:0;width:100%">
+          <div class="pbar">
+            <span class="pbar__l"><span class="pbar__ic"><svg><use href="#i-gift"/></svg></span><span class="pbar__label">我的积分</span></span>
+            <span class="pbar__r"><span class="pbar__value">100</span><span class="pbar__hint">积分可在商城兑换权益</span></span>
+          </div>
+          <div class="cbar"><div class="clist">
+            <span class="citem citem--on"><span class="citem__t">全部</span></span>
+            <span class="citem"><span class="citem__t">活动票务</span></span>
+            <span class="citem"><span class="citem__t">餐饮美食</span></span>
+            <span class="citem"><span class="citem__t">校园周边</span></span>
+            <span class="citem"><span class="citem__t">文创周边</span></span>
+          </div></div>
+          <div class="sstate" style="padding-top:110px"><span class="sstate__text">商品加载失败，请重试</span>
+            <span class="sstate__btn"><span class="sstate__btn-text">重试</span></span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">开关开启 · 该分类下暂无商品</span><span class="d">real 模式后端返空 · 仅一行文字</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="sheader"><span class="sheader__back"><svg><use href="#i-back"/></svg></span><span class="sheader__title">逛逛</span></div>
+        <div style="position:absolute;top:100px;left:0;width:100%">
+          <div class="pbar">
+            <span class="pbar__l"><span class="pbar__ic"><svg><use href="#i-gift"/></svg></span><span class="pbar__label">我的积分</span></span>
+            <span class="pbar__r"><span class="pbar__value">100</span><span class="pbar__hint">积分可在商城兑换权益</span></span>
+          </div>
+          <div class="cbar"><div class="clist">
+            <span class="citem"><span class="citem__t">全部</span></span>
+            <span class="citem"><span class="citem__t">活动票务</span></span>
+            <span class="citem"><span class="citem__t">餐饮美食</span></span>
+            <span class="citem citem--on"><span class="citem__t">校园周边</span></span>
+            <span class="citem"><span class="citem__t">文创周边</span></span>
+          </div></div>
+          <div class="sstate" style="padding-top:130px"><span class="sstate__text">该分类下暂无商品</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">开关开启 · 商品网格（mock 6 件 · 全部）</span><span class="d">↓ 裁切至第 3 行图片位内</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="sheader"><span class="sheader__back"><svg><use href="#i-back"/></svg></span><span class="sheader__title">逛逛</span></div>
+        <div style="position:absolute;top:100px;left:0;width:100%">
+          <div class="pbar">
+            <span class="pbar__l"><span class="pbar__ic"><svg><use href="#i-gift"/></svg></span><span class="pbar__label">我的积分</span></span>
+            <span class="pbar__r"><span class="pbar__value">100</span><span class="pbar__hint">积分可在商城兑换权益</span></span>
+          </div>
+          <div class="cbar"><div class="clist">
+            <span class="citem citem--on"><span class="citem__t">全部</span></span>
+            <span class="citem"><span class="citem__t">活动票务</span></span>
+            <span class="citem"><span class="citem__t">餐饮美食</span></span>
+            <span class="citem"><span class="citem__t">校园周边</span></span>
+            <span class="citem"><span class="citem__t">文创周边</span></span>
+          </div></div>
+          <div class="sgrid">
+            <div class="scard">
+              <div class="scard__imgw"><img src="assets/demo/circle-cover-music.jpg" alt=""><span class="scard__tag"><span>热销</span></span></div>
+              <div class="scard__info"><span class="scard__title">校园音乐节早鸟票</span>
+                <div class="scard__pr"><span class="scard__price">¥99</span><span class="scard__oprice">¥129</span></div>
+                <span class="scard__sales">已售 56</span></div>
+            </div>
+            <div class="scard">
+              <div class="scard__imgw"><img src="assets/demo/post-2.jpg" alt=""><span class="scard__tag"><span>新品</span></span></div>
+              <div class="scard__info"><span class="scard__title">校园文创帆布袋</span>
+                <div class="scard__pr"><span class="scard__price">¥29.9</span><span class="scard__oprice">¥39.9</span></div>
+                <span class="scard__sales">已售 128</span></div>
+            </div>
+            <div class="scard">
+              <div class="scard__imgw"><img src="assets/demo/post-4.jpg" alt=""><span class="scard__tag"><span>限时</span></span></div>
+              <div class="scard__info"><span class="scard__title">食堂午餐优惠券</span>
+                <div class="scard__pr"><span class="scard__price">¥9.9</span><span class="scard__oprice">¥15</span></div>
+                <span class="scard__sales">已售 234</span></div>
+            </div>
+            <div class="scard">
+              <div class="scard__imgw"><img src="assets/demo/campus-library.jpg" alt=""></div>
+              <div class="scard__info"><span class="scard__title">校徽纪念徽章</span>
+                <div class="scard__pr"><span class="scard__price">¥19.9</span><span class="scard__oprice">¥25</span></div>
+                <span class="scard__sales">已售 89</span></div>
+            </div>
+            <div class="scard">
+              <div class="scard__imgw"><img src="assets/demo/circle-cover-sports.jpg" alt=""></div>
+              <div class="scard__info"><span class="scard__title">篮球赛门票</span>
+                <div class="scard__pr"><span class="scard__price">¥15</span><span class="scard__oprice">¥20</span></div>
+                <span class="scard__sales">已售 45</span></div>
+            </div>
+            <div class="scard">
+              <div class="scard__imgw"><img src="assets/demo/circle-cover-travel.jpg" alt=""><span class="scard__tag"><span>推荐</span></span></div>
+              <div class="scard__info"><span class="scard__title">校园手绘地图</span>
+                <div class="scard__pr"><span class="scard__price">¥12.9</span><span class="scard__oprice">¥18</span></div>
+                <span class="scard__sales">已售 167</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">四类件：分类 chip（选中态是本页唯一的「已交互」证据）、商品卡（图 / 角标 / 划线价三处条件节点）、
+    积分条（值 + 说明）、状态位（四型互斥）。角标文案四枚逐字取自 <code>shop.tag*</code>。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>分类 chip · 两态 + 五档文案</h3>
+      <p class="hint">选中态底 <code>linear-gradient(135deg,--c-brand,--c-brand-300)</code> + 白字 700；
+        未选中白底 + <code>--c-neutral-500</code> 字。<code>activeCategory</code> 默认 <code>"all"</code>（<code>:57</code>）。</p>
+      <div class="row">
+        <div class="cell"><span class="citem citem--on"><span class="citem__t">全部</span></span><span class="lab">active（默认）</span></div>
+        <div class="cell"><span class="citem"><span class="citem__t">活动票务</span></span><span class="lab">default</span></div>
+        <div class="cell"><span class="citem" style="transform:scale(0.96)"><span class="citem__t">餐饮美食</span></span><span class="lab">pressed（H5 :active 0.96）</span></div>
+      </div>
+      <table class="tbl" style="margin-top:12px">
+        <tr><th>chip</th><th>i18n key</th><th>mock 命中数</th></tr>
+        <tr><td>全部</td><td><code>shop.categoryAll</code></td><td>6</td></tr>
+        <tr><td>活动票务</td><td><code>shop.categoryTicket</code></td><td>2（票 1 / 票 2）</td></tr>
+        <tr><td>餐饮美食</td><td><code>shop.categoryFood</code></td><td>1</td></tr>
+        <tr><td>校园周边</td><td><code>shop.categoryGoods</code></td><td>1</td></tr>
+        <tr><td>文创周边</td><td><code>shop.categoryCreative</code></td><td>2</td></tr>
+      </table>
+      <p class="hint" style="margin-top:8px">mock 分支本地过滤 ⇒ <strong>五档都不会出 F04 空态</strong>；
+        F04 只在 real 模式后端 <code>GET /products?category=…</code> 返空时可达。</p>
+    </div>
+
+    <div class="panel">
+      <h3>商品卡 · 条件节点枚举</h3>
+      <p class="hint">卡宽 <code>calc(50% - 10rpx)</code>=165px、图位 <code>300rpx</code>=150px、
+        <code>mode="aspectFill"</code>；三处 <code>v-if</code> 决定卡面密度。</p>
+      <div class="row">
+        <div class="cell" style="width:165px"><div class="scard" style="box-shadow:var(--s-card-soft)"><div class="scard__imgw" style="height:84px"><img src="assets/demo/circle-cover-music.jpg" alt=""><span class="scard__tag"><span>热销</span></span></div><div class="scard__info"><span class="scard__title">校园音乐节早鸟票</span><div class="scard__pr"><span class="scard__price">¥99</span><span class="scard__oprice">¥129</span></div><span class="scard__sales">已售 56</span></div></div><span class="lab">全节点（tag + 划线价）</span></div>
+        <div class="cell" style="width:165px"><div class="scard" style="box-shadow:var(--s-card-soft)"><div class="scard__imgw" style="height:84px"><img src="assets/demo/circle-cover-sports.jpg" alt=""></div><div class="scard__info"><span class="scard__title">篮球赛门票</span><div class="scard__pr"><span class="scard__price">¥15</span><span class="scard__oprice">¥20</span></div><span class="scard__sales">已售 45</span></div></div><span class="lab">无角标（<code>tag:""</code>）</span></div>
+        <div class="cell" style="width:165px"><div class="scard" style="box-shadow:var(--s-card-soft)"><div class="scard__imgw" style="height:84px;background:var(--c-bg-page);display:flex;align-items:center;justify-content:center"><span style="font-size:var(--fs-sm);color:var(--c-text-placeholder)">无图</span></div><div class="scard__info"><span class="scard__title">校徽纪念徽章</span><div class="scard__pr"><span class="scard__price">¥19.9</span></div><span class="scard__sales">已售 89</span></div></div><span class="lab"><code>originalPrice=0</code> → 划线价整节点消失</span></div>
+      </div>
+      <table class="tbl" style="margin-top:12px">
+        <tr><th>角标</th><th>key</th><th>底</th></tr>
+        <tr><td>热销</td><td><code>shop.tagHot</code></td><td rowspan="4"><code>linear-gradient(135deg,--c-romance-500,--c-romance-400)</code> + 白字 700 + <code>--s-romance-md</code>；四枚角标同视觉，仅文案分档</td></tr>
+        <tr><td>新品</td><td><code>shop.tagNew</code></td></tr>
+        <tr><td>限时</td><td><code>shop.tagLimited</code></td></tr>
+        <tr><td>推荐</td><td><code>shop.tagRecommended</code></td></tr>
+      </table>
+      <p class="hint" style="margin-top:8px">real 分支 <code>toShopItem()</code>（<code>:124-135</code>）把 <code>tag</code> 恒置 <code>""</code>
+        ⇒ <strong>后端商品永远没有角标</strong>，四枚角标只在 mock 出现。这是在册的口径差异，不是画错。</p>
+    </div>
+
+    <div class="panel">
+      <h3>积分条 · 单态（值来源两口径）</h3>
+      <p class="hint">金底 <code>linear-gradient(135deg,--c-vip-from,--c-vip-border-light)</code>；
+        条上白字（<code>--c-text-inverse</code> 0.95 白压 #C9A36A ≈ 2.2:1，13px/700 大字档不达 4.5:1 —— 在册可达性问题，画板照实况画）。</p>
+      <div class="row">
+        <div class="cell" style="width:300px"><div class="pbar"><span class="pbar__l"><span class="pbar__ic"><svg><use href="#i-gift"/></svg></span><span class="pbar__label">我的积分</span></span><span class="pbar__r"><span class="pbar__value">100</span><span class="pbar__hint">积分可在商城兑换权益</span></span></div><span class="lab">default（mock 种子 100）</span></div>
+      </div>
+      <table class="tbl" style="margin-top:12px">
+        <tr><th>字段</th><th>真值来源</th></tr>
+        <tr><td>积分余额</td><td><code>checkInStore.pointsBalance</code>；mock = <code>MOCK_POINTS_BALANCE=100</code>（<code>constants/growth.ts:37</code>），签到后 <code>+CHECKIN_POINTS_EARNED</code>；real 由 <code>fetchStatus</code> 的 <code>data.points</code> 覆盖</td></tr>
+        <tr><td>说明文案</td><td><code>discover.pointsHint</code> =「积分可在商城兑换权益」——<strong>跨域 key</strong>，文案登记在 discover 段下</td></tr>
+        <tr><td>拉取时机</td><td><code>onShow</code> 且非封存（<code>:43-47</code>）；封存态一条请求都不发</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>状态位 · 四型（内层链）+ 封存卡</h3>
+      <p class="hint">内层链在 <code>v-if="!commerceSealed"</code> 之内，故四型都以「页头 + 积分条 + 分类条已出」为前提；
+        封存卡则三者同隐。</p>
+      <table class="tbl">
+        <tr><th>状态</th><th>条件</th><th>画面</th></tr>
+        <tr><td>sealed</td><td><code>!isCommerceOn()</code></td><td>白卡：锁图标 48px（opacity .55）+ 功能封存中 + 说明 + 无按钮</td></tr>
+        <tr><td>loading</td><td><code>shopLoading</code></td><td>spinner 28px（<code>--c-neutral-100</code> 环 / <code>--c-brand</code> 顶弧）+ 加载中...</td></tr>
+        <tr><td>error</td><td><code>shopError</code></td><td>商品加载失败，请重试 + <code>--c-brand</code> 底「重试」钮（48px 全圆）</td></tr>
+        <tr><td>empty</td><td><code>filteredItems.length===0</code></td><td>仅一行「该分类下暂无商品」，<strong>无 EmptyState 组件、无插图</strong>（与 detail 页空态不同档）</td></tr>
+        <tr><td>grid</td><td>其余</td><td>两列网格，卡间 <code>gap:20rpx</code>=10px</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页 SCSS 顶部有 8 个 <code>$变量</code> 别名（<code>:393-402</code>），
+      全部指向 base 已登记令牌；唯 <code>--c-vip-from</code> / <code>--c-vip-border-tint</code> / <code>--c-neutral-400</code> base 缺档，按 scss 真值落字面量。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">「逛逛」标题（R9-L14-D06：mp-weixin 降级纯色）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">chip 选中渐变起 · 重试钮底 · spinner 顶弧</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫 500<code>--c-romance-500</code></div><div class="sw__u">现价 · 角标渐变起点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF7C91"></span><div><div class="sw__n">浪漫 400<code>--c-romance-400</code></div><div class="sw__u">角标渐变终点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#C9A36A"></span><div><div class="sw__n">VIP 渐变起<code>--c-vip-from</code></div><div class="sw__u">积分条底色起点（base 未登记）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">中性 500<code>--c-neutral-500</code></div><div class="sw__u">返回盘 1px 描边（R11-L14-D09，4.36:1）· chip 字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#9AA39F"></span><div><div class="sw__n">中性 400<code>--c-neutral-400</code></div><div class="sw__u">划线原价 · 已售（base 未登记，与 --c-text-quaternary 同值）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页底<code>--c-bg-page</code></div><div class="sw__u">R11-L14-D10 归位：原 tint-green 台阶已撤</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/800</span><span class="type__p" style="font-size:22px;font-weight:800;color:var(--c-brand-800)">逛逛</span></div>
+        <div class="type__i"><span class="type__m">--fs-4xl 20/800</span><span class="type__p" style="font-size:20px;font-weight:800">100</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/800</span><span class="type__p" style="font-size:18px;font-weight:800;color:var(--c-romance-500)">¥99</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/500·600</span><span class="type__p" style="font-size:13px;font-weight:600">我的积分 · 校园音乐节早鸟票 · 全部</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-neutral-400)">¥129 · 已售 56</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/500·700</span><span class="type__p" style="font-size:10px;font-weight:700">热销 · 积分可在商城兑换权益</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--card-padding 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>24rpx（页头/网格横向）</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>20rpx（卡间 gap）</b><i style="width:10px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 本页未用（备用档）</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 商品卡 / 积分条</div>
+        <div class="rad__i"><b style="border-radius:16px"></b>--r-xxl<br>32rpx · 封存卡（R9-L14-D08 与 wallet 同档）</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>chip / 返回盘 / 重试钮</div>
+      </div>
+      <p class="hint" style="margin-top:14px">页头返回盘 32px（命中盒 <code>::after</code> 四边 −14rpx 扩到 44px）、
+        图位 150px、卡宽 165px、底部留白 <code>60rpx</code>=30px。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>六张商品图位全部为「池内真照片顶位」，真源待主控补进池</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/circle-cover-music.jpg" alt="">
+      <div class="asset__b"><b>PRODUCTS.TICKET_1 → circle-cover-music.jpg（顶位）</b>
+        <p>真源 <code>static/assets/images/products/ticket-1.jpg</code>；同类还有
+           <code>merch-1 / food-1 / merch-2 / ticket-2 / food-2</code>，六件均不在 <code>assets/demo/</code> 池内，
+           画板按语义就近取池内真照片顶位（唱片插画 / 海岸 / 热饮 / 图书馆 / 球赛 / 旅行）——一律取池内 <code>.jpg</code> 全幅件，<code>circle-*.png</code> 自带圆角透明边，铺进直角图位会露白边，不用，
+           以便判 150px 图位的 aspectFill 裁切与角标压图关系。</p>
+        <div class="m">NEED_ASSET: apps/client/src/static/assets/images/products/ticket-1.jpg</div></div></div>
+    <div class="asset"><img src="assets/demo/post-4.jpg" alt="">
+      <div class="asset__b"><b>PRODUCTS.FOOD_1 → post-4.jpg（顶位）</b>
+        <p>「食堂午餐优惠券」卡面。真源 <code>products/food-1.jpg</code> 未入池 ⇒ 顶位；
+           顶位只影响像素比对的图区，不影响价格/销量/文案三行的真值。</p>
+        <div class="m">NEED_ASSET: apps/client/src/static/assets/images/products/food-1.jpg</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:120px;object-fit:contain">
+      <div class="asset__b"><b>REGISTER_ICONS.BACK / ICONS_EMOJI.GIFT / LOCK_SVG</b>
+        <p>返回描线在 R11-L14-D19 换档为 <code>REGISTER_ICONS.BACK</code>（<code>back.svg</code>，stroke #1A1E1C）；
+           积分条图标走 <code>ICONS_EMOJI.GIFT</code>，封存卡走 <code>ICONS_COMMON.LOCK_SVG</code>（禁 emoji）。
+           画板按 §4 用页内 lucide 描边 symbol 替身，尺寸写在宿主节点。</p>
+        <div class="m">20px / 20px / 48px · 非素材缺口</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异 + 数值口径（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>默认态是封存，F02–F05 画的是开关开启态。</b>判据 <code>market/shop/index.vue:32</code>
+        <code>commerceSealed = !appConfig.isCommerceOn()</code>（<strong>不传 module ⇒ 只判总闸 <code>commerce.enabled</code></strong>，
+        实装 <code>stores/app-config.ts:64-77</code>，缺 key 即封存）；<code>onShow</code> 在封存态直接 return（<code>:43-47</code>），
+        积分与商品两条请求都不发。与 VIP 三页不同：<strong>本页封存在页面内渲染白卡，不重定向</strong>。
+        <code>:36-40</code> 的 <code>watch(commerceSealed)</code> 是解封补偿（MP-R2-次要22-003），删它会在解封后误显「该分类下暂无商品」。</li>
+      <li><b>六件商品的价格 / 原价 / 销量 = mock 种子</b>（<code>:141-204</code> <code>buildMockShopItems()</code>，
+        与 detail 页 mockCatalog 同源）：¥99/¥129·56、¥29.9/¥39.9·128、¥9.9/¥15·234、¥19.9/¥25·89、¥15/¥20·45、¥12.9/¥18·167。
+        real 模式走 <code>GET /products?page=0&amp;pageSize=20</code>（后端页码从 0 起），价格由 admin 商品管理维护 ⇒
+        <strong>画板数字是演示种子口径，不是后端真值</strong>。</li>
+      <li><b>积分 100 = mock 种子</b>（<code>constants/growth.ts:37</code> <code>MOCK_POINTS_BALANCE</code>），
+        real 由签到状态接口的 <code>points</code> 覆盖；<strong>积分与交友币是两套账</strong>：本页条展示的是签到积分，
+        wallet 页展示的是 <code>/wallet/balance</code> 交友币，二者不得互推。</li>
+      <li><b>角标只在 mock 存在</b>：real 的 <code>toShopItem()</code> 把 <code>tag</code> 写死 <code>""</code>（<code>:133</code>），
+        后端商品无角标字段 ⇒ 四枚角标（热销/新品/限时/推荐）属演示态专属，验收时不得按 real 判缺。</li>
+      <li><b>返回盘描边 1px <code>--c-neutral-500</code></b> 是 R11-L14-D09 的可达性收口结果（原 <code>--c-border-card</code> 在浅绿页底上不可辨），
+        画板按收口后的实况画；<code>--statusbar</code> 由 <code>useMenuButtonRect</code> 注入，画板按 44px 状态栏 + 12px 内衬落地。</li>
+      <li><b>BASE_PROBLEM（base 缺档，本页按 scss 真值 1:1 落字面量）：</b>
+        <code>--c-vip-from</code>(#C9A36A, scss:46/309)、<code>--c-vip-border-tint</code>(rgba(201,163,106,.35), scss:869)、
+        <code>--c-neutral-400</code>(#9AA39F, scss:355)、<code>--c-tint-gray-50</code>(#F3F4F6, scss:831，本页仅 <code>$border-light</code> 别名引用)、
+        <code>--c-overlay-text-secondary</code>(rgba(255,255,255,.85), scss:750)。
+        另 base 的 <code>--c-gold</code> 登记为 #C9A36A，与两个登记处（scss:814 / tokens.scss:347）的 #FFD700 不一致 ⇒ 见 vip 三页画板回报。</li>
+      <li>本页在 market 分包、<code>navigationStyle: custom</code>：<strong>无原生导航栏、无 tabbar</strong>；
+        无上一页时 <code>goBack</code> 兜底 <code>switchTab /pages/home/index</code>（<code>:66-70</code>）。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 逛逛商城页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 官方助手会话页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，不写私有色值） ===== */
+.chat { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; background: var(--c-bg-page); }
+
+/* 自绘导航栏（白底，非 AppShell 轻页头） */
+.nav { flex: none; display: flex; align-items: center; justify-content: space-between;
+  padding: 30px 12px 8px; background: var(--c-bg-container); border-bottom: 0.5px solid var(--c-border-light); }
+.nav__l { width: 40px; display: flex; align-items: center; justify-content: center; }
+.nav__back { font-size: 21px; line-height: 1; color: var(--c-brand-800); }
+.nav__c { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.nav__tr { display: flex; align-items: center; gap: 5px; }
+.nav__title { font-size: 17px; font-weight: 700; color: var(--c-text-primary); }
+.official { padding: 1px 6px; border-radius: var(--r-sm); background: #fff; border: 0.5px solid var(--c-brand); color: var(--c-brand-800); font-size: var(--fs-sm); font-weight: 600; line-height: 1.4; }
+.nav__sub { font-size: var(--fs-sm); color: var(--c-text-tertiary); margin-top: 1px; }
+.nav__r { width: 40px; display: flex; align-items: center; justify-content: flex-end; }
+.nav__more { font-size: 18px; color: var(--c-neutral-700); letter-spacing: 1px; }
+
+/* 滚动消息区 */
+.scroll { flex: 1; min-height: 0; overflow: hidden; }
+
+/* 吉祥物英雄区 */
+.hero { display: flex; flex-direction: column; align-items: center; padding: 20px 20px 14px; position: relative; overflow: hidden;
+  background: linear-gradient(180deg, #E8FAF0 0%, #F0FDF5 60%, #F5F6F8 100%); }
+.hero__mascot { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 8px; object-fit: cover; }
+.hero__greet { font-size: 17px; font-weight: 700; color: var(--c-text-primary); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+.hero__greet svg { width: 16px; height: 16px; color: var(--c-brand); }
+.hero__desc { font-size: var(--fs-lg); color: var(--c-text-secondary); line-height: 1.6; display: flex; align-items: center; gap: 3px; }
+.hero__desc svg { width: 13px; height: 13px; color: var(--c-apricot-500); }
+
+/* 消息列表 */
+.msgs { padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; }
+.mtime { display: flex; justify-content: center; padding: 2px 0; }
+.mtime span { font-size: var(--fs-md); color: var(--c-text-secondary); }
+.mrow { display: flex; align-items: flex-start; gap: 8px; }
+.mrow--right { flex-direction: row-reverse; }
+.mav { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; object-fit: cover; }
+.mcol { max-width: var(--bubble-max-width); display: flex; flex-direction: column; }
+.mcol--right { align-items: flex-end; }
+.bubble { border-radius: var(--bubble-radius-main); padding: 10px 14px; font-size: var(--bubble-font-size); line-height: 1.6; }
+.bubble--a { background: var(--c-bubble-other); color: var(--c-text-primary); border-top-left-radius: var(--bubble-radius-tail); box-shadow: var(--s-sm); }
+.bubble--u { background: var(--c-brand); color: #fff; border-top-right-radius: var(--bubble-radius-tail); }
+.receipt { font-size: var(--fs-xs); color: var(--c-text-placeholder); margin-top: 3px; }
+
+/* 活动卡片消息 */
+.bubble--card { background: var(--c-bubble-other); box-shadow: var(--s-sm); padding: 10px; width: 232px; }
+.card-tag { font-size: var(--fs-md); color: var(--c-text-primary); margin-bottom: 8px; }
+.embed { background: var(--c-neutral-50); border-radius: var(--r-lg); overflow: hidden; }
+.embed__img { width: 100%; height: 96px; object-fit: cover; display: block; }
+.embed__info { padding: 8px 10px 10px; }
+.embed__title { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); }
+.embed__meta { font-size: var(--fs-base); color: var(--c-text-secondary); margin-top: 2px; }
+.embed__parts { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+.pdot { width: 14px; height: 14px; border-radius: 50%; background: linear-gradient(135deg, #43E97B, #38F9D7); border: 1px solid #fff; }
+.pdot + .pdot { margin-left: -7px; }
+.embed__count { font-size: var(--fs-base); color: var(--c-text-tertiary); margin-left: 4px; }
+.embed__link { margin-top: 8px; padding-top: 8px; border-top: 0.5px solid var(--c-border-light); font-size: var(--fs-md); color: var(--c-brand-700); font-weight: 600; text-align: center; }
+.bubble__mt { font-size: var(--bubble-font-size); color: var(--c-text-secondary); line-height: 1.6; margin-top: 8px; }
+
+/* 引导问答按钮消息 */
+.mbtns { display: flex; gap: 10px; }
+.abtn { flex: 1; height: 40px; border-radius: var(--r-full); display: flex; align-items: center; justify-content: center; font-size: var(--fs-lg); font-weight: 600; white-space: nowrap; }
+.abtn--p { background: var(--c-brand); color: #fff; }
+.abtn--d { background: #fff; border: 1px solid var(--c-border-default); color: var(--c-text-secondary); }
+
+/* 输入栏 */
+.ibar { flex: none; display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--c-bg-container); border-top: 0.5px solid var(--c-border-light); }
+.ibar__ic { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: var(--c-text-secondary); }
+.ibar__ic svg { width: 24px; height: 24px; }
+.ibar__plus { width: 26px; height: 26px; border-radius: 50%; background: var(--c-neutral-100); display: flex; align-items: center; justify-content: center; color: var(--c-text-secondary); }
+.ibar__plus svg { width: 16px; height: 16px; }
+.ibar__field { flex: 1; height: 36px; background: var(--c-neutral-50); border-radius: 18px; display: flex; align-items: center; padding: 0 12px; }
+.ibar__ph { font-size: var(--fs-lg); color: var(--c-text-placeholder); }
+.ibar__txt { font-size: var(--fs-lg); color: var(--c-text-primary); }
+.ibar__send { height: 32px; padding: 0 16px; border-radius: var(--r-full); background: var(--c-brand-500); color: #fff; font-size: var(--fs-md); font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.ibar__send--dis { background: var(--c-status-disabled); color: #fff; }
+
+/* 骨架 */
+.skel { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 14px; }
+.skel .r { display: flex; gap: 8px; align-items: flex-start; }
+.skel .r--right { flex-direction: row-reverse; }
+.skel .a { width: 36px; height: 36px; border-radius: 50%; background: var(--c-border-light); flex-shrink: 0; }
+.skel .b { height: 40px; border-radius: var(--r-lg); background: var(--c-border-light); width: 55%; }
+.skel .b--s { width: 38%; }
+.skel__cap { text-align: center; font-size: var(--fs-sm); color: var(--c-text-placeholder); }
+
+/* 状态视图 */
+.state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 40px 24px; }
+.state__err { font-size: var(--fs-lg); color: var(--c-error); }
+.state__retry { padding: 8px 22px; border-radius: var(--r-full); background: var(--c-brand-50); color: var(--c-brand-700); font-weight: 600; font-size: var(--fs-md); }
+
+/* LockScreen 未解锁门槛 */
+.lock { position: absolute; inset: 0; overflow: hidden; background: var(--c-bg-page); display: flex; flex-direction: column; }
+.lock__atmo { position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 20% 20%, rgba(61,201,148,.18) 0, transparent 50%),
+    radial-gradient(ellipse at 80% 30%, rgba(249,168,196,.2) 0, transparent 45%),
+    radial-gradient(ellipse at 50% 80%, rgba(124,217,166,.15) 0, transparent 50%); }
+.lock__close { position: absolute; top: 54px; right: 16px; width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,.7); display: flex; align-items: center; justify-content: center; color: var(--c-text-secondary); z-index: 3; }
+.lock__close svg { width: 16px; height: 16px; }
+.lock__body { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; align-items: center; padding: 92px 28px 0; }
+.lock__ring { width: 108px; height: 108px; border-radius: 50%; background: var(--c-gradient-brand); display: flex; align-items: center; justify-content: center; box-shadow: var(--s-brand-lg); }
+.lock__ring svg { width: 48px; height: 48px; color: #fff; }
+.lock__title { font-size: var(--fs-4xl); font-weight: 800; color: var(--c-text-primary); margin-top: 26px; text-align: center; }
+.lock__sub { font-size: var(--fs-md); color: var(--c-text-secondary); margin-top: 10px; text-align: center; line-height: 1.6; max-width: 280px; }
+.lock__benefits { width: 100%; max-width: 300px; margin-top: 26px; display: flex; flex-direction: column; gap: 14px; }
+.ben { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(255,255,255,.72); border-radius: var(--r-lg); border: var(--c-border-card); }
+.ben__ic { width: 26px; height: 26px; border-radius: 50%; background: var(--c-brand-50); color: var(--c-brand-700); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ben__ic svg { width: 15px; height: 15px; }
+.ben__t { font-size: var(--fs-lg); color: var(--c-text-secondary); }
+.lock__action { width: 100%; max-width: 300px; margin-top: 30px; }
+.lock__btn { height: 48px; border-radius: var(--r-xl); background: var(--c-gradient-brand); color: #fff; font-size: var(--fs-xl); font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: var(--s-brand); }
+.lock__link { text-align: center; margin-top: 14px; font-size: var(--fs-md); color: var(--c-brand-800); font-weight: 600; }
+.lock__footer { position: relative; z-index: 2; text-align: center; padding: 18px 24px 30px; font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M12 20v-8"/><path d="M12 12C12 9 9.5 7 6.5 7 6.6 10 9 12 12 12z"/><path d="M12 11c.2-2.6 2.3-4.2 4.9-4.2-.2 2.7-2.3 4.3-4.9 4.2z"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 4l1.6 4.4L18 10l-4.4 1.6L12 16l-1.6-4.4L6 10l4.4-1.6z"/></symbol>
+  <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14a4 4 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.4"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.6-7-9.5A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.5C19 15.4 12 20 12 20z"/></symbol>
+  <symbol id="i-cap" viewBox="0 0 24 24"><path d="M12 4 3 8l9 4 9-4z"/><path d="M6.5 10v4c0 1.4 2.4 2.6 5.5 2.6s5.5-1.2 5.5-2.6v-4"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-4 3v-3H4z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>官方助手会话页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/chat/official-chat</code>。
+     「寻觅助手」是 chat 分包里的官方号会话，与普通聊天会话（chat-session）同域但形态不同：多一道
+     <code>LockScreen</code> 登录门槛、自绘官方号导航、吉祥物英雄区、系统推送活动卡片与引导问答按钮。
+     本画板覆盖 5 屏，并在 §04 给出与同域 chat-session 的差异清单，作为该页永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>chat/official-chat</b></span>
+    <span>分包 <b>chat</b>（无 tabbar）</span>
+    <span>状态 <b>5 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 5 屏</h2>
+    <p>已加载 / 进入骨架 / 未解锁 / 加载失败 / 发送回复</p></div>
+  <div class="sec__sub">本页状态机来自模板 <code>v-if="!isUnlocked"(LockScreen) / v-else: !ready(骨架) / loading / errorMessage / else 会话主体</code>。
+    会话主体含四种消息形态：助手文本、系统推送活动卡片（<code>card</code>）、引导问答按钮（<code>action-buttons</code>）、用户气泡（右对齐 + 已读回执）。
+    气泡几何走 base 的 <code>--bubble-*</code> 私聊规范族。帧即视口，超出 812px 裁掉写在题注 <code>.d</code>。分包页不画 tabbar。</div>
+
+  <div class="frames">
+
+    <!-- F01 会话·已加载 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">会话 · 已加载</span><span class="d">英雄区 + 活动卡片 + 引导按钮 + 用户气泡 · ↓消息流向上滚出</span></figcaption>
+      <div class="phone">
+        <div class="chat">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="nav">
+            <div class="nav__l"><span class="nav__back">‹</span></div>
+            <div class="nav__c"><div class="nav__tr"><span class="nav__title">寻觅助手</span><span class="official">官方</span></div><span class="nav__sub">你的恋爱小管家</span></div>
+            <div class="nav__r"><span class="nav__more">···</span></div>
+          </div>
+          <div class="scroll">
+            <div class="hero">
+              <img class="hero__mascot" src="assets/demo/mascot_smile.png" alt="">
+              <div class="hero__greet">Hi~ 我是寻觅助手 <svg><use href="#i-sprout"/></svg></div>
+              <div class="hero__desc">我会帮你发现有趣的人和活动</div>
+              <div class="hero__desc">让每一次相遇都更有意义 <svg><use href="#i-spark"/></svg></div>
+            </div>
+            <div class="msgs">
+              <div class="mtime"><span>昨天 20:15</span></div>
+              <div class="mrow">
+                <img class="mav" src="assets/demo/mascot_smile.png" alt="">
+                <div class="mcol"><div class="bubble bubble--a">Hi~ 我是寻觅助手，我会帮你发现有趣的人和活动，让每一次相遇都更有意义 ✨</div></div>
+              </div>
+              <div class="mrow">
+                <img class="mav" src="assets/demo/mascot_smile.png" alt="">
+                <div class="mcol">
+                  <div class="bubble bubble--card">
+                    <div class="card-tag">发现一个适合你的活动</div>
+                    <div class="embed">
+                      <img class="embed__img" src="assets/demo/circle-cover-sports.jpg" alt="">
+                      <div class="embed__info">
+                        <div class="embed__title">城市露营计划</div>
+                        <div class="embed__meta">周六 14:00-18:00</div>
+                        <div class="embed__meta">中央公园 2.3km</div>
+                        <div class="embed__parts"><span class="pdot"></span><span class="pdot"></span><span class="pdot"></span><span class="pdot"></span><span class="embed__count">12人已报名</span></div>
+                      </div>
+                    </div>
+                    <div class="embed__link">查看详情</div>
+                    <div class="bubble__mt">这个活动和你的兴趣很匹配哦~ 要一起去认识新朋友吗？</div>
+                  </div>
+                </div>
+              </div>
+              <div class="mrow">
+                <img class="mav" src="assets/demo/mascot_smile.png" alt="">
+                <div class="mbtns"><div class="abtn abtn--p">去看看</div><div class="abtn abtn--d">稍后再说</div></div>
+              </div>
+              <div class="mrow mrow--right">
+                <img class="mav" src="assets/demo/xiaoman-avatar.png" alt="">
+                <div class="mcol mcol--right"><div class="bubble bubble--u">好呀，帮我报名～</div><span class="receipt">已读</span></div>
+              </div>
+              <div class="mrow">
+                <img class="mav" src="assets/demo/mascot_smile.png" alt="">
+                <div class="mcol"><div class="bubble bubble--a">太好了！已经帮你报名成功啦 ✅ 活动开始前一天我会提醒你~ 另外有 3 位兴趣相近的人也参加 🌹 要提前认识一下吗？</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="ibar">
+            <div class="ibar__ic"><svg><use href="#i-smile"/></svg></div>
+            <div class="ibar__plus"><svg><use href="#i-plus"/></svg></div>
+            <div class="ibar__field"><span class="ibar__ph">对我说点什么吧～</span></div>
+            <div class="ibar__send ibar__send--dis">发送</div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 进入骨架 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">进入骨架 · !ready</span><span class="d">SkeletonBlock chat · 4 行</span></figcaption>
+      <div class="phone">
+        <div class="chat">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="nav">
+            <div class="nav__l"><span class="nav__back">‹</span></div>
+            <div class="nav__c"><div class="nav__tr"><span class="nav__title">寻觅助手</span><span class="official">官方</span></div><span class="nav__sub">你的恋爱小管家</span></div>
+            <div class="nav__r"><span class="nav__more">···</span></div>
+          </div>
+          <div class="skel">
+            <div class="r"><span class="a"></span><span class="b"></span></div>
+            <div class="r r--right"><span class="a"></span><span class="b b--s"></span></div>
+            <div class="r"><span class="a"></span><span class="b b--s"></span></div>
+            <div class="r r--right"><span class="a"></span><span class="b"></span></div>
+            <div class="skel__cap">加载中</div>
+          </div>
+          <div class="ibar">
+            <div class="ibar__ic"><svg><use href="#i-smile"/></svg></div>
+            <div class="ibar__plus"><svg><use href="#i-plus"/></svg></div>
+            <div class="ibar__field"><span class="ibar__ph">对我说点什么吧～</span></div>
+            <div class="ibar__send ibar__send--dis">发送</div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 未解锁 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">未解锁 · LockScreen</span><span class="d">isUnlocked=false（未登录且非 mock）</span></figcaption>
+      <div class="phone">
+        <div class="lock">
+          <div class="lock__atmo"></div>
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="lock__close"><svg><use href="#i-x"/></svg></div>
+          <div class="lock__body">
+            <div class="lock__ring"><svg><use href="#i-lock"/></svg></div>
+            <div class="lock__title">登录后解锁完整交友功能</div>
+            <div class="lock__sub">完成登录授权与基础资料填写，即可开启匹配、聊天、校园活动等全部功能</div>
+            <div class="lock__benefits">
+              <div class="ben"><span class="ben__ic"><svg><use href="#i-heart"/></svg></span><span class="ben__t">解锁精准匹配推荐</span></div>
+              <div class="ben"><span class="ben__ic"><svg><use href="#i-cap"/></svg></span><span class="ben__t">查看同校校友主页</span></div>
+              <div class="ben"><span class="ben__ic"><svg><use href="#i-chat"/></svg></span><span class="ben__t">发起私信与匿名聊天</span></div>
+            </div>
+            <div class="lock__action">
+              <div class="lock__btn">立即登录并完善</div>
+              <div class="lock__link">先去逛逛匹配推荐</div>
+            </div>
+          </div>
+          <div class="lock__footer">资料越完善，匹配越精准，曝光机会越多</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 加载失败 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">加载失败 · 重试</span><span class="d">errorMessage 分支</span></figcaption>
+      <div class="phone">
+        <div class="chat">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="nav">
+            <div class="nav__l"><span class="nav__back">‹</span></div>
+            <div class="nav__c"><div class="nav__tr"><span class="nav__title">寻觅助手</span><span class="official">官方</span></div><span class="nav__sub">你的恋爱小管家</span></div>
+            <div class="nav__r"><span class="nav__more">···</span></div>
+          </div>
+          <div class="state">
+            <span class="state__err">官方消息加载失败，请重试</span>
+            <span class="state__retry">重试</span>
+          </div>
+          <div class="ibar">
+            <div class="ibar__ic"><svg><use href="#i-smile"/></svg></div>
+            <div class="ibar__plus"><svg><use href="#i-plus"/></svg></div>
+            <div class="ibar__field"><span class="ibar__ph">对我说点什么吧～</span></div>
+            <div class="ibar__send ibar__send--dis">发送</div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 发送/回复 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">发送 · 助手回复</span><span class="d">用户气泡已读 + mock 回复 · 输入已填 → 发送可用</span></figcaption>
+      <div class="phone">
+        <div class="chat">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="nav">
+            <div class="nav__l"><span class="nav__back">‹</span></div>
+            <div class="nav__c"><div class="nav__tr"><span class="nav__title">寻觅助手</span><span class="official">官方</span></div><span class="nav__sub">你的恋爱小管家</span></div>
+            <div class="nav__r"><span class="nav__more">···</span></div>
+          </div>
+          <div class="scroll">
+            <div class="msgs">
+              <div class="mrow">
+                <img class="mav" src="assets/demo/mascot_smile.png" alt="">
+                <div class="mcol"><div class="bubble bubble--a">太好了！已经帮你报名成功啦 ✅ 活动开始前一天我会提醒你~ 另外有 3 位兴趣相近的人也参加 🌹 要提前认识一下吗？</div></div>
+              </div>
+              <div class="mrow mrow--right">
+                <img class="mav" src="assets/demo/xiaoman-avatar.png" alt="">
+                <div class="mcol mcol--right"><div class="bubble bubble--u">好啊，帮我留意一下周末的活动</div><span class="receipt">已读</span></div>
+              </div>
+              <div class="mtime"><span>刚刚</span></div>
+              <div class="mrow">
+                <img class="mav" src="assets/demo/mascot_smile.png" alt="">
+                <div class="mcol"><div class="bubble bubble--a">收到啦～我会帮你留意合适的活动和人哦 😊</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="ibar">
+            <div class="ibar__ic"><svg><use href="#i-smile"/></svg></div>
+            <div class="ibar__plus"><svg><use href="#i-plus"/></svg></div>
+            <div class="ibar__field"><span class="ibar__txt">谢谢啦</span></div>
+            <div class="ibar__send">发送</div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页交互件比私聊页多：整页门槛/加载态、四种消息形态、输入栏发送键、引导问答按钮。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>整页态 · 五态</h3>
+      <p class="hint">来自 <code>!isUnlocked / !ready / loading / errorMessage / else</code>。</p>
+      <table class="tbl">
+        <tr><th>态</th><th>判据</th><th>渲染</th></tr>
+        <tr><td>未解锁</td><td><code>!isLoggedIn && !mock</code></td><td>LockScreen 全屏引导</td></tr>
+        <tr><td>进入骨架</td><td><code>!ready</code>（前 500ms）</td><td>SkeletonBlock chat · 4 行</td></tr>
+        <tr><td>加载中</td><td><code>loading</code></td><td>state-view「加载中...」</td></tr>
+        <tr><td>失败</td><td><code>errorMessage</code></td><td>错误文字 + 重试</td></tr>
+        <tr><td>会话</td><td>else</td><td>英雄区 + 消息流 + 输入栏</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>消息形态 · 四种</h3>
+      <p class="hint">助手气泡走 <code>--bubble-*</code> 私聊规范族，尾角镜像（助手左上 / 用户右上）。</p>
+      <div class="row">
+        <div class="cell" style="width:150px"><div class="bubble bubble--a" style="max-width:150px">助手文本</div><span class="lab">text（左）</span></div>
+        <div class="cell" style="width:150px"><div class="bubble bubble--u" style="max-width:150px">用户文本</div><span class="lab">user-text（右）+ 已读</span></div>
+        <div class="cell" style="width:150px"><div class="bubble bubble--card" style="width:150px;padding:8px"><div class="embed" style="height:44px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--c-text-tertiary)">活动卡片</div></div><span class="lab">card（系统推送）</span></div>
+        <div class="cell" style="width:150px"><div class="mbtns" style="width:150px"><div class="abtn abtn--p">去看看</div><div class="abtn abtn--d">稍后</div></div><span class="lab">action-buttons（引导）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>输入栏发送键 · 两态</h3>
+      <p class="hint"><code>canSend = 输入非空 && !sending</code>；空输入禁用（R21 与私聊页一致）。表情/+ 复用私聊页 EmojiPanel，本页无麦克风按钮。</p>
+      <div class="row">
+        <div class="cell" style="width:150px"><div class="ibar" style="padding:0;border:none"><div class="ibar__field" style="flex:1"><span class="ibar__ph">对我说点什么吧～</span></div><div class="ibar__send ibar__send--dis">发送</div></div><span class="lab">空输入（禁用）</span></div>
+        <div class="cell" style="width:150px"><div class="ibar" style="padding:0;border:none"><div class="ibar__field" style="flex:1"><span class="ibar__txt">谢谢啦</span></div><div class="ibar__send">发送</div></div><span class="lab">已填（可用）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>官方号导航 · 元素</h3>
+      <p class="hint">「官方」为白底薄荷绿描边胶囊（V-08，非渐变填充）；右侧「···」按胶囊避让 paddingRight；返回是 ‹ 文字（规格书 9.1）。</p>
+      <div class="row">
+        <div class="cell"><div class="nav__tr"><span class="nav__title">寻觅助手</span><span class="official">官方</span></div><span class="lab">账号名 + 官方标</span></div>
+        <div class="cell"><span class="nav__back">‹</span><span class="lab">返回（文字箭头）</span></div>
+        <div class="cell"><span class="nav__more">···</span><span class="lab">更多（敬请期待 toast）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">气泡族 + 品牌族，未引入页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">用户气泡 · 去看看 · 发送键</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">助手气泡<code>--c-bubble-other</code></div><div class="sw__u">助手/卡片白底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">返回箭头 · 官方标文字 · 门槛链接</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">会话/门槛背景</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">加载失败文案</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶 / 气泡族</h3><p class="hint">气泡几何走 base 的 <code>--bubble-*</code>（§3.7 R20 与私聊页同档）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">nav 17/700</span><span class="type__p" style="font-size:17px;font-weight:700">寻觅助手</span></div>
+        <div class="type__i"><span class="type__m">bubble 14/1.6</span><span class="type__p" style="font-size:14px;font-weight:400;color:var(--c-text-secondary)">这个活动和你的兴趣很匹配哦~</span></div>
+        <div class="type__i"><span class="type__m">lock 20/800</span><span class="type__p" style="font-size:20px;font-weight:800">登录后解锁完整交友功能</span></div>
+      </div>
+      <div class="hint" style="margin-top:14px">max-width 58% · padding 10·14 · radius 10（尾角 2） · 头像 36 · 阴影 <code>--s-sm</code></div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-4 8rpx</b><i style="width:4px"></i></div>
+        <div class="space__i"><b>msg gap 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>bubble pad 28rpx</b><i style="width:14px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>气泡主角<br>--bubble-radius-main</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>chip · 按钮<br>--r-full</div>
+        <div class="rad__i"><b style="border-radius:50%"></b>头像 · 吉祥物<br>50%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 同域差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与同域 chat-session 的差异清单</h2><p>照片位用真素材</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/mascot_smile.png" alt="" style="height:190px;object-fit:cover">
+      <div class="asset__b"><b>assets/demo/mascot_smile.png</b><p>吉祥物英雄区 + 5 枚助手头像。源码 <code>mascotSmileSrc = resolveMediaUrl(IMAGE_PATHS.MASCOT.SMILE)</code>（R6-B38/D05：素材由后端 app-assets 托管，实测在盘）。</p><div class="m">英雄区 80px · 头像 36px</div></div></div>
+    <div class="asset"><img src="assets/demo/circle-cover-sports.jpg" alt="" style="height:190px;object-fit:cover">
+      <div class="asset__b"><b>assets/demo/circle-cover-sports.jpg</b><p>活动卡片封面位。源码 <code>msg.cardActivity.imageUrl || ACTIVITIES.ACTIVITY_1</code>（MP-R1-OFFICIALCHAT-004：优先消息自带封面）。mock 卡片 imageUrl=ACTIVITY_SPORTS，此处用池内运动封面替身。</p><div class="m">232×96 · aspectFill</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-avatar.png" alt="" style="height:190px;object-fit:cover">
+      <div class="asset__b"><b>assets/demo/xiaoman-avatar.png</b><p>用户气泡头像。源码 <code>userAvatar = profileStore.avatarUrl</code>（单一数据源，与私聊页一致），演示人设「小满」。</p><div class="m">36px · 50%</div></div></div>
+  </div>
+  <div class="note">
+    <b>与同域 chat-session（普通聊天会话）的差异清单（一切以本页源码为准，未参考那块画板）：</b>
+    <ul>
+      <li><b>共用件（同域同源）：</b>① 输入栏与私聊页 <code>wechat-input-bar</code> 统一（R20：[表情][+] [输入框] [发送]，移除麦克风）；② 表情面板复用私聊页 <code>EmojiPanel.vue</code>（MP-R1-OFFICIALCHAT-002）；③ 空输入禁用发送（R21 与私聊页同逻辑）；④ 滚底走 <code>scroll-into-view</code> 底部锚点（MP-R1-OFFICIALCHAT-001，与 chat-session 同款）；⑤ 本人头像单一数据源 <code>profileStore.avatarUrl</code>；⑥ 气泡几何吃同一 <code>--bubble-*</code> 私聊规范族。</li>
+      <li><b>官方助手独有 · LockScreen 门槛：</b><code>isUnlocked = isLoggedIn || useMock()</code>，未登录时整页替换为 <code>LockScreen</code>（带 completionPercent 进度）；普通会话进入不设此门。</li>
+      <li><b>官方助手独有 · 自绘官方号导航：</b>账号名「寻觅助手」+「官方」描边胶囊 + 副标题「你的恋爱小管家」+ 右侧「···」（按微信胶囊 paddingRight 避让）；普通会话是对方头像+昵称的 ChatHeader。</li>
+      <li><b>官方助手独有 · 吉祥物英雄区：</b>绿色渐变 <code>hero-section</code>（mascot + 4 枚 emoji 装饰 + Hi~ 问候），作消息流首块随滚动滚走（R11-L11-D20）；普通会话无英雄区。</li>
+      <li><b>官方助手独有 · 系统推送活动卡片：</b><code>messageType:"card"</code> + <code>cardActivity</code>（封面/标题/时间/地点/参与圆点/N人已报名/查看详情）；由活动详情页报名成功经 <code>consumeAssistantActivityNotifies</code> 回流。普通会话无系统推送卡。</li>
+      <li><b>官方助手独有 · 引导问答按钮：</b><code>messageType:"action-buttons"</code>（去看看→跳活动列表 / 稍后再说→插一条用户气泡），是官方号的引导式问答；普通会话是自由对话，无预设引导按钮。</li>
+      <li><b>计数口径：</b>卡片「N人已报名」取 <code>msg.cardActivity.enrollmentCount</code>（后端下发，有真值源），参与圆点数 = <code>min(count,4)</code>；非伪造位。</li>
+      <li>本页在 chat 分包，无 tabbar（goBack 无上一页时 switchTab 回消息 tab）——画 tabbar 即错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 官方助手会话页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积对齐理想效果图语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

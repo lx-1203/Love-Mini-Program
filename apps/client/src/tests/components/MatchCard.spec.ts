@@ -45,12 +45,20 @@ function mountCard(user = makeUser()) {
 }
 
 describe("MatchCard", () => {
-  it("渲染照片卡、在线胶囊与匹配度胶囊", () => {
+  /* 2026-10-26 审计 §4.3（reports/audit/2026-10-25-mini-program-review.md）反转了
+     「渲染匹配度胶囊」这条旧契约：user.matchScore 由 view-models/match.ts 的
+     computeMatchScore（constants/match.ts 的 80+n×5 常量式）派生，不是后端真分
+     ——共同圈缺失归一为 0 时读数仍恒 80%（真实游客实帧即此裸常量）。
+     CardSwiper（R11-L08-D18/D29）/ MatchSuccess（R11-L06-D05）已同批撤除，本卡同步。
+     断言从"环里显示多少"改为"徽章不存在且卡面不出现任何百分比"，后者更强。 */
+  it("渲染照片卡与在线胶囊，不渲染匹配度徽章", () => {
     const wrapper = mountCard();
     expect(wrapper.find(".match-card").exists()).toBe(true);
     expect(wrapper.find(".match-card__online").exists()).toBe(true);
-    expect(wrapper.find(".match-card__score-value").text()).toContain("92%");
-    expect(wrapper.find(".match-card__score-label").text()).toContain("匹配度");
+    expect(wrapper.find(".match-card__score").exists()).toBe(false);
+    expect(wrapper.find(".match-card__score-ring").exists()).toBe(false);
+    expect(wrapper.text()).not.toMatch(/\d+%/);
+    expect(wrapper.text()).not.toContain("匹配度");
   });
 
   it("渲染昵称年龄、学校职业、距离与在线", () => {

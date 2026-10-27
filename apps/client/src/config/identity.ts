@@ -43,9 +43,3 @@ export function saveIdentity(identity: UserIdentity): void {
     // 存储失败时静默
   }
 }
-
-/** 身份对应的步骤数量（与 SetupProgress variant 对齐） */
-export const IDENTITY_TOTAL_STEPS: Record<UserIdentity, number> = {
-  student: 4,
-  non_student: 3,
-};

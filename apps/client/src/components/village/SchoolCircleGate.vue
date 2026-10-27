@@ -97,7 +97,7 @@ const { t } = useI18n();
   gap: var(--sp-3);
   padding: var(--sp-8) var(--sp-6);
   border-radius: var(--r-xl);
-  background: var(--c-gradient-brand-soft, linear-gradient(180deg, #f0fdf9 0%, #ffffff 60%));
+  background: var(--c-gradient-brand-soft);
   border: 1rpx solid var(--c-brand-100, #ccfbef);
 }
 
@@ -206,7 +206,7 @@ const { t } = useI18n();
 }
 
 .school-gate__simulate--pressed {
-  background: var(--c-bg-romance-soft, #fdf2f8);
+  background: var(--c-bg-romance);
 }
 
 .school-gate__simulate-text {

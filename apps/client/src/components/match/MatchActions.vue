@@ -25,10 +25,12 @@ const { t } = useI18n();
 
 const icons = {
   /** R6-L01-D07/D08：三枚动作图标全部过解析器（HEART_WHITE 同属 v2/，此前只是恰好
-   *  因白色在浅底上不可辨而看起来「正常」） */
+   *  因白色在浅底上不可辨而看起来「正常」）
+   *  2026-10-26 对齐理想图（寻觅匹配卡片页面.png）：「打个招呼」改为粉色实心对话气泡
+   *  内含白色爱心眼（原 ICONS_V2.CHAT_PINK 描边空心气泡+文本线条，形态不符） */
   pass: resolveMediaUrl(IMAGE_PATHS.ICONS_V2.X_GRAY),
   like: resolveMediaUrl(IMAGE_PATHS.ICONS_V2.HEART_WHITE),
-  superLike: resolveMediaUrl(IMAGE_PATHS.ICONS_V2.CHAT_PINK),
+  superLike: resolveMediaUrl(IMAGE_PATHS.GREET_HEART_BUBBLE),
 } as const;
 </script>
 

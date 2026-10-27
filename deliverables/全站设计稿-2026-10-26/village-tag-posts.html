@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 话题帖列表 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 令牌，无页内私有色值） ===== */
+/* 深绿导航带：tag-posts.vue .tag-header background: linear-gradient(135deg, --c-brand-800, --c-brand-900) */
+.gph { position: absolute; top: 0; left: 0; width: 100%; z-index: 4;
+  background: linear-gradient(135deg, var(--c-brand-800) 0%, var(--c-brand-900) 100%);
+  display: flex; align-items: center; justify-content: space-between; padding: 56px 16px 14px; }
+.gph__back { width: 34px; height: 34px; border-radius: 50%; background: var(--c-bg-container);
+  display: flex; align-items: center; justify-content: center; flex: none; }
+.gph__back svg { width: 18px; height: 18px; color: var(--c-neutral-700); }
+.gph__title { font-size: var(--fs-2xl); font-weight: 700; color: #fff; letter-spacing: 0.3px; }
+.gph__spacer { width: 34px; flex: none; }
+
+/* 标签头卡：#标签名 + 帖子数 + 去发布入口（.tag-hero，白卡浮在页面底色上） */
+.tag-hero { position: relative; z-index: 3; margin: 112px 16px 12px; padding: 16px;
+  background: var(--c-bg-container); border-radius: var(--r-card); box-shadow: var(--s-card-soft);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tag-hero__name { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); display: block; }
+.tag-hero__count { font-size: var(--fs-sm); color: var(--c-text-tertiary); margin-top: 3px; display: block; }
+.tag-hero__btn { flex: none; height: 34px; padding: 0 16px; border-radius: var(--r-full); display: flex;
+  align-items: center; background: linear-gradient(135deg, var(--c-brand-600) 0%, var(--c-brand) 100%);
+  box-shadow: var(--s-brand-sm); }
+.tag-hero__btn span { font-size: var(--fs-base); font-weight: 700; color: #fff; }
+
+/* 帖子流容器（scroll-view 内） */
+.feed { position: absolute; top: 0; left: 0; width: 100%; padding-bottom: 20px; z-index: 2; }
+
+/* 帖流状态块（加载 / 错误 / 空 三态共用） */
+.feed-state { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 90px 24px 30px; }
+.feed-state__ic { width: 46px; height: 46px; color: var(--c-text-placeholder); }
+.feed-state__ic svg { width: 46px; height: 46px; }
+.feed-state__spin { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--c-neutral-100);
+  border-top-color: var(--c-romance-500); animation: sp 0.8s linear infinite; }
+.feed-state__text { font-size: var(--fs-md); color: var(--c-text-secondary); }
+.feed-empty__title { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-secondary); margin-top: 4px; }
+.feed-empty__desc { font-size: var(--fs-base); color: var(--c-text-placeholder); }
+.feed-state__btn { margin-top: 10px; height: 34px; padding: 0 20px; border-radius: var(--r-full);
+  display: flex; align-items: center; background: linear-gradient(135deg, var(--c-brand-600), var(--c-brand));
+  box-shadow: var(--s-brand-sm); }
+.feed-state__btn span { font-size: var(--fs-md); font-weight: 600; color: #fff; }
+.feed-state__btn--ghost { background: var(--c-bg-container); border: 1.5px solid var(--c-border-default); box-shadow: none; }
+.feed-state__btn--ghost span { color: var(--c-text-secondary); }
+
+/* 帖子卡（tag-posts.vue 内联版式：header 作者行 / body 正文 / tags / footer 互动栏，无配图网格） */
+.post-card { background: var(--c-bg-container); border-radius: var(--r-xl); box-shadow: var(--s-card-soft);
+  border: var(--c-border-card); margin: 12px 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 9px; }
+.post-card__header { display: flex; align-items: center; }
+.post-card__user { display: flex; align-items: center; gap: 10px; }
+.user-avatar { width: 38px; height: 38px; border-radius: 50%; overflow: hidden; flex: none;
+  background: linear-gradient(135deg, var(--c-brand-100), var(--c-brand)); display: flex; align-items: center; justify-content: center; }
+.user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.user-avatar__char { font-size: var(--fs-lg); font-weight: 700; color: #fff; }
+.user-info__name { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); }
+.user-info__headline { font-size: var(--fs-base); color: var(--c-text-tertiary); margin-top: 1px; }
+.post-card__content { font-size: var(--fs-lg); color: var(--c-text-primary); line-height: 1.55; }
+.post-card__tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.post-card__tag { font-size: var(--fs-base); color: var(--c-brand-700); background: var(--c-brand-50);
+  padding: 4px 9px; border-radius: var(--r-full); font-weight: 500; }
+.post-card__footer { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+.post-card__time { font-size: var(--fs-base); color: var(--c-text-placeholder); }
+.post-card__actions { display: flex; align-items: center; gap: 18px; }
+.action-btn { display: flex; align-items: center; gap: 4px; color: var(--c-text-tertiary); }
+.action-btn svg { width: 17px; height: 17px; }
+.action-btn--liked { color: var(--c-romance-500); }
+.action-btn .c { font-size: var(--fs-base); }
+
+/* 终止 / 加载更多 */
+.load-more { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 16px 0 8px; }
+.load-more__spin { width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid var(--c-neutral-100);
+  border-top-color: var(--c-romance-500); animation: sp 0.8s linear infinite; }
+.load-more__text { font-size: var(--fs-base); color: var(--c-text-placeholder); }
+
+/* §02 卡样张缩放容器 */
+.demo-card { width: 320px; transform: scale(1); }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-comment" viewBox="0 0 24 24"><path d="M20 12.5a7.5 7 0 0 1-8.2 6.9L5 21l1.3-3.6A7 7 0 1 1 20 12.5z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6c0 4.9-7 9.4-7 9.4z"/></symbol>
+  <symbol id="i-heart-fill" viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6c0 4.9-7 9.4-7 9.4z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.2h.01"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 8.5 12 4l8.5 4.5v7L12 20l-8.5-4.5z"/><path d="M3.5 8.5 12 13l8.5-4.5"/><path d="M12 13v7"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ===== 封面 ===== -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>话题帖列表 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/village/village/tag-posts</code>。
+     该页是某个 <code>#标签</code> 下的帖子流，进入前已由村口广场点标签跳入。页头为深绿导航带（<code>--c-brand-800→900</code>），
+     下挂一张标签头卡（#标签名 + 帖子数 + 「去发布」入口），其下是 <code>scroll-view</code> 帖流。
+     本页状态机有 5 态，帖子卡为 <b>tag-posts.vue 内联版式</b>（非共享 PostCard 组件，见 §04）。本页此前无理想效果图，版式按源码实况。</p>
+  <div class="cover__meta">
+    <span>路由 <b>village/tag-posts</b></span>
+    <span>分包 <b>village</b>（无 tabbar）</span>
+    <span>状态 <b>5 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ===== 01 状态稿 ===== -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 5 屏</h2>
+    <p>加载 / 错误 / 空 / 有帖·加载更多 / 有帖·到底</p></div>
+  <div class="sec__sub">本页状态机有 5 态，来自帖流 <code>scroll-view</code> 的 v-if 链：
+    <code>loading &amp;&amp; posts.length===0</code>（加载）→ <code>errorMessage &amp;&amp; posts.length===0</code>（错误）→
+    <code>!loading &amp;&amp; posts.length===0</code>（空）→ 有帖时列表 + 底部
+    <code>isLoadingMore</code>（加载更多）/ <code>!hasMore &amp;&amp; posts.length&gt;0</code>（到底）。
+    深绿导航带与标签头卡在加载/错误/空三态始终存在（非帖流分支）；帧即视口，超出 812px 裁切，裁切说明写题注不写画面。</div>
+
+  <div class="frames">
+
+    <!-- F01 加载 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">加载态</span><span class="d">loading &amp;&amp; 空列表</span></figcaption>
+      <div class="phone">
+        <div class="gph"><span class="gph__back"><svg><use href="#i-back"/></svg></span><span class="gph__title">#校园日常</span><span class="gph__spacer"></span></div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="tag-hero"><div><span class="tag-hero__name">#校园日常</span></div><span class="tag-hero__btn"><span>去发布</span></span></div>
+        <div class="feed" style="top:196px">
+          <div class="feed-state"><span class="feed-state__spin"></span><span class="feed-state__text">正在加载帖子...</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 错误 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">错误态</span><span class="d">errorMessage &amp;&amp; 空列表</span></figcaption>
+      <div class="phone">
+        <div class="gph"><span class="gph__back"><svg><use href="#i-back"/></svg></span><span class="gph__title">#校园日常</span><span class="gph__spacer"></span></div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="tag-hero"><div><span class="tag-hero__name">#校园日常</span></div><span class="tag-hero__btn"><span>去发布</span></span></div>
+        <div class="feed" style="top:196px">
+          <div class="feed-state">
+            <span class="feed-state__ic"><svg style="color:var(--c-error)"><use href="#i-alert"/></svg></span>
+            <span class="feed-state__text">加载帖子失败，请稍后重试</span>
+            <span class="feed-state__btn feed-state__btn--ghost"><span>重试</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 空 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">空态</span><span class="d">!loading &amp;&amp; 空列表</span></figcaption>
+      <div class="phone">
+        <div class="gph"><span class="gph__back"><svg><use href="#i-back"/></svg></span><span class="gph__title">#校园日常</span><span class="gph__spacer"></span></div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="tag-hero"><div><span class="tag-hero__name">#校园日常</span><span class="tag-hero__count">共 0 条记录</span></div><span class="tag-hero__btn"><span>去发布</span></span></div>
+        <div class="feed" style="top:196px">
+          <div class="feed-state">
+            <span class="feed-state__ic"><svg><use href="#i-box"/></svg></span>
+            <span class="feed-empty__title">暂无帖子</span>
+            <span class="feed-empty__desc">该标签下还没有内容</span>
+            <span class="feed-state__btn"><span>去发布</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 有帖·加载更多中 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">有帖 · 加载更多中</span><span class="d">isLoadingMore · 两卡+转圈均在视口内</span></figcaption>
+      <div class="phone">
+        <div class="gph"><span class="gph__back"><svg><use href="#i-back"/></svg></span><span class="gph__title">#校园日常</span><span class="gph__spacer"></span></div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="tag-hero"><div><span class="tag-hero__name">#校园日常</span><span class="tag-hero__count">共 2 条记录</span></div><span class="tag-hero__btn"><span>去发布</span></span></div>
+        <div class="feed" style="top:196px">
+          <div class="post-card">
+            <div class="post-card__header"><div class="post-card__user">
+              <span class="user-avatar"><img src="assets/demo/person-01.png" alt=""></span>
+              <div><div class="user-info__name">小满</div><div class="user-info__headline">北京·985硕士</div></div>
+            </div></div>
+            <div class="post-card__body"><span class="post-card__content">今天在图书馆遇到一个认真学习的女生，感觉好有气质！</span></div>
+            <div class="post-card__tags"><span class="post-card__tag">#校园日常</span><span class="post-card__tag">#表白墙</span></div>
+            <div class="post-card__footer"><span class="post-card__time">2小时前</span>
+              <div class="post-card__actions">
+                <span class="action-btn"><svg><use href="#i-comment"/></svg><span class="c">8</span></span>
+                <span class="action-btn"><svg><use href="#i-heart"/></svg><span class="c">32</span></span>
+                <span class="action-btn"><svg><use href="#i-share"/></svg><span class="c">3</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="post-card">
+            <div class="post-card__header"><div class="post-card__user">
+              <span class="user-avatar"><img src="assets/demo/xiaoman-avatar.png" alt=""></span>
+              <div><div class="user-info__name">周岚</div><div class="user-info__headline">上海·互联网大厂</div></div>
+            </div></div>
+            <div class="post-card__body"><span class="post-card__content">食堂新开的麻辣香锅绝了，有人一起拼单吗？</span></div>
+            <div class="post-card__tags"><span class="post-card__tag">#校园日常</span><span class="post-card__tag">#生活记录</span></div>
+            <div class="post-card__footer"><span class="post-card__time">5小时前</span>
+              <div class="post-card__actions">
+                <span class="action-btn"><svg><use href="#i-comment"/></svg><span class="c">5</span></span>
+                <span class="action-btn action-btn--liked"><svg class="ico--fill"><use href="#i-heart-fill"/></svg><span class="c">23</span></span>
+                <span class="action-btn"><svg><use href="#i-share"/></svg><span class="c">2</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="load-more"><span class="load-more__spin"></span><span class="load-more__text">加载中...</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 有帖·到底 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">有帖 · 到底终止</span><span class="d">!hasMore &amp;&amp; 有帖 · ↓裁切至第二卡</span></figcaption>
+      <div class="phone">
+        <div class="gph"><span class="gph__back"><svg><use href="#i-back"/></svg></span><span class="gph__title">#校园日常</span><span class="gph__spacer"></span></div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="tag-hero"><div><span class="tag-hero__name">#校园日常</span><span class="tag-hero__count">共 2 条记录</span></div><span class="tag-hero__btn"><span>去发布</span></span></div>
+        <div class="feed" style="top:196px">
+          <div class="post-card">
+            <div class="post-card__header"><div class="post-card__user">
+              <span class="user-avatar"><img src="assets/demo/person-04.png" alt=""></span>
+              <div><div class="user-info__name">阿辰</div><div class="user-info__headline">杭州·设计师</div></div>
+            </div></div>
+            <div class="post-card__body"><span class="post-card__content">急！计算机组成原理期末怎么复习？求大佬带带。</span></div>
+            <div class="post-card__tags"><span class="post-card__tag">#校园日常</span><span class="post-card__tag">#技术交流</span></div>
+            <div class="post-card__footer"><span class="post-card__time">昨天</span>
+              <div class="post-card__actions">
+                <span class="action-btn"><svg><use href="#i-comment"/></svg><span class="c">23</span></span>
+                <span class="action-btn"><svg><use href="#i-heart"/></svg><span class="c">45</span></span>
+                <span class="action-btn"><svg><use href="#i-share"/></svg><span class="c">6</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="post-card">
+            <div class="post-card__header"><div class="post-card__user">
+              <span class="user-avatar"><span class="user-avatar__char">星</span></span>
+              <div><div class="user-info__name">星辰</div><div class="user-info__headline">成都·创业者</div></div>
+            </div></div>
+            <div class="post-card__body"><span class="post-card__content">毕业五年了，想问问学弟学妹们学校现在变化大吗？</span></div>
+            <div class="post-card__tags"><span class="post-card__tag">#校园日常</span><span class="post-card__tag">#校友动态</span></div>
+            <div class="post-card__footer"><span class="post-card__time">3天前</span>
+              <div class="post-card__actions">
+                <span class="action-btn"><svg><use href="#i-comment"/></svg><span class="c">19</span></span>
+                <span class="action-btn"><svg><use href="#i-heart"/></svg><span class="c">67</span></span>
+                <span class="action-btn"><svg><use href="#i-share"/></svg><span class="c">10</span></span>
+              </div>
+            </div>
+          </div>
+          <div class="load-more"><span class="load-more__text">— 没有更多了 —</span></div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ===== 02 组件状态规范 ===== -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页交互件：帖流容器四态、帖子卡互动栏三键的计数/已赞态、去发布与重试按钮。计数为 0 时数字 <code>v-if</code> 不出，图标仍在。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>帖流容器 · 四态</h3>
+      <p class="hint">三态互斥由 <code>loading</code> / <code>errorMessage</code> / <code>posts.length</code> 决定，深绿带与标签头卡不受影响。</p>
+      <table class="tbl">
+        <tr><th>条件</th><th>呈现</th><th>主文案</th></tr>
+        <tr><td>loading &amp;&amp; 空</td><td>粉色转圈</td><td>正在加载帖子...</td></tr>
+        <tr><td>errorMessage &amp;&amp; 空</td><td>红告警 + 重试</td><td>加载帖子失败，请稍后重试</td></tr>
+        <tr><td>!loading &amp;&amp; 空</td><td>盒图标 + 去发布</td><td>暂无帖子 / 该标签下还没有内容</td></tr>
+        <tr><td>posts.length&gt;0</td><td>帖子卡列表</td><td>—</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>帖子卡互动栏 · 评论/点赞/分享</h3>
+      <p class="hint">注意本页是 <b>tag-posts 内联版式</b>：第三枚键为「分享」，共享 PostCard 组件此处已撤分享、改收藏（见 §04）。</p>
+      <div class="row">
+        <div class="cell"><span class="action-btn"><svg><use href="#i-comment"/></svg><span class="c">8</span></span><span class="lab">评论·有计数</span></div>
+        <div class="cell"><span class="action-btn"><svg><use href="#i-comment"/></svg></span><span class="lab">评论·计数0</span></div>
+        <div class="cell"><span class="action-btn"><svg><use href="#i-heart"/></svg><span class="c">32</span></span><span class="lab">未赞</span></div>
+        <div class="cell"><span class="action-btn action-btn--liked"><svg class="ico--fill"><use href="#i-heart-fill"/></svg><span class="c">23</span></span><span class="lab">已赞（粉实心）</span></div>
+        <div class="cell"><span class="action-btn"><svg><use href="#i-share"/></svg><span class="c">3</span></span><span class="lab">分享</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>帖子卡作者位 · 有头像 / 无头像</h3>
+      <p class="hint"><code>post.author.avatar</code> 为空时回落为名字首字（绿底白字），非灰块。</p>
+      <div class="row">
+        <div class="cell"><span class="user-avatar"><img src="assets/demo/person-01.png" alt=""></span><span class="lab">有头像（真素材）</span></div>
+        <div class="cell"><span class="user-avatar"><span class="user-avatar__char">星</span></span><span class="lab">无头像（首字）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>按钮 · 去发布 / 重试</h3>
+      <p class="hint">「去发布」= <code>circle.topicsEmptyAction</code>（绿实心胶囊）；「重试」= <code>common.retry</code>（错误态 ghost）。</p>
+      <div class="row">
+        <div class="cell"><span class="tag-hero__btn" style="display:inline-flex"><span>去发布</span></span><span class="lab">去发布（主）</span></div>
+        <div class="cell"><span class="feed-state__btn feed-state__btn--ghost" style="display:inline-flex"><span>重试</span></span><span class="lab">重试（描边）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== 03 令牌 ===== -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用以下档，未引入页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">导航带渐变起点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#0B4A38"></span><div><div class="sw__n">主色 900<code>--c-brand-900</code></div><div class="sw__u">导航带渐变终点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">去发布按钮 · 头像底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3;border:1px solid #DDE3E0"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">标签胶囊底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫 500<code>--c-romance-500</code></div><div class="sw__u">已赞实心 · 加载转圈</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">错误态告警</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到五档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">#校园日常</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">小满 · 正文内容</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500;color:var(--c-brand-700)">#校园日常 #表白墙</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-text-secondary)">正在加载帖子...</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-tertiary)">共 2 条记录</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>帖卡 gap 18rpx</b><i style="width:9px"></i></div>
+        <div class="space__i"><b>帖卡侧缩 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 帖子卡</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 标签头卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>胶囊</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 04 素材 + 差异 ===== -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 &amp; 与实况的已知差异</h2><p>头像用真演示素材，无灰块</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/person-01.png" alt="" style="height:150px;object-fit:cover">
+      <div class="asset__b"><b>assets/demo/person-*.png</b><p>帖子卡作者头像（<code>post.author.avatar</code> 非空分支）。§8 要求头像位用盘上真实演示素材，不用灰块/图形占位。无头像时回落为名字首字（绿底白字），仍是本页真实分支。</p><div class="m">38px · aspectFill</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-avatar.png" alt="" style="height:150px;object-fit:cover">
+      <div class="asset__b"><b>assets/demo/xiaoman-avatar.png</b><p>真名池人设之一（小满）。演示文案与标签取自本页 mock 夹具主题，人名按 §3.4 用真名池（小满/周岚/阿辰/星辰）。</p><div class="m">互动计数为帖子内容计数，非分数类</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>帖子卡结构：</b>本页 <code>tag-posts.vue</code> 渲染的是<b>自绘内联卡片</b>（作者行 / 正文 / 标签 / 底部互动栏），
+        与共享组件 <code>components/village/PostCard.vue</code> 版式<b>不同源</b>——内联卡<b>不渲染配图网格</b>、无关注胶囊/校名徽章/评论预览，
+        且第三枚互动键为「分享」（PostCard 已按 R13-L01-D11 撤除分享改收藏）。画板按本页模板实况画内联卡，未套用 PostCard 的富结构。</li>
+      <li>「去发布」文案复用键 <code>circle.topicsEmptyAction</code>（逐字「去发布」）；错误态主文案取 <code>village.tagPosts.loadFailed</code>（<code>errorMessage</code> 空回落值），实际运行时可为后端 error.message。</li>
+      <li>计数为 0 时数字 <code>v-if</code> 不出（如空态帖流），图标仍保留。</li>
+      <li>本页在 village 分包，无原生导航栏、无 tabbar——页头是深绿自绘导航带，出现 tabbar 即为错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 话题帖列表高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx）
+</footer>
+
+</div>
+</body>
+</html>

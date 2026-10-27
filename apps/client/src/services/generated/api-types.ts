@@ -147,6 +147,138 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/change-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 修改密码
+         * @description 校验旧密码后更新密码，并吊销该用户全部 token 强制重新登录。
+         *
+         *     需 `ROLE_USER`（`@PreAuthorize("hasRole('USER')")`）；userId 由服务端从 JWT 解析
+         *     （`SecurityUtils.getCurrentUserId()`），不接受 query / body 传入。成功后当前请求携带的
+         *     Bearer token 的 jti 一并写入 Redis 黑名单，调用方必须重新登录。
+         *     无密码账号（纯 wechat / apple 注册）返回 403 + `PASSWORD_NOT_SET`；
+         *     旧密码错误返回 403 + `OPERATION_FORBIDDEN`；用户不存在返回 404 + `RESOURCE_NOT_FOUND`。
+         */
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/change-phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 更换手机号
+         * @description 验旧密码后更换手机号；新手机号被占用返回业务冲突错误。verificationCode 字段预留（后续短信验证）
+         *
+         *     本期只走「验旧密码」路径（`password` 必填）：无密码账号 403 + `PASSWORD_NOT_SET`、
+         *     旧密码错误 403 + `OPERATION_FORBIDDEN`、新手机号已被占用 409 + `RESOURCE_CONFLICT`、
+         *     用户不存在 404 + `RESOURCE_NOT_FOUND`。成功仅更新手机号（加密存储）与 `openid` 派生键，
+         *     不吊销 token。`verificationCode` 服务端当前不消费。
+         */
+        post: operations["changePhone"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 设备列表
+         * @description 返回当前用户的登录设备列表（含已吊销，前端置灰展示）
+         *
+         *     需 `ROLE_USER`；userId 由服务端从 JWT 解析，不接受 query / 路径参数。
+         *     列表按 `lastActiveAt` 倒序（`findByUserIdOrderByLastActiveAtDesc`），包含已吊销设备。
+         */
+        get: operations["listDevices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/devices/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 吊销设备
+         * @description 吊销指定设备：校验属主、标记 revoked 并使该设备 token 立即失效
+         *
+         *     需 `ROLE_USER`；只按路径 `id` 定位设备记录，属主校验在服务端完成。
+         *     设备不存在返回 404 + `RESOURCE_NOT_FOUND`；设备不属于当前用户返回 403 + `OPERATION_FORBIDDEN`；
+         *     已吊销设备重复吊销为幂等成功（200，不重复写黑名单）。成功时该设备最近签发 token 的
+         *     jti 进入 Redis 黑名单（TTL = JWT 有效期上限）。
+         */
+        post: operations["revokeDevice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 注销账号
+         * @description 校验凭据后注销账号并匿名化个人数据；幂等，已注销账号重复调用直接成功
+         *
+         *     需 `ROLE_USER`；userId 由服务端从 JWT 解析。凭据校验按账号是否有密码分叉：
+         *     有密码账号必须带 `password` 且需匹配，否则 403 + `OPERATION_FORBIDDEN`；
+         *     无密码账号（纯 wechat / apple 注册）必须带非空 `confirmationText`，缺失 403 + `OPERATION_FORBIDDEN`。
+         *
+         *     成功后的服务端后果（`RealAccountSecurityService.deactivateAccount`）：
+         *     - `status` 置为 `deactivated`
+         *     - 昵称改为「已注销用户」、头像 URL 置空、手机号替换为含用户 ID 的脱敏占位（不可再登录）
+         *     - 该用户全部 token（含当前请求 token）进入 Redis 黑名单，客户端必须重新登录
+         *     - 同步清除该用户的实名认证照片文件与引用（清除失败仅记日志，不阻断注销）
+         *
+         *     幂等语义分两层：业务层已注销账号（`status=deactivated`）重复调用直接返回 200 且不重复处理；
+         *     传输层由 `@Idempotent` 基于 `Idempotency-Key` 去重，TTL 内复用同一 key 返回 409 + `IDEMPOTENT_CONFLICT`。
+         */
+        post: operations["deactivateAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/profile/stats": {
         parameters: {
             query?: never;
@@ -941,6 +1073,101 @@ export interface components {
             username: string;
             password: string;
         };
+        /**
+         * @description 修改密码请求体，字段与 Bean Validation 注解逐一对应
+         *     （`AccountSecurityController` 文件内 record `ChangePasswordRequest`）。
+         */
+        ChangePasswordRequest: {
+            /** @description 旧密码（`@NotBlank` + `@Size(max = 128)`）。 */
+            oldPassword: string;
+            /** @description 新密码（`@NotBlank` + `@Size(min = 6, max = 64)`，长度须为 6-64 位）。 */
+            newPassword: string;
+        };
+        /**
+         * @description 更换手机号请求体（record `ChangePhoneRequest`）。本期只消费 `password` + `newPhone`，
+         *     `verificationCode` 为预留字段（无校验注解、服务端不读取）。
+         */
+        ChangePhoneRequest: {
+            /** @description 旧密码（`@NotBlank` + `@Size(max = 64)`）；本期「验旧密码」路径必填。 */
+            password: string;
+            /** @description 短信验证码预留字段（无 `@NotBlank` / `@Size` / `@Pattern` 约束，可选）。 */
+            verificationCode?: string;
+            /** @description 新手机号（`@NotBlank` + `@Pattern(regexp = '^1[3-9]\\d{9}$')`，1[3-9] 开头的 11 位号码）。 */
+            newPhone: string;
+        };
+        /**
+         * @description 注销账号请求体（record `DeactivateRequest`）。两个字段都只带 `@Size`、无 `@NotBlank`，
+         *     必填性由服务端按账号是否有密码分叉校验：有密码账号必须传匹配的 `password`，
+         *     无密码账号必须传非空 `confirmationText`。
+         */
+        DeactivateRequest: {
+            /** @description 旧密码（`@Size(max = 128)`）；有密码账号必填，错误返回 403。 */
+            password?: string;
+            /**
+             * @description 注销确认文本（`@Size(max = 64)`，注解复用了 `NICKNAME_LENGTH_INVALID` 的错误文案）；
+             *     无密码账号（纯 wechat / apple 注册）必填，缺失返回 403 +「注销确认文本不能为空」。
+             */
+            confirmationText?: string;
+        };
+        /**
+         * @description 登录设备会话视图（record `UserDeviceSessionView`，GET `/auth/devices` 响应项）。
+         *     字段非空性取自实体 `UserDeviceSession` 的 `@Column(nullable = false)` 列。
+         */
+        UserDeviceSessionView: {
+            /**
+             * Format: int64
+             * @description 设备记录 ID（POST `/auth/devices/{id}/revoke` 的路径参数）。
+             */
+            id: number;
+            /** @description 客户端设备标识（实体列 `device_id`，非空，长度 128）。 */
+            deviceId: string;
+            /**
+             * @description 登录平台：登录时写入 `wechat` / `phone` / `guest`（`RealAuthService`、`MockAuthService`）、
+             *     `apple`（`ThirdPartyAuthService` 以 `provider.toLowerCase()` 写入）；
+             *     传入空值时服务端兜底为 `unknown`（实体列默认值，非空，长度 32）。
+             */
+            platform: string;
+            /**
+             * Format: date-time
+             * @description 最近活跃时间（实体列 `last_active_at` 非空）。
+             */
+            lastActiveAt: string;
+            /** @description 是否已被吊销（实体列非空，默认 false；前端置灰展示）。 */
+            revoked: boolean;
+            /**
+             * Format: date-time
+             * @description 首次登录时间（实体列 `created_at` 非空）。
+             */
+            createdAt: string;
+        };
+        /**
+         * @description `ApiResponse<Void>` 统一信封（`ApiResponse.empty()`）：`code` 为 0、`message` 为 `ok`、
+         *     `data` 恒为 null、`traceId` 取自 MDC。客户端 `services/http.ts` 以 `code === 0` 判成功并解包 `data`。
+         */
+        EmptyApiResponse: {
+            /** @description 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。 */
+            code: number;
+            /** @description 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。 */
+            message: string;
+            /** @description 载荷为 null（泛型参数为 Void）。 */
+            data?: Record<string, never> | null;
+            /** @description 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。 */
+            traceId: string;
+        };
+        /**
+         * @description `ApiResponse<List<UserDeviceSessionView>>` 统一信封：`code` 为 0 表示成功，
+         *     `data` 为当前用户的设备列表（按 `lastActiveAt` 倒序，含已吊销设备）。
+         */
+        UserDeviceSessionListApiResponse: {
+            /** @description 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。 */
+            code: number;
+            /** @description 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。 */
+            message: string;
+            /** @description 设备列表；无设备时为空数组。 */
+            data: components["schemas"]["UserDeviceSessionView"][];
+            /** @description 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。 */
+            traceId: string;
+        };
         BasicProfile: {
             nickname: string;
             bio: string;
@@ -1583,6 +1810,21 @@ export interface components {
                 "application/json": components["schemas"]["ApiError"];
             };
         };
+        /** @description Unprocessable entity */
+        UnprocessableEntity: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "error": "INVALID_OPERATION",
+                 *       "message": "缺少 Idempotency-Key 请求头"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ApiError"];
+            };
+        };
         /** @description Too many requests */
         TooManyRequests: {
             headers: {
@@ -1822,6 +2064,183 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description 幂等键（UUID 或业务唯一标识）。方法带 `@Idempotent` 且 `required` 默认 true，
+                 *     缺失时返回 422 + `INVALID_OPERATION`；服务端按 `idempotent:{key}:{userId}` 去重，
+                 *     TTL 4 小时，TTL 内重复提交同一 key 返回 409 + `IDEMPOTENT_CONFLICT`；
+                 *     业务失败（HTTP 状态 >= 400）时该 key 被释放，同 key 可立即重试。
+                 */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description 修改成功（无数据载荷） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptyApiResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    changePhone: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description 幂等键（UUID 或业务唯一标识）。方法带 `@Idempotent` 且 `required` 默认 true，
+                 *     缺失时返回 422 + `INVALID_OPERATION`；服务端按 `idempotent:{key}:{userId}` 去重，
+                 *     TTL 4 小时，TTL 内重复提交同一 key 返回 409 + `IDEMPOTENT_CONFLICT`；
+                 *     业务失败（HTTP 状态 >= 400）时该 key 被释放，同 key 可立即重试。
+                 */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePhoneRequest"];
+            };
+        };
+        responses: {
+            /** @description 更换成功（无数据载荷） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptyApiResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    listDevices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 设备列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserDeviceSessionListApiResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    revokeDevice: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description 幂等键（UUID 或业务唯一标识）。方法带 `@Idempotent` 且 `required` 默认 true，
+                 *     缺失时返回 422 + `INVALID_OPERATION`；服务端按 `idempotent:{key}:{userId}` 去重，
+                 *     TTL 4 小时，TTL 内重复提交同一 key 返回 409 + `IDEMPOTENT_CONFLICT`；
+                 *     业务失败（HTTP 状态 >= 400）时该 key 被释放，同 key 可立即重试。
+                 */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description 设备记录 ID（来自 GET `/auth/devices` 的 `id`） */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 吊销成功（无数据载荷） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptyApiResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+            500: components["responses"]["InternalServerError"];
+        };
+    };
+    deactivateAccount: {
+        parameters: {
+            query?: never;
+            header: {
+                /**
+                 * @description 幂等键（UUID 或业务唯一标识）。方法带 `@Idempotent` 且 `required` 默认 true，
+                 *     缺失时返回 422 + `INVALID_OPERATION`；服务端按 `idempotent:{key}:{userId}` 去重，
+                 *     TTL 4 小时，TTL 内重复提交同一 key 返回 409 + `IDEMPOTENT_CONFLICT`；
+                 *     业务失败（HTTP 状态 >= 400）时该 key 被释放，同 key 可立即重试。
+                 */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeactivateRequest"];
+            };
+        };
+        responses: {
+            /** @description 注销成功（含已注销账号的幂等成功，无数据载荷） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmptyApiResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
             500: components["responses"]["InternalServerError"];
         };
     };

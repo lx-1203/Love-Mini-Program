@@ -729,7 +729,7 @@ defineExpose({ toggleJoin });
   gap: 4rpx;
   padding: 2rpx 12rpx;
   border-radius: 999rpx;
-  background: var(--c-tint-green-soft, #E8F7EF);
+  background: var(--c-brand-50);
   flex-shrink: 0;
 }
 
@@ -827,8 +827,8 @@ defineExpose({ toggleJoin });
 /* #endif */
 
 .circle-card__action--joined {
-  background: var(--c-tint-green-soft, #E8F7EF);
-  border: 2rpx solid var(--c-brand-light, #D1F5E7);
+  background: var(--c-brand-50);
+  border: 2rpx solid var(--c-brand-100);
   color: var(--c-text-tertiary);
 }
 

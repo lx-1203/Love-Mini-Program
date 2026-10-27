@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 附近的人整屏列表 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（色/字阶/圆角/阴影一律取 base 令牌） ===== */
+.pghdr { position: absolute; top: 0; left: 0; width: 100%; padding: 54px 16px 0; box-sizing: border-box; z-index: 4; }
+.pghdr__row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.pgt__back { position: relative; width: 32px; height: 32px; flex: none; display: flex;
+  align-items: center; justify-content: center; }
+.pgt__back::before { content: ""; position: absolute; inset: 0; border-radius: var(--r-full);
+  background: var(--c-bg-container); box-shadow: var(--card-shadow); }
+.pgt__back span { position: relative; font-size: 20px; line-height: 1; color: var(--c-text-primary); }
+.pgt__back--press { opacity: 0.55; }
+.pgt__title { font-size: var(--fs-7xl); font-weight: 800; color: var(--c-text-primary); letter-spacing: -0.5px; }
+.pgt__spacer { width: 32px; flex: none; }
+
+.tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.tab { flex: 1; min-height: 44px; border-radius: var(--r-lg); display: flex; align-items: center;
+  justify-content: center; background: var(--c-bg-container); border: 1px solid transparent; box-shadow: var(--s-sm); }
+.tab span { font-size: var(--fs-md); color: var(--c-text-secondary); }
+.tab--active { border-color: var(--c-brand-800); background: var(--c-brand-100); box-shadow: none; }
+.tab--active span { font-weight: 700; color: var(--c-brand-800); }
+
+.list { position: absolute; top: 166px; left: 0; width: 100%; padding: 0 16px 24px; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 8px; z-index: 2; }
+.row { display: flex; align-items: center; gap: 10px; padding: 11px 12px; background: var(--c-bg-container);
+  border-radius: var(--r-card); box-shadow: var(--s-card-soft); }
+.row__av { width: 48px; height: 48px; border-radius: var(--r-full); overflow: hidden; flex: none;
+  background: var(--c-neutral-100); }
+.row__av img { width: 100%; height: 100%; object-fit: cover; }
+.row__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.row__nrow { display: flex; align-items: center; gap: 6px; }
+.row__name { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.row__age { font-size: var(--fs-md); color: var(--c-text-secondary); }
+.on { display: flex; align-items: center; gap: 3px; flex: none; }
+.on i { width: 8px; height: 8px; border-radius: var(--r-full); background: var(--c-brand-700); }
+.on span { font-size: var(--fs-base); color: var(--c-brand-800); }
+.row__meta { font-size: var(--fs-base); color: var(--c-text-secondary); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.tags { display: flex; gap: 5px; }
+.tag { padding: 4px 8px; border-radius: var(--r-full); background: var(--c-brand-50);
+  color: var(--c-brand-800); font-size: var(--fs-base); font-weight: 500; }
+.row__chev { font-size: 15px; color: var(--c-text-tertiary); flex: none; line-height: 1; }
+
+.state { position: absolute; top: 166px; left: 0; width: 100%; padding: 40px 20px 0; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 2; }
+.state__text { font-size: var(--fs-md); color: var(--c-text-tertiary); text-align: center; }
+.state__hint { font-size: var(--fs-sm); color: var(--c-text-quaternary); text-align: center; }
+.retry { margin-top: 4px; padding: 7px 24px; border-radius: var(--r-full); border: 1px solid var(--c-status-disabled); }
+.retry span { font-size: var(--fs-base); color: var(--c-text-secondary); }
+
+.sk { display: flex; align-items: center; gap: 10px; padding: 11px 12px; background: var(--c-bg-container);
+  border-radius: var(--r-card); box-shadow: var(--s-card-soft); }
+.sk__av { width: 48px; height: 48px; border-radius: var(--r-full); background: var(--c-border-light); flex: none; }
+.sk__l { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.sk__b { height: 10px; border-radius: var(--r-sm); background: var(--c-border-light); }
+.w40 { width: 40%; } .w90 { width: 90%; } .w70 { width: 70%; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-5.6 7-11.2A7 7 0 0 0 5 9.8C5 15.4 12 21 12 21z"/><circle cx="12" cy="9.6" r="2.6"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>附近的人 / 同城的人 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/discover-extra/nearby/people</code>。
+     附近页「附近的人」分区头「全部」跳来的<b>整屏列表出口</b>，单页双态：<code>?scope=nearby|city</code>
+     决定标题、请求参数与排序口径（nearby 距离→活跃度 / city 活跃度→推荐度）。
+     页面形态是纯行式列表——整行点击进他人主页，<b>页内不出现喜欢/悄悄话/匹配按钮、不使用滑动卡片</b>（源码文件头自述的冻结口径）。</p>
+  <div class="cover__meta">
+    <span>路由 <b>nearby/people</b></span>
+    <span>分包 <b>discover-extra</b>（无 tabbar）</span>
+    <span>状态 <b>5 屏</b>（4 态 × scope 两值）</span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页无独立理想图（附近页基准的分区出口）</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 5 屏</h2>
+    <p>v-if 链四态 + scope 两值</p></div>
+  <div class="sec__sub">本页状态机有 <b>4 态</b>，来自模板条件链
+    <code>v-if="loading" / v-else-if="errorMessage" / v-else-if="list.length === 0" / v-else（scroll-view 列表）</code>；
+    scope 是正交维度（两个值都落在列表态），故列表画两屏、其余三态各一屏。
+    列表在 <code>scroll-view</code> 内滚、页面本身不滚，首批只渲染 <code>PAGE_SIZE=20</code> 条、触底增量；
+    帧内按视口裁切，被裁掉的行只写题注。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">列表 · scope=nearby（按距离）</span><span class="d">首批 20 条 · 第 7 行被视口裁断</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pghdr">
+          <div class="pghdr__row"><span class="pgt__back"><span>‹</span></span><span class="pgt__title">附近的人</span><span class="pgt__spacer"></span></div>
+          <div class="tabs"><span class="tab tab--active"><span>附近的人</span></span><span class="tab"><span>同城的人</span></span></div>
+        </div>
+        <div class="list">
+          <div class="row"><span class="row__av"><img src="assets/demo/xiaoman-avatar.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">小满</span><span class="row__age">22</span><span class="on"><i></i><span>在线</span></span></span>
+              <span class="row__meta">北京师范大学 · 0.6km</span>
+              <span class="tags"><span class="tag">摄影</span><span class="tag">阅读</span><span class="tag">美食</span></span></span>
+            <span class="row__chev">›</span></div>
+          <div class="row"><span class="row__av"><img src="assets/demo/person-05-avatar.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">Luna</span><span class="row__age">23</span><span class="on"><i></i><span>在线</span></span></span>
+              <span class="row__meta">北京师范大学 · 1.2km</span>
+              <span class="tags"><span class="tag">音乐</span><span class="tag">旅行</span></span></span>
+            <span class="row__chev">›</span></div>
+          <div class="row"><span class="row__av"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">阿辰</span><span class="row__age">24</span></span>
+              <span class="row__meta">北京大学 · 2.4km</span>
+              <span class="tags"><span class="tag">跑步</span><span class="tag">电影</span></span></span>
+            <span class="row__chev">›</span></div>
+          <div class="row"><span class="row__av"><img src="assets/demo/person-01-avatar.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">林晓</span><span class="row__age">21</span><span class="on"><i></i><span>在线</span></span></span>
+              <span class="row__meta">中国人民大学 · 3.1km</span>
+              <span class="tags"><span class="tag">绘画</span></span></span>
+            <span class="row__chev">›</span></div>
+          <div class="row"><span class="row__av"><img src="assets/demo/person-06-avatar.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">草莓</span><span class="row__age">22</span></span>
+              <span class="row__meta">清华大学 · 4.2km</span>
+              <span class="tags"><span class="tag">美食</span><span class="tag">游戏</span></span></span>
+            <span class="row__chev">›</span></div>
+          <div class="row"><span class="row__av"><img src="assets/demo/person-08.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">周岚</span><span class="row__age">25</span></span>
+              <span class="row__meta">北京邮电大学 · 4.9km</span>
+              <span class="tags"><span class="tag">旅行</span><span class="tag">音乐</span></span></span>
+            <span class="row__chev">›</span></div>
+          <div class="row"><span class="row__av"><img src="assets/demo/person-02-avatar.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">夏言</span><span class="row__age">23</span><span class="on"><i></i><span>在线</span></span></span>
+              <span class="row__meta">北京航空航天大学 · 5km</span>
+              <span class="tags"><span class="tag">阅读</span><span class="tag">跑步</span></span></span>
+            <span class="row__chev">›</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">列表 · scope=city（按活跃度）</span><span class="d">距离缺失 → meta 回落「附近」</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pghdr">
+          <div class="pghdr__row"><span class="pgt__back"><span>‹</span></span><span class="pgt__title">同城的人</span><span class="pgt__spacer"></span></div>
+          <div class="tabs"><span class="tab"><span>附近的人</span></span><span class="tab tab--active"><span>同城的人</span></span></div>
+        </div>
+        <div class="list">
+          <div class="row"><span class="row__av"><img src="assets/demo/person-07-avatar.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">苏奈</span><span class="row__age">22</span><span class="on"><i></i><span>在线</span></span></span>
+              <span class="row__meta">中国传媒大学 · 附近</span>
+              <span class="tags"><span class="tag">唱歌</span><span class="tag">电影</span></span></span>
+            <span class="row__chev">›</span></div>
+          <div class="row"><span class="row__av"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">阿辰</span><span class="row__age">24</span><span class="on"><i></i><span>在线</span></span></span>
+              <span class="row__meta">北京理工大学 · 附近</span>
+              <span class="tags"><span class="tag">阅读</span></span></span>
+            <span class="row__chev">›</span></div>
+          <div class="row"><span class="row__av"><img src="assets/demo/person-09.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">林晚</span><span class="row__age">23</span></span>
+              <span class="row__meta">中央财经大学 · 附近</span>
+              <span class="tags"><span class="tag">阅读</span><span class="tag">旅行</span></span></span>
+            <span class="row__chev">›</span></div>
+          <div class="row"><span class="row__av"><img src="assets/demo/xiaoman-photo-1.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">小满</span><span class="row__age">21</span></span>
+              <span class="row__meta">对外经济贸易大学 · 附近</span>
+              <span class="tags"><span class="tag">美食</span><span class="tag">摄影</span></span></span>
+            <span class="row__chev">›</span></div>
+          <div class="row"><span class="row__av"><img src="assets/demo/person-06-avatar.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">草莓</span><span class="row__age">22</span></span>
+              <span class="row__meta">北京大学 · 附近</span>
+              <span class="tags"><span class="tag">游戏</span></span></span>
+            <span class="row__chev">›</span></div>
+          <div class="row"><span class="row__av"><img src="assets/demo/person-02-avatar.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">夏言</span><span class="row__age">23</span></span>
+              <span class="row__meta">北京外国语大学 · 附近</span>
+              <span class="tags"><span class="tag">音乐</span><span class="tag">绘画</span></span></span>
+            <span class="row__chev">›</span></div>
+          <div class="row"><span class="row__av"><img src="assets/demo/person-08.png" alt=""></span>
+            <span class="row__info"><span class="row__nrow"><span class="row__name">周岚</span><span class="row__age">25</span></span>
+              <span class="row__meta">清华大学 · 附近</span>
+              <span class="tags"><span class="tag">跑步</span><span class="tag">美食</span></span></span>
+            <span class="row__chev">›</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">加载中</span><span class="d">tab 常驻 · SkeletonBlock rows=4</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pghdr">
+          <div class="pghdr__row"><span class="pgt__back"><span>‹</span></span><span class="pgt__title">附近的人</span><span class="pgt__spacer"></span></div>
+          <div class="tabs"><span class="tab tab--active"><span>附近的人</span></span><span class="tab"><span>同城的人</span></span></div>
+        </div>
+        <div class="list">
+          <div class="sk"><span class="sk__av"></span><span class="sk__l"><span class="sk__b w40"></span><span class="sk__b w90"></span><span class="sk__b w70"></span></span></div>
+          <div class="sk"><span class="sk__av"></span><span class="sk__l"><span class="sk__b w40"></span><span class="sk__b w90"></span><span class="sk__b w70"></span></span></div>
+          <div class="sk"><span class="sk__av"></span><span class="sk__l"><span class="sk__b w40"></span><span class="sk__b w90"></span><span class="sk__b w70"></span></span></div>
+          <div class="sk"><span class="sk__av"></span><span class="sk__l"><span class="sk__b w40"></span><span class="sk__b w90"></span><span class="sk__b w70"></span></span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">加载失败 · 可重试</span><span class="d">描边胶囊，非实心按钮</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pghdr">
+          <div class="pghdr__row"><span class="pgt__back"><span>‹</span></span><span class="pgt__title">附近的人</span><span class="pgt__spacer"></span></div>
+          <div class="tabs"><span class="tab tab--active"><span>附近的人</span></span><span class="tab"><span>同城的人</span></span></div>
+        </div>
+        <div class="state">
+          <span class="state__text">附近的人加载失败</span>
+          <span class="retry"><span>重试</span></span>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">空态</span><span class="d">两行文案，无出口件</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="pghdr">
+          <div class="pghdr__row"><span class="pgt__back"><span>‹</span></span><span class="pgt__title">同城的人</span><span class="pgt__spacer"></span></div>
+          <div class="tabs"><span class="tab"><span>附近的人</span></span><span class="tab tab--active"><span>同城的人</span></span></div>
+        </div>
+        <div class="state">
+          <span class="state__text">附近暂时没有新的人</span>
+          <span class="state__hint">换个范围或稍后再来看看</span>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每类交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页交互件四枚：scope 切换 tab / 返回件 / 行 / 重试件。
+    行是唯一出口件（整行进他人主页），它有三个「数据缺失也不许编造」的位：age、在线位、tags。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>scope 切换 tab · 两态</h3>
+      <p class="hint">选中档：底 <code>--c-brand-100</code> + 框 <code>--c-brand-800</code> + 字 <code>--c-brand-800</code>/700；
+        未选：白底 + 透明框 + <code>--c-text-secondary</code>。热区 44px（R10-L06-D13 补 min-height 88rpx）。
+        切换会重发请求并带竞态 token，旧响应不得覆盖新列表。</p>
+      <div class="row">
+        <div class="cell" style="width:150px"><span class="tab tab--active" style="width:150px"><span>附近的人</span></span><span class="lab">active（nearby）</span></div>
+        <div class="cell" style="width:150px"><span class="tab" style="width:150px"><span>同城的人</span></span><span class="lab">default</span></div>
+      </div>
+      <table class="tbl" style="margin-top:16px">
+        <tr><th>scope</th><th>标题</th><th>请求参数</th><th>排序（源码 load()）</th></tr>
+        <tr><td>nearby</td><td>附近的人</td><td><code>distanceMax: NEARBY_MAX_DISTANCE_KM</code></td><td>活跃度 → 距离</td></tr>
+        <tr><td>city</td><td>同城的人</td><td><code>{}</code></td><td>活跃度 → 共同圈子数</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>行 · 三个可缺位</h3>
+      <p class="hint">姓名走 <code>displayName()</code>（剥 QA 取证前缀，剥空即留空不编造）；
+        age 用 <code>v-if="item.age"</code>；在线位 <code>isOnline()</code> 认 online / just_now；tags <code>slice(0, 3)</code>。</p>
+      <div class="row" style="margin-bottom:12px">
+        <div class="cell"><span class="row__nrow"><span class="row__name">小满</span><span class="row__age">22</span><span class="on"><i></i><span>在线</span></span></span><span class="lab">全位齐</span></div>
+        <div class="cell"><span class="row__nrow"><span class="row__name">阿辰</span></span><span class="lab">缺 age + 离线</span></div>
+        <div class="cell"><span class="tags"><span class="tag">摄影</span></span><span class="lab">1 个标签</span></div>
+        <div class="cell"><span class="row__meta" style="font-size:12px">（tags 行整行不渲染）</span><span class="lab">0 个标签</span></div>
+      </div>
+      <div class="row">
+        <div class="cell"><span class="row__meta" style="font-size:12px">北京大学 · 2.4km</span><span class="lab">meta：校名+距离</span></div>
+        <div class="cell"><span class="row__meta" style="font-size:12px">北京大学 · 附近</span><span class="lab">meta：回落 home.segmentNearby</span></div>
+        <div class="cell"><span class="row__meta" style="font-size:12px">2.4km</span><span class="lab">meta：仅距离</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>返回件 · 默认 / 按下</h3>
+      <p class="hint">热区 44px、白圆 32px（88rpx / 64rpx），字形「‹」20px；
+        <code>goBack()</code> 在页面栈深度 1 时 <code>switchTab</code> 到寻觅 Tab（MP-R2-LNEARBY-001 栈底兜底）。</p>
+      <div class="row">
+        <div class="cell"><span class="pgt__back"><span>‹</span></span><span class="lab">default</span></div>
+        <div class="cell"><span class="pgt__back pgt__back--press"><span>‹</span></span><span class="lab">press</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>状态区 · 四态</h3>
+      <p class="hint">重试件是<b>白底描边胶囊</b>（<code>--c-status-disabled</code> 框 + 12px 二级字），不是实心主色按钮。</p>
+      <table class="tbl">
+        <tr><th>状态</th><th>条件</th><th>画面内容</th></tr>
+        <tr><td>loading</td><td><code>v-if="loading"</code></td><td>SkeletonBlock variant=list rows=4（aria 用 <code>nearby.loading</code>「正在加载附近的人…」，不落画面）</td></tr>
+        <tr><td>error</td><td><code>v-else-if="errorMessage"</code></td><td>错误文案 + 描边「重试」</td></tr>
+        <tr><td>empty</td><td><code>v-else-if="list.length === 0"</code></td><td><code>nearby.peopleEmpty</code> + <code>peopleEmptyHint</code> 两行</td></tr>
+        <tr><td>list</td><td><code>v-else</code></td><td>scroll-view 行列表 + 触底增量</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">页底与页头同色，行卡靠白底 + <code>--s-card-soft</code> 分层。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页底<code>--c-bg-page</code></div><div class="sw__u">整页背景</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器<code>--c-bg-container</code></div><div class="sw__u">行卡 · tab · 返回白圆</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#D1F5E7"></span><div><div class="sw__n">主色 100<code>--c-brand-100</code></div><div class="sw__u">选中 tab 底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">选中 tab 框/字 · 标签字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1F8D6A"></span><div><div class="sw__n">主色 700<code>--c-brand-700</code></div><div class="sw__u">在线圆点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3"></span><div><div class="sw__n">标签底<code>--c-brand-50</code></div><div class="sw__u">代源码 --c-tag-green-bg，见 §04</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#4A524E"></span><div><div class="sw__n">二级文本<code>--c-text-secondary</code></div><div class="sw__u">meta 行 · age · tab 未选字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#DCE5E2"></span><div><div class="sw__n">禁用线<code>--c-status-disabled</code></div><div class="sw__u">重试件描边</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">页头标题源码 52rpx=26px（阶梯外字面值），画板取 --fs-7xl 28px，见 §04。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/800</span><span class="type__p" style="font-size:28px;font-weight:800">附近的人</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/700</span><span class="type__p" style="font-size:15px;font-weight:700">小满</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-text-secondary)">22 · 附近的人加载失败</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500;color:var(--c-brand-800)">在线 · 摄影 · 重试</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-quaternary)">换个范围或稍后再来看看</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 阴影</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-3 6rpx</b><i style="width:3px"></i></div>
+        <div class="space__i"><b>--sp-4 8rpx</b><i style="width:4px"></i></div>
+        <div class="space__i"><b>--sp-5 10rpx</b><i style="width:5px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · tab（R8-L06-D14 收档）</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 行卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>胶囊 · 头像 · 标签</div>
+      </div>
+      <p class="hint" style="margin-top:14px">阴影：行卡 <code>--s-card-soft</code>，tab / 返回白圆 <code>--s-sm</code> / <code>--card-shadow</code>。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与实况的已知差异</h2><p>头像全部走盘上真素材</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/person-01-avatar.png" alt="" style="object-fit:contain">
+      <div class="asset__b"><b>assets/demo/person-0N-avatar.png · p*.jpg</b>
+        <p>行头像 48px 圆。昵称与素材按 <code>config/people-role.ts</code> 登记对取用
+        （person-01 林晓 / 02 夏言 / 04 小满 / 05 Luna / 06 草莓 / 07 苏奈 / 08 周岚 / 09 林晚）；
+        池中 person-08 / 09 无 <code>-avatar</code> 档，画板用整图裁圆。</p>
+        <div class="m">无灰块：源码 SafeImage 的 DEFAULT_AVATAR 兜底位画板不画灰底</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-photo-1.png" alt="">
+      <div class="asset__b"><b>标签文案真值源</b>
+        <p>标签字面（摄影 / 阅读 / 美食 / 音乐 / 旅行 / 跑步 / 电影 / 绘画 / 游戏 / 唱歌）
+        取 <code>utils/tag-label.ts</code> + <code>config/profile-tags.ts</code> 的 value→中文映射表，不新造标签词
+        （「健身」的登记档是「健身达人」，故帧内不用「健身」二字）。</p>
+        <div class="m">每行最多 3 枚（源码 slice(0, 3)）</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异 / 同分包漂移登记（画板不修，按源码画）：</b>
+    <ul>
+      <li><b>令牌缺登记（BASE_PROBLEM · 本页剩一枚）</b>：源码标签底用 <code>--c-tag-green-bg</code>（#EAF8F2）、
+        空态副行用 <code>--c-text-quaternary</code>。后者已在本次出图期间补进 <code>board-base.css</code>（实测 <code>:196</code>，#9AA39F 与真源同值），
+        画板直接引用；<b><code>--c-tag-green-bg</code> 仍未登记</b>，标签底暂以已登记的 <code>--c-brand-50</code>（#E8FAF3，差 2/5/1）代画，
+        补登记后回改即可，字色 <code>--c-brand-800</code> 不受影响。</li>
+      <li><b>meta 行色档与同分包 segment.vue 不同</b>：本页 <code>.people-row__meta</code> 取 <code>--c-text-secondary</code>（#666 档），
+        segment 同角色同函数（两页 metaText 逐字同构）取 <code>--c-text-tertiary</code>。两页注释互称「口径同 segment.vue」，
+        但色档没同步——看着像复制未同步，不像有意设计。</li>
+      <li><b>重试件形态与 segment.vue 不同</b>：本页白底 + <code>--c-line-strong</code> 描边 + 12px 二级字；
+        segment 是实心 <code>--c-brand</code> 胶囊 + 13px 白字。同一分包、同一「加载失败重试」语义两种控件。</li>
+      <li><b>返回件尺寸与 segment.vue 不同</b>：本页白圆 64rpx=32px / 负边距 -12rpx；segment 56rpx=28px / -16rpx。热区同为 88rpx。</li>
+      <li><b>页头标题档位</b>：源码 <code>52rpx</code>（=26px）为阶梯外字面值（源码注释自认「字号令牌阶梯无 52rpx 档」），
+        画板取 <code>--fs-7xl</code> 28px，与 segment 画板同档同注。</li>
+      <li><b>无分数位</b>：本页 <code>DiscoverCard</code> 只有 <code>commonCircleCount</code>（参与 city 排序，不上画面），
+        没有匹配度/合拍度字段，故画板不出现百分比或圆环——按登记表通用规则第 0 条，这不是留空，是本页没有该位。</li>
+      <li><b>演示值口径</b>：校名 / <code>age</code> / <code>distanceText</code> / 标签均为后端真字段的演示读数（非某次实测快照）；
+        距离缺失时按源码回落「附近」，不编造公里数。F02 全部行显示「附近」正是 city scope 不传 <code>distanceMax</code>、
+        后端不回填距离时的真实形态。</li>
+      <li><b>与附近页基准的关系</b>：附近页（<code>pages/nearby/index</code>，登记表第 3 行 · 裁定 C 保留「附近的人」分区）
+        的分区头「全部」跳本页；本页只是该分区的整屏出口，不重复画分区头、地图位与兴趣圈分区。</li>
+      <li>本页在 discover-extra 分包，<b>无 tabbar</b>、无原生导航栏。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 附近的人整屏列表高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（deviceScaleFactor 2.273，面积对齐语料 1.573 Mpx）
+</footer>
+
+</div>
+</body>
+</html>

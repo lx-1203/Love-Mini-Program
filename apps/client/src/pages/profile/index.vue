@@ -67,8 +67,6 @@ import { IMAGE_PATHS } from "../../config/images";
 // 批次 A5：商业化封存开关（commerce.enabled 总闸 + 子闸）
 import { useAppConfigStore } from "../../stores/app-config";
 import { lightHaptic, successHaptic } from "../../utils/haptic";
-import { designTokens } from "../../theme/tokens";
-// P2.6：语音播放 URL 解析（mock:// 演示态 / /api/v1/media/ 鉴权代理真实 URL）
 import { resolveMediaUrl, resolveMediaUrls } from "../../utils/media";
 // 导入 UniUploadFileLike 类型，消除 buildFileLike 中 `as unknown as File` 交叉类型断言
 import type { UniUploadFileLike } from "../../services/api";
@@ -768,7 +766,7 @@ const moreItems = computed(() => [
 
 // MP-R1-PROFILE-204：growthItems / onProfileShellGrowthTap 已删——ProfileShell/MyProfile
 // 从未声明 growthItems prop 与 growthTap emit（三层契约断裂，事件永不触发），
-// MyGrowth.vue 孤儿组件一并移除；「邀请好友」入口迁入本人态附加功能区（可达）。
+// MyGrowth.vue 孤儿组件一并移除；邀请弹窗的唤起路径是首页邀请横幅桥接的 ?invite=1。
 
 /** 2.0 薄化页面的动作转发（MyProfile 事件 -> 既有处理器） */
 function goLogin() {
@@ -1150,347 +1148,10 @@ function handleVipClick() {
   openAppPath("/subpackages/vip/index");
 }
 
-/* ========== Phase Feedback5：60s 语音状态（P2.6 真实化） ========== */
-
-/** 语音状态 URL（来自 profile store） */
-const voiceStatusUrl = computed(() => profileStore.voiceStatusUrl);
-/** 语音时长（秒） */
-const voiceStatusDuration = computed(() => profileStore.voiceStatusDuration);
-/** 是否正在播放（真实 InnerAudioContext / 演示态计时） */
-const isVoicePlaying = ref(false);
-/** P2.6：是否正在录音（真实 RecorderManager） */
-const isRecordingVoice = ref(false);
-/** P2.6：录音已用秒数（驱动录音态文案） */
-const recordingSeconds = ref(0);
-
-/** P2.6：语音最长 60 秒（RecorderManager duration 上限与后端收敛一致） */
-const VOICE_MAX_DURATION_MS = 60000;
-/** 录音最短有效时长（毫秒）：过短视为误触，不产生语音 */
-const VOICE_MIN_DURATION_MS = 1000;
-/** 演示态自动停止时长（毫秒）——mock:// URL 无真实音频，模拟播放动效 */
-const VOICE_DEMO_PLAY_MS = 3000;
-
-/** 演示态自动停止计时器（连点播放/暂停时先清理，避免状态错乱） */
-let voicePlayTimer: ReturnType<typeof setTimeout> | null = null;
-/** P2.6：录音进度刷新定时器 */
-let recordingTickTimer: ReturnType<typeof setInterval> | null = null;
-/** 录音开始时间戳（毫秒，用于 onStop 无 duration 时兜底计算） */
-let recordingStartedAt = 0;
-/** 录音管理器（懒初始化，页面加载不创建） */
-let recorderManager: UniApp.RecorderManager | null = null;
-/** 音频播放器（懒初始化，播放时创建） */
-let voiceAudio: UniApp.InnerAudioContext | null = null;
-
-/** 语音时长标签（如 0:42 / 0:05） */
-const voiceDurationLabel = computed(() => {
-  const seconds = voiceStatusDuration.value || 0;
-  const mm = Math.floor(seconds / 60);
-  const ss = seconds % 60;
-  return `${mm}:${String(ss).padStart(2, "0")}`;
-});
-
-/** 录音中标签（如 录音中 12″） */
-const recordingLabel = computed(() => {
-  const ss = Math.min(recordingSeconds.value, 60);
-  return `${ss}″`;
-});
-
-/**
- * 懒初始化录音管理器并注册回调（P2.6 真实录制）。
- *
- * 平台限制：mp-weixin 支持 uni.getRecorderManager；H5 端部分环境不支持，
- * 获取失败时返回 null，由调用方降级提示。
- */
-function getRecorder(): UniApp.RecorderManager | null {
-  if (recorderManager) {
-    return recorderManager;
-  }
-  try {
-    recorderManager = uni.getRecorderManager();
-  } catch (_e) {
-    return null;
-  }
-  recorderManager.onStop((res) => {
-    stopRecordingTicker();
-    isRecordingVoice.value = false;
-    const filePath = res?.tempFilePath ?? "";
-    if (!filePath) {
-      uni.showToast({ title: t("messages.voiceRecordFailed"), icon: "none" });
-      return;
-    }
-    // res.duration 为毫秒；缺失时按开始时间兜底计算
-    const durationMs = res?.duration && res.duration > 0
-      ? res.duration
-      : Date.now() - recordingStartedAt;
-    void finishRecording(filePath, durationMs);
-  });
-  recorderManager.onError(() => {
-    stopRecordingTicker();
-    isRecordingVoice.value = false;
-    uni.showToast({ title: t("messages.voiceRecordFailed"), icon: "none" });
-  });
-  return recorderManager;
-}
-
-/** 启动录音进度刷新（每秒 +1s，60s 上限由 RecorderManager duration 强制停止） */
-function startRecordingTicker(): void {
-  stopRecordingTicker();
-  recordingTickTimer = setInterval(() => {
-    recordingSeconds.value += 1;
-    if (recordingSeconds.value >= 60) {
-      // 到达 60s 上限由 RecorderManager 自动 onStop，此处仅停止刷新
-      stopRecordingTicker();
-    }
-  }, 1000);
-}
-
-function stopRecordingTicker(): void {
-  if (recordingTickTimer) {
-    clearInterval(recordingTickTimer);
-    recordingTickTimer = null;
-  }
-}
-
-/**
- * 停止录音后的上传流程（P2.6 真实链路）：
- * 1. 时长过短（<1s）视为误触，丢弃不产生语音
- * 2. 包装 tempFilePath 为 UniUploadFileLike
- * 3. profileStore.uploadVoice 上传（mock 生成 mock URL / real 走 /api/v1/media/upload?type=audio）
- * 4. 成功后展示语音卡片；失败 toast 提示
- */
-async function finishRecording(filePath: string, durationMs: number): Promise<void> {
-  const safeMs = Math.min(Math.max(0, durationMs || 0), VOICE_MAX_DURATION_MS);
-  if (safeMs < VOICE_MIN_DURATION_MS) {
-    uni.showToast({ title: t("profile.voiceTooShort"), icon: "none" });
-    return;
-  }
-  const file = buildFileLike(filePath);
-  try {
-    await profileStore.uploadVoice(file, safeMs);
-    successHaptic();
-    uni.showToast({ title: t("profile.voiceUploaded"), icon: "success" });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : t("profile.uploadFailed");
-    uni.showToast({ title: message, icon: "none" });
-  }
-}
-
-/**
- * 录制语音状态（P2.6 真实录制，最长 60s）：
- * - 未录制：点击开始录音（再次点击或录满 60s 自动停止）
- * - 录音中：点击立即停止并上传
- * - 环境不支持录音（如 H5）时降级提示
- */
-function handleRecordVoice() {
-  lightHaptic();
-  // 录音中：点击即停止
-  if (isRecordingVoice.value) {
-    const mgr = getRecorder();
-    if (mgr) {
-      mgr.stop();
-    } else {
-      isRecordingVoice.value = false;
-      stopRecordingTicker();
-    }
-    return;
-  }
-  const mgr = getRecorder();
-  if (!mgr) {
-    uni.showToast({ title: t("profile.voiceNotSupported"), icon: "none" });
-    return;
-  }
-  // 播放中先停止，避免录音与播放并发
-  stopVoicePlayback();
-  try {
-    recordingStartedAt = Date.now();
-    recordingSeconds.value = 0;
-    isRecordingVoice.value = true;
-    startRecordingTicker();
-    mgr.start({
-      format: "aac",
-      duration: VOICE_MAX_DURATION_MS,
-      sampleRate: 16000,
-      numberOfChannels: 1,
-      encodeBitRate: 48000,
-    });
-    uni.showToast({ title: t("profile.voiceRecording"), icon: "none" });
-  } catch (_e) {
-    isRecordingVoice.value = false;
-    stopRecordingTicker();
-    uni.showToast({ title: t("messages.voiceRecordFailed"), icon: "none" });
-  }
-}
-
-/** 停止语音播放（真实音频 stop + 演示态计时清理） */
-function stopVoicePlayback(): void {
-  if (voicePlayTimer) {
-    clearTimeout(voicePlayTimer);
-    voicePlayTimer = null;
-  }
-  try {
-    voiceAudio?.stop();
-  } catch (_e) {
-    // 停止失败静默处理（音频可能已结束）
-  }
-  isVoicePlaying.value = false;
-}
-
-/**
- * 播放/暂停语音状态（P2.6 真实播放）：
- * - mock:// 演示态 URL：模拟 3 秒播放动效（无真实音频源）
- * - 真实 URL（/api/v1/media/... 鉴权代理）：createInnerAudioContext 播放，
- *   结束/错误自动复位播放态
- */
-function handlePlayVoice() {
-  lightHaptic();
-  if (isVoicePlaying.value) {
-    stopVoicePlayback();
-    return;
-  }
-  const rawUrl = voiceStatusUrl.value;
-  if (!rawUrl) return;
-  // 演示态（mock URL 无真实音频，保留原计时器模拟动效）
-  if (rawUrl.startsWith("mock://")) {
-    isVoicePlaying.value = true;
-    if (voicePlayTimer) {
-      clearTimeout(voicePlayTimer);
-    }
-    voicePlayTimer = setTimeout(() => {
-      isVoicePlaying.value = false;
-      voicePlayTimer = null;
-    }, VOICE_DEMO_PLAY_MS);
-    return;
-  }
-  // 真实播放：解析鉴权代理 URL（附带 token 查询参数）
-  const src = resolveMediaUrl(rawUrl);
-  if (!src) {
-    uni.showToast({ title: t("profile.uploadFailed"), icon: "none" });
-    return;
-  }
-  try {
-    if (!voiceAudio) {
-      voiceAudio = uni.createInnerAudioContext();
-      voiceAudio.onEnded(() => {
-        isVoicePlaying.value = false;
-      });
-      voiceAudio.onStop(() => {
-        isVoicePlaying.value = false;
-      });
-      voiceAudio.onError(() => {
-        isVoicePlaying.value = false;
-        // MP-R1-PROFILE-003：播放失败不得复用「录音失败」文案误导用户
-        uni.showToast({ title: t("profile.voicePlayFailed"), icon: "none" });
-      });
-    }
-    voiceAudio.src = src;
-    voiceAudio.play();
-    isVoicePlaying.value = true;
-  } catch (_e) {
-    uni.showToast({ title: t("profile.voiceNotSupported"), icon: "none" });
-  }
-}
-
-/** 删除语音状态（先停止播放/录音，避免残留音频上下文） */
-function handleRemoveVoice() {
-  stopVoicePlayback();
-  if (isRecordingVoice.value) {
-    isRecordingVoice.value = false;
-    stopRecordingTicker();
-    try {
-      getRecorder()?.stop();
-    } catch (_e) {
-      // 停止失败静默处理
-    }
-  }
-  uni.showModal({
-    title: t("profile.titleTip"),
-    content: t("profile.voiceDeleteConfirm"),
-    confirmText: t("common.delete"),
-    cancelText: t("common.cancel"),
-    confirmColor: designTokens.color.error,
-    success: (res) => {
-      if (!res.confirm) return;
-      profileStore.clearVoiceStatus();
-      uni.showToast({ title: t("profile.voiceDeleted"), icon: "success" });
-    },
-  });
-}
-
 /** Task F：全局发帖 FAB publish 事件 → 发帖编辑页 */
 function goToPublishTopic() {
   // 统一发帖入口（P12）：个人主页加号跳转标准发帖页
   openAppPath(ROUTES.VILLAGE.POST);
-}
-
-
-/**
- * Task E1 / H-10：点击"编辑背景图"按钮触发图片选择 + 上传。
- *
- * 流程：
- * 1. uni.chooseImage 选择单张压缩图
- * 2. 构造类 File 对象（兼容 mp-weixin path 字段）
- * 3. 调用 profileStore.uploadBackground 上传 + 更新本地状态
- * 4. 上传中显示 loading + 进度文案，上传完成 toast 提示
- * 5. 失败时 toast 提示错误信息
- *
- * Task 0.2.4：调用 chooseImage 前先调用 ensurePrivacyAuthorized 检查隐私授权。
- */
-async function handleEditBackground() {
-  if (isUploading.value) return;
-  lightHaptic();
-  try {
-    await ensurePrivacyAuthorized();
-  } catch (_e) {
-    uni.showToast({
-      title: t('profile.privacyRequiredImage'),
-      icon: "none",
-    });
-    return;
-  }
-  uni.chooseImage({
-    count: 1,
-    sizeType: ["compressed"],
-    sourceType: ["album", "camera"],
-    success: (res) => {
-      const tempPath = res.tempFilePaths?.[0] ?? "";
-      if (!tempPath) {
-        uni.showToast({ title: t("profile.noPhotoSelected"), icon: "none" });
-        return;
-      }
-      const file = buildFileLike(tempPath);
-      void uploadBackground(file);
-    },
-    fail: (err) => {
-      // 用户取消选择时不报错（errMsg 含 cancel）
-      if (!String(err?.errMsg || "").includes("cancel")) {
-        uni.showToast({ title: t("profile.choosePhotoFailed"), icon: "none" });
-      }
-    },
-  });
-}
-
-/**
- * 实际执行背景图上传（与 chooseImage 解耦，便于测试）
- *
- * @param file - 类 File 对象（UniUploadFileLike，兼容 H5 / mp-weixin 双端）
- */
-async function uploadBackground(file: UniUploadFileLike) {
-  isUploading.value = true;
-  uploadKind.value = "background";
-  uploadProgress.value = t("profile.uploading");
-  try {
-    await profileStore.uploadBackground(file);
-    successHaptic();
-    uni.showToast({ title: t("profile.bgUpdated"), icon: "success" });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : t("profile.uploadFailed");
-    uni.showToast({ title: message, icon: "none" });
-  } finally {
-    isUploading.value = false;
-    uploadKind.value = null;
-    uploadProgress.value = "";
-  }
 }
 
 /**
@@ -1607,27 +1268,9 @@ onShow(() => {
 });
 
 /**
- * 页面卸载时清理语音资源（Phase Feedback5 / P2.6）：
- * 演示定时器、录音进度定时器、录音/播放音频上下文，避免卸载后触发状态更新
+ * 页面卸载时清理定时器与 store 请求资源，避免卸载后触发状态更新。
  */
 onUnload(() => {
-  if (voicePlayTimer) {
-    clearTimeout(voicePlayTimer);
-    voicePlayTimer = null;
-  }
-  stopRecordingTicker();
-  isRecordingVoice.value = false;
-  try {
-    recorderManager?.stop();
-  } catch (_e) {
-    // 停止失败静默处理
-  }
-  try {
-    voiceAudio?.destroy();
-  } catch (_e) {
-    // 销毁失败静默处理
-  }
-  voiceAudio = null;
   // 2026-08-09：清理头像引导气泡定时器
   if (avatarHintTimer) {
     clearTimeout(avatarHintTimer);
@@ -1670,139 +1313,12 @@ onUnload(() => {
       >
       </ProfileShell>
 
-      <!-- ==================== MP-R1-PROFILE-202/206：本人主页附加功能区 ====================
-           语音介绍 / 背景图编辑 / 邀请好友 / VIP 开通此前全部位于不可达分支
-           （legacy 槽 v-if=false 或他人态分支内 isOwnProfile 门禁恒 false 块），
-           已接通后端的真实链路（P2.6 录音播放 / Phase E1 背景上传 / POST /invites）
-           在成品中无任何可达入口。现迁入本人态活代码路径（ProfileShell 之后渲染），
-           复用页面既有 handler 与样式类。 -->
+      <!-- ==================== MP-R1-PROFILE-206：本人主页附加功能区 ====================
+           只剩 VIP 开通卡（商业化开关开启时）。语音介绍 / 背景图编辑 / 推荐给好友三段
+           不在此渲染：个人页版面以理想效果图「已经填完资料的个人主页.png」的六段为准。
+           profileStore 的 uploadVoice / uploadBackground 与后端字段仍在，恢复入口即可接回；
+           邀请弹窗 showInviteModal 保留，由首页邀请横幅以 ?invite=1 桥接唤起。 -->
       <template v-if="isOwnProfile">
-        <!-- 语音介绍（最长 60s）：录制 / 播放 / 重录 / 删除 -->
-        <view class="media-section">
-          <view class="section-header">
-            <view class="section-header__left">
-              <text class="section-header__title">{{ t('profile.voiceStatus') }}</text>
-              <view class="voice-only-tag">
-                <text class="voice-only-tag__text">{{ t('profile.voiceOnlyTag') }}</text>
-              </view>
-              <text class="section-header__count">{{ t('profile.voiceStatusHint') }}</text>
-            </view>
-          </view>
-
-          <view
-            v-if="!voiceStatusUrl"
-            class="video-cta press-feedback"
-            hover-class="video-cta--hover"
-            hover-stay-time="40"
-            role="button"
-            :aria-label="t('profile.recordVoiceAria')"
-            @tap="handleRecordVoice"
-          >
-            <view class="video-cta__icon-wrap" :class="{ 'video-cta__icon-wrap--recording': isRecordingVoice }">
-              <image class="video-cta__icon" :src="IMAGE_PATHS.ICONS_EMOJI.MICROPHONE" mode="aspectFit" alt="" />
-            </view>
-            <text class="video-cta__text">
-              {{ isRecordingVoice ? t('profile.voiceRecording') : t('profile.voiceRecord') }}
-            </text>
-            <text v-if="isRecordingVoice" class="video-cta__hint">
-              {{ recordingLabel }}
-            </text>
-          </view>
-
-          <view v-else class="voice-preview">
-            <view class="voice-preview__card">
-              <view
-                class="voice-preview__play press-feedback"
-                hover-class="press-feedback--active"
-                hover-stay-time="40"
-                role="button"
-                :aria-label="t('profile.playVoiceAria')"
-                @tap="handlePlayVoice"
-              >
-                <image class="voice-preview__play-icon" :src="isVoicePlaying ? IMAGE_PATHS.ICONS_COMMON.PAUSE_SVG : IMAGE_PATHS.ICONS_COMMON.PLAY_SVG" mode="aspectFit" alt="" />
-              </view>
-              <view class="voice-preview__info">
-                <view class="voice-preview__wave">
-                  <view
-                    v-for="(_, idx) in 12"
-                    :key="idx"
-                    class="voice-preview__bar"
-                    :class="{ 'voice-preview__bar--active': isVoicePlaying }"
-                    :style="{ height: (10 + ((idx * 7) % 18)) + 'rpx' }"
-                  />
-                </view>
-                <text class="voice-preview__duration">{{ voiceDurationLabel }}</text>
-              </view>
-              <view
-                class="voice-preview__delete press-feedback"
-                hover-class="press-feedback--active"
-                hover-stay-time="40"
-                role="button"
-                :aria-label="t('profile.voiceReRecordAria')"
-                @tap="handleRecordVoice"
-              >
-                <text class="voice-preview__delete-text">{{ t('profile.voiceReRecord') }}</text>
-              </view>
-              <view
-                class="voice-preview__delete press-feedback"
-                hover-class="press-feedback--active"
-                hover-stay-time="40"
-                role="button"
-                :aria-label="t('profile.deleteVoiceAria')"
-                @tap="handleRemoveVoice"
-              >
-                <text class="voice-preview__delete-text">{{ t('profile.delete') }}</text>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- 背景图编辑（Phase E1 上传链路） -->
-        <view class="media-section">
-          <view class="section-header">
-            <view class="section-header__left">
-              <text class="section-header__title">{{ t('profile.editBackground') }}</text>
-            </view>
-          </view>
-          <view
-            class="video-cta press-feedback"
-            hover-class="video-cta--hover"
-            hover-stay-time="40"
-            role="button"
-            :aria-label="t('profile.editBgAria')"
-            @tap="handleEditBackground"
-          >
-            <view class="video-cta__icon-wrap">
-              <image
-                v-if="!isUploading || uploadKind !== 'background'"
-                class="video-cta__icon"
-                :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
-                mode="aspectFit" alt=""
-              />
-              <view v-else class="profile-bg__edit-spinner" />
-            </view>
-            <text class="video-cta__text">
-              {{ isUploading && uploadKind === 'background' ? uploadProgress : t('profile.editBackground') }}
-            </text>
-          </view>
-        </view>
-
-        <!-- 邀请好友（POST /invites 真实链路，3-K）：入口自此可达 -->
-        <view class="media-section">
-          <view
-            class="video-cta video-cta--invite press-feedback"
-            hover-class="video-cta--hover"
-            hover-stay-time="40"
-            role="button"
-            :aria-label="t('profile.shareFriend')"
-            @tap="openInviteModal"
-          >
-            <view class="video-cta__icon-wrap">
-              <image class="video-cta__icon" :src="IMAGE_PATHS.ICONS_COMMON.SHARE_ICON_SVG" mode="aspectFit" alt="" />
-            </view>
-            <text class="video-cta__text">{{ t('profile.shareFriend') }}</text>
-          </view>
-        </view>
 
         <!-- MP-R1-PROFILE-206：VIP 开通卡迁入本人主页（商业化开关开启时）；
              原块误置于他人态分支（isVip 恒 false → 他人主页显示本人 VIP 营销入口） -->
@@ -1980,34 +1496,6 @@ onUnload(() => {
               <text v-if="bio" class="profile-bg__bio">{{ bio }}</text>
             </view>
           </view>
-          <!-- Phase E1 / H-10：编辑背景图按钮（仅自己主页显示，右下角相机图标） -->
-          <view
-            v-if="isOwnProfile"
-            class="profile-bg__edit press-feedback"
-            hover-class="profile-bg__edit--hover"
-            hover-stay-time="40"
-            role="button"
-            :aria-label="t('profile.editBgAria')"
-            @tap="handleEditBackground"
-          >
-            <image
-              v-if="!isUploading || uploadKind !== 'background'"
-              class="profile-bg__edit-icon"
-              :src="IMAGE_PATHS.ICONS_COMMON.CAMERA"
-              mode="aspectFit" alt=""
-            />
-            <view v-else class="profile-bg__edit-spinner" />
-            <text class="profile-bg__edit-text">
-              {{ isUploading && uploadKind === 'background' ? uploadProgress : t('profile.editBackground') }}
-            </text>
-          </view>
-          <!-- Phase E1 / H-10：上传中蒙层 -->
-          <view
-            v-if="isUploading && uploadKind === 'background'"
-            class="profile-bg__loading"
-          >
-            <text class="profile-bg__loading-text">{{ uploadProgress }}</text>
-          </view>
         </view>
 
         <!-- QQ 名片卡（2026-08-13 V4 重构）：白色内容面板从背景下方升起（圆角顶），
@@ -2053,7 +1541,8 @@ onUnload(() => {
         </view>
 
         <!-- MP-R1-PROFILE-203：成就卡片 / 语音介绍 / 照片墙 三个 v-if="isOwnProfile" 死块
-             已删（他人态分支内恒 false；语音/背景编辑已迁入本人态附加功能区） -->
+             已删（他人态分支内恒 false）；背景图编辑按钮与其上传蒙层同因一并移除，
+             语音与背景编辑能力当前无 UI 入口（store 与后端字段保留） -->
       </view><!-- /资料 Tab -->
 
       <!-- ===== MP-R1-PROFILE-203：「动态 Tab」内容块（isOwnProfile 门禁恒 false）已删；
@@ -2294,23 +1783,6 @@ onUnload(() => {
   }
 }
 
-/* 语音介绍「仅语音 · 无视频」标注（设计需求） */
-.voice-only-tag {
-  padding: 4rpx 14rpx;
-  border-radius: var(--r-full);
-  background: var(--c-brand-50, #f0fdf9);
-  border: 1rpx solid var(--c-brand-200, #99f6e0);
-  /* R9-L02-D19：角标不再被压缩（原帧上「仅语音 · 无视频」折成两行并压住提示语） */
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.voice-only-tag__text {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  color: var(--c-brand-600, #0d9488);
-}
-
 /* 顶部背景图（Phase D4 · 可配置，默认品牌色渐变）
    2026-08-08 QQ 主页风格：widthFix 完整展示背景（下拉可看全图），
    min-height 兜底保证无背景图/加载中也有品牌渐变底色 */
@@ -2350,68 +1822,6 @@ onUnload(() => {
   /* 个人背景自然过渡：顶部更多透明、中部轻微压暗过渡、底部轻微压暗，过渡更平滑 */
   background: linear-gradient(180deg, rgba(15, 23, 42, 0) 30%, rgba(15, 23, 42, 0.18) 70%, rgba(15, 23, 42, 0.32) 100%);
   pointer-events: none;
-}
-
-/* Phase E1 / H-10：编辑背景图按钮（右下角相机图标，半透明白底胶囊）。
-   2026-08-13 V4：bottom 16→128rpx，避开背景 identity 叠加层（不压在头像信息上） */
-.profile-bg__edit {
-  position: absolute;
-  right: var(--sp-5);
-  bottom: 128rpx;
-  z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-1);
-  padding: var(--sp-1) var(--sp-3);
-  background: var(--c-overlay-mid);
-  border-radius: var(--r-full);
-  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
-
-  &--hover {
-    transform: scale(0.96);
-    background: var(--c-overlay-strong);
-  }
-}
-
-.profile-bg__edit-icon {
-  width: 28rpx;
-  height: 28rpx;
-}
-
-.profile-bg__edit-text {
-  font-size: var(--fs-xs);
-  color: var(--c-neutral-0);
-  font-weight: 500;
-  line-height: 1;
-}
-
-.profile-bg__edit-spinner {
-  width: 28rpx;
-  height: 28rpx;
-  border-radius: var(--r-full);
-  border: 3rpx solid var(--c-overlay-white-bg-stronger);
-  border-top-color: var(--c-neutral-0);
-  animation: profile-bg-spin var(--d-spinner, 800ms) linear infinite;
-}
-
-@keyframes profile-bg-spin {
-  to { transform: rotate(360deg); }
-}
-
-.profile-bg__loading {
-  position: absolute;
-  inset: 0;
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--c-overlay-mid-strong);
-}
-
-.profile-bg__loading-text {
-  font-size: var(--fs-md);
-  color: var(--c-neutral-0);
-  font-weight: 600;
 }
 
 /* ========== 2026-08-13 V4：背景上的身份叠加层（首屏第一视觉锚点，参考图3） ========== */
@@ -2502,8 +1912,6 @@ onUnload(() => {
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
-
-/* 背景编辑按钮位置已调整（见上方 .profile-bg__edit：bottom 128rpx 避开 identity 叠加层） */
 
 /* ========== 2026-08-13 V4：白卡首区（匹配标签 + 他人照片墙） ========== */
 .profile-head-card__tags {
@@ -2653,7 +2061,7 @@ onUnload(() => {
 
   &--hover {
     transform: scale(0.92);
-    background: var(--c-overlay-bg-light-strong);
+    background: var(--c-overlay-bg-mid);
   }
 }
 
@@ -2786,7 +2194,7 @@ onUnload(() => {
   z-index: 3;
   width: 100%;
   margin-top: var(--sp-7);
-  padding: var(--sp-4) var(--sp-11);
+  padding: var(--sp-4) var(--sp-10);
   min-height: 88rpx;
   background: var(--c-brand-50);
   border-radius: var(--r-full);
@@ -2809,7 +2217,7 @@ onUnload(() => {
   z-index: 3;
   width: 100%;
   margin-top: var(--sp-7);
-  padding: var(--sp-4) var(--sp-11);
+  padding: var(--sp-4) var(--sp-10);
   min-height: 88rpx;
   background: var(--c-gradient-brand);
   border-radius: var(--r-full);
@@ -2963,88 +2371,6 @@ onUnload(() => {
   color: var(--c-text-tertiary);
 }
 
-/* ==================== Phase E2 / E3：媒体区块（语音 + 照片墙） ==================== */
-.media-section {
-  position: relative;
-  z-index: 1;
-  margin: 0 var(--sp-7) var(--sp-6);
-  padding: var(--sp-6) var(--sp-8) var(--sp-7);
-  background: var(--c-bg-container);
-  border-radius: var(--r-xl);
-  box-shadow: var(--s-card-soft);
-  border: var(--c-border-card);
-}
-
-/* 语音 CTA（未上传态） */
-.video-cta {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-  padding: var(--sp-9) var(--sp-6);
-  border-radius: var(--r-lg);
-  border: 2rpx dashed var(--c-brand-200);
-  background: var(--c-bg-brand);
-  transition: transform var(--d-normal, 200ms) cubic-bezier(0.4, 0, 0.2, 1);
-
-  &--hover {
-    transform: scale(0.98);
-    background: var(--c-bg-secondary);
-  }
-}
-
-.video-cta__icon-wrap {
-  width: 96rpx;
-  height: 96rpx;
-  border-radius: var(--r-full);
-  background: var(--c-neutral-0);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--s-sm);
-}
-
-/* P2.6：录音中红色呼吸灯提示（真实 RecorderManager 录制态） */
-/* R4-batch4：动画呼吸环 rgba(244,63,94,0.35) 无等值 token（最接近 --c-error-bg-tint-strong 0.3），保留原值保证动画视觉一致 */
-.video-cta__icon-wrap--recording {
-  animation: video-cta-pulse 1s ease-in-out infinite;
-}
-
-@keyframes video-cta-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.35); }
-  50% { box-shadow: 0 0 0 12rpx rgba(244, 63, 94, 0); }
-}
-
-.video-cta__icon {
-  width: 48rpx;
-  height: 48rpx;
-}
-
-.video-cta__spinner {
-  width: 48rpx;
-  height: 48rpx;
-  border-radius: var(--r-full);
-  border: 4rpx solid var(--c-brand-100);
-  border-top-color: var(--c-brand-500);
-  animation: video-cta-spin var(--d-spinner, 800ms) linear infinite;
-}
-
-@keyframes video-cta-spin {
-  to { transform: rotate(360deg); }
-}
-
-.video-cta__text {
-  font-size: var(--fs-md);
-  color: var(--c-brand-700);
-  font-weight: 600;
-}
-
-.video-cta__hint {
-  font-size: var(--fs-xs);
-  color: var(--c-text-tertiary);
-}
-
 /* 语音预览（已上传态） */
 .video-preview {
   display: flex;
@@ -3125,76 +2451,6 @@ onUnload(() => {
   }
 }
 
-/* Phase Feedback5：语音状态卡片样式 */
-.voice-preview__card {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-  padding: var(--sp-4) var(--sp-5);
-  border-radius: var(--r-xl);
-  background: var(--c-brand-bg-tint, #e6f9f0);
-  border: 1rpx solid var(--c-brand-border-tint, #b7ecd8);
-}
-
-.voice-preview__play {
-  width: 80rpx;
-  height: 80rpx;
-  border-radius: var(--r-circle, 50%);
-  background: var(--c-gradient-brand, linear-gradient(135deg, #36C99A 0%, #6FD4AA 100%));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.voice-preview__play-icon {
-  width: 32rpx;
-  height: 32rpx;
-}
-
-.voice-preview__info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-}
-
-.voice-preview__wave {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-  height: 32rpx;
-}
-
-.voice-preview__bar {
-  width: 6rpx;
-  border-radius: var(--r-sm, 8rpx);
-  background: var(--c-brand-300, #9be8c8);
-  transition: height var(--d-normal, 200ms) ease;
-}
-
-.voice-preview__bar--active {
-  background: var(--c-brand-500, #36C99A);
-}
-
-.voice-preview__duration {
-  font-size: var(--fs-xs, 24rpx);
-  color: var(--c-brand-600, #2db97a);
-  font-weight: 600;
-}
-
-.voice-preview__delete {
-  padding: 8rpx 20rpx;
-  border-radius: var(--r-full, 999rpx);
-  background: var(--c-bg-container, #ffffff);
-}
-
-.voice-preview__delete-text {
-  font-size: var(--fs-sm, 26rpx);
-  color: var(--c-error, #e5454d);
-  font-weight: 600;
-}
-
 /* 2026-08-09：照片墙审核状态角标（pending 审核中 / rejected 未通过，本人可见） */
 .photo-grid__badge {
   position: absolute;
@@ -3217,7 +2473,7 @@ onUnload(() => {
 }
 
 .photo-grid__badge-text {
-  font-size: var(--fs-2xs, 20rpx);
+  font-size: var(--fs-xs);
   color: var(--c-neutral-0);
   font-weight: 600;
   line-height: 1.4;
@@ -3248,7 +2504,7 @@ onUnload(() => {
 }
 
 .avatar-audit-badge__text {
-  font-size: var(--fs-2xs, 20rpx);
+  font-size: var(--fs-xs);
   color: var(--c-neutral-0);
   font-weight: 600;
   line-height: 1.4;
@@ -3424,64 +2680,6 @@ onUnload(() => {
   box-shadow: var(--s-card-soft);
   overflow: hidden;
   border: var(--c-border-card);
-}
-
-/* 区块标题行 */
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--sp-6) var(--sp-8) var(--sp-4);
-}
-
-.section-header__left {
-  display: flex;
-  align-items: baseline;
-  gap: var(--sp-3);
-  /* R9-L02-D19（位置）：原来一行塞标题 + 角标 + 长提示语，且不换行 ⇒ 三个都是可压缩项：
-     帧上「语音介绍」被断成「语音介 / 绍」两行、角标「仅语音 · 无视频」压住提示语左半、
-     提示语右半出卡缘被裁，「最长 60 秒」这条录制约束读不到。
-     允许换行 + 标题/角标不收缩后：标题整词一行、角标完整，提示语整条落到第二行
-     （max-width 内正常折行），三件都不再互相覆盖。 */
-  flex-wrap: wrap;
-  min-width: 0;
-}
-
-.section-header__title {
-  font-size: var(--fs-xl);
-  font-weight: 700;
-  color: var(--c-text-primary);
-  /* R9-L02-D19：标题不再让位给角标/提示语（原先 flex-shrink 默认 1，4 字被折成 2 行） */
-  flex-shrink: 0;
-}
-
-.section-header__count {
-  font-size: var(--fs-sm);
-  color: var(--c-text-tertiary);
-}
-
-.section-header__more {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1);
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--r-full);
-
-  &--hover {
-    background: var(--c-neutral-50);
-    transform: scale(0.96);
-  }
-}
-
-.section-header__more-text {
-  font-size: var(--fs-base);
-  color: var(--c-text-secondary);
-}
-
-.section-header__more-arrow {
-  font-size: var(--fs-lg);
-  color: var(--c-text-tertiary);
-  line-height: 1;
 }
 
 /* 动态列表 */

@@ -18,8 +18,8 @@ import { useCircleStore, type CircleItem } from "../../../stores/circle";
 // 既非头像也非品牌图形）。单一数据源 = profile.avatarUrl：App.vue:217 在登录启动时已拉取一次，
 // 只读取、不请求、不改 store（与 HomeHeader.vue:34 同一口径，缺失时回落本地默认头像素材）。
 import { useProfileStore } from "../../../stores/profile";
-// MP-R1-PUB-016：字数上限与 store 校验同一来源（stores/village MAX_CONTENT_LENGTH=500），
-// 此前本地 POST_MAX_LENGTH=1000 与 store 校验 500 不一致，超 500 字发布必败且仅提交时提示
+// MP-R1-PUB-016：字数上限与 store 校验同一来源。该缺陷当年是「页面 1000 / store 500」向下对齐，
+// 2026-10-26 按规范 §3.14 与理想效果图的 0/1000 反向收口——单一真源仍是本常量，数值为 1000
 import { useVillageStore, MAX_CONTENT_LENGTH } from "../../../stores/village";
 import { useMock } from "../../../stores/helpers/use-mock";
 import { clientApi } from "../../../services/api";

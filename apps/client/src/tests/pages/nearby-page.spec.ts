@@ -41,7 +41,9 @@ describe("Nearby v3 页面 smoke", () => {
   it("附近首页为分区聚合：人 → 兴趣圈 → 校园圈 → 活动 → 动态", () => {
     expect(nearbySource).toContain("nearby-home");
     expect(nearbySource).toContain("NearbySection");
-    expect(nearbySource).toContain("people-entry");
+    // 分区①的结构锚：两张全宽入口条已按裁定合并进分段行（规范 §3.5 的「按距离/同城」口径），
+    // 该分区的存在改由人卡本身作证
+    expect(nearbySource).toContain("person-mini");
     expect(nearbySource).toContain("circle-mini");
     expect(nearbySource).toContain("campus-entry");
     expect(nearbySource).toContain("nearby-post-item");

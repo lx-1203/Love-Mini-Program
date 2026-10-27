@@ -20,7 +20,36 @@ export interface School {
   city?: string;
   /** 城市名的 i18n key（config.schools.{id}.city，zh/en 同步） */
   cityKey?: string;
-  /** 该校专业目录（可选；缺省时使用通用专业目录 MAJORS 兜底） */
+  /**
+   * 该校专业目录（可选；缺省时使用通用专业目录 MAJORS 兜底）。
+   *
+   * 2026-10-27 后端补真源（本次接线）：新表 {@code school_majors}
+   * （database/flyway/sql/V2026.10.27.0001__create_school_majors.sql）+
+   * CampusView.majors（apps/api/.../clientconfig/CampusView.java）+ 客户端镜像
+   * services/config.ts 的 CampusView.majors。数据分两档：
+   * - school_code = 具体高校编码（大写，如 NJU）＝按校专属目录；
+   * - school_code = '*' ＝通用基线档（67 条，即本文件 MAJORS 的同源入库）。
+   * **当前库里只有基线档**：没有任何权威来源（教育部学科备案 / 各校本科招生专业目录）
+   * 被导入过，所以后端对 17 所学校一律回退基线并记一行日志。也就是说这个字段现在
+   * 下发的是「通用目录」而不是「这所学校开什么专业」，展示层不得把它包装成按校事实。
+   *
+   * ✅ 口径已统一（2026-10-28 产品裁定＝统一到字典，两处均已接线，不再是待决项）：
+   * 1. subpackages/setup/campus/index.vue（注册页第 2 步）：专业＝字典 picker；
+   * 2. subpackages/campus/campus/certification.vue（学生证认证页）：专业原为**自由文本 input**，
+   *    现已改为与注册页**同一个数据源**的 <picker mode="selector">——同样调 loadSchools()
+   *    取列表、同样用 getMajorsForSchool(schools.find(s => s.name === 校名)) 出选项，
+   *    本字段因此同时供两条路径消费（选项为空时两页都回退 MAJORS）。
+   *
+   * 旧值兜底策略（这条统一的承重约束：**不许卡住任何已提交过的用户**）：
+   * 认证页历史上吃自由文本，campus_certifications.major（VARCHAR(100)，后端
+   * CampusController 只 @Size(max=100)、**无字典校验**）里留过不在本字典内的行。认证页把
+   * 「当前已提交值不在字典里」的那一项**临时前置进 picker 选项首位**，故旧值仍原样可见、
+   * 仍原样可提交，不会被 picker 静默改成字典内的另一个专业；已认证态的只读回显渲染原始
+   * 字符串，不经字典、不经 picker，同样保真。注册页则沿用其原有的「历史值不在选项内就留空」。
+   *
+   * ⇒ 结论仍未变的部分：因为历史行可以是字典外文本、且后端不校验字典，任何「按 major
+   * 统计/分组」的需求仍要先做值域清洗（只有本次之后新提交的值才保证落在字典内）。
+   */
   majors?: string[];
   /** 校园圈封面图（可选；未上传时渲染浅绿背景+学校名字，上传后渲染图片——保留上传能力） */
   coverUrl?: string;
@@ -104,13 +133,35 @@ export function getSchoolsByCity(schools: School[], city: string): School[] {
   return schools.filter((s) => s.city === city);
 }
 
-/** 获取某校的专业目录（学校未配置时回退通用目录） */
+/** 获取某校的专业目录（按校目录缺失时回退通用目录 MAJORS） */
 export function getMajorsForSchool(school: School | undefined): string[] {
+  // 优先级：后端按校档 > 后端通用基线档（两者都由 loadSchools() 装进 school.majors）
+  // > 本地静态 SCHOOLS 的 majors（当前 11 所全未填，等于直通）> 本地通用目录 MAJORS。
+  // 最后一档是本文件唯一的兜底，绝不下发空数组：空 picker 会被用户读成
+  // 「这所学校没有专业」，而事实只是「字典没数据」。
   return school?.majors && school.majors.length > 0 ? school.majors : MAJORS;
 }
 
 /**
- * 从后端动态加载学校列表（Task 3.6.1）。
+ * 后端校区与本地静态学校的对齐（跨源匹配）。
+ *
+ * 已实测两个口径对不齐，必须按下面的顺序兜底，且**对不齐时不许崩**（返回 undefined，
+ * 调用方落到回退分支）：
+ * - 后端 id 是 schools.code 大写（PKU/THU/FDU/…），本地 id 是小写 slug（pku/fudan/…），
+ *   且两者并非简单大小写关系：本地 `fudan` ↔ 后端 `FDU`、本地 `tongji` ↔ 后端 `TJU`
+ *   ⇒ 先按大小写不敏感的 id 比，比不上再按**中文全等 name** 兜底（name 是两源共同的稳定键，
+ *   schools.name 上有唯一约束）。
+ * - 本地独有「深圳大学」（后端 schools 表 17 所里没有它）；后端独有 6 所
+ *   （广州大学/四川大学/华中科技大学/西安交通大学/哈尔滨工业大学/南开大学）。
+ *   两源的并集与差集都会随种子变动，所以匹配失败是**预期路径**，不是异常。
+ */
+function matchLocalSchool(campus: { id: string; name: string }): School | undefined {
+  const byId = SCHOOLS.find((s) => s.id.toLowerCase() === campus.id.toLowerCase());
+  return byId ?? SCHOOLS.find((s) => s.name === campus.name);
+}
+
+/**
+ * 从后端动态加载学校列表（Task 3.6.1；专业目录 2026-10-27 接入 school_majors 真源）。
  *
  * 调用 GET /api/v1/config/campuses，返回学校视图列表。
  * 失败时回退到本地 SCHOOLS 静态默认值，保证功能可用性。
@@ -123,13 +174,33 @@ export async function loadSchools(): Promise<School[]> {
     if (campuses.length === 0) {
       return SCHOOLS;
     }
-    return campuses.map((c) => ({
-      id: c.id,
-      name: c.name,
-      city: c.city ?? undefined,
-    }));
+    // 取 id/name/city/majors + city 空值归一。majors 自 2026-10-27 起在 CampusView 契约里
+    //（后端 school_majors 表：按校档命中给按校目录，否则后端自己回退通用基线档），
+    // 这里把它带进前端 School 对象，供 setup/campus 三级联动的第三级 picker 消费。
+    // nameKey/cityKey/coverUrl 仍不在 CampusView 契约里（后端不下发 i18n key 与封面），
+    // 只有本地静态 SCHOOLS 带 ⇒ 走后端分支时这三项为 undefined，消费方按 name 直显
+    //（本域 setup/campus 的三级联动就取 s.name）。
+    return campuses.map((c) => {
+      const local = matchLocalSchool(c);
+      // 后端没给目录（null / 缺键 / 空数组）时不硬回退 MAJORS，而是先看本地静态有没有配过
+      // 这所学校的专属目录；都没有才留 undefined，交给 getMajorsForSchool() 兜到 MAJORS。
+      const backendMajors = c.majors && c.majors.length > 0 ? c.majors : undefined;
+      const localMajors = local?.majors && local.majors.length > 0 ? local.majors : undefined;
+      return {
+        id: c.id,
+        name: c.name,
+        city: c.city ?? local?.city,
+        majors: backendMajors ?? localMajors,
+        // 对齐到本地静态项时顺带补回 i18n key / 封面，让已收录的 11 所继续走 t() 渲染；
+        // 对不齐（后端独有那 6 所）就是 undefined，消费方按 name 直显，不崩。
+        nameKey: local?.nameKey,
+        cityKey: local?.cityKey,
+        coverUrl: local?.coverUrl,
+      };
+    });
   } catch (error) {
     // 后端不可达或返回异常：回退到本地静态默认值，保证功能可用性。
+    // 注意本地 11 所都没填 majors，所以这条分支下专业目录恒回退 MAJORS（本文件内兜底）。
     // infra R2-00122: 失败不再完全静默——输出告警便于联调排查与运营感知
     //（学校列表长期缺失时无任何信号，原审计项要求失败上报）；
     // 生产环境的请求错误由 http 层统一错误通道处理。

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 时间安排页（注册第 3 步）高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，不写私有色值；rpx ÷ 2 = px） ===== */
+
+/* AppShell（variant=standard + fixed 默认 true）：白胶囊返回 + 标题 + 副标题，无渐变带 */
+.shell { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden;
+  padding: 0 var(--page-padding); background: var(--c-bg-page); }
+.apphdr { padding: 52px 0 10px; margin-bottom: 14px; flex: none; } /* 52 = 状态栏 44 + headerStyle 的 +8px */
+.apphdr__main { display: flex; flex-direction: column; }
+.backpill { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start;
+  min-height: 44px; min-width: 44px; padding: 10px 12px 10px 8px; margin-bottom: 8px;
+  border-radius: var(--r-full); background: var(--c-bg-container); border: 0.5px solid var(--c-border-light);
+  color: var(--c-brand-800); }
+.backpill svg { width: 20px; height: 20px; }
+.backpill span { font-size: var(--fs-base); font-weight: 500; }
+.apphdr__title { display: block; font-size: var(--fs-7xl); font-weight: 700; line-height: 1.3;
+  color: var(--c-text-primary); }
+.apphdr__sub { display: block; margin-top: 4px; font-size: var(--fs-base); line-height: 1.5;
+  color: var(--c-text-secondary); }
+.bodycol { display: flex; flex-direction: column; gap: var(--sp-6); } /* shell__body gap 24rpx */
+.card-stack { display: flex; flex-direction: column; gap: var(--sp-6); }
+.cta-spacer { height: 76px; }                                          /* 152rpx，吸底条留位 */
+
+/* SectionCard（compact） */
+.seccard { display: flex; flex-direction: column; gap: var(--sp-4); padding: var(--sp-7);
+  border-radius: var(--r-card); background: var(--c-bg-container);
+  border: var(--c-border-card); box-shadow: var(--card-shadow); }
+.seccard__t { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); }
+.seccard__s { font-size: var(--fs-lg); line-height: 1.6; color: var(--c-text-secondary); }
+.field-label { font-size: var(--fs-sm); color: var(--c-text-secondary); font-weight: 500; }
+
+/* .field：源文件 min-height 88rpx / --r-lg / --c-bg-surface / border --c-border-card */
+.field { display: flex; align-items: center; width: 100%; min-height: 44px; padding: var(--sp-4);
+  box-sizing: border-box; border-radius: var(--r-lg); background: var(--c-bg-surface);
+  border: var(--c-border-card); font-size: var(--fs-lg); color: var(--c-text-primary); line-height: 1.4; }
+.field--ph { color: var(--c-text-placeholder); }
+.field--focus { background: var(--c-bg-container); border: var(--c-border-card);
+  box-shadow: 0 0 0 2px var(--c-brand-200); }
+
+/* 时段行 + 删除钮（72rpx=36px 圆钮，仅 length > 1 时出现） */
+.tw-row { display: flex; align-items: center; gap: var(--sp-3); }
+.tw-input { flex: 1; min-width: 0; }
+.tw-x { width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-full); background: var(--c-bg-surface); color: var(--c-text-tertiary); }
+.tw-x svg { width: 16px; height: 16px; }
+.tw-add { min-height: 44px; box-sizing: border-box; padding: var(--sp-4); display: flex;
+  align-items: center; justify-content: center; border-radius: var(--r-lg);
+  border: 0.5px dashed var(--c-border-strong); }
+.tw-add__t { font-size: var(--fs-lg); font-weight: 500; color: var(--c-brand-800); }
+.press { transform: scale(0.98); opacity: 0.92; }
+
+/* SetupProgress（variant=full，第 3/5 步） */
+.prog { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-4) var(--sp-5);
+  background: var(--c-bg-container); border-radius: var(--r-lg); box-shadow: var(--s-sm); }
+.prog__hd { display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); }
+.prog__cur { font-size: var(--fs-base); color: var(--c-text-tertiary); font-weight: 500; }
+.prog__lab { font-size: var(--fs-md); color: var(--c-text-primary); font-weight: 700; }
+.prog__bar { display: flex; align-items: center; justify-content: space-between; padding: 0 var(--sp-2); }
+.prog__wrap { display: flex; align-items: center; flex: 1; min-width: 0; }
+.prog__wrap--last { flex: 0 0 auto; }
+.dot { width: 28px; height: 28px; border-radius: var(--r-full); flex: none; display: flex;
+  align-items: center; justify-content: center; border: 1px solid var(--c-border-default);
+  background: var(--c-bg-surface); font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-secondary); }
+.dot--done { background: var(--c-brand); border-color: var(--c-brand); box-shadow: var(--s-sm); color: var(--c-text-inverse); }
+.dot--done svg { width: 12px; height: 12px; }
+.dot--cur { background: var(--c-brand-50); border-color: var(--c-brand);
+  box-shadow: 0 0 0 3px var(--c-brand-100); color: var(--c-brand-700); }
+.pline { flex: 1; min-width: 12px; height: 2px; margin: 0 var(--sp-1); border-radius: var(--sp-1);
+  background: var(--c-border-default); }
+.pline--done { background: var(--c-brand); }
+.prog__labs { display: flex; align-items: center; padding: 0 var(--sp-1); }
+.plab { flex: 1; min-width: 0; font-size: var(--fs-base); font-weight: 500; color: var(--c-text-tertiary); }
+.plab--last { flex: 0 0 auto; text-align: right; }
+.plab--done { color: var(--c-brand-700); font-weight: 600; }
+.plab--cur { color: var(--c-text-primary); font-weight: 700; }
+
+/* BottomActionBar（fixed）：主 CTA 常亮（R15-L12-D10 撤回禁用档） */
+.bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 90; display: flex;
+  padding: var(--sp-4) var(--page-padding) 42px; background: var(--c-bg-page); } /* 42 = --sp-8 8 + 机型安全区 34 */
+.cta { flex: 1; height: 44px; border-radius: var(--r-xl); background: var(--c-brand-800);
+  color: var(--c-text-inverse); font-size: var(--fs-lg); font-weight: 700; display: flex;
+  align-items: center; justify-content: center; box-shadow: var(--s-brand); }
+.cta--press { transform: scale(0.97); }
+.cta--dis { background: var(--c-status-disabled); color: var(--c-text-secondary); box-shadow: none; }
+
+/* uni.showToast({ icon: "none" }) 浮层 */
+.toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 20;
+  max-width: 64%; padding: 12px var(--sp-7); border-radius: var(--r-lg); background: var(--c-text-primary);
+  color: var(--c-bg-container); font-size: var(--fs-lg); line-height: 1.4; text-align: center; }
+/* 系统 home 指示条压在吸底条的安全区带上（base 的 .homebar z-index 9 会被 .bar 90 盖住） */
+.homebar { z-index: 95; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格，与工程 SVG 体系一致） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5.5 8 12l7 6.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.6l4.4 4.4L19 7"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.8v4.8"/><path d="M12 16.2h.01"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>时间安排页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/setup/schedule/index</code>。
+     注册链第 3 步（基本资料 30 + 校园 30（学生）+ 日程 20 = 80 → profileCompleted）。
+     源码文件名叫 schedule，但本页<b>不渲染课表网格</b>：模板只有「常去区域」一个输入框与「空闲时段」的
+     可增删行；<code style="font-family:var(--mono);font-size:12.5px">courseBlocks</code> 无渲染入口（文件头 R6-B69/D01 已登记 NEEDS-RULING）。
+     本画板按源码实际分支把 5 个可见状态画全，作为该页验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>setup/schedule</b></span>
+    <span>分包 <b>setup</b>（无 tabbar）</span>
+    <span>状态 <b>5 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无验收基准图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 5 屏</h2>
+    <p>空态 / 多时段已填 / 两条保存校验 toast / 保存失败 toast</p></div>
+  <div class="sec__sub">本页状态机有 <b>5</b> 态，全部来自源码实际分支：
+    ① <code>v-for="(_win, idx) in form.preferredTimeWindows"</code> + 初值 <code>[""]</code>（R6-B69/D04）⇒ 空态；
+    ② <code>v-if="form.preferredTimeWindows.length &gt; 1"</code> ⇒ 删除钮出现态（含多行已填）；
+    ③ <code>if (!form.preferredCampusArea.trim())</code> ⇒ toast <code>setup.schedule.locationRequired</code>；
+    ④ <code>if (validWindows.length === 0)</code> ⇒ toast <code>setup.schedule.timeWindowRequired</code>；
+    ⑤ <code>catch</code> ⇒ toast <code>setup.schedule.saveFailed</code>。
+    第 6 个变量 <code>saving</code>（MP-R2-SCHEDULE-001 防重入）<b>不产生任何视觉差</b>——它没传给 BottomActionBar，
+    故不单列一屏，只在 §02 的「主 CTA」枚举里记档。页头不是渐变带，是 AppShell 的白胶囊返回 + 标题 + 副标题；
+    帧即视口，超出 812px 的内容一律裁掉，裁切说明只写在题注里。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">空态 · 首次进入</span><span class="d">无删除钮 · 正文止于 655px，加吸底留位 731px &lt; 812px，本屏无裁切</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="shell">
+          <div class="apphdr"><div class="apphdr__main">
+            <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="apphdr__title">时间安排</span>
+            <span class="apphdr__sub">这里会驱动首页默认推荐和可聊天时段。</span>
+          </div></div>
+          <div class="bodycol">
+            <div class="prog">
+              <div class="prog__hd"><span class="prog__cur">第 3/5 步</span><span class="prog__lab">时间安排</span></div>
+              <div class="prog__bar">
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--cur">3</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">4</span><span class="pline"></span></span>
+                <span class="prog__wrap prog__wrap--last"><span class="dot">5</span></span>
+              </div>
+              <div class="prog__labs">
+                <span class="plab plab--done">基本信息</span>
+                <span class="plab plab--done">校园认证</span>
+                <span class="plab plab--cur">时间安排</span>
+                <span class="plab">推荐偏好</span>
+                <span class="plab plab--last">完成</span>
+              </div>
+            </div>
+            <div class="card-stack">
+              <div class="seccard">
+                <span class="seccard__t">偏好设置</span>
+                <span class="field-label">常去区域</span>
+                <div class="field field--ph">如：图书馆 / 北草坪</div>
+              </div>
+              <div class="seccard">
+                <span class="seccard__t">设置真实空闲时段</span>
+                <span class="seccard__s">空闲时间越准确，推荐链路就越可靠。</span>
+                <div class="tw-row"><div class="field field--ph tw-input">常用空闲时段，例如今晚或本周三下午</div></div>
+                <div class="tw-add"><span class="tw-add__t">＋ 添加时段</span></div>
+              </div>
+            </div>
+            <div class="cta-spacer"></div>
+          </div>
+        </div>
+        <div class="bar"><span class="cta">保存并继续</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">已填 · 3 行时段（删除钮出现）</span><span class="d">length&gt;1 · ↓裁切：末行「＋ 添加时段」压在吸底条下沿，未画滚动后内容</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="shell">
+          <div class="apphdr"><div class="apphdr__main">
+            <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="apphdr__title">时间安排</span>
+            <span class="apphdr__sub">这里会驱动首页默认推荐和可聊天时段。</span>
+          </div></div>
+          <div class="bodycol">
+            <div class="prog">
+              <div class="prog__hd"><span class="prog__cur">第 3/5 步</span><span class="prog__lab">时间安排</span></div>
+              <div class="prog__bar">
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--cur">3</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">4</span><span class="pline"></span></span>
+                <span class="prog__wrap prog__wrap--last"><span class="dot">5</span></span>
+              </div>
+              <div class="prog__labs">
+                <span class="plab plab--done">基本信息</span>
+                <span class="plab plab--done">校园认证</span>
+                <span class="plab plab--cur">时间安排</span>
+                <span class="plab">推荐偏好</span>
+                <span class="plab plab--last">完成</span>
+              </div>
+            </div>
+            <div class="card-stack">
+              <div class="seccard">
+                <span class="seccard__t">偏好设置</span>
+                <span class="field-label">常去区域</span>
+                <div class="field">图书馆 三楼自习区 / 北草坪</div>
+              </div>
+              <div class="seccard">
+                <span class="seccard__t">设置真实空闲时段</span>
+                <span class="seccard__s">空闲时间越准确，推荐链路就越可靠。</span>
+                <div class="tw-row"><div class="field tw-input">今晚</div><span class="tw-x"><svg><use href="#i-x"/></svg></span></div>
+                <div class="tw-row"><div class="field tw-input">本周三下午</div><span class="tw-x"><svg><use href="#i-x"/></svg></span></div>
+                <div class="tw-row"><div class="field field--focus tw-input">周日上午</div><span class="tw-x"><svg><use href="#i-x"/></svg></span></div>
+                <div class="tw-add"><span class="tw-add__t">＋ 添加时段</span></div>
+              </div>
+            </div>
+            <div class="cta-spacer"></div>
+          </div>
+        </div>
+        <div class="bar"><span class="cta">保存并继续</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">保存校验 · 缺常去区域</span><span class="d">toast locationRequired · 未写进画面</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="shell">
+          <div class="apphdr"><div class="apphdr__main">
+            <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="apphdr__title">时间安排</span>
+            <span class="apphdr__sub">这里会驱动首页默认推荐和可聊天时段。</span>
+          </div></div>
+          <div class="bodycol">
+            <div class="prog">
+              <div class="prog__hd"><span class="prog__cur">第 3/5 步</span><span class="prog__lab">时间安排</span></div>
+              <div class="prog__bar">
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--cur">3</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">4</span><span class="pline"></span></span>
+                <span class="prog__wrap prog__wrap--last"><span class="dot">5</span></span>
+              </div>
+              <div class="prog__labs">
+                <span class="plab plab--done">基本信息</span>
+                <span class="plab plab--done">校园认证</span>
+                <span class="plab plab--cur">时间安排</span>
+                <span class="plab">推荐偏好</span>
+                <span class="plab plab--last">完成</span>
+              </div>
+            </div>
+            <div class="card-stack">
+              <div class="seccard">
+                <span class="seccard__t">偏好设置</span>
+                <span class="field-label">常去区域</span>
+                <div class="field field--ph">如：图书馆 / 北草坪</div>
+              </div>
+              <div class="seccard">
+                <span class="seccard__t">设置真实空闲时段</span>
+                <span class="seccard__s">空闲时间越准确，推荐链路就越可靠。</span>
+                <div class="tw-row"><div class="field tw-input">今晚</div></div>
+                <div class="tw-add"><span class="tw-add__t">＋ 添加时段</span></div>
+              </div>
+            </div>
+            <div class="cta-spacer"></div>
+          </div>
+        </div>
+        <div class="bar"><span class="cta">保存并继续</span></div>
+        <span class="homebar"></span>
+        <div class="toast">请输入偏好地点</div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">保存校验 · 缺空闲时段</span><span class="d">toast timeWindowRequired · 两行均空串</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="shell">
+          <div class="apphdr"><div class="apphdr__main">
+            <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="apphdr__title">时间安排</span>
+            <span class="apphdr__sub">这里会驱动首页默认推荐和可聊天时段。</span>
+          </div></div>
+          <div class="bodycol">
+            <div class="prog">
+              <div class="prog__hd"><span class="prog__cur">第 3/5 步</span><span class="prog__lab">时间安排</span></div>
+              <div class="prog__bar">
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--cur">3</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">4</span><span class="pline"></span></span>
+                <span class="prog__wrap prog__wrap--last"><span class="dot">5</span></span>
+              </div>
+              <div class="prog__labs">
+                <span class="plab plab--done">基本信息</span>
+                <span class="plab plab--done">校园认证</span>
+                <span class="plab plab--cur">时间安排</span>
+                <span class="plab">推荐偏好</span>
+                <span class="plab plab--last">完成</span>
+              </div>
+            </div>
+            <div class="card-stack">
+              <div class="seccard">
+                <span class="seccard__t">偏好设置</span>
+                <span class="field-label">常去区域</span>
+                <div class="field">图书馆 三楼自习区 / 北草坪</div>
+              </div>
+              <div class="seccard">
+                <span class="seccard__t">设置真实空闲时段</span>
+                <span class="seccard__s">空闲时间越准确，推荐链路就越可靠。</span>
+                <div class="tw-row"><div class="field field--ph tw-input">常用空闲时段，例如今晚或本周三下午</div><span class="tw-x"><svg><use href="#i-x"/></svg></span></div>
+                <div class="tw-row"><div class="field field--ph tw-input">补充空闲时段，例如周日下午</div><span class="tw-x"><svg><use href="#i-x"/></svg></span></div>
+                <div class="tw-add"><span class="tw-add__t">＋ 添加时段</span></div>
+              </div>
+            </div>
+            <div class="cta-spacer"></div>
+          </div>
+        </div>
+        <div class="bar"><span class="cta">保存并继续</span></div>
+        <span class="homebar"></span>
+        <div class="toast">请至少添加一个时间窗口</div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">保存失败 · 接口异常</span><span class="d">catch → toast saveFailed · CTA 按压态</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="shell">
+          <div class="apphdr"><div class="apphdr__main">
+            <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="apphdr__title">时间安排</span>
+            <span class="apphdr__sub">这里会驱动首页默认推荐和可聊天时段。</span>
+          </div></div>
+          <div class="bodycol">
+            <div class="prog">
+              <div class="prog__hd"><span class="prog__cur">第 3/5 步</span><span class="prog__lab">时间安排</span></div>
+              <div class="prog__bar">
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--cur">3</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">4</span><span class="pline"></span></span>
+                <span class="prog__wrap prog__wrap--last"><span class="dot">5</span></span>
+              </div>
+              <div class="prog__labs">
+                <span class="plab plab--done">基本信息</span>
+                <span class="plab plab--done">校园认证</span>
+                <span class="plab plab--cur">时间安排</span>
+                <span class="plab">推荐偏好</span>
+                <span class="plab plab--last">完成</span>
+              </div>
+            </div>
+            <div class="card-stack">
+              <div class="seccard">
+                <span class="seccard__t">偏好设置</span>
+                <span class="field-label">常去区域</span>
+                <div class="field">图书馆 三楼自习区 / 北草坪</div>
+              </div>
+              <div class="seccard">
+                <span class="seccard__t">设置真实空闲时段</span>
+                <span class="seccard__s">空闲时间越准确，推荐链路就越可靠。</span>
+                <div class="tw-row"><div class="field tw-input">今晚</div><span class="tw-x"><svg><use href="#i-x"/></svg></span></div>
+                <div class="tw-row"><div class="field tw-input">本周三下午</div><span class="tw-x"><svg><use href="#i-x"/></svg></span></div>
+                <div class="tw-add"><span class="tw-add__t">＋ 添加时段</span></div>
+              </div>
+            </div>
+            <div class="cta-spacer"></div>
+          </div>
+        </div>
+        <div class="bar"><span class="cta cta--press">保存并继续</span></div>
+        <span class="homebar"></span>
+        <div class="toast">保存失败，请稍后重试</div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页可交互件共四类：常去区域输入框 / 时段输入行（含删除钮）/ 添加时段虚线钮 / 吸底主 CTA；
+    外加注册链进度条与 toast 浮层。文案一律取 <code>setup.schedule.*</code>、<code>homeSetup.schedule*</code>、
+    <code>setup.campus.saveLabel</code>、<code>setupProgress.*</code> 的现值。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>时段输入行 · 全状态（含占位双档）</h3>
+      <p class="hint">占位取三元分支 <code>idx === 0 ? timeWindowPlaceholder : timeWindowPlaceholderExtra</code>——首行与追加行是两句不同文案，画板必须分开枚举。删除钮条件是 <code>form.preferredTimeWindows.length &gt; 1</code>，单行时整列不出现。</p>
+      <div class="row">
+        <div class="cell" style="width:240px"><div class="field field--ph">常用空闲时段，例如今晚或本周三下午</div><span class="lab">空态 · idx 0（无删除钮）</span></div>
+        <div class="cell" style="width:240px"><div class="field field--ph">补充空闲时段，例如周日下午</div><span class="lab">空态 · idx &gt; 0</span></div>
+        <div class="cell" style="width:240px"><div class="field tw-input">本周三下午</div><span class="lab">已填</span></div>
+        <div class="cell" style="width:240px"><div class="field field--focus tw-input">周日上午</div><span class="lab">聚焦（系统描边，页内未定义）</span></div>
+        <div class="cell" style="width:240px"><div class="tw-row"><div class="field tw-input">今晚</div><span class="tw-x"><svg><use href="#i-x"/></svg></span></div><span class="lab">已填 + 删除钮（length&gt;1）</span></div>
+        <div class="cell" style="width:240px"><div class="tw-row"><div class="field tw-input">今晚</div><span class="tw-x press"><svg><use href="#i-x"/></svg></span></div><span class="lab">删除钮按压 hover-class</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>添加时段 · 两态 + 常去区域输入框</h3>
+      <p class="hint">虚线盒 min-height 88rpx（R6-B69/D08 从 64rpx 抬到热区口径）；文字 <code>--c-brand-800</code>（R9-L12-D09：原 <code>--c-brand</code> 压白卡只有 2.12:1）。常去区域框上方有一行常驻标签 <code>placePlaceholder</code>，框内只留示例占位，二者不重复。</p>
+      <div class="row">
+        <div class="cell" style="width:240px"><div class="tw-add"><span class="tw-add__t">＋ 添加时段</span></div><span class="lab">default（虚线 · 无底色）</span></div>
+        <div class="cell" style="width:240px"><div class="tw-add press"><span class="tw-add__t">＋ 添加时段</span></div><span class="lab">按压 press-feedback--active</span></div>
+        <div class="cell" style="width:240px"><span class="field-label">常去区域</span><div class="field field--ph">如：图书馆 / 北草坪</div><span class="lab">常去区域 · 空态（占位是字面量，非 i18n 键）</span></div>
+        <div class="cell" style="width:240px"><span class="field-label">常去区域</span><div class="field">图书馆 三楼自习区 / 北草坪</div><span class="lab">常去区域 · 已填</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>吸底主 CTA · 四态枚举</h3>
+      <p class="hint">label 取 <code>setup.campus.saveLabel</code>「保存并继续」（R9-L12-D10：不用本页 <code>saveButton</code>「保存并进入应用」，因为 save() 实际 replace 到推荐偏好）。<b>禁用档已撤回</b>（R15-L12-D10）——空态也必须常亮可点，缺项交给 toast 定位。</p>
+      <div class="row">
+        <div class="cell" style="width:240px"><div class="cta">保存并继续</div><span class="lab">default · 常亮</span></div>
+        <div class="cell" style="width:240px"><div class="cta cta--press">保存并继续</div><span class="lab">:active scale(0.97)</span></div>
+        <div class="cell" style="width:240px"><div class="cta">保存并继续</div><span class="lab">saving=true · 画面零变化（仅防重入）</span></div>
+        <div class="cell" style="width:240px"><div class="cta cta--dis">保存并继续</div><span class="lab">历史禁用档 · 本页现已不存在</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>变量</th><th>消费点</th><th>可见结果</th></tr>
+        <tr><td>saving</td><td><code>if (saving.value) return</code>（save() 首行）</td><td>无视觉：未绑 <code>:disabled</code>，无 spinner</td></tr>
+        <tr><td>canSave</td><td>已删除（noUnusedLocals）</td><td>禁用档随之消失</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>注册进度条 · 圆点三态 + 本页档位</h3>
+      <p class="hint">本页传 <code>:current-step="3" variant="full"</code>（R15-L12-D08：若传 student，旧表 <code>LEGACY_STEP_MAP.student</code> 无键 3，会把第 3 步报成 4/5）。第 3 枚标签走 <code>labelKey</code> 覆盖 = <code>setup.schedule.pageTitle</code>「时间安排」，不是 <code>setupProgress.stepSchedule</code>「课表导入」。</p>
+      <div class="row">
+        <div class="cell"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="lab">completed</span></div>
+        <div class="cell"><span class="dot dot--cur">3</span><span class="lab">current（脉冲光环）</span></div>
+        <div class="cell"><span class="dot">4</span><span class="lab">upcoming</span></div>
+        <div class="cell" style="width:240px"><div class="prog"><div class="prog__hd"><span class="prog__cur">第 3/5 步</span><span class="prog__lab">时间安排</span></div></div><span class="lab">顶部两行文案档</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>步骤</th><th>标签（i18n 现值）</th><th>状态</th><th>连线</th></tr>
+        <tr><td>1</td><td>基本信息</td><td>completed</td><td><code>--c-brand</code></td></tr>
+        <tr><td>2</td><td>校园认证</td><td>completed</td><td><code>--c-brand</code></td></tr>
+        <tr><td>3</td><td>时间安排 <code>setup.schedule.pageTitle</code></td><td>current</td><td><code>--c-border-default</code></td></tr>
+        <tr><td>4</td><td>推荐偏好</td><td>upcoming</td><td><code>--c-border-default</code></td></tr>
+        <tr><td>5</td><td>完成</td><td>upcoming</td><td>—（末步无连线）</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Toast · 三档文案（<code>icon: "none"</code>）</h3>
+      <p class="hint">本页没有内联错误文本，缺项与失败全部走 uni toast；三条守卫按源码顺序命中，区域先于时段。</p>
+      <table class="tbl">
+        <tr><th>触发条件</th><th>i18n key</th><th>文案现值</th></tr>
+        <tr><td><code>!form.preferredCampusArea.trim()</code></td><td><code>setup.schedule.locationRequired</code></td><td>请输入偏好地点</td></tr>
+        <tr><td><code>validWindows.length === 0</code></td><td><code>setup.schedule.timeWindowRequired</code></td><td>请至少添加一个时间窗口</td></tr>
+        <tr><td><code>catch</code> 且 error 非 Error</td><td><code>setup.schedule.saveFailed</code></td><td>保存失败，请稍后重试</td></tr>
+      </table>
+      <div class="row" style="margin-top:16px">
+        <div class="cell" style="width:240px"><div class="toast" style="position:static;transform:none">请输入偏好地点</div><span class="lab">toast 几何：居中浮层 · 无图标</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位，与 design-variables.scss 一一对应</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">页内零私有色值；就近替换项见 §04 注记。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand)"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">进度条已完成点 · 已完成连线</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-50)"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">当前步圆点底（--c-bg-brand 同值）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-100)"></span><div><div class="sw__n">主色 100<code>--c-brand-100</code></div><div class="sw__u">当前步光环 · 输入框聚焦环</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-700)"></span><div><div class="sw__n">主色 700<code>--c-brand-700</code></div><div class="sw__u">已完成步骤名 · 当前步序号</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-800)"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">主 CTA 底 · 添加时段字 · 返回胶囊</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-page)"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">AppShell 底色 · 吸底条底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-surface);border:1px solid var(--c-border-default)"></span><div><div class="sw__n">输入底<code>--c-bg-surface</code></div><div class="sw__u">输入框 · 删除钮圆底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-border-strong)"></span><div><div class="sw__n">强描边<code>--c-border-strong</code></div><div class="sw__u">添加时段虚线盒</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-status-disabled)"></span><div><div class="sw__n">禁用档<code>--c-status-disabled</code></div><div class="sw__u">仅 §02 存档：本页已撤回禁用</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-text-primary)"></span><div><div class="sw__n">正文/最深档<code>--c-text-primary</code></div><div class="sw__u">标题 · 输入值 · toast 浮层底（就近）</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到六档；页头标题取真值 --fs-7xl（56rpx＝28px）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/700</span><span class="type__p" style="font-size:28px;font-weight:700">时间安排</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">偏好设置 · 设置真实空闲时段</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/500</span><span class="type__p" style="font-size:14px;font-weight:500">＋ 添加时段 · 保存并继续 · 输入值</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/700</span><span class="type__p" style="font-size:13px;font-weight:700">时间安排（当前步名）</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500;color:var(--c-text-tertiary)">第 3/5 步 · 基本信息 · 返回</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/500</span><span class="type__p" style="font-size:11px;font-weight:500;color:var(--c-text-secondary)">常去区域（常驻字段名）</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:5px"></b>--r-lg<br>20rpx · 输入框 · 添加钮</div>
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-xl<br>24rpx · 主 CTA</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-card<br>40rpx · SectionCard</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>删除钮 · 返回胶囊</div>
+      </div>
+      <p class="hint" style="margin-top:14px">卡内节奏：SectionCard 的 <code>.card__body</code> 已是 flex 列 + <code>--sp-4</code> gap，
+        时段行自身不再写 margin-top（R6-B69/D06 修的正是 gap+margin 双倍叠加）。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>本页只吃工程既有三枚图标，无新素材缺口</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_COMMON.BACK</b><p>页头返回箭头（<code>common/back.png</code>，40rpx=20px），与文字「返回」同在一枚白胶囊里。画板用同几何的 lucide 描边箭头替身。</p><div class="m">20px · 文字 --c-brand-800（R10-L07-D07）</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_EMOJI.CLOSE</b><p>时段删除钮的 ✕（emoji→SVG 替换映射表 v1，<code>03-icons/close.svg</code>，32rpx=16px）。源文件在 <code>&lt;image&gt;</code> 上写了 <code>color: --c-text-tertiary</code>，image 不吃 color，真机上图标颜色由素材自身决定。</p><div class="m">16px · 圆底 36px --c-bg-surface</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_COMMON.CHECK_WHITE_SVG</b><p>进度条已完成步的白勾（24rpx=12px），铺在 <code>--c-brand</code> 实心圆点上。画板用同几何描边替身。</p><div class="m">12px · --c-text-inverse</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>本页没有课表网格。</b>源文件名叫 schedule，头注释曾自称「课表导入」，但模板只渲染常去区域 + 空闲时段两类输入；<code>courseBlocks</code> 只在提交时按空数组带上，无星期×节次增删 UI（文件头 R6-B69/D01 已登记 NEEDS-RULING）。任何「几×几课表格子」的验收预期都不适用于这张图。</li>
+      <li>「保存中」<b>没有视觉档</b>：<code>saving</code> 只作 save() 的防重入守卫，既没传 <code>:disabled</code> 也没换文案，连点期间 CTA 仍是「保存并继续」——画板如实照画，不补 spinner。</li>
+      <li>保存成功也无本地反馈：save() 成功后直接 <code>replaceAppPath(SETUP_PROGRESS.RECOMMEND_PREF)</code>，页面即被替换，故 §01 不设「成功态」屏。</li>
+      <li><code>page { background: --c-bg-container }</code>（R16 纯白口径）被 AppShell <code>.shell</code> 的 <code>--c-bg-page</code> 覆盖，实测页面底仍是 #EEF7F2；吸底条同色，两者连成一片。</li>
+      <li>进度条第 3 枚标签靠组件内 <code>labelKey</code> 覆盖成「时间安排」；locale 现值 <code>setupProgress.stepSchedule</code> 仍是「课表导入」（zh-CN.ts:3090），属并行车道未改。</li>
+      <li>令牌替身（2026-10-26 base 补齐后已回正）：页头标题 <code>--fs-7xl</code>、SectionCard <code>--card-shadow</code> 已用真值；进度条的 <code>--s-card-sm</code> → <code>--s-sm</code>（2026-10-27 令牌断引用收口：源码同样并到 <code>--s-sm</code>，本条不再是画板单方面替身）；当前步脉冲光环 <code>rgba(61,201,154,.18)</code> → <code>--c-brand-100</code> 实心环；toast 浮层 <code>rgba(0,0,0,.9)</code> → <code>--c-text-primary</code>；CTA 按压的 <code>--s-brand-md</code> → <code>--s-brand</code>。</li>
+      <li>脉冲动画、键盘弹起（<code>cursor-spacing="20"</code>）与 safe-area 机型差属动效/环境项，静态画板不体现；吸底条底部留 34px 机型安全区（系统几何）。</li>
+      <li>本页在 setup 分包，<b>无 tabbar</b>、无原生导航栏——页头是 AppShell 自绘的白胶囊返回；画板若出现 tabbar 即为错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 时间安排页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1,572,192 px，对齐 素材/理想效果图 语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 今日已看（历史推荐）高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属（色值一律取 base 令牌；渐变用令牌拼，不写私有色值） ===== */
+.pg { position: absolute; inset: 0; background: linear-gradient(180deg, var(--c-tint-green-50) 0%, var(--c-bg-page) 50%); }
+.hbar { position: absolute; top: 0; left: 0; width: 100%; display: flex; align-items: center;
+  padding: 56px 16px 14px; box-sizing: border-box; z-index: 4; }
+.hbar__back { position: relative; width: 44px; height: 44px; flex: none; display: flex;
+  align-items: center; justify-content: center; }
+.hbar__back::before { content: ""; position: absolute; width: 36px; height: 36px; border-radius: var(--r-full);
+  background: var(--c-bg-container); box-shadow: var(--card-shadow); }
+.hbar__back span { position: relative; font-size: var(--fs-3xl); line-height: 1; color: var(--c-text-primary); }
+.hbar__back--press { opacity: 0.55; }
+.hbar__title { flex: 1; text-align: center; font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); }
+.hbar__ph { width: 36px; flex: none; }
+
+.stats { display: flex; margin: 0 16px 14px; padding: 14px 16px; background: var(--c-bg-container);
+  border-radius: var(--r-xl); box-shadow: var(--s-card-soft); }
+.stats__i { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.stats__n { font-size: var(--fs-5xl); font-weight: 800; color: var(--c-brand-800); line-height: 1.1; }
+.stats__l { font-size: var(--fs-base); color: var(--c-text-tertiary); }
+
+.list { padding: 0 16px; display: flex; flex-direction: column; gap: 12px; }
+.hcard { background: var(--c-bg-container); border-radius: var(--r-xl); padding: 14px; box-shadow: var(--s-card-soft); }
+.card__main { display: flex; align-items: flex-start; gap: 12px; }
+.card__av { width: 48px; height: 48px; border-radius: var(--r-full); overflow: hidden; flex: none;
+  background: var(--c-bg-page); }
+.card__av img { width: 100%; height: 100%; object-fit: cover; }
+.card__info { flex: 1; min-width: 0; }
+.card__hrow { display: flex; align-items: center; gap: 8px; }
+.card__name { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); }
+.badge { padding: 4px 9px; border-radius: var(--r-full); font-size: var(--fs-sm); font-weight: 600; flex: none; }
+.badge--liked { background: linear-gradient(135deg, var(--c-romance-100), var(--c-romance-200)); color: var(--c-romance-500); }
+.badge--passed { background: var(--c-bg-page); color: var(--c-neutral-400); }
+.card__hl { display: block; font-size: var(--fs-base); color: var(--c-neutral-400); margin-top: 4px; }
+.card__bio { display: block; font-size: var(--fs-md); color: var(--c-neutral-500); line-height: 1.6; margin-top: 2px;
+  max-height: 3.2em; overflow: hidden; }
+
+.rw { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--c-border-light); }
+.rw__btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 40px;
+  border-radius: var(--r-full); background: linear-gradient(135deg, var(--c-brand), var(--c-brand-300));
+  box-shadow: 0 2px 8px var(--c-black-shadow-xs); }
+.rw__btn i { font-style: normal; font-size: var(--fs-2xl); color: var(--c-text-inverse); line-height: 1; }
+.rw__btn span { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-inverse); }
+.rw__btn--load { opacity: 0.72; }
+.rw__hint { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--c-border-light);
+  text-align: center; font-size: var(--fs-base); color: var(--c-neutral-400); }
+
+/* 无样式分支：源码 .history-loading / .history-error* 类在本页 <style> 内 0 命中，画板如实画成裸文本 */
+.raw { padding: 0 16px; display: flex; flex-direction: column; gap: 6px; }
+.raw__t { font-size: var(--fs-lg); color: var(--c-text-primary); }
+.raw__r { font-size: var(--fs-lg); color: var(--c-text-primary); text-decoration: underline; }
+
+.sk { display: flex; align-items: center; gap: 10px; padding: 14px; background: var(--c-bg-container);
+  border-radius: var(--r-xl); box-shadow: var(--s-card-soft); }
+.sk__av { width: 48px; height: 48px; border-radius: var(--r-full); background: var(--c-border-light); flex: none; }
+.sk__l { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.sk__b { height: 10px; border-radius: var(--r-sm); background: var(--c-border-light); }
+.w40 { width: 40%; } .w90 { width: 90%; } .w70 { width: 70%; }
+
+.empty { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+.empty__ic { width: 60px; height: 60px; color: var(--c-text-placeholder); margin-bottom: 8px; }
+.empty__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-secondary); }
+.empty__s { font-size: var(--fs-base); color: var(--c-text-secondary); margin-top: 4px; text-align: center; }
+.empty__a { margin-top: 12px; padding: 8px 20px; border-radius: var(--r-full); background: var(--c-brand-800); }
+.empty__a span { font-size: var(--fs-md); font-weight: 600; color: var(--c-text-inverse); }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 8.2 12 4l8.5 4.2v7.6L12 20l-8.5-4.2z"/><path d="M3.5 8.2 12 12.4l8.5-4.2M12 12.4V20"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>今日已看 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/discover-extra/discover/history</code>。
+     寻觅页今日已滑卡片的回看页，核心能力是<b>挽回</b>——只对「已跳过」列表的<b>最后一张</b>开放，且每日限 1 次。
+     本页状态机 4 态（加载 / 错误 / 列表 / 空），列表态下挽回件又有 3 形态（可点 / 请求中 / 已用完），
+     故画 6 屏。统计三格全部由 store 派生（<code>historyCards.length</code> 等），是后端/本地有真值源的位，按真值口径画。</p>
+  <div class="cover__meta">
+    <span>路由 <b>discover/history</b></span>
+    <span>分包 <b>discover-extra</b>（无 tabbar）</span>
+    <span>状态 <b>6 屏</b>（4 态 + 挽回 3 形态）</span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 6 屏</h2>
+    <p>列表 3 形态 + 加载 / 错误 / 空</p></div>
+  <div class="sec__sub">状态机 4 态来自 <code>.history-list</code> 内条件链
+    <code>v-if="discoverStore.loading &amp;&amp; historyCards.length === 0" / v-else-if="discoverStore.errorMessage &amp;&amp; historyCards.length === 0" / v-else（列表）</code>，
+    空态另由页面级 <code>v-if="historyCards.length === 0 &amp;&amp; !loading &amp;&amp; !errorMessage"</code> 叠加。
+    挽回件三形态来自 <code>direction === 'left' &amp;&amp; isLastPassedCard() &amp;&amp; !hasRewoundToday</code> 与其 <code>v-else-if</code>、
+    以及 <code>rewinding</code> ref。<b>统计栏在四态下恒渲染</b>，故加载/错误/空三屏必然显示 0 / 0 / 0——这是派生真值，不是留空。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">列表 · 末位已跳过 · 可挽回</span><span class="d">4 条 · 统计 4/2/2 同源派生</span></figcaption>
+      <div class="phone">
+        <div class="pg"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hbar"><span class="hbar__back"><span>‹</span></span><span class="hbar__title">今日已看</span><span class="hbar__ph"></span></div>
+        <div style="position:absolute; top:114px; left:0; width:100%">
+          <div class="stats">
+            <span class="stats__i"><span class="stats__n">4</span><span class="stats__l">已浏览</span></span>
+            <span class="stats__i"><span class="stats__n">2</span><span class="stats__l">已喜欢</span></span>
+            <span class="stats__i"><span class="stats__n">2</span><span class="stats__l">已跳过</span></span>
+          </div>
+          <div class="list">
+            <div class="hcard"><div class="card__main"><span class="card__av"><img src="assets/demo/person-08.png" alt=""></span>
+              <span class="card__info"><span class="card__hrow"><span class="card__name">周岚</span><span class="badge badge--liked">已喜欢</span></span>
+                <span class="card__hl">爱爬山的理工科女生</span>
+                <span class="card__bio">周末常去香山，想找个人一起爬山看日出。</span></span></div></div>
+            <div class="hcard"><div class="card__main"><span class="card__av"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+              <span class="card__info"><span class="card__hrow"><span class="card__name">阿辰</span><span class="badge badge--passed">已跳过</span></span>
+                <span class="card__hl">吉他 · 独立电影</span>
+                <span class="card__bio">在乐队弹吉他，周末泡在影展里。</span></span></div></div>
+            <div class="hcard"><div class="card__main"><span class="card__av"><img src="assets/demo/xiaoman-avatar.png" alt=""></span>
+              <span class="card__info"><span class="card__hrow"><span class="card__name">小满</span><span class="badge badge--liked">已喜欢</span></span>
+                <span class="card__hl">烘焙与长跑</span>
+                <span class="card__bio">每周跑一次 10 公里，剩下时间在烤面包。</span></span></div></div>
+            <div class="hcard"><div class="card__main"><span class="card__av"><img src="assets/demo/person-09.png" alt=""></span>
+              <span class="card__info"><span class="card__hrow"><span class="card__name">林晚</span><span class="badge badge--passed">已跳过</span></span>
+                <span class="card__hl">图书馆常驻</span>
+                <span class="card__bio">历史系，喜欢旧书店和胶片相机。</span></span></div>
+              <div class="rw"><span class="rw__btn"><i>↩</i><span>挽回（每日限1次）</span></span></div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">列表 · 挽回请求中</span><span class="d">rewinding=true · 按钮禁用防连点</span></figcaption>
+      <div class="phone">
+        <div class="pg"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hbar"><span class="hbar__back"><span>‹</span></span><span class="hbar__title">今日已看</span><span class="hbar__ph"></span></div>
+        <div style="position:absolute; top:114px; left:0; width:100%">
+          <div class="stats">
+            <span class="stats__i"><span class="stats__n">4</span><span class="stats__l">已浏览</span></span>
+            <span class="stats__i"><span class="stats__n">2</span><span class="stats__l">已喜欢</span></span>
+            <span class="stats__i"><span class="stats__n">2</span><span class="stats__l">已跳过</span></span>
+          </div>
+          <div class="list">
+            <div class="hcard"><div class="card__main"><span class="card__av"><img src="assets/demo/person-08.png" alt=""></span>
+              <span class="card__info"><span class="card__hrow"><span class="card__name">周岚</span><span class="badge badge--liked">已喜欢</span></span>
+                <span class="card__hl">爱爬山的理工科女生</span>
+                <span class="card__bio">周末常去香山，想找个人一起爬山看日出。</span></span></div></div>
+            <div class="hcard"><div class="card__main"><span class="card__av"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+              <span class="card__info"><span class="card__hrow"><span class="card__name">阿辰</span><span class="badge badge--passed">已跳过</span></span>
+                <span class="card__hl">吉他 · 独立电影</span>
+                <span class="card__bio">在乐队弹吉他，周末泡在影展里。</span></span></div></div>
+            <div class="hcard"><div class="card__main"><span class="card__av"><img src="assets/demo/xiaoman-avatar.png" alt=""></span>
+              <span class="card__info"><span class="card__hrow"><span class="card__name">小满</span><span class="badge badge--liked">已喜欢</span></span>
+                <span class="card__hl">烘焙与长跑</span>
+                <span class="card__bio">每周跑一次 10 公里，剩下时间在烤面包。</span></span></div></div>
+            <div class="hcard"><div class="card__main"><span class="card__av"><img src="assets/demo/person-09.png" alt=""></span>
+              <span class="card__info"><span class="card__hrow"><span class="card__name">林晚</span><span class="badge badge--passed">已跳过</span></span>
+                <span class="card__hl">图书馆常驻</span>
+                <span class="card__bio">历史系，喜欢旧书店和胶片相机。</span></span></div>
+              <div class="rw"><span class="rw__btn rw__btn--load"><i>↩</i><span>挽回中...</span></span></div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">列表 · 今日挽回已用完</span><span class="d">hasRewoundToday=true · 按钮换成提示行</span></figcaption>
+      <div class="phone">
+        <div class="pg"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hbar"><span class="hbar__back"><span>‹</span></span><span class="hbar__title">今日已看</span><span class="hbar__ph"></span></div>
+        <div style="position:absolute; top:114px; left:0; width:100%">
+          <div class="stats">
+            <span class="stats__i"><span class="stats__n">4</span><span class="stats__l">已浏览</span></span>
+            <span class="stats__i"><span class="stats__n">2</span><span class="stats__l">已喜欢</span></span>
+            <span class="stats__i"><span class="stats__n">2</span><span class="stats__l">已跳过</span></span>
+          </div>
+          <div class="list">
+            <div class="hcard"><div class="card__main"><span class="card__av"><img src="assets/demo/person-08.png" alt=""></span>
+              <span class="card__info"><span class="card__hrow"><span class="card__name">周岚</span><span class="badge badge--liked">已喜欢</span></span>
+                <span class="card__hl">爱爬山的理工科女生</span>
+                <span class="card__bio">周末常去香山，想找个人一起爬山看日出。</span></span></div></div>
+            <div class="hcard"><div class="card__main"><span class="card__av"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+              <span class="card__info"><span class="card__hrow"><span class="card__name">阿辰</span><span class="badge badge--passed">已跳过</span></span>
+                <span class="card__hl">吉他 · 独立电影</span>
+                <span class="card__bio">在乐队弹吉他，周末泡在影展里。</span></span></div></div>
+            <div class="hcard"><div class="card__main"><span class="card__av"><img src="assets/demo/xiaoman-avatar.png" alt=""></span>
+              <span class="card__info"><span class="card__hrow"><span class="card__name">小满</span><span class="badge badge--liked">已喜欢</span></span>
+                <span class="card__hl">烘焙与长跑</span>
+                <span class="card__bio">每周跑一次 10 公里，剩下时间在烤面包。</span></span></div></div>
+            <div class="hcard"><div class="card__main"><span class="card__av"><img src="assets/demo/person-09.png" alt=""></span>
+              <span class="card__info"><span class="card__hrow"><span class="card__name">林晚</span><span class="badge badge--passed">已跳过</span></span>
+                <span class="card__hl">图书馆常驻</span>
+                <span class="card__bio">历史系，喜欢旧书店和胶片相机。</span></span></div>
+              <div class="rw__hint">今日挽回次数已用完</div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">加载中</span><span class="d">统计栏恒渲染 0/0/0</span></figcaption>
+      <div class="phone">
+        <div class="pg"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hbar"><span class="hbar__back"><span>‹</span></span><span class="hbar__title">今日已看</span><span class="hbar__ph"></span></div>
+        <div style="position:absolute; top:114px; left:0; width:100%">
+          <div class="stats">
+            <span class="stats__i"><span class="stats__n">0</span><span class="stats__l">已浏览</span></span>
+            <span class="stats__i"><span class="stats__n">0</span><span class="stats__l">已喜欢</span></span>
+            <span class="stats__i"><span class="stats__n">0</span><span class="stats__l">已跳过</span></span>
+          </div>
+          <div class="list" style="gap:12px">
+            <div class="sk"><span class="sk__av"></span><span class="sk__l"><span class="sk__b w40"></span><span class="sk__b w90"></span><span class="sk__b w70"></span></span></div>
+            <div class="sk"><span class="sk__av"></span><span class="sk__l"><span class="sk__b w40"></span><span class="sk__b w90"></span><span class="sk__b w70"></span></span></div>
+            <div class="sk"><span class="sk__av"></span><span class="sk__l"><span class="sk__b w40"></span><span class="sk__b w90"></span><span class="sk__b w70"></span></span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">加载失败</span><span class="d">无样式分支 · 重试是裸文本</span></figcaption>
+      <div class="phone">
+        <div class="pg"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hbar"><span class="hbar__back"><span>‹</span></span><span class="hbar__title">今日已看</span><span class="hbar__ph"></span></div>
+        <div style="position:absolute; top:114px; left:0; width:100%">
+          <div class="stats">
+            <span class="stats__i"><span class="stats__n">0</span><span class="stats__l">已浏览</span></span>
+            <span class="stats__i"><span class="stats__n">0</span><span class="stats__l">已喜欢</span></span>
+            <span class="stats__i"><span class="stats__n">0</span><span class="stats__l">已跳过</span></span>
+          </div>
+          <div class="raw">
+            <span class="raw__t">加载推荐失败，请稍后重试</span>
+            <span class="raw__r">重试</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">空态</span><span class="d">EmptyState 居中于剩余高度</span></figcaption>
+      <div class="phone">
+        <div class="pg"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hbar"><span class="hbar__back"><span>‹</span></span><span class="hbar__title">今日已看</span><span class="hbar__ph"></span></div>
+        <div style="position:absolute; top:114px; left:0; width:100%">
+          <div class="stats">
+            <span class="stats__i"><span class="stats__n">0</span><span class="stats__l">已浏览</span></span>
+            <span class="stats__i"><span class="stats__n">0</span><span class="stats__l">已喜欢</span></span>
+            <span class="stats__i"><span class="stats__n">0</span><span class="stats__l">已跳过</span></span>
+          </div>
+        </div>
+        <div style="position:absolute; top:186px; bottom:0; left:0; width:100%; display:flex; align-items:center; justify-content:center">
+          <div class="empty">
+            <svg class="empty__ic"><use href="#i-box"/></svg>
+            <span class="empty__t">还没有浏览记录</span>
+            <span class="empty__s">快去寻觅页看看，发现有趣的 TA 吧</span>
+            <span class="empty__a"><span>去寻觅</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每类交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页四类件：方向徽标 / 挽回件 / 返回件 / 空态出口。
+    挽回件的显隐条件是本页最容易回归的地方——它同时受「是否最后一张已跳过」与「今日是否已挽回」两个条件约束。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>方向徽标 · 两态</h3>
+      <p class="hint">条件 <code>record.direction === 'right' ? 'status-liked' : 'status-passed'</code>，
+        文案 <code>discoverHistory.directionLiked / directionSkipped</code>。</p>
+      <div class="row">
+        <div class="cell"><span class="badge badge--liked">已喜欢</span><span class="lab">right（粉渐变底 · --c-romance-500 字）</span></div>
+        <div class="cell"><span class="badge badge--passed">已跳过</span><span class="lab">left（--c-bg-page 底 · 三级字）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>挽回件 · 三形态 + 缺席</h3>
+      <p class="hint">出现条件 <code>direction === 'left' &amp;&amp; isLastPassedCard(cardId) &amp;&amp; !hasRewoundToday</code>；
+        已挽回过则换成提示行；<b>非最后一张的已跳过卡两者都不出现</b>（卡片底部无分隔线）。</p>
+      <div class="row">
+        <div class="cell" style="width:190px"><span class="rw__btn" style="width:190px"><i>↩</i><span>挽回（每日限1次）</span></span><span class="lab">default</span></div>
+        <div class="cell" style="width:190px"><span class="rw__btn rw__btn--load" style="width:190px"><i>↩</i><span>挽回中...</span></span><span class="lab">loading（disabled 防连点）</span></div>
+        <div class="cell" style="width:190px"><span class="rw__hint" style="width:190px;margin-top:0;padding-top:12px">今日挽回次数已用完</span><span class="lab">used-up（提示行）</span></div>
+        <div class="cell" style="width:190px"><span class="card__bio" style="border-top:1px solid var(--c-border-light);padding-top:12px;display:block">（该位整块不渲染）</span><span class="lab">非末位已跳过 / 已喜欢</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>返回件 · 默认 / 按下</h3>
+      <p class="hint">热区 44px、白圆 36px（88rpx / 72rpx），字形「‹」18px。
+        R10-L06-D19 已把本页的「←」统一为同分包的「‹」。栈深 1 时 <code>switchTab</code> 回寻觅 Tab。</p>
+      <div class="row">
+        <div class="cell"><span class="hbar__back"><span>‹</span></span><span class="lab">default</span></div>
+        <div class="cell"><span class="hbar__back hbar__back--press"><span>‹</span></span><span class="lab">press</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>状态区 · 四态</h3>
+      <p class="hint">统计栏不在条件链内，四态下恒渲染。</p>
+      <table class="tbl">
+        <tr><th>状态</th><th>条件</th><th>画面内容</th></tr>
+        <tr><td>loading</td><td><code>loading &amp;&amp; historyCards.length === 0</code></td><td>SkeletonBlock variant=list rows=3（<b>无样式容器</b>，见 §04）</td></tr>
+        <tr><td>error</td><td><code>errorMessage &amp;&amp; historyCards.length === 0</code></td><td>裸文本错误信息 + 裸文本「重试」</td></tr>
+        <tr><td>empty</td><td><code>historyCards.length === 0 &amp;&amp; !loading &amp;&amp; !errorMessage</code></td><td>EmptyState type="no-data"（空箱图标 + 标题 + 描述 + 出口「去寻觅」）</td></tr>
+        <tr><td>list</td><td>其余</td><td>历史卡片列表 + 挽回件</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">页底是 <code>linear-gradient(180deg, 绿 tint → --c-bg-page)</code>；标题与统计数字在小程序端为纯色（渐变字仅 H5 分支，见 §04）。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#E8F5E9"></span><div><div class="sw__n">绿 tint<code>--c-tint-green-50</code></div><div class="sw__u">页底渐变起点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页底<code>--c-bg-page</code></div><div class="sw__u">渐变终点 · 已跳过徽标底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">统计数字 · 空态出口按钮底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">挽回按钮渐变起点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#75E1B7"></span><div><div class="sw__n">主色 300<code>--c-brand-300</code></div><div class="sw__u">挽回按钮渐变终点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFD9DF"></span><div><div class="sw__n">浪漫 100<code>--c-romance-100</code></div><div class="sw__u">已喜欢徽标渐变起点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFB3C0"></span><div><div class="sw__n">浪漫 200<code>--c-romance-200</code></div><div class="sw__u">已喜欢徽标渐变终点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫 500<code>--c-romance-500</code></div><div class="sw__u">已喜欢徽标字色</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">页头标题源码 38rpx=19px（阶梯外），画板取 --fs-3xl 18px，见 §04。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/800</span><span class="type__p" style="font-size:22px;font-weight:800;color:var(--c-brand-800)">4</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">今日已看</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">周岚 · 挽回（每日限1次）</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-neutral-500)">每周跑一次 10 公里，剩下时间在烤面包。</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/600</span><span class="type__p" style="font-size:11px;font-weight:600;color:var(--c-romance-500)">已喜欢 · 已跳过</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 阴影</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-4 8rpx</b><i style="width:4px"></i></div>
+        <div class="space__i"><b>--sp-6 12rpx→12px</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 统计栏 · 卡片</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>挽回按钮 · 徽标 · 返回白圆</div>
+      </div>
+      <p class="hint" style="margin-top:14px">阴影：卡片 <code>--s-card-soft</code>（源码 <code>$card-soft-shadow</code> 同族），
+        挽回按钮 <code>0 2px 8px var(--c-black-shadow-xs)</code>，返回白圆 <code>--card-shadow</code>。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与实况的已知差异</h2><p>头像走盘上真素材；空态图标为组件预设</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/person-08.png" alt="" style="object-fit:contain">
+      <div class="asset__b"><b>assets/demo/*-avatar.png · person-08/09.png</b>
+        <p>卡片头像 48px 圆，昵称按 <code>config/people-role.ts</code> 登记对取用
+        （person-03 阿辰 / person-08 周岚 / person-09 林晚 / xiaoman 小满）。
+        源码该位是 <code>getCardDetail().avatar || IMAGE_PATHS.DEFAULT_AVATAR</code>（滑卡时持久化的快照），画板用真素材不用灰块。</p>
+        <div class="m">快照缺失时源码回退「discoverHistory.defaultUserName」+ 空头像，属数据缺值态，画板不画</div></div></div>
+    <div class="asset"><img src="assets/demo/post-placeholder.jpg" alt="">
+      <div class="asset__b"><b>EmptyState type="no-data" 预设图标</b>
+        <p>源码 R8-L06-D19 已把本页显式的蓝灰铃铛（语义是「消息」）删掉，改走组件预设
+        <code>common/box.svg</code> 空箱 + <code>.empty-icon--preset</code> 归色 filter，60px。
+        画板用同形态描线箱形表达，不引新素材。</p>
+        <div class="m">120rpx · 组件内固定尺寸（无 sp 档，组件注释自认）</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异 / 源码缺陷登记（画板不修，按源码画）：</b>
+    <ul>
+      <li><b>错误态与加载态无样式</b>：<code>.history-loading</code>、<code>.history-error</code>、<code>.history-error__text</code>、
+        <code>.history-error__retry</code>、<code>.history-error__retry-text</code> 五个类名在本页 <code>&lt;style&gt;</code> 段内 <b>0 命中</b>。
+        于是「重试」不是按钮，是一段继承页面字号的裸文本（画板如实画成带下划线的裸文本以标出可点区，真机无任何视觉提示）。
+        同分包 segment / people 的失败重试都是胶囊件——本页是四页里唯一没给重试件样式的。
+        错误文案本身也<b>不走 i18n</b>：兜底串 <code>"加载推荐失败，请稍后重试"</code> 硬写在 <code>stores/discover/actions/fetch.ts:235</code>，
+        画板照源码字面画。</li>
+      <li><b>挽回限流两套口径</b>：按钮文案是 <code>discoverHistory.rewindLabel</code>「挽回（每日限1次）」、门是布尔 <code>hasRewoundToday</code>，
+        但 store 的超额报错写的是 <code>本次会话挽回次数已用完（最多${MAX_UNDO_COUNT_PER_SESSION}次）</code>，常量实测 <code>= 3</code>
+        （<code>stores/discover/constants.ts:88</code>）。日限 1 与会话限 3 同时存在，画板只呈现 UI 侧的「每日限1次」，不替产品裁定哪套是对的。</li>
+      <li><b>统计栏恒渲染</b>：它不在 <code>v-if</code> 链内，加载/错误/空三态下必然显示 <code>0 / 0 / 0</code>。
+        三格数字都有真值源（<code>historyCards.length</code>、<code>historyCards.filter(direction==='right').length</code>、<code>passedCards.length</code>），
+        按登记表通用规则第 0 条属「照真值画」，不是留空位；F01–F03 的 4/2/2 与帧内卡片逐条对得上。</li>
+      <li><b>渐变字只在 H5 生效</b>：<code>.page-title</code> 与 <code>.stat-num</code> 的 <code>background-clip: text</code> 都写在
+        <code>// #ifdef H5</code> 里，<code>#ifndef H5</code> 分支分别落 <code>--c-text-primary</code> 与 <code>--c-brand-800</code>（R10-L06-D15 / D16 的可达性收口）。
+        本页真机是微信小程序 ⇒ 画板按纯色档画。</li>
+      <li><b>令牌缺登记（BASE_PROBLEM · 本页剩一枚）</b>：本页 SCSS 头用到 <code>--c-tint-green-50</code>（#E8F5E9，页底渐变起点）、
+        <code>--c-neutral-400</code>（<code>$text-tertiary</code> 别名，已跳过徽标字 / 签名行 / 挽回提示行）、
+        <code>--c-tint-gray-50</code>（#F3F4F6，<code>$border-light</code> 别名，挽回件与提示行的分隔线）三枚。
+        前两枚已在本次出图期间补进 <code>board-base.css</code>（实测 <code>:233</code> / <code>:241</code>，值与真源一致），画板已改为直接引用；
+        <b><code>--c-tint-gray-50</code> 仍未登记</b>，画板按 §1 暂以已登记的最浅线档 <code>--c-border-light</code>（#EEF2F0）代画，差 5/2/1。</li>
+      <li><b>页面内私有别名</b>：本页把 <code>$text-secondary</code> 定义成 <code>--c-neutral-500</code>（#6B7571），
+        与全站 <code>--c-text-secondary</code>（#4A524E）不同值；同分包另三页直接用 <code>--c-text-secondary</code>。
+        画板按本页真值取 <code>--c-neutral-500</code>，并在此登记为跨页不一致。</li>
+      <li><b>页头标题档位</b>：源码 <code>38rpx</code>（=19px）落 §1.3 阶梯外，画板取 <code>--fs-3xl</code> 18px。</li>
+      <li><b>无分数位</b>：本页不显示任何匹配度/合拍度/共同点数值——卡片快照里就没有该字段，
+        挽回成功后的匹配结果归 <code>discover/matching</code> 与 <code>discover/match-success</code> 两页。</li>
+      <li><b>演示正文</b>：卡片 <code>headline</code> / <code>bio</code> 是用户自填字段的演示读数（真值位存在，内容随账号），
+        不是产品文案，也不参与 i18n 逐字口径；<code>bio</code> 两行截断（<code>-webkit-line-clamp: 2</code> + mp 端 <code>max-height: 3.2em</code> 兜底）。</li>
+      <li>本页在 discover-extra 分包，<b>无 tabbar</b>、无原生导航栏。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 今日已看高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（deviceScaleFactor 2.273，面积对齐语料 1.573 Mpx）
+</footer>
+
+</div>
+</body>
+</html>

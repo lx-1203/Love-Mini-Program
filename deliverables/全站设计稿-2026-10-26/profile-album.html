@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 我的相册 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，不写私有色值） ===== */
+.phone--alb { background: var(--c-gradient-page); }
+
+/* 页头：baseline 行（白圆「‹」 + 标题 + 右端 N / 6 计数），右侧预留胶囊安全距 7+104px */
+.alb-head { position: absolute; top: 44px; left: 0; width: 100%; height: 56px; z-index: 6; box-sizing: border-box;
+  display: flex; align-items: baseline; justify-content: flex-start; padding: 12px 111px 0 16px; }
+.alb-back { width: 44px; height: 44px; flex: none; align-self: center; margin-left: -6px;
+  display: flex; align-items: center; justify-content: center; }
+.alb-back__c { width: 32px; height: 32px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: var(--c-border-card); display: flex; align-items: center; justify-content: center; }
+.alb-back__g { font-size: 26px; font-weight: 700; line-height: 1; color: var(--c-text-primary); }
+.alb-title { font-size: var(--fs-7xl); font-weight: 700; color: var(--c-text-primary); margin-left: var(--sp-4); }
+.alb-count { margin-left: auto; font-size: var(--fs-md); color: var(--c-text-tertiary);
+  font-variant-numeric: tabular-nums; }
+
+.alb-body { position: absolute; top: 112px; left: 0; width: 100%; padding: 0 16px; box-sizing: border-box; z-index: 2; }
+.alb-card { background: var(--c-bg-container); border-radius: var(--r-xl); box-shadow: var(--s-card-soft); }
+
+/* 错误卡 / 空态卡 */
+.alb-state { display: flex; flex-direction: column; align-items: center; gap: var(--sp-5); padding: 36px;
+  margin-top: 10px; }
+.alb-state > svg { width: 60px; height: 60px; color: var(--c-text-placeholder); }
+.alb-state__t { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); }
+.alb-state__d { font-size: var(--fs-md); color: var(--c-text-tertiary); text-align: center; }
+.alb-state__msg { font-size: var(--fs-md); color: var(--c-text-secondary); text-align: center; }
+.alb-pill { padding: 6px 16px; margin-top: 6px; border-radius: var(--r-full); background: var(--c-brand-800);
+  display: flex; align-items: center; justify-content: center; }
+.alb-pill span { color: var(--c-text-inverse); font-size: var(--fs-md); font-weight: 600; }
+.alb-pill--sm { padding: 6px 12px; margin-top: 0; }
+
+/* 照片墙：flex 三列（mp-weixin 不支持 grid），格 110px 见方、gap --sp-3=6px */
+.alb-grid { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+.alb-cell { position: relative; width: calc((100% - 2 * var(--sp-3)) / 3);
+  padding-top: calc((100% - 2 * var(--sp-3)) / 3); border-radius: var(--r-lg); background: var(--c-bg-container);
+  border: var(--c-border-card); overflow: hidden; box-sizing: border-box; }
+.alb-cell--filled { background: var(--c-bg-page); }
+.alb-cell--empty { background: var(--c-brand-50); }
+.alb-cell img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+.alb-cell__ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.alb-cell__plus { font-size: 28px; font-weight: 400; line-height: 1; color: var(--c-brand-800); }
+.alb-cell__load { position: absolute; inset: 0; background: var(--c-bg-overlay);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-2); }
+.alb-cell__spin { width: 16px; height: 16px; border: 1px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--c-text-inverse); border-radius: var(--r-full); }
+.alb-cell__load span { font-size: var(--fs-sm); color: var(--c-text-inverse); }
+
+/* 添加按钮（块级，满宽）与长按提示 */
+.alb-add { margin-top: var(--sp-6); padding: var(--sp-4) var(--sp-8); background: var(--c-brand-800);
+  border: 1px solid var(--c-brand-800); border-radius: var(--r-full); box-shadow: var(--s-card-soft);
+  display: flex; align-items: center; justify-content: center; }
+.alb-add span { color: var(--c-text-inverse); font-size: var(--fs-lg); font-weight: 600; }
+.alb-tip { margin-top: var(--sp-5); text-align: center; }
+.alb-tip span { font-size: var(--fs-sm); color: var(--c-text-secondary); }
+
+/* 照片使用说明卡 */
+.alb-rules { margin-top: var(--sp-8); padding: var(--sp-8) var(--sp-8) 36px; display: flex;
+  flex-direction: column; gap: var(--sp-4); }
+.alb-rules__t { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.alb-rules__s { font-size: var(--fs-lg); line-height: 1.6; color: var(--c-text-secondary); }
+.alb-rules__row { display: flex; align-items: flex-start; gap: var(--sp-2); }
+.alb-rules__b { flex: none; font-size: var(--fs-lg); line-height: 1.6; color: var(--c-brand); }
+.alb-rules__x { flex: 1; min-width: 0; font-size: var(--fs-lg); line-height: 1.6; color: var(--c-text-secondary); }
+
+/* 全屏查看层（自建 viewer，非 uni.previewImage） */
+.alb-viewer { position: absolute; inset: 0; z-index: 30; background: var(--c-overlay-stronger);
+  display: flex; align-items: center; justify-content: center; }
+.alb-viewer__img { width: 100%; height: 650px; object-fit: contain; }
+.alb-viewer__pager { position: absolute; bottom: 20px; left: 0; right: 0; display: flex;
+  justify-content: center; gap: var(--sp-2); }
+.alb-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c-overlay-bg-mid); }
+.alb-dot--on { background: var(--c-neutral-0); }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-heart-signal" viewBox="0 0 24 24"><path d="M20.4 8.6a4.6 4.6 0 0 0-8.4-2.6A4.6 4.6 0 0 0 3.6 8.6c0 5.4 8.4 10.6 8.4 10.6"/><path d="M2.4 13.4h4l1.6-2.6 2.2 4.6 1.8-3 1.2 1.6h6.4"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.8v4.8"/><path d="M12 16.2h.01"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>我的相册 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/profile-extra/profile/album</code>。
+     个人页「我的互动 · 我的相册」的下钻页，也是全站唯一能改「对外展示的头像源」的地方（长按 → 设为头像，重走头像审核链路）。
+     形态 = 薄荷渐变页底 + baseline 页头（含 <code>N / 6</code> 计数）+ 三列照片墙 + 添加钮 + 长按提示 + 规则卡，
+     外加一层自建全屏查看层（<code>uni.previewImage</code> 不吃包内路径）。
+     本页状态机有 6 态，是六页里分支最多的一页。本页此前无理想效果图，版式按源码实况。</p>
+  <div class="cover__meta">
+    <span>路由 <b>profile-extra/album</b></span>
+    <span>分包 <b>profile-extra</b>（无 tabbar）</span>
+    <span>状态 <b>6 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 6 屏</h2>
+    <p>错误 / 空 / 墙未满 / 上传中 / 已满 6-6 / 全屏查看层</p></div>
+  <div class="sec__sub">本页状态机有 6 态，来自 <code>errorMessage &amp;&amp; photoCount === 0</code>（错误，MP-R1-ALBUM-002 只在首拉失败且无照片时整卡替换，保护照片墙）、
+    <code>v-else-if="photoCount === 0 &amp;&amp; !isUploading"</code>（空）、<code>v-else</code>（照片墙）这条主链，
+    加上格内 <code>uploadingIndex === cell.index</code>（上传蒙层）、
+    <code>photoCount &gt; 0 &amp;&amp; hasEmptySlot &amp;&amp; !isUploading</code>（添加钮去留）、
+    <code>viewerVisible</code>（全屏查看层）三条独立 v-if。
+    计数节点 <code>v-if="photoCount &gt; 0"</code>，长按提示与规则卡同判据。六屏均一屏装下，无视口裁切。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">错误 · 首拉失败且无照片</span><span class="d">photoCount=0 才整卡替换 · 无计数</span></figcaption>
+      <div class="phone phone--alb">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="alb-head"><span class="alb-back"><span class="alb-back__c"><span class="alb-back__g">‹</span></span></span><span class="alb-title">我的相册</span></div>
+        <div class="alb-body">
+          <div class="alb-card alb-state" role="alert">
+            <span class="alb-state__msg">网络错误</span>
+            <span class="alb-pill alb-pill--sm"><span>重试</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">空 · 还没有照片</span><span class="d">photoCount=0 且未在上传 · 无计数</span></figcaption>
+      <div class="phone phone--alb">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="alb-head"><span class="alb-back"><span class="alb-back__c"><span class="alb-back__g">‹</span></span></span><span class="alb-title">我的相册</span></div>
+        <div class="alb-body">
+          <div class="alb-card alb-state">
+            <svg><use href="#i-heart-signal"/></svg>
+            <span class="alb-state__t">还没有上传照片</span>
+            <span class="alb-state__d">点击下方按钮添加第一张照片</span>
+            <span class="alb-pill"><span>添加照片</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">照片墙 · 未满（4 / 6）</span><span class="d">两格空位 + 号 · 添加钮在场</span></figcaption>
+      <div class="phone phone--alb">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="alb-head"><span class="alb-back"><span class="alb-back__c"><span class="alb-back__g">‹</span></span></span><span class="alb-title">我的相册</span><span class="alb-count">4 / 6</span></div>
+        <div class="alb-body">
+          <div class="alb-grid">
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-1.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-2.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-3.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-4.png" alt=""></div>
+            <div class="alb-cell alb-cell--empty"><span class="alb-cell__ph"><span class="alb-cell__plus">+</span></span></div>
+            <div class="alb-cell alb-cell--empty"><span class="alb-cell__ph"><span class="alb-cell__plus">+</span></span></div>
+          </div>
+          <div class="alb-add"><span>添加照片</span></div>
+          <div class="alb-tip"><span>长按照片可删除或设为头像</span></div>
+          <div class="alb-card alb-rules">
+            <span class="alb-rules__t">照片使用说明</span>
+            <span class="alb-rules__s">已上传 4 张，剩余 2 个空位</span>
+            <div class="alb-rules__row"><span class="alb-rules__b">•</span><span class="alb-rules__x">最多 6 张，已满时需先删除旧照片才能继续添加</span></div>
+            <div class="alb-rules__row"><span class="alb-rules__b">•</span><span class="alb-rules__x">单张不超过 10MB，超出会在上传前提示</span></div>
+            <div class="alb-rules__row"><span class="alb-rules__b">•</span><span class="alb-rules__x">轻点照片可全屏查看，长按照片可设为头像或删除</span></div>
+            <div class="alb-rules__row"><span class="alb-rules__b">•</span><span class="alb-rules__x">设为头像会重新走头像审核链路，通过后对外展示</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">上传中 · 格内蒙层</span><span class="d">isUploading ⇒ 添加钮消失 · 计数 5 / 6</span></figcaption>
+      <div class="phone phone--alb">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="alb-head"><span class="alb-back"><span class="alb-back__c"><span class="alb-back__g">‹</span></span></span><span class="alb-title">我的相册</span><span class="alb-count">5 / 6</span></div>
+        <div class="alb-body">
+          <div class="alb-grid">
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-1.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-2.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-3.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-4.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/p1.jpg" alt=""><span class="alb-cell__load"><i class="alb-cell__spin"></i><span>上传中...</span></span></div>
+            <div class="alb-cell alb-cell--empty"><span class="alb-cell__ph"><span class="alb-cell__plus">+</span></span></div>
+          </div>
+          <div class="alb-tip"><span>长按照片可删除或设为头像</span></div>
+          <div class="alb-card alb-rules">
+            <span class="alb-rules__t">照片使用说明</span>
+            <span class="alb-rules__s">已上传 5 张，剩余 1 个空位</span>
+            <div class="alb-rules__row"><span class="alb-rules__b">•</span><span class="alb-rules__x">最多 6 张，已满时需先删除旧照片才能继续添加</span></div>
+            <div class="alb-rules__row"><span class="alb-rules__b">•</span><span class="alb-rules__x">单张不超过 10MB，超出会在上传前提示</span></div>
+            <div class="alb-rules__row"><span class="alb-rules__b">•</span><span class="alb-rules__x">轻点照片可全屏查看，长按照片可设为头像或删除</span></div>
+            <div class="alb-rules__row"><span class="alb-rules__b">•</span><span class="alb-rules__x">设为头像会重新走头像审核链路，通过后对外展示</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">照片墙 · 已满（6 / 6）</span><span class="d">!hasEmptySlot ⇒ 添加钮消失 · 无空位格</span></figcaption>
+      <div class="phone phone--alb">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="alb-head"><span class="alb-back"><span class="alb-back__c"><span class="alb-back__g">‹</span></span></span><span class="alb-title">我的相册</span><span class="alb-count">6 / 6</span></div>
+        <div class="alb-body">
+          <div class="alb-grid">
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-1.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-2.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-3.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-4.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/p1.jpg" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/p2.jpg" alt=""></div>
+          </div>
+          <div class="alb-tip" style="margin-top:var(--sp-6)"><span>长按照片可删除或设为头像</span></div>
+          <div class="alb-card alb-rules">
+            <span class="alb-rules__t">照片使用说明</span>
+            <span class="alb-rules__s">已上传 6 张，剩余 0 个空位</span>
+            <div class="alb-rules__row"><span class="alb-rules__b">•</span><span class="alb-rules__x">最多 6 张，已满时需先删除旧照片才能继续添加</span></div>
+            <div class="alb-rules__row"><span class="alb-rules__b">•</span><span class="alb-rules__x">单张不超过 10MB，超出会在上传前提示</span></div>
+            <div class="alb-rules__row"><span class="alb-rules__b">•</span><span class="alb-rules__x">轻点照片可全屏查看，长按照片可设为头像或删除</span></div>
+            <div class="alb-rules__row"><span class="alb-rules__b">•</span><span class="alb-rules__x">设为头像会重新走头像审核链路，通过后对外展示</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">全屏查看层 · viewerVisible</span><span class="d">压在 F03 之上 · 第 2 张为当前页</span></figcaption>
+      <div class="phone phone--alb">
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="alb-head"><span class="alb-back"><span class="alb-back__c"><span class="alb-back__g">‹</span></span></span><span class="alb-title">我的相册</span><span class="alb-count">4 / 6</span></div>
+        <div class="alb-body">
+          <div class="alb-grid">
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-1.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-2.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-3.png" alt=""></div>
+            <div class="alb-cell alb-cell--filled"><img src="assets/demo/xiaoman-photo-4.png" alt=""></div>
+            <div class="alb-cell alb-cell--empty"><span class="alb-cell__ph"><span class="alb-cell__plus">+</span></span></div>
+            <div class="alb-cell alb-cell--empty"><span class="alb-cell__ph"><span class="alb-cell__plus">+</span></span></div>
+          </div>
+        </div>
+        <div class="alb-viewer">
+          <img class="alb-viewer__img" src="assets/demo/xiaoman-photo-2.png" alt="">
+          <div class="alb-viewer__pager">
+            <span class="alb-dot"></span><span class="alb-dot alb-dot--on"></span><span class="alb-dot"></span><span class="alb-dot"></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页核心是那一格照片的四种形态，外加两个由 <code>photoCount</code> 系判据开关的整块节点。
+    「上传失败」按 MP-R1-ALBUM-002 只 toast、不写 <code>errorMessage</code> ⇒ 墙不会被顶掉，故不单列一屏。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>照片格 · 四态</h3>
+      <p class="hint">格宽 <code>calc((100% - 2*--sp-3)/3)</code> = 110px，用 <code>padding-top</code> 同值撑 1:1（mp-weixin 不吃 <code>aspect-ratio</code>）。空位底 <code>--c-brand-50</code> + <code>--c-brand-800</code> 加号（R11-L10-D15：品牌绿加号压同族浅底只有 1.94:1，收深档后 ≈6.0:1）。</p>
+      <div class="row">
+        <div class="cell" style="width:110px"><div class="alb-cell alb-cell--filled" style="width:110px;padding-top:110px"><img src="assets/demo/xiaoman-photo-1.png" alt=""></div><span class="lab">已上传</span></div>
+        <div class="cell" style="width:110px"><div class="alb-cell alb-cell--empty" style="width:110px;padding-top:110px"><span class="alb-cell__ph"><span class="alb-cell__plus">+</span></span></div><span class="lab">空位</span></div>
+        <div class="cell" style="width:110px"><div class="alb-cell alb-cell--filled" style="width:110px;padding-top:110px"><img src="assets/demo/xiaoman-photo-3.png" alt=""><span class="alb-cell__load"><i class="alb-cell__spin"></i><span>上传中...</span></span></div><span class="lab">上传中蒙层</span></div>
+        <div class="cell" style="width:110px"><div class="alb-cell alb-cell--filled" style="width:110px;padding-top:110px;opacity:.72"><img src="assets/demo/xiaoman-photo-4.png" alt=""></div><span class="lab">press（hover-class）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>整块节点开关矩阵 · photoCount 系</h3>
+      <p class="hint">四块节点的判据必须逐条对上，缺一块就是回归。<code>isUploading</code> 与 <code>hasEmptySlot</code> 共同决定添加钮去留。</p>
+      <table class="tbl">
+        <tr><th>节点</th><th>判据</th><th>在场屏</th></tr>
+        <tr><td>页头计数「N / 6」</td><td><code>photoCount &gt; 0</code></td><td>F03 / F04 / F05 / F06</td></tr>
+        <tr><td>添加照片钮</td><td><code>photoCount &gt; 0 &amp;&amp; hasEmptySlot &amp;&amp; !isUploading</code></td><td>仅 F03</td></tr>
+        <tr><td>长按提示行</td><td><code>photoCount &gt; 0</code></td><td>F03 / F04 / F05 / F06</td></tr>
+        <tr><td>照片使用说明卡</td><td><code>photoCount &gt; 0</code></td><td>F03 / F04 / F05（F06 被查看层盖住）</td></tr>
+        <tr><td>全屏查看层</td><td><code>viewerVisible</code></td><td>仅 F06</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>添加照片 / 重试 · 各两支</h3>
+      <p class="hint">两枚都是 <code>--c-brand-800</code> 实底 + <code>--c-text-inverse</code> 反色字（R8-L10-D11 把字号从 --fs-md 提到 --fs-lg 对齐同分包主按钮口径）。<b>添加钮是块级、满宽</b>（.album-add-btn 无 align-self），不是居中药丸。</p>
+      <div class="row">
+        <div class="cell" style="width:220px"><span class="alb-add" style="margin-top:0"><span>添加照片</span></span><span class="lab">添加 default（满宽）</span></div>
+        <div class="cell" style="width:220px"><span class="alb-add" style="margin-top:0;opacity:.72"><span>添加照片</span></span><span class="lab">添加 press</span></div>
+        <div class="cell"><span class="alb-pill alb-pill--sm"><span>重试</span></span><span class="lab">重试 default</span></div>
+        <div class="cell"><span class="alb-pill alb-pill--sm" style="opacity:.72"><span>重试</span></span><span class="lab">重试 press</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>全屏查看层 · 两支 + 分页点</h3>
+      <p class="hint">MP-R1-ALBUM-001：包内 <code>/static</code> 路径 <code>uni.previewImage</code> 不支持，故页内自建层。图 <code>aspectFit</code>、高 80vh；点按任意处 <code>closeViewer</code>，点分页点 <code>@tap.stop</code> 切页不关层。</p>
+      <div class="row">
+        <div class="cell" style="width:150px"><div style="position:relative;height:150px;border-radius:var(--r-lg);overflow:hidden;background:var(--c-overlay-stronger);display:flex;align-items:center;justify-content:center"><img src="assets/demo/xiaoman-photo-2.png" alt="" style="height:120px;object-fit:contain"><div style="position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px"><span class="alb-dot"></span><span class="alb-dot alb-dot--on"></span><span class="alb-dot"></span><span class="alb-dot"></span></div></div><span class="lab">当前页 = 第 2 张</span></div>
+        <div class="cell" style="width:150px"><div style="position:relative;height:150px;border-radius:var(--r-lg);overflow:hidden;background:var(--c-overlay-stronger);display:flex;align-items:center;justify-content:center"><img src="assets/demo/xiaoman-photo-4.png" alt="" style="height:120px;object-fit:contain"><div style="position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:4px"><span class="alb-dot"></span><span class="alb-dot"></span><span class="alb-dot"></span><span class="alb-dot alb-dot--on"></span></div></div><span class="lab">点第 4 枚点后（tap.stop）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>页头计数与胶囊安全距 · 一支易错</h3>
+      <p class="hint">R6-B55/D16：<code>--capsule-right</code> 真值是「胶囊右缘间隙」≈7px，不是胶囊宽度；旧写法兜底 96px 只留 19px ⇒ 「4 / 6」实测正压在原生胶囊下。现按 <code>calc(--capsule-right, 7px) + 104px</code> 预留 ⇒ 计数右缘落在 x≈248。</p>
+      <div class="row">
+        <div class="cell" style="width:250px"><div class="alb-head" style="position:static;height:32px;padding:0 111px 0 0;width:100%"><span class="alb-title" style="margin-left:0">我的相册</span><span class="alb-count">4 / 6</span></div><span class="lab">现行（+104px 安全距）</span></div>
+        <div class="cell" style="width:250px"><div class="alb-head" style="position:static;height:32px;padding:0 19px 0 0;width:100%"><span class="alb-title" style="margin-left:0">我的相册</span><span class="alb-count">4 / 6</span></div><span class="lab">反例：只留 19px（改前，被胶囊叠压）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用九档，未引入任何页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#DFF3EA"></span><div><div class="sw__n">页底渐变<code>--c-gradient-page</code></div><div class="sw__u">.album-page 底 · 180deg #DFF3EA→#EEF7F2</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器白<code>--c-bg-container</code></div><div class="sw__u">返回圆底 · 状态卡 · 规则卡</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">添加钮 · 空位加号 · 重试</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">规则卡项目符号</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">空位格底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">已上传格底（图未铺满时露出）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(15,23,42,0.45)"></span><div><div class="sw__n">遮罩<code>--c-bg-overlay</code></div><div class="sw__u">格内上传蒙层</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(15,23,42,0.72)"></span><div><div class="sw__n">强遮罩<code>--c-overlay-stronger</code></div><div class="sw__u">全屏查看层底（就近档，见 §04）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">三级文字<code>--c-text-tertiary</code></div><div class="sw__u">计数 · 空态副标</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到六档；加号 56rpx=28px 与「‹」26px 是固定布局尺寸，不入档位。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/700</span><span class="type__p" style="font-size:28px;font-weight:700">我的相册</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">还没有上传照片</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/700</span><span class="type__p" style="font-size:15px;font-weight:700">照片使用说明</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">添加照片</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/400</span><span class="type__p" style="font-size:14px;font-weight:400;color:var(--c-text-secondary)">已上传 4 张，剩余 2 个空位</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-text-tertiary)">点击下方按钮添加第一张照片</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-secondary)">长按照片可删除或设为头像</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-8 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--sp-10 72rpx</b><i style="width:36px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 照片格</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 卡片</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>圆底 · 两枚钮 · 分页点</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>照片墙与查看层全部走 assets/demo 真素材</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/xiaoman-photo-1.png" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>xiaoman-photo-1.png … xiaoman-photo-4.png</b><p>演示人设「小满」的全套四张相册照，对应 F03/F04/F05 的前四格。<code>mode="aspectFill"</code> 满格裁切，正是 §8 要判的封面裁切与密度。</p><div class="m">110px 见方 · aspectFill</div></div></div>
+    <div class="asset"><img src="assets/demo/p1.jpg" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>p1.jpg · p2.jpg</b><p>第五、六格。演示池里这两枚是<b>竖版人像</b>，塞进 1:1 格必然上下裁切——画板故意用它们，好让「非方图进方格」的裁切口径在基准里留一份可比的样本。</p><div class="m">110px · 竖图裁入方格</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_SOCIAL.HEART_SIGNAL</b><p>空态主视觉 120rpx=60px（assets/social/heart-signal.svg）。该 SVG 在工程 /static 树内、不属演示素材池，画板按 §4 以同形态「心 + 心电」描边 symbol 复刻。</p><div class="m">60px · --c-text-placeholder</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>查看层底色</b>：源码 <code>.album-viewer</code> 写死 <code>rgba(0, 0, 0, 0.92)</code>，该档未登记进 board-base.css，画板就近取 <code>--c-overlay-stronger</code>(rgba(15,23,42,.72))，比真机浅一档。已回报 BASE_PROBLEM。</li>
+      <li><b>规则卡四条与汇总行是模板字面量</b>，不在 locale 里（源码 R7-L10-D15 明确「卡内四条全部取自本页既有真实约束，不编造数据」）。数字 6 与 10 分别来自 <code>PHOTO_GALLERY_MAX=6</code> 与 <code>PHOTO_SIZE_LIMIT=10MB</code>，随 photoCount 联动，画板逐屏算过：F03 4/2、F04 5/1、F05 6/0。</li>
+      <li><b>「最近上传」时间行不做</b>：<code>photoGallery</code> 只有 URL 数组、无上传时间字段，源码明确不拿假时间轴填空白，画板同样不出现任何时间戳。</li>
+      <li><b>上传失败不占一屏</b>：MP-R1-ALBUM-002 把 <code>errorMessage</code> 语义保留给首拉失败，上传失败只 toast + 局部提示，照片墙不被顶掉 ⇒ 与 F01 不是同一支。</li>
+      <li><b>无分数类真值位</b>：本页不显示合拍度/匹配度/共同点。</li>
+      <li><b>本页在 profile-extra 分包，无 tabbar、无原生导航栏</b>——页头是页面自己画的 baseline 行。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 我的相册页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 我的收藏 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，不写私有色值） ===== */
+.phone--fav { background: var(--c-bg-page); }
+
+/* 页头：无底色行（页面薄荷底直接承托）· 白圆「‹」 + 带计数的标题 */
+.fav-head { position: absolute; top: 44px; left: 0; width: 100%; height: 64px; z-index: 6; box-sizing: border-box;
+  display: flex; align-items: center; gap: 8px; padding: 8px 0 12px; }
+.fav-back { width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center; }
+.fav-back__c { width: 32px; height: 32px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: var(--c-border-card); display: flex; align-items: center; justify-content: center; }
+.fav-back__g { font-size: 26px; font-weight: 700; line-height: 1; color: var(--c-text-primary); }
+.fav-title { font-size: var(--fs-7xl); font-weight: 700; color: var(--c-text-primary); }
+
+/* 骨架 */
+.fav-shim { background: linear-gradient(90deg, var(--c-border-light) 25%, var(--c-border-default) 50%, var(--c-border-light) 75%); }
+.fav-sk { position: absolute; top: 108px; left: 0; width: 100%; padding: 0 16px; box-sizing: border-box; z-index: 2;
+  display: flex; flex-direction: column; gap: var(--section-gap); }
+.fav-sk__card { display: flex; align-items: center; gap: var(--sp-5); padding: var(--sp-7);
+  background: var(--c-bg-container); border-radius: var(--r-xl); box-shadow: var(--s-card-soft); }
+.fav-sk__av { width: 44px; height: 44px; border-radius: 50%; flex: none; }
+.fav-sk__ls { flex: 1; display: flex; flex-direction: column; gap: var(--sp-3); }
+.fav-sk__l { height: 12px; border-radius: var(--r-md); }
+.w40 { width: 40%; } .w90 { width: 90%; } .w70 { width: 70%; }
+
+/* 空态宿主槽（R14-L10-D23：纯宿主 view 给 EmptyState 一个可解析高度的居中容器） */
+.fav-eslot { position: absolute; top: 108px; left: 0; right: 0; bottom: 0; z-index: 2;
+  display: flex; flex-direction: column; justify-content: center; padding: 0 16px; box-sizing: border-box; }
+.fav-empty { display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 20px; box-sizing: border-box; }
+.fav-empty__ic { width: 60px; height: 60px; margin-bottom: var(--sp-4); color: var(--c-romance-500); }
+.fav-empty__ic svg { width: 60px; height: 60px; }
+.fav-empty__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-secondary); }
+.fav-empty__d { font-size: var(--fs-base); color: var(--c-text-secondary); margin-top: var(--sp-2); text-align: center; }
+.fav-empty__b { margin-top: var(--sp-6); min-height: 44px; padding: var(--sp-4) 20px; border-radius: var(--r-full);
+  background: var(--c-brand-800); display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.fav-empty__b span { font-size: var(--fs-base); font-weight: 600; color: var(--c-neutral-0); }
+
+/* 收藏卡列表 */
+.fav-list { position: absolute; top: 108px; left: 0; width: 100%; padding: 0 16px; box-sizing: border-box;
+  z-index: 2; }
+.fav-card { display: flex; gap: 10px; padding: 10px; margin-top: 10px; background: var(--c-bg-container);
+  border-radius: var(--r-lg); box-shadow: var(--s-card-soft); }
+.fav-card:first-child { margin-top: 0; }
+.fav-card__cover { width: 80px; height: 80px; border-radius: var(--r-md); overflow: hidden; flex: none;
+  background: var(--c-border-light); }
+.fav-card__cover img { width: 100%; height: 100%; object-fit: cover; }
+.fav-card__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.fav-card__author { display: flex; align-items: center; gap: 4px; }
+.fav-card__av { width: 20px; height: 20px; border-radius: 50%; overflow: hidden; flex: none;
+  background: var(--c-border-light); }
+.fav-card__av img { width: 100%; height: 100%; object-fit: cover; }
+.fav-card__name { font-size: var(--fs-base); font-weight: 600; color: var(--c-text-primary); }
+.fav-card__campus { font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+.fav-card__t { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fav-card__c { font-size: var(--fs-base); color: var(--c-text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fav-card__meta { display: flex; align-items: center; justify-content: space-between; margin-top: 2px; }
+.fav-card__n { font-size: var(--fs-sm); color: var(--c-text-tertiary); font-variant-numeric: tabular-nums; }
+.fav-unfav { padding: 3px 10px; border-radius: var(--r-full); border: 1px solid var(--c-brand-500); }
+.fav-unfav span { font-size: var(--fs-sm); color: var(--c-brand-500); }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-heart-fill" viewBox="0 0 24 24"><path d="M12 20.6S3.4 15.1 3.4 9.3a4.9 4.9 0 0 1 8.6-3.2 4.9 4.9 0 0 1 8.6 3.2c0 5.8-8.6 11.3-8.6 11.3z" transform="translate(0 -1.4)" class="ico--fill" style="fill:currentColor;stroke:none"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.6S3.4 15.1 3.4 9.3a4.9 4.9 0 0 1 8.6-3.2 4.9 4.9 0 0 1 8.6 3.2c0 5.8-8.6 11.3-8.6 11.3z" transform="translate(0 -1.4)"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>我的收藏 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/profile-extra/profile/favorites</code>。
+     个人页「我的互动 · 我的收藏」的下钻页，数据源是 village store 的帖子列表按 <code>isFavorite</code> 过滤。
+     形态 = 薄荷底页头（白圆「‹」 + 带条数的标题）+ 单一 v-if 链的三种正文。
+     空态走全站 <code>&lt;EmptyState&gt;</code> 组件，主视觉是<b>心动粉</b>实心心（R14-L10-D22 把语义从「星标」纠正回「喜欢」）。
+     本页状态机有 3 态，本页此前无理想效果图，版式按源码实况。</p>
+  <div class="cover__meta">
+    <span>路由 <b>profile-extra/favorites</b></span>
+    <span>分包 <b>profile-extra</b>（无 tabbar）</span>
+    <span>状态 <b>3 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 3 屏</h2>
+    <p>加载中（骨架） / 空（EmptyState） / 有收藏（列表）</p></div>
+  <div class="sec__sub">本页状态机有 3 态，来自模板里唯一一条 v-if 链：
+    <code>v-if="loading"</code>（骨架，3 行）、<code>v-else-if="favorites.length === 0"</code>（空态）、
+    <code>v-else</code>（<code>&lt;scroll-view&gt;</code> 列表）。页头恒定，但标题带
+    <code>favorites.length</code> 插值，故加载/空两屏恒为「我的收藏（0）」——这是源码实况，不是画板疏漏。
+    列表屏三卡装得下，无视口裁切。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">加载中 · 骨架</span><span class="d">标题恒为「我的收藏（0）」</span></figcaption>
+      <div class="phone phone--fav">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="fav-head"><span class="fav-back"><span class="fav-back__c"><span class="fav-back__g">‹</span></span></span><span class="fav-title">我的收藏（0）</span></div>
+        <div class="fav-sk">
+          <div class="fav-sk__card"><span class="fav-sk__av fav-shim"></span><div class="fav-sk__ls"><span class="fav-sk__l fav-shim w40"></span><span class="fav-sk__l fav-shim w90"></span><span class="fav-sk__l fav-shim w70"></span></div></div>
+          <div class="fav-sk__card"><span class="fav-sk__av fav-shim"></span><div class="fav-sk__ls"><span class="fav-sk__l fav-shim w40"></span><span class="fav-sk__l fav-shim w90"></span><span class="fav-sk__l fav-shim w70"></span></div></div>
+          <div class="fav-sk__card"><span class="fav-sk__av fav-shim"></span><div class="fav-sk__ls"><span class="fav-sk__l fav-shim w40"></span><span class="fav-sk__l fav-shim w90"></span><span class="fav-sk__l fav-shim w70"></span></div></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">空 · 还没有收藏</span><span class="d">EmptyState 居中于页头以下可用区</span></figcaption>
+      <div class="phone phone--fav">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="fav-head"><span class="fav-back"><span class="fav-back__c"><span class="fav-back__g">‹</span></span></span><span class="fav-title">我的收藏（0）</span></div>
+        <div class="fav-eslot">
+          <div class="fav-empty">
+            <span class="fav-empty__ic"><svg><use href="#i-heart-fill"/></svg></span>
+            <span class="fav-empty__t">还没有收藏</span>
+            <span class="fav-empty__d">在帖子页点收藏，喜欢的帖子会出现在这里</span>
+            <span class="fav-empty__b"><span>去广场逛逛</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">有收藏 · 3 条</span><span class="d">含一支无配图支（post.images 空）</span></figcaption>
+      <div class="phone phone--fav">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="fav-head"><span class="fav-back"><span class="fav-back__c"><span class="fav-back__g">‹</span></span></span><span class="fav-title">我的收藏（3）</span></div>
+        <div class="fav-list">
+          <div class="fav-card">
+            <div class="fav-card__cover"><img src="assets/demo/post-1.jpg" alt=""></div>
+            <div class="fav-card__body">
+              <div class="fav-card__author"><span class="fav-card__av"><img src="assets/demo/person-01-avatar.png" alt=""></span><span class="fav-card__name">小满</span><span class="fav-card__campus">北京大学</span></div>
+              <span class="fav-card__t">图书馆五楼靠窗的位置太好拍了</span>
+              <span class="fav-card__c">下午三点的光刚好落在桌面上，拍到第七张才敢发</span>
+              <div class="fav-card__meta"><span class="fav-card__n">12 人收藏</span><span class="fav-unfav"><span>取消收藏</span></span></div>
+            </div>
+          </div>
+          <div class="fav-card">
+            <div class="fav-card__cover"><img src="assets/demo/post-2.jpg" alt=""></div>
+            <div class="fav-card__body">
+              <div class="fav-card__author"><span class="fav-card__av"><img src="assets/demo/person-02-avatar.png" alt=""></span><span class="fav-card__name">周岚</span><span class="fav-card__campus">清华大学</span></div>
+              <span class="fav-card__t">周末有没有一起去爬山的搭子</span>
+              <span class="fav-card__c">想约香山，早上六点出发，中午山顶吃个饭就下</span>
+              <div class="fav-card__meta"><span class="fav-card__n">8 人收藏</span><span class="fav-unfav"><span>取消收藏</span></span></div>
+            </div>
+          </div>
+          <div class="fav-card">
+            <div class="fav-card__body">
+              <div class="fav-card__author"><span class="fav-card__av"><img src="assets/demo/person-03-avatar.png" alt=""></span><span class="fav-card__name">阿辰</span></div>
+              <span class="fav-card__t">求推荐学校附近好吃的火锅店</span>
+              <span class="fav-card__c">一个人吃有点尴尬，有没有愿意拼桌的</span>
+              <div class="fav-card__meta"><span class="fav-card__n">5 人收藏</span><span class="fav-unfav"><span>取消收藏</span></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页两类件：收藏卡（配图两支 × 校区位两支）与「取消收藏」钮（default / press / 已取消后整卡出列）。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>收藏卡 · 封面位与校区位两支交叉</h3>
+      <p class="hint">封面 <code>v-if="post.images &amp;&amp; post.images.length &gt; 0"</code>——无图时<b>整块不渲染</b>，正文列直接顶到卡左边（不是留一个灰方块）。校区 <code>v-if="post.author.campusName"</code>。标题/正文两行都是 <code>white-space:nowrap + ellipsis</code> 单行截断。</p>
+      <div class="row">
+        <div class="cell" style="width:220px"><div class="fav-card" style="margin-top:0"><div class="fav-card__cover"><img src="assets/demo/post-3.jpg" alt=""></div><div class="fav-card__body"><div class="fav-card__author"><span class="fav-card__av"><img src="assets/demo/person-04-avatar.png" alt=""></span><span class="fav-card__name">星辰</span><span class="fav-card__campus">武汉大学</span></div><span class="fav-card__t">校园歌手大赛海选现场好热闹</span><span class="fav-card__c">第三个赞出去的瞬间就后悔了</span><div class="fav-card__meta"><span class="fav-card__n">21 人收藏</span><span class="fav-unfav"><span>取消收藏</span></span></div></div></div><span class="lab">有图 + 有校区</span></div>
+        <div class="cell" style="width:220px"><div class="fav-card" style="margin-top:0"><div class="fav-card__body"><div class="fav-card__author"><span class="fav-card__av"><img src="assets/demo/xiaoman-avatar.png" alt=""></span><span class="fav-card__name">小满</span></div><span class="fav-card__t">一个人吃火锅也很快乐</span><span class="fav-card__c">服务员放了个玩偶在对面</span><div class="fav-card__meta"><span class="fav-card__n">3 人收藏</span><span class="fav-unfav"><span>取消收藏</span></span></div></div></div><span class="lab">无图 + 无校区（整块塌陷）</span></div>
+        <div class="cell" style="width:220px"><div class="fav-card" style="margin-top:0"><div class="fav-card__cover" style="background:var(--c-border-light)"></div><div class="fav-card__body"><div class="fav-card__author"><span class="fav-card__av"></span><span class="fav-card__name">暂无数据</span></div><span class="fav-card__t">标题很长很长很长很长会被截断的样子</span><span class="fav-card__c">正文同样只留一行，超出用省略号收口，不许把卡片撑高</span><div class="fav-card__meta"><span class="fav-card__n">0 人收藏</span><span class="fav-unfav"><span>取消收藏</span></span></div></div></div><span class="lab">反例：灰封面 + 无头像（退稿）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>「取消收藏」钮 · 三支</h3>
+      <p class="hint"><code>@tap.stop</code> 阻止冒泡到整卡的 <code>openPost</code>。点击后 <code>unfavorite</code> 直接把该帖从 <code>isFavorite</code> 里摘掉 ⇒ 整卡出列，<b>没有</b>「已取消」的按钮残留态；列表变空则整页回落 F02。toast 文案 <code>profile.unfavoriteDone</code>「已取消收藏」由平台容器渲染。</p>
+      <div class="row">
+        <div class="cell"><span class="fav-unfav"><span>取消收藏</span></span><span class="lab">default（描边 + 主色字）</span></div>
+        <div class="cell"><span class="fav-unfav" style="opacity:.72"><span>取消收藏</span></span><span class="lab">press（hover-class）</span></div>
+        <div class="cell"><span class="fav-empty__b" style="margin-top:0;background:var(--c-overlay-strong)"><span>已取消收藏</span></span><span class="lab">动作反馈 toast（uni.showToast，几何非本页 CSS）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>EmptyState 空态块 · 三支</h3>
+      <p class="hint">组件侧固定配方：图标 120rpx=60px + 主标 --fs-xl/600 + 副标 --fs-base + 动作胶囊（<code>--c-brand-800</code> 实底、min-height 88rpx=44px）。R14-L10-D22 把主视觉从「主绿星标」纠正为<b>心动粉实心心</b>——「喜欢」语义全站归 <code>--c-romance-500</code>，主绿只留给动作钮。</p>
+      <div class="row">
+        <div class="cell"><span class="fav-empty__ic"><svg><use href="#i-heart-fill"/></svg></span><span class="lab">主视觉 · --c-romance-500（现行）</span></div>
+        <div class="cell"><span class="fav-empty__ic" style="color:var(--c-brand)"><svg><use href="#i-heart"/></svg></span><span class="lab">反例：主绿描边心（R14 前的星标口径，退稿）</span></div>
+        <div class="cell"><span class="fav-empty__b"><span>去广场逛逛</span></span><span class="lab">动作 default</span></div>
+        <div class="cell"><span class="fav-empty__b" style="opacity:.72"><span>去广场逛逛</span></span><span class="lab">动作 press</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>页头标题计数 · 插值两支</h3>
+      <p class="hint"><code>t('profile.favoritesTitle', { n: favorites.length })</code> 真值是「我的收藏（{n}）」——括号是<b>全角</b>，与同分包「谁看过我」的「访客记录 · N」不同形态。加载与空两屏 n 恒为 0。</p>
+      <table class="tbl">
+        <tr><th>屏</th><th>n</th><th>标题</th></tr>
+        <tr><td>F01 加载</td><td>0</td><td>我的收藏（0）</td></tr>
+        <tr><td>F02 空</td><td>0</td><td>我的收藏（0）</td></tr>
+        <tr><td>F03 有收藏</td><td>3</td><td>我的收藏（3）</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用八档，未引入任何页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">整页底（页头无独立底色）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器白<code>--c-bg-container</code></div><div class="sw__u">返回圆底 · 收藏卡</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫 500<code>--c-romance-500</code></div><div class="sw__u">空态实心心（R14-L10-D22 语义纠正）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand-500</code></div><div class="sw__u">「取消收藏」描边与文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">空态动作胶囊实底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">主文字<code>--c-text-primary</code></div><div class="sw__u">页头标题 · 「‹」 · 帖子标题 · 作者名</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#4A524E"></span><div><div class="sw__n">次级文字<code>--c-text-secondary</code></div><div class="sw__u">正文摘要 · 空态两行文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">三级文字<code>--c-text-tertiary</code></div><div class="sw__u">校区位 · 收藏数</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到六档；「‹」字形 52rpx=26px 是固定布局尺寸，不入档位。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/700</span><span class="type__p" style="font-size:28px;font-weight:700">我的收藏（3）</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/700</span><span class="type__p" style="font-size:14px;font-weight:700">图书馆五楼靠窗的位置太好拍了</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600</span><span class="type__p" style="font-size:15px;font-weight:600;color:var(--c-text-secondary)">还没有收藏</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/600</span><span class="type__p" style="font-size:12px;font-weight:600">小满 · 去广场逛逛</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px;font-weight:400;color:var(--c-text-secondary)">在帖子页点收藏，喜欢的帖子会出现在这里</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-tertiary)">12 人收藏 · 取消收藏</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/400</span><span class="type__p" style="font-size:10px;font-weight:400;color:var(--c-text-tertiary)">北京大学</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。收藏卡内部 20rpx=10px 一档是本页独有的紧凑档。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>卡内 gap 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>卡间距 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>16rpx · 封面图</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 收藏卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>圆底 · 取消收藏 · 动作胶囊</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>封面与头像位全部走 assets/demo 真素材</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/post-1.jpg" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>post-1.jpg … post-8.jpg</b><p>收藏卡封面位 160rpx=80px 见方、<code>mode="aspectFill"</code>。演示池登记的是 post-1..9，<b>实测盘上只有 post-1..8 + post-placeholder.jpg</b>，缺 post-9（已回报 NEED_ASSET）。本页三卡只用 1..3。</p><div class="m">80px · aspectFill · 圆角 6px</div></div></div>
+    <div class="asset"><img src="assets/demo/person-01-avatar.png" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>person-01-avatar.png … person-07-avatar.png · xiaoman-avatar.png</b><p>作者头像 40rpx=20px。演示人设固定取真名池：小满 / 周岚 / 阿辰 / 星辰 / 小溪。</p><div class="m">20px · 圆形裁切</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_EMOJI.DOUBLE_HEART</b><p>空态主视觉。源码真值是 assets/icons/common/heart-filled.svg（fill|stroke #FF6B81，逐字等于 --c-romance-500）。该 SVG 在工程 /static 树内、不属演示素材池，画板按 §4 以同形态实心心复刻，色档与 120rpx=60px 尺寸一致。</p><div class="m">60px · --c-romance-500 实心</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>帖子标题 / 正文 / 收藏数是演示数据，不是 i18n 文案</b>：本页 locale 只有标题、空态三行与「取消收藏」。帖子内容取自 village store，画板沿用全站语料里已有的帖子标题（与 <code>village-history.html</code> 同批），保证跨画板不出现两套演示帖。</li>
+      <li><b>无分数类真值位</b>：本页不显示合拍度/匹配度/共同点。收藏数 <code>post.favorites</code> 是后端计数字段、非产品裁定留空的评分位，故照常回填。</li>
+      <li><b>加载/空两屏标题为「我的收藏（0）」</b>：模板把 <code>favorites.length</code> 直接插进标题，加载期列表还是空数组 ⇒ 页头先出「（0）」再跳「（3）」。这是源码实况，画板不替它圆场。</li>
+      <li><b>空态居中依赖宿主高度</b>：R14-L10-D23 说明 <code>&lt;EmptyState&gt;</code> 的 <code>flex:1 0 auto</code> 挂在组件内部节点、跨不过宿主边界，故页面侧另包一层 <code>.favorites-empty-slot</code>（flex:1 + justify-content:center）。画板按修好的口径画——空态块中心落在页头以下可用区中线，不是贴顶。</li>
+      <li><b>本页在 profile-extra 分包，无 tabbar、无原生导航栏</b>——页头是页面自己画的薄荷底行。画板若出现 tabbar 即为错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 我的收藏页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

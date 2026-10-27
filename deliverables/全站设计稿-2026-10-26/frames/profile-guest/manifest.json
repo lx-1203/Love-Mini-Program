@@ -1,0 +1,27 @@
+{
+  "schema": "design-board-shoot/v1",
+  "board": "profile-guest.html",
+  "dsf": 2.273,
+  "results": [
+    {
+      "id": "F01",
+      "title": "未登录 · 首屏：顶栏 / 点击登录 / 完整度 / 四格 / 故事 / 互动起",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\profile-guest\\F01.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    },
+    {
+      "id": "F02",
+      "title": "未登录 · 第二屏：我的互动 / 更多功能 · 页尾",
+      "file": "D:\\6\\恋爱小程序\\deliverables\\全站设计稿-2026-10-26\\frames\\profile-guest\\F02.png",
+      "cssW": 375,
+      "cssH": 812,
+      "pxW": 852,
+      "pxH": 1846,
+      "ok": true
+    }
+  ]
+}

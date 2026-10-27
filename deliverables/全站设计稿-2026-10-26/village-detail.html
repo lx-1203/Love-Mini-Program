@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 帖子详情页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 令牌；rpx ÷ 2 = px，源 = subpackages/village/village/detail.vue） ===== */
+/* 本页在 .detail-page 根把 --c-bg-page / --c-bg-container 双双重声明为 #FFFFFF（源码 2026-08-27 强制浅色），
+   故画框底色取 --c-bg-container（白）而非 base 的浅绿页底。 */
+.phone--white { background: var(--c-bg-container); }
+
+/* --- 顶部导航（非渐变带：白底 + 左标题 + 右三点，源码 .detail-header） --- */
+.navbar { position: absolute; top: 0; left: 0; width: 100%; height: 104px; display: flex;
+  align-items: flex-end; gap: 4px; padding: 0 16px 10px; background: var(--c-bg-container);
+  border-bottom: 0.5px solid var(--c-border-light); z-index: 5; box-sizing: border-box; }
+.navbar__back { width: 44px; height: 44px; display: flex; align-items: center; justify-content: flex-start;
+  margin-bottom: -10px; flex: none; }
+.navbar__back svg { width: 20px; height: 20px; color: var(--c-text-primary); }
+.navbar__t { flex: 1; font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); letter-spacing: -0.2px; }
+.navbar__menu { width: 40px; height: 44px; display: flex; align-items: center; justify-content: flex-end;
+  margin-bottom: -10px; flex: none; }
+.navbar__menu svg { width: 20px; height: 20px; color: var(--c-text-primary); }
+
+/* --- 滚动容器（源码 .detail-body：flex:1 内滚，帧即视口 ⇒ overflow hidden） --- */
+.dbody { position: absolute; top: 104px; left: 0; width: 100%; bottom: 0; overflow: hidden; }
+
+/* --- 作者行（.author-inline） --- */
+.author-inline { display: flex; align-items: center; gap: 8px; padding: 12px 16px 8px; }
+.avatar { border-radius: 50%; overflow: hidden; flex: none; background: var(--c-brand-50); }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar--40 { width: 40px; height: 40px; }
+.avatar--32 { width: 32px; height: 32px; }
+.avatar--24 { width: 24px; height: 24px; }
+.author-inline__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.author-inline__name-row { display: flex; align-items: center; gap: 5px; }
+.author-inline__name { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-primary); }
+.badge-school { display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px; border-radius: var(--r-full);
+  background: var(--c-brand-50); border: 0.5px solid var(--c-brand-200); }
+.badge-school svg { width: 10px; height: 10px; color: var(--c-brand); }
+.badge-school span { font-size: var(--fs-xs); color: var(--c-brand); font-weight: 500; }
+.author-inline__meta { font-size: var(--fs-sm); color: var(--c-text-placeholder); display: flex; align-items: center; }
+.cat-pill { padding: 1px 7px; margin-right: 4px; border-radius: var(--r-full); background: var(--c-brand-50);
+  color: var(--c-brand); font-size: var(--fs-xs); font-weight: 500; }
+.meta-sep { margin: 0 4px; }
+.follow { padding: 5px 14px; border-radius: var(--r-full); border: 1px solid var(--c-brand);
+  background: var(--c-bg-container); font-size: var(--fs-base); color: var(--c-brand); font-weight: 600; flex: none; }
+.follow--active { border-color: var(--c-border-light); color: var(--c-text-tertiary); }
+
+/* --- 正文区（.post-section：无边框、无卡底） --- */
+.post-section { padding: 0 16px 8px; }
+.post-content { font-size: var(--fs-xl); color: var(--c-text-primary); line-height: 1.7; margin-bottom: 10px; }
+.post-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.post-tag { font-size: var(--fs-md); color: var(--c-brand); background: var(--c-brand-50); padding: 4px 9px;
+  border-radius: var(--r-full); font-weight: 500; }
+/* 图格：theme/global.scss .post-media-grid 唯一口径（gap 8rpx、cell 1:1、圆角 --r-lg）
+   + 本页 scoped 覆写 --1 档为通栏（R13-L03-D04） */
+.pgrid { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.pgrid__cell { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: var(--r-lg);
+  background: var(--c-neutral-50); }
+.pgrid__cell img { width: 100%; height: 100%; object-fit: cover; }
+.pgrid--1 .pgrid__cell { width: 100%; }
+.pgrid--2 .pgrid__cell, .pgrid--4 .pgrid__cell { width: calc((100% - 4px) / 2); }
+.pgrid--3 .pgrid__cell { width: calc((100% - 8px) / 3); }
+.pgrid__cell--ph { opacity: 0.55; }
+.pgrid__more { position: absolute; right: 0; bottom: 0; padding: 2px 6px; border-radius: var(--r-full) 0 0 0;
+  background: var(--c-overlay-strong); color: var(--c-neutral-0); font-size: var(--fs-xs); }
+.post-location { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; margin: 2px 0 10px;
+  background: var(--c-bg-brand); border-radius: var(--r-full); }
+.post-location svg { width: 14px; height: 14px; color: var(--c-brand); }
+.post-location span { font-size: var(--fs-base); color: var(--c-brand); font-weight: 500; }
+.post-actions { display: flex; align-items: center; gap: 24px; padding: 8px 0 10px; }
+.pa { display: flex; align-items: center; gap: 4px; }
+.pa svg { width: 16px; height: 16px; color: var(--c-text-placeholder); }
+.pa span { font-size: var(--fs-lg); color: var(--c-text-tertiary); font-weight: 500; }
+.pa--on svg, .pa--on span { color: var(--c-romance-500); }
+.pa--share { margin-left: auto; }
+
+/* --- 评论区（.comments-section：白卡 + 12px 侧缩） --- */
+.comments-section { background: var(--c-bg-container); padding: 14px 16px; margin: 0 12px;
+  border-radius: var(--r-xl); box-shadow: var(--s-card-soft); }
+.comments-header { display: flex; align-items: center; gap: 4px; margin-bottom: 12px; }
+.comments-title { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); white-space: nowrap; }
+.comments-count { font-size: var(--fs-md); color: var(--c-brand); background: var(--c-brand-50); padding: 2px 8px;
+  border-radius: var(--r-full); font-weight: 600; white-space: nowrap; }
+.comments-sort { margin-left: auto; display: flex; align-items: center; gap: 2px; padding: 3px 0; flex: none; }
+.comments-sort span { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.comments-sort svg { width: 12px; height: 12px; color: var(--c-text-tertiary); }
+.comments-loading { display: flex; align-items: center; gap: 8px; padding: 24px 0; justify-content: center; }
+.comments-loading .spin { border-color: var(--c-brand-100); border-top-color: var(--c-brand); }
+.comments-loading span { font-size: var(--fs-md); color: var(--c-text-tertiary); }
+.comments-empty { display: flex; align-items: center; justify-content: center; padding: 30px 0; }
+.comments-empty span { font-size: var(--fs-lg); color: var(--c-text-tertiary); }
+
+/* 楼层（.comment-item：底取 $bg-page→本页重声明为白，故与卡底同色、无可见边界） */
+.comment-item { display: flex; gap: 10px; padding: 10px; background: var(--c-bg-container);
+  border-radius: var(--r-lg); position: relative; }
+.comment-item + .comment-item { margin-top: 6px; }
+.comment-content { flex: 1; min-width: 0; }
+.comment-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.comment-header__left { display: flex; align-items: center; gap: 5px; }
+.comment-author { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); }
+.comment-school-badge { display: inline-flex; align-items: center; padding: 1px 5px; border-radius: var(--r-full);
+  background: var(--c-brand-50); }
+.comment-school-badge span { font-size: var(--fs-xs); color: var(--c-brand); font-weight: 500; }
+.comment-text { font-size: var(--fs-lg); color: var(--c-text-secondary); line-height: 1.6; margin-bottom: 6px; }
+.comment-actions { display: flex; align-items: center; gap: 8px; }
+.comment-time { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.comment-dot { font-size: var(--fs-sm); color: var(--c-text-tertiary); margin: 0 2px; }
+.comment-reply-btn { display: flex; align-items: center; padding: 4px 8px; border-radius: var(--r-full);
+  background: var(--c-bg-container); }
+.comment-reply-btn span { font-size: var(--fs-base); color: var(--c-brand); font-weight: 500; }
+/* 右侧爱心：根评论锚定楼层右上角（.comment-content > .comment-heart-wrap） */
+.comment-heart-wrap { position: absolute; right: 10px; top: 12px; display: flex; flex-direction: column;
+  align-items: center; gap: 2px; }
+.comment-heart-wrap--flex { position: static; margin-left: auto; padding-left: 8px; flex-direction: row; }
+.comment-heart-wrap svg { width: 16px; height: 16px; color: var(--c-text-placeholder); }
+.comment-heart-wrap--on svg { color: var(--c-romance-500); }
+.comment-heart-wrap span { font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+/* 楼中楼（.comment-replies：左 4rpx 绿竖线 + 20rpx 内缩；回复行底同样 $bg-page→白） */
+.comment-replies { margin-top: 8px; border-left: 2px solid var(--c-brand-50); padding-left: 10px;
+  display: flex; flex-direction: column; gap: 6px; }
+.comment-reply { display: flex; gap: 8px; padding: 8px; background: var(--c-bg-container); border-radius: var(--r-lg); }
+.comment-reply__content { flex: 1; min-width: 0; }
+.comment-reply__header { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.comment-reply__author { font-size: var(--fs-md); font-weight: 600; color: var(--c-text-primary); }
+.comment-reply__text-ref { font-size: var(--fs-md); color: var(--c-brand); }
+.comment-reply__text { font-size: var(--fs-md); color: var(--c-text-secondary); line-height: 1.6; margin-bottom: 4px; }
+.comment-reply__meta { display: flex; align-items: center; gap: 8px; }
+.comment-reply__time { font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+.comment-replies__toggle { display: inline-flex; margin-top: 6px; }
+.comment-replies__toggle span { font-size: var(--fs-md); color: var(--c-brand-600); }
+
+/* --- 相似作者（.similar-authors-section） --- */
+.similar-section { background: var(--c-bg-container); padding: 14px 16px; margin: 8px 12px 0;
+  border-radius: var(--r-xl); box-shadow: var(--s-card-soft); }
+.similar-toggle { display: flex; align-items: center; justify-content: center; padding: 8px 0 2px; }
+.similar-toggle span { font-size: var(--fs-md); font-weight: 500; color: var(--c-brand); }
+.similar-header { margin-bottom: 12px; }
+.similar-title { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); }
+.similar-sub { font-size: var(--fs-base); color: var(--c-text-tertiary); margin-top: 3px; }
+.similar-list { display: flex; flex-direction: column; gap: 10px; }
+.similar-card { padding: 12px; background: var(--c-bg-container); border-radius: var(--r-lg); }
+.similar-main { display: flex; gap: 10px; align-items: flex-start; }
+.similar-avatar { position: relative; width: 40px; height: 40px; border-radius: 50%; flex: none; overflow: visible;
+  box-shadow: 0 0 0 2px var(--c-brand-50), 0 0 0 4px var(--c-brand-100); }
+.similar-avatar__badge { position: absolute; top: -2px; left: -2px; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--c-gradient-brand); border: 1px solid var(--c-neutral-0); display: flex;
+  align-items: center; justify-content: center; z-index: 2; }
+.similar-avatar__badge svg { width: 9px; height: 9px; color: var(--c-neutral-0); }
+.similar-info { flex: 1; min-width: 0; }
+.similar-name-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+.similar-name { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-primary); }
+.identity-tag { display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px; border-radius: var(--r-full);
+  background: var(--c-brand-50); }
+.identity-tag svg { width: 10px; height: 10px; color: var(--c-brand); }
+.identity-tag span { font-size: var(--fs-xs); color: var(--c-brand); font-weight: 500; }
+.similar-headline { font-size: var(--fs-base); color: var(--c-text-tertiary); margin-bottom: 5px; }
+.similar-interests { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
+.similar-interests .l { font-size: var(--fs-base); color: var(--c-text-secondary); }
+.similar-interests .v { font-size: var(--fs-base); color: var(--c-romance-500); font-weight: 500; }
+.similar-actions { display: flex; gap: 10px; margin-top: 10px; }
+.action-btn { flex: 1; padding: 7px 0; border-radius: var(--r-full); display: flex; align-items: center;
+  justify-content: center; font-size: var(--fs-md); font-weight: 600; color: var(--c-text-inverse); }
+.action-btn--follow { background: var(--c-gradient-brand); box-shadow: var(--s-brand-sm); }
+.action-btn--message { background: var(--c-gradient-romance); box-shadow: var(--s-romance); }
+.action-btn--follow-active { background: var(--c-bg-container); border: 1px solid var(--c-border-light);
+  box-shadow: none; color: var(--c-text-tertiary); }
+
+/* --- 吸底输入栏（.detail-input-bar：fixed 吸底） --- */
+.detail-input-bar { position: absolute; left: 0; bottom: 0; width: 100%; background: var(--c-bg-container);
+  border-top: 0.5px solid var(--c-border-light); padding-bottom: 14px; z-index: 8; }
+.reply-mode-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 4px 8px; margin: 4px 8px 0; border-radius: var(--r-lg); background: var(--c-brand-50); }
+.reply-mode-bar__t { font-size: var(--fs-md); color: var(--c-brand); font-weight: 600; }
+.reply-mode-bar__x { width: 24px; height: 24px; border-radius: var(--r-full); background: var(--c-bg-container);
+  display: flex; align-items: center; justify-content: center; flex: none; }
+.reply-mode-bar__x svg { width: 11px; height: 11px; color: var(--c-text-placeholder); }
+.input-bar__thumbs { display: flex; gap: 8px; padding: 8px 12px 0; }
+.input-bar__thumb { position: relative; width: 60px; height: 60px; }
+.input-bar__thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: var(--r-md); }
+.input-bar__thumb-x { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--c-overlay-strong); color: var(--c-neutral-0); display: flex; align-items: center;
+  justify-content: center; font-size: var(--fs-base); line-height: 1; }
+.input-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
+.input-bar__field { flex: 1; background: var(--c-bg-container); border-radius: var(--r-full); padding: 0 12px;
+  height: 36px; display: flex; align-items: center; }
+.input-bar__field span { font-size: var(--fs-lg); color: var(--c-text-placeholder); }
+.input-bar__field b { font-size: var(--fs-lg); color: var(--c-text-primary); font-weight: 400; }
+.input-bar__actions { display: flex; align-items: center; gap: 10px; flex: none; }
+.ib-ico { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.ib-ico svg { width: 18px; height: 18px; color: var(--c-text-secondary); }
+.ib-ico--on { background: var(--c-brand-50); }
+.ib-ico--on svg { color: var(--c-brand); }
+.ib-ico--at { font-size: var(--fs-2xl); color: var(--c-text-secondary); font-weight: 500; }
+.ib-send { height: 32px; padding: 0 14px; border-radius: var(--r-full); background: var(--c-brand-600);
+  display: flex; align-items: center; justify-content: center; font-size: var(--fs-lg); font-weight: 600;
+  color: var(--c-text-inverse); }
+.emoji-panel { border-top: 0.5px solid var(--c-border-light); padding: 8px 10px 4px; display: flex; flex-wrap: wrap; }
+.emoji-panel i { width: 12.5%; height: 36px; display: flex; align-items: center; justify-content: center;
+  font-style: normal; font-size: 20px; line-height: 1; }
+
+/* --- 骨架屏（.detail-skeleton） --- */
+.skeleton { padding: 12px; }
+.sk-head { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--c-bg-container);
+  border-radius: var(--r-xl); margin-bottom: 8px; box-shadow: var(--s-card-soft); }
+.sk-ava { width: 44px; height: 44px; border-radius: 50%; background: var(--c-neutral-100); flex: none; }
+.sk-col { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.sk-line { height: 12px; border-radius: var(--r-sm); background: var(--c-neutral-100); }
+.sk-line--name { width: 40%; } .sk-line--meta { width: 60%; }
+.sk-line--title { width: 80%; height: 16px; } .sk-line--short { width: 50%; }
+.sk-body { padding: 14px 16px; background: var(--c-bg-container); border-radius: var(--r-xl);
+  display: flex; flex-direction: column; gap: 8px; box-shadow: var(--s-card-soft); }
+.sk-block { height: 130px; border-radius: var(--r-lg); background: var(--c-neutral-100); margin-top: 8px; }
+
+/* --- 未找到（.detail-empty > .notfound-card） --- */
+.detail-empty { position: absolute; top: 104px; left: 0; width: 100%; bottom: 0; display: flex;
+  flex-direction: column; align-items: center; justify-content: center; }
+.notfound-card { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 0 16px;
+  padding: 20px 16px; background: var(--c-bg-container); border: 0.5px solid var(--c-border-light);
+  border-radius: var(--r-card); }
+.notfound-card__author { display: flex; align-items: center; gap: 8px; width: 100%; }
+.notfound-card__avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--c-bg-surface); flex: none; }
+.notfound-card__title { margin-top: 4px; font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); }
+.notfound-card__desc { font-size: var(--fs-base); color: var(--c-text-tertiary); text-align: center; line-height: 1.6; }
+.notfound-card__actions { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.nf-btn { min-height: 44px; padding: 0 18px; border-radius: var(--r-full); display: flex; align-items: center;
+  justify-content: center; font-size: var(--fs-base); font-weight: 600; color: var(--c-text-inverse);
+  background: var(--c-brand-800); }
+.nf-btn--ghost { background: transparent; border: 1px solid var(--c-border-default); color: var(--c-text-secondary); }
+
+/* --- 覆盖层（转发弹窗 / 大图查看） --- */
+.overlay { position: absolute; inset: 0; background: var(--c-overlay-strong); display: flex;
+  align-items: center; justify-content: center; z-index: 20; }
+.share-modal { width: 310px; background: var(--c-bg-container); border-radius: var(--r-xxl); overflow: hidden;
+  box-shadow: var(--s-modal); }
+.share-modal__header { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 10px;
+  border-bottom: 0.5px solid var(--c-border-light); }
+.share-modal__title { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); }
+.share-modal__close { width: 44px; height: 44px; border-radius: 50%; background: var(--c-bg-container);
+  display: flex; align-items: center; justify-content: center; margin: -11px -12px -11px 0; }
+.share-modal__close span { font-size: var(--fs-md); color: var(--c-text-placeholder); font-weight: 600; }
+.share-modal__body { padding: 12px 16px; }
+.share-modal__ta { width: 100%; min-height: 70px; padding: 10px; border-radius: var(--r-lg);
+  background: var(--c-bg-container); border: 1px solid var(--c-border-light); font-size: var(--fs-lg);
+  color: var(--c-text-placeholder); }
+.share-modal__count { display: block; text-align: right; font-size: var(--fs-sm); color: var(--c-text-placeholder);
+  margin-top: 6px; }
+.share-modal__footer { display: flex; gap: 10px; padding: 10px 16px 16px; }
+.share-modal__btn { flex: 1; padding: 11px 0; border-radius: var(--r-full); display: flex; align-items: center;
+  justify-content: center; font-size: var(--fs-md); font-weight: 600; }
+.share-modal__btn--cancel { background: var(--c-bg-container); border: 1px solid var(--c-border-default);
+  color: var(--c-text-secondary); }
+.share-modal__btn--confirm { background: var(--c-gradient-brand); color: var(--c-text-inverse); }
+.viewer { position: absolute; inset: 0; background: var(--c-overlay-stronger); z-index: 30; display: flex;
+  align-items: center; justify-content: center; }
+.viewer img { width: 100%; height: 80%; object-fit: contain; }
+
+/* --- §02 组件画布（非画框，不参与出图计数） --- */
+.demo { background: var(--c-bg-container); border: 0.5px solid var(--c-border-light); border-radius: var(--r-xl);
+  padding: 12px; }
+.demo--page { background: var(--c-bg-page); }
+.demo__w { width: 343px; }
+.demo__w2 { width: 168px; }
+.cap { font-size: 10.5px; color: var(--c-text-placeholder); font-weight: 600; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格描边；实心件加 .ico--fill） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 4.5 7.5 12 15 19.5"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></symbol>
+  <symbol id="i-school" viewBox="0 0 24 24"><path d="M12 3.2 3 7.4l9 4.2 9-4.2z"/><path d="M6.6 9.6v5.1c0 1.9 2.4 3.4 5.4 3.4s5.4-1.5 5.4-3.4V9.6"/><path d="M21 7.4v6.2"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21.2s6.8-5.5 6.8-11a6.8 6.8 0 1 0-13.6 0c0 5.5 6.8 11 6.8 11z"/><circle cx="12" cy="10.2" r="2.5"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19.6 12.5 12 20l-7.6-7.5A5.1 5.1 0 1 1 12 6.4a5.1 5.1 0 1 1 7.6 6.1z"/></symbol>
+  <symbol id="i-heart-fill" viewBox="0 0 24 24"><path d="M19.6 12.5 12 20l-7.6-7.5A5.1 5.1 0 1 1 12 6.4a5.1 5.1 0 1 1 7.6 6.1z"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 11.6a8.4 8.4 0 0 1-8.5 8.3 8.6 8.6 0 0 1-3.9-.9L3.4 20.5l1.6-4.9a8.1 8.1 0 0 1-.9-4A8.4 8.4 0 0 1 12.5 3.3 8.4 8.4 0 0 1 21 11.6z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M13.5 5 20 11.8l-6.5 6.8"/><path d="M20 11.8h-9.6a6 6 0 0 0-5.9 6.4"/></symbol>
+  <symbol id="i-at" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.9"/><path d="M15.9 12v1.4a2.6 2.6 0 0 0 5.1 0V12a9 9 0 1 0-3.5 7.1"/></symbol>
+  <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.3 14.2a4.6 4.6 0 0 0 7.4 0"/><path d="M9.3 9.6h.01M14.7 9.6h.01"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.2" y="4.6" width="17.6" height="14.8" rx="2.6"/><circle cx="8.6" cy="9.8" r="1.6"/><path d="M20.8 15.6 16 11.2l-8.8 8.2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9.5 12 15.5 18 9.5"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>帖子详情页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/village/village/detail</code>。
+     本页是全站唯一「内容 + 讨论」容器：作者行 → 正文 → 图格 → 位置行 → 赞评转 → 评论楼层（含楼中楼）→
+     相似同学 → 吸底发言栏，外加骨架、未找到、转发弹窗、大图查看四类覆盖态。
+     理想效果图为 <code style="font-family:var(--mono);font-size:12.5px">素材/理想效果图/帖子.png</code>（登记表第 14 行）：
+     版式照图，评论区按盘上演示数据画（fixtures 无楼中楼 ⇒ 楼中楼形态在 §02 组件规范里枚举，不在 §01 编楼层）。</p>
+  <div class="cover__meta">
+    <span>路由 <b>village/detail</b></span>
+    <span>分包 <b>village</b>（无 tabbar）</span>
+    <span>状态 <b>9 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>理想图：帖子.png</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 9 屏</h2><p>正文态 5 + 覆盖态 2 + 无内容态 2</p></div>
+  <div class="sec__sub">本页状态机有 9 态，来自
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="currentPost"</code> /
+    <code style="font-family:var(--mono);font-size:11.5px">v-else-if="detailLoading"</code> /
+    <code style="font-family:var(--mono);font-size:11.5px">v-else</code>（顶层三态），其下有
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="loading"</code> ·
+    <code style="font-family:var(--mono);font-size:11.5px">v-else-if="sortedComments.length &gt; 0"</code> ·
+    <code style="font-family:var(--mono);font-size:11.5px">v-else</code>（评论区三态）、
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="replyingTo"</code> /
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="commentImages.length &gt; 0"</code> /
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="commentContent.trim().length &gt; 0"</code> /
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="emojiPanelVisible"</code>（吸底栏四件）、
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="showShareModal"</code> /
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="imageViewerVisible"</code>（两个覆盖层）。
+    数据档取 mock 档 fixtures（<code style="font-family:var(--mono);font-size:11.5px">stores/village/mock-data.ts</code>）：
+    F01/F02/F04/F05 取 post-1（裸路由进入本页时
+    <code style="font-family:var(--mono);font-size:11.5px">bootstrapFromFeed()</code> 取 feed 首条实际渲染的那一帖 + 其两条 mockComments），
+    F03 取 post-2——mock 档里唯一「0 条评论」的帖（<code style="font-family:var(--mono);font-size:11.5px">mockComments</code>
+    只覆盖 post-1/post-4/post-5+），它同时把两列图格、已赞、已关注三件一并带出；
+    帧即视口，超出 812px 的部分裁掉，裁切写在题注里。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">正文 · 有评论（默认态）</span><span class="d">↓ 裁切于评论区卡上沿</span></figcaption>
+      <div class="phone phone--white">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="navbar"><span class="navbar__back"><svg><use href="#i-back"/></svg></span><span class="navbar__t">帖子详情</span><span class="navbar__menu"><svg class="ico--fill"><use href="#i-dots"/></svg></span></div>
+        <div class="dbody">
+          <div class="author-inline">
+            <span class="avatar avatar--40"><img src="assets/demo/xiaoman-avatar.png" alt=""></span>
+            <div class="author-inline__info">
+              <div class="author-inline__name-row"><span class="author-inline__name">小鹿</span>
+                <span class="badge-school"><svg><use href="#i-school"/></svg><span>北京大学</span></span></div>
+              <div class="author-inline__meta"><span class="cat-pill">诚意帖</span><span>·</span><span>5 分钟前</span></div>
+            </div>
+            <span class="follow">+ 关注</span>
+          </div>
+          <div class="post-section">
+            <div class="post-content">认真征友，希望能遇到那个对的人。平时喜欢看书、旅行，周末会去做志愿者。期待一段双向奔赴的感情。</div>
+            <div class="pgrid pgrid--1"><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-1.png" alt=""></span></div>
+            <div class="post-tags"><span class="post-tag">#这是一条520交友启事</span><span class="post-tag">#诚意征友</span></div>
+            <div class="post-location"><svg><use href="#i-pin"/></svg><span>北京大学</span></div>
+            <div class="post-actions">
+              <span class="pa"><svg><use href="#i-heart"/></svg><span>128</span></span>
+              <span class="pa"><svg><use href="#i-msg"/></svg><span>32</span></span>
+              <span class="pa pa--share"><svg><use href="#i-share"/></svg><span>分享</span></span>
+            </div>
+          </div>
+          <div class="comments-section">
+            <div class="comments-header"><span class="comments-title">全部评论</span><span class="comments-count">（32）</span>
+              <span class="comments-sort"><span>最热</span><svg><use href="#i-chev-d"/></svg></span></div>
+            <div class="comment-item">
+              <span class="avatar avatar--32"><img src="assets/demo/person-01.png" alt=""></span>
+              <div class="comment-content">
+                <div class="comment-header"><div class="comment-header__left"><span class="comment-author">阿泽</span>
+                  <span class="comment-school-badge"><span>复旦大学</span></span></div></div>
+                <div class="comment-text">同在北京，可以认识一下吗？</div>
+                <div class="comment-actions"><span class="comment-time">3 分钟前</span><span class="comment-dot">·</span>
+                  <span class="comment-reply-btn"><span>回复</span></span></div>
+              </div>
+              <span class="comment-heart-wrap"><svg><use href="#i-heart"/></svg><span>6</span></span>
+            </div>
+            <div class="comment-item">
+              <span class="avatar avatar--32"><img src="assets/demo/person-02.png" alt=""></span>
+              <div class="comment-content">
+                <div class="comment-header"><div class="comment-header__left"><span class="comment-author">橙子</span>
+                  <span class="comment-school-badge"><span>浙江大学</span></span></div></div>
+                <div class="comment-text">志愿者活动是在哪里做的呀？</div>
+                <div class="comment-actions"><span class="comment-time">2 分钟前</span><span class="comment-dot">·</span>
+                  <span class="comment-reply-btn"><span>回复</span></span></div>
+              </div>
+              <span class="comment-heart-wrap"><svg><use href="#i-heart"/></svg><span>3</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="detail-input-bar">
+          <div class="input-bar">
+            <div class="input-bar__field"><span>说点什么...</span></div>
+            <div class="input-bar__actions">
+              <span class="ib-ico ib-ico--at">@</span>
+              <span class="ib-ico"><svg><use href="#i-smile"/></svg></span>
+              <span class="ib-ico"><svg><use href="#i-image"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">正文 · 评论加载中</span><span class="d">v-if="loading" 分支 · 列表整块不渲染</span></figcaption>
+      <div class="phone phone--white">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="navbar"><span class="navbar__back"><svg><use href="#i-back"/></svg></span><span class="navbar__t">帖子详情</span><span class="navbar__menu"><svg class="ico--fill"><use href="#i-dots"/></svg></span></div>
+        <div class="dbody">
+          <div class="author-inline">
+            <span class="avatar avatar--40"><img src="assets/demo/xiaoman-avatar.png" alt=""></span>
+            <div class="author-inline__info">
+              <div class="author-inline__name-row"><span class="author-inline__name">小鹿</span>
+                <span class="badge-school"><svg><use href="#i-school"/></svg><span>北京大学</span></span></div>
+              <div class="author-inline__meta"><span class="cat-pill">诚意帖</span><span>·</span><span>5 分钟前</span></div>
+            </div>
+            <span class="follow">+ 关注</span>
+          </div>
+          <div class="post-section">
+            <div class="post-content">认真征友，希望能遇到那个对的人。平时喜欢看书、旅行，周末会去做志愿者。期待一段双向奔赴的感情。</div>
+            <div class="pgrid pgrid--1"><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-1.png" alt=""></span></div>
+            <div class="post-tags"><span class="post-tag">#这是一条520交友启事</span><span class="post-tag">#诚意征友</span></div>
+            <div class="post-location"><svg><use href="#i-pin"/></svg><span>北京大学</span></div>
+            <div class="post-actions">
+              <span class="pa"><svg><use href="#i-heart"/></svg><span>128</span></span>
+              <span class="pa"><svg><use href="#i-msg"/></svg><span>32</span></span>
+              <span class="pa pa--share"><svg><use href="#i-share"/></svg><span>分享</span></span>
+            </div>
+          </div>
+          <div class="comments-section">
+            <div class="comments-header"><span class="comments-title">全部评论</span><span class="comments-count">（32）</span>
+              <span class="comments-sort"><span>最热</span><svg><use href="#i-chev-d"/></svg></span></div>
+            <div class="comments-loading"><span class="spin"></span><span>加载评论中...</span></div>
+          </div>
+        </div>
+        <div class="detail-input-bar">
+          <div class="input-bar">
+            <div class="input-bar__field"><span>说点什么...</span></div>
+            <div class="input-bar__actions">
+              <span class="ib-ico ib-ico--at">@</span>
+              <span class="ib-ico"><svg><use href="#i-smile"/></svg></span>
+              <span class="ib-ico"><svg><use href="#i-image"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">正文 · 评论空态（0 条）</span><span class="d">取 mock post-2 · 已赞 + 已关注态</span></figcaption>
+      <div class="phone phone--white">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="navbar"><span class="navbar__back"><svg><use href="#i-back"/></svg></span><span class="navbar__t">帖子详情</span><span class="navbar__menu"><svg class="ico--fill"><use href="#i-dots"/></svg></span></div>
+        <div class="dbody">
+          <div class="author-inline">
+            <span class="avatar avatar--40"><img src="assets/demo/person-01.png" alt=""></span>
+            <div class="author-inline__info">
+              <div class="author-inline__name-row"><span class="author-inline__name">阿泽</span>
+                <span class="badge-school"><svg><use href="#i-school"/></svg><span>复旦大学</span></span></div>
+              <div class="author-inline__meta"><span class="cat-pill">兴趣圈</span><span>·</span><span>30 分钟前</span></div>
+            </div>
+            <span class="follow follow--active">已关注</span>
+          </div>
+          <div class="post-section">
+            <div class="post-content">周末有一起去徒步的吗？计划去西湖周边走一圈，大概15公里，新手友好路线。已经有3个人了，再来2个就出发！</div>
+            <div class="pgrid pgrid--2"><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-2.png" alt=""></span><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-4.png" alt=""></span></div>
+            <div class="post-tags"><span class="post-tag">#周末徒步</span><span class="post-tag">#西湖</span><span class="post-tag">#户外</span></div>
+            <div class="post-location"><svg><use href="#i-pin"/></svg><span>复旦大学</span></div>
+            <div class="post-actions">
+              <span class="pa pa--on"><svg class="ico--fill"><use href="#i-heart-fill"/></svg><span>45</span></span>
+              <span class="pa"><svg><use href="#i-msg"/></svg><span>18</span></span>
+              <span class="pa pa--share"><svg><use href="#i-share"/></svg><span>分享</span></span>
+            </div>
+          </div>
+          <div class="comments-section">
+            <div class="comments-header"><span class="comments-title">全部评论</span><span class="comments-count">（18）</span>
+              <span class="comments-sort"><span>最热</span><svg><use href="#i-chev-d"/></svg></span></div>
+            <div class="comments-empty"><span>暂无评论，快来抢沙发吧</span></div>
+            <div class="similar-toggle"><span>看更多相似同学</span></div>
+          </div>
+        </div>
+        <div class="detail-input-bar">
+          <div class="input-bar">
+            <div class="input-bar__field"><span>说点什么...</span></div>
+            <div class="input-bar__actions">
+              <span class="ib-ico ib-ico--at">@</span>
+              <span class="ib-ico"><svg><use href="#i-smile"/></svg></span>
+              <span class="ib-ico"><svg><use href="#i-image"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">正文 · 回复态 + 待发图</span><span class="d">吸底栏三件同开 · ↓ 裁切于第 1 楼</span></figcaption>
+      <div class="phone phone--white">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="navbar"><span class="navbar__back"><svg><use href="#i-back"/></svg></span><span class="navbar__t">帖子详情</span><span class="navbar__menu"><svg class="ico--fill"><use href="#i-dots"/></svg></span></div>
+        <div class="dbody">
+          <div class="author-inline">
+            <span class="avatar avatar--40"><img src="assets/demo/xiaoman-avatar.png" alt=""></span>
+            <div class="author-inline__info">
+              <div class="author-inline__name-row"><span class="author-inline__name">小鹿</span>
+                <span class="badge-school"><svg><use href="#i-school"/></svg><span>北京大学</span></span></div>
+              <div class="author-inline__meta"><span class="cat-pill">诚意帖</span><span>·</span><span>5 分钟前</span></div>
+            </div>
+            <span class="follow">+ 关注</span>
+          </div>
+          <div class="post-section">
+            <div class="post-content">认真征友，希望能遇到那个对的人。平时喜欢看书、旅行，周末会去做志愿者。期待一段双向奔赴的感情。</div>
+            <div class="pgrid pgrid--1"><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-1.png" alt=""></span></div>
+            <div class="post-tags"><span class="post-tag">#这是一条520交友启事</span><span class="post-tag">#诚意征友</span></div>
+            <div class="post-location"><svg><use href="#i-pin"/></svg><span>北京大学</span></div>
+            <div class="post-actions">
+              <span class="pa pa--on"><svg class="ico--fill"><use href="#i-heart-fill"/></svg><span>129</span></span>
+              <span class="pa"><svg><use href="#i-msg"/></svg><span>32</span></span>
+              <span class="pa pa--share"><svg><use href="#i-share"/></svg><span>分享</span></span>
+            </div>
+          </div>
+          <div class="comments-section">
+            <div class="comments-header"><span class="comments-title">全部评论</span><span class="comments-count">（32）</span>
+              <span class="comments-sort"><span>最热</span><svg><use href="#i-chev-d"/></svg></span></div>
+            <div class="comment-item">
+              <span class="avatar avatar--32"><img src="assets/demo/person-01.png" alt=""></span>
+              <div class="comment-content">
+                <div class="comment-header"><div class="comment-header__left"><span class="comment-author">阿泽</span>
+                  <span class="comment-school-badge"><span>复旦大学</span></span></div></div>
+                <div class="comment-text">同在北京，可以认识一下吗？</div>
+                <div class="comment-actions"><span class="comment-time">3 分钟前</span><span class="comment-dot">·</span>
+                  <span class="comment-reply-btn"><span>回复</span></span></div>
+              </div>
+              <span class="comment-heart-wrap comment-heart-wrap--on"><svg class="ico--fill"><use href="#i-heart-fill"/></svg><span>7</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="detail-input-bar">
+          <div class="reply-mode-bar"><span class="reply-mode-bar__t">正在回复 阿泽</span>
+            <span class="reply-mode-bar__x"><svg><use href="#i-x"/></svg></span></div>
+          <div class="input-bar__thumbs">
+            <span class="input-bar__thumb"><img src="assets/demo/xiaoman-photo-2.png" alt=""><span class="input-bar__thumb-x">×</span></span>
+          </div>
+          <div class="input-bar">
+            <div class="input-bar__field"><b>周末一起去图书馆吗</b></div>
+            <div class="input-bar__actions">
+              <span class="ib-ico ib-ico--at">@</span>
+              <span class="ib-ico"><svg><use href="#i-smile"/></svg></span>
+              <span class="ib-ico"><svg><use href="#i-image"/></svg></span>
+              <span class="ib-send">发送</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">正文 · 表情面板展开</span><span class="d">emojiPanelVisible · 面板压住评论区</span></figcaption>
+      <div class="phone phone--white">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="navbar"><span class="navbar__back"><svg><use href="#i-back"/></svg></span><span class="navbar__t">帖子详情</span><span class="navbar__menu"><svg class="ico--fill"><use href="#i-dots"/></svg></span></div>
+        <div class="dbody">
+          <div class="author-inline">
+            <span class="avatar avatar--40"><img src="assets/demo/xiaoman-avatar.png" alt=""></span>
+            <div class="author-inline__info">
+              <div class="author-inline__name-row"><span class="author-inline__name">小鹿</span>
+                <span class="badge-school"><svg><use href="#i-school"/></svg><span>北京大学</span></span></div>
+              <div class="author-inline__meta"><span class="cat-pill">诚意帖</span><span>·</span><span>5 分钟前</span></div>
+            </div>
+            <span class="follow">+ 关注</span>
+          </div>
+          <div class="post-section">
+            <div class="post-content">认真征友，希望能遇到那个对的人。平时喜欢看书、旅行，周末会去做志愿者。期待一段双向奔赴的感情。</div>
+            <div class="pgrid pgrid--1"><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-1.png" alt=""></span></div>
+            <div class="post-tags"><span class="post-tag">#这是一条520交友启事</span><span class="post-tag">#诚意征友</span></div>
+            <div class="post-location"><svg><use href="#i-pin"/></svg><span>北京大学</span></div>
+            <div class="post-actions">
+              <span class="pa"><svg><use href="#i-heart"/></svg><span>128</span></span>
+              <span class="pa"><svg><use href="#i-msg"/></svg><span>32</span></span>
+              <span class="pa pa--share"><svg><use href="#i-share"/></svg><span>分享</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="detail-input-bar">
+          <div class="input-bar">
+            <div class="input-bar__field"><span>说点什么...</span></div>
+            <div class="input-bar__actions">
+              <span class="ib-ico ib-ico--at">@</span>
+              <span class="ib-ico ib-ico--on"><svg><use href="#i-smile"/></svg></span>
+              <span class="ib-ico"><svg><use href="#i-image"/></svg></span>
+            </div>
+          </div>
+          <div class="emoji-panel"><i>😀</i><i>😂</i><i>🥰</i><i>😍</i><i>😊</i><i>🙂</i><i>😉</i><i>🤩</i><i>😘</i><i>😜</i><i>😭</i><i>😅</i><i>😎</i><i>🤔</i><i>🙄</i><i>😮</i><i>😴</i><i>🤗</i><i>🙌</i><i>👏</i><i>👍</i><i>👎</i><i>💪</i><i>🙏</i><i>💚</i><i>❤️</i><i>💔</i><i>✨</i><i>🔥</i><i>🌸</i></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">首帧骨架（detailLoading）</span><span class="d">无 currentPost ⇒ 吸底栏不渲染</span></figcaption>
+      <div class="phone phone--white">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="navbar"><span class="navbar__back"><svg><use href="#i-back"/></svg></span><span class="navbar__t">帖子详情</span><span class="navbar__menu"><svg class="ico--fill"><use href="#i-dots"/></svg></span></div>
+        <div class="skeleton">
+          <div class="sk-head"><span class="sk-ava"></span>
+            <div class="sk-col"><span class="sk-line sk-line--name"></span><span class="sk-line sk-line--meta"></span></div></div>
+          <div class="sk-body"><span class="sk-line sk-line--title"></span><span class="sk-line"></span>
+            <span class="sk-line"></span><span class="sk-line sk-line--short"></span></div>
+          <div class="sk-block"></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">帖子不存在（未找到版式）</span><span class="d">导航常驻 · 双动作</span></figcaption>
+      <div class="phone phone--white">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="navbar"><span class="navbar__back"><svg><use href="#i-back"/></svg></span><span class="navbar__t">帖子详情</span><span class="navbar__menu"><svg class="ico--fill"><use href="#i-dots"/></svg></span></div>
+        <div class="detail-empty">
+          <div class="notfound-card">
+            <div class="notfound-card__author"><span class="notfound-card__avatar sk-ava"></span>
+              <div class="sk-col"><span class="sk-line sk-line--name"></span><span class="sk-line sk-line--meta"></span></div></div>
+            <div class="notfound-card__title">帖子不存在或已被删除</div>
+            <div class="notfound-card__desc">校园村口，看看大家在聊什么</div>
+            <div class="notfound-card__actions">
+              <span class="nf-btn nf-btn--ghost">返回</span><span class="nf-btn">返回广场</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F08 -->
+    <figure class="frame">
+      <figcaption><b>F08</b><span class="t">转发确认弹窗（showShareModal）</span><span class="d">点遮罩即关 · 附加评论 200 字</span></figcaption>
+      <div class="phone phone--white">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="navbar"><span class="navbar__back"><svg><use href="#i-back"/></svg></span><span class="navbar__t">帖子详情</span><span class="navbar__menu"><svg class="ico--fill"><use href="#i-dots"/></svg></span></div>
+        <div class="overlay">
+          <div class="share-modal">
+            <div class="share-modal__header"><span class="share-modal__title">转发到我的动态</span>
+              <span class="share-modal__close"><span>X</span></span></div>
+            <div class="share-modal__body">
+              <div class="share-modal__ta">说点什么吧（选填）...</div>
+              <span class="share-modal__count">0/200</span>
+            </div>
+            <div class="share-modal__footer">
+              <span class="share-modal__btn share-modal__btn--cancel">取消转发</span>
+              <span class="share-modal__btn share-modal__btn--confirm">确认转发</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F09 -->
+    <figure class="frame">
+      <figcaption><b>F09</b><span class="t">图片全屏查看层（imageViewerVisible）</span><span class="d">aspectFit · 点任意处关闭</span></figcaption>
+      <div class="phone phone--white">
+        <div class="viewer"><img src="assets/demo/xiaoman-photo-3.png" alt=""></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>六类件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">理想图的评论区画了 2 楼 + 楼中楼，而盘上 fixtures（<code style="font-family:var(--mono);font-size:11.5px">mockComments</code>）
+    没有任何 <code style="font-family:var(--mono);font-size:11.5px">replies</code> 字段 ⇒ 按登记表第 14 行「评论区按真实数据画，不要编楼层」，
+    §01 不出现楼中楼；其形态与图格张数分支一并在本节枚举。所有件宽 343px = 375 − 16×2，与源码
+    <code style="font-family:var(--mono);font-size:11.5px">.post-section</code> 的 32rpx 侧缩同档。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>图格 · 张数决定列数（6 态）</h3>
+      <p class="hint">口径唯一来源 <code>theme/global.scss .post-media-grid</code>：恒 1:1 方格、gap 8rpx、圆角 --r-lg；
+        1/2/4 张→两列，3/5–9 张→三列；本页 scoped 把 <code>--1</code> 覆写为通栏（R13-L03-D04）。
+        理想图「首图横幅 + 3 方格」的混排形态已在 2026-10-13 用户反馈后整块删除，按 §10 以源码为准。</p>
+      <div class="row">
+        <div class="cell"><div class="demo demo__w"><div class="pgrid pgrid--1"><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-1.png" alt=""></span></div></div><span class="lab">1 张 · 本页覆写为通栏 1:1</span></div>
+        <div class="cell"><div class="demo demo__w2"><div class="pgrid pgrid--2"><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-1.png" alt=""></span><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-2.png" alt=""></span></div></div><span class="lab">2 张 · 两列</span></div>
+        <div class="cell"><div class="demo demo__w2"><div class="pgrid pgrid--3"><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-1.png" alt=""></span><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-2.png" alt=""></span><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-3.png" alt=""></span></div></div><span class="lab">3 张 · 三列</span></div>
+        <div class="cell"><div class="demo demo__w2"><div class="pgrid pgrid--4"><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-1.png" alt=""></span><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-2.png" alt=""></span><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-3.png" alt=""></span><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-4.png" alt=""></span></div></div><span class="lab">4 张 · 两列两行</span></div>
+        <div class="cell"><div class="demo demo__w2"><div class="pgrid pgrid--3"><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-1.png" alt=""></span><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-2.png" alt=""></span><span class="pgrid__cell"><img src="assets/demo/xiaoman-photo-3.png" alt=""><span class="pgrid__more">+6</span></span></div></div><span class="lab">9 张 · 末格 +N 角标（POST_MAX_IMAGES=9）</span></div>
+        <div class="cell"><div class="demo demo__w2"><div class="pgrid pgrid--4"><span class="pgrid__cell pgrid__cell--ph"></span><span class="pgrid__cell pgrid__cell--ph"></span><span class="pgrid__cell pgrid__cell--ph"></span><span class="pgrid__cell pgrid__cell--ph"></span></div></div><span class="lab">0 图 · 恒渲染 4 占位格（opacity .55）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>评论楼层 · 4 态</h3>
+      <p class="hint">根评论爱心锚定楼层右上角（<code>.comment-content &gt; .comment-heart-wrap</code>），楼中楼爱心走 flex 右列；
+        <code>comment.likes &gt; 0</code> 才渲染计数；楼层底取 <code>$bg-page</code>→本页重声明为白，故与卡底同色（见 §04）。</p>
+      <div class="row">
+        <div class="cell" style="width:343px">
+          <div class="demo">
+            <div class="comment-item" style="padding:0">
+              <span class="avatar avatar--32"><img src="assets/demo/person-01.png" alt=""></span>
+              <div class="comment-content">
+                <div class="comment-header"><div class="comment-header__left"><span class="comment-author">阿泽</span>
+                  <span class="comment-school-badge"><span>复旦大学</span></span></div></div>
+                <div class="comment-text">同在北京，可以认识一下吗？</div>
+                <div class="comment-actions"><span class="comment-time">3 分钟前</span><span class="comment-dot">·</span>
+                  <span class="comment-reply-btn"><span>回复</span></span></div>
+              </div>
+              <span class="comment-heart-wrap"><svg><use href="#i-heart"/></svg><span>6</span></span>
+            </div>
+          </div><span class="lab">根评论 · 未赞（空心 + 计数）</span>
+        </div>
+        <div class="cell" style="width:343px">
+          <div class="demo">
+            <div class="comment-item" style="padding:0">
+              <span class="avatar avatar--32"><img src="assets/demo/person-02.png" alt=""></span>
+              <div class="comment-content">
+                <div class="comment-header"><div class="comment-header__left"><span class="comment-author">橙子</span>
+                  <span class="comment-school-badge"><span>浙江大学</span></span></div></div>
+                <div class="comment-text">志愿者活动是在哪里做的呀？</div>
+                <div class="comment-actions"><span class="comment-time">2 分钟前</span><span class="comment-dot">·</span>
+                  <span class="comment-reply-btn"><span>回复</span></span></div>
+              </div>
+              <span class="comment-heart-wrap comment-heart-wrap--on"><svg class="ico--fill"><use href="#i-heart-fill"/></svg><span>3</span></span>
+            </div>
+          </div><span class="lab">根评论 · 已赞（实心 --c-romance-500）</span>
+        </div>
+        <div class="cell" style="width:343px">
+          <div class="demo">
+            <div class="comment-replies" style="margin-top:0">
+              <div class="comment-reply" style="padding:0">
+                <span class="avatar avatar--24"><img src="assets/demo/person-05.png" alt=""></span>
+                <div class="comment-reply__content">
+                  <div class="comment-reply__header"><span class="comment-reply__author">南风</span>
+                    <span class="comment-reply__text-ref">（回复 @阿泽：）</span></div>
+                  <div class="comment-reply__text">支持一下楼主！</div>
+                  <div class="comment-reply__meta"><span class="comment-reply__time">1 分钟前</span><span class="comment-dot">·</span>
+                    <span class="comment-reply-btn"><span>回复</span></span></div>
+                </div>
+                <span class="comment-heart-wrap comment-heart-wrap--flex"><svg><use href="#i-heart"/></svg><span>2</span></span>
+              </div>
+            </div>
+          </div><span class="lab">楼中楼 · 左 2px 绿竖线 + 24px 头像（fixtures 无 replies，本节代位）</span>
+        </div>
+        <div class="cell" style="width:343px">
+          <div class="demo">
+            <div class="comment-replies" style="margin-top:0">
+              <div class="comment-reply" style="padding:0"><span class="avatar avatar--24"><img src="assets/demo/person-05.png" alt=""></span>
+                <div class="comment-reply__content"><div class="comment-reply__header"><span class="comment-reply__author">南风</span></div>
+                  <div class="comment-reply__text">支持一下楼主！</div></div></div>
+              <div class="comment-replies__toggle"><span>展开2条回复</span></div>
+            </div>
+          </div><span class="lab">&gt;3 条回复 · 收起态（visibleReplies 截 3 条）</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>赞评转 · 2 态 + 关注 · 3 态</h3>
+      <p class="hint">红心按 <code>currentPost.isLiked</code> 切实心/空心资源（R16：此前无条件实心且状态不可见）；
+        分享件右端固定 <code>margin-left:auto</code>，文案取 <code>village.detail.statsShare</code>「分享」（R2b-L04-D10，非「转发」）。</p>
+      <div class="row">
+        <div class="cell"><div class="demo"><div class="post-actions" style="padding:0;width:200px"><span class="pa"><svg><use href="#i-heart"/></svg><span>128</span></span><span class="pa"><svg><use href="#i-msg"/></svg><span>32</span></span></div></div><span class="lab">未赞 · 空心灰</span></div>
+        <div class="cell"><div class="demo"><div class="post-actions" style="padding:0;width:200px"><span class="pa pa--on"><svg class="ico--fill"><use href="#i-heart-fill"/></svg><span>129</span></span><span class="pa"><svg><use href="#i-msg"/></svg><span>32</span></span></div></div><span class="lab">已赞 · 实心红</span></div>
+        <div class="cell"><div class="demo" style="padding:12px 16px"><span class="follow">+ 关注</span></div><span class="lab">未关注（village.follow）</span></div>
+        <div class="cell"><div class="demo" style="padding:12px 16px"><span class="follow follow--active">已关注</span></div><span class="lab">已关注（village.followed）</span></div>
+        <div class="cell"><div class="demo" style="padding:12px 16px"><span class="cap">自己的帖子：整件不渲染（v-if="!isOwnPost"）</span></div><span class="lab">作者本人视角</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>吸底发言栏 · 5 态</h3>
+      <p class="hint">空内容时右端只有三枚图标、无发送胶囊（R2b-L04-D09）；胶囊仅在有内容时出现（R16 保留可见提交入口）；
+        图片件用 <code>ICONS_CHAT_V1.IMAGE</code>（烘焙绿，R2b-L04-D08）。</p>
+      <div class="row">
+        <div class="cell" style="width:343px"><div class="detail-input-bar" style="position:static;border-radius:var(--r-xl);box-shadow:var(--s-card-soft)"><div class="input-bar"><div class="input-bar__field"><span>说点什么...</span></div><div class="input-bar__actions"><span class="ib-ico ib-ico--at">@</span><span class="ib-ico"><svg><use href="#i-smile"/></svg></span><span class="ib-ico"><svg><use href="#i-image"/></svg></span></div></div></div><span class="lab">默认（village.commentPlaceholder）</span></div>
+        <div class="cell" style="width:343px"><div class="detail-input-bar" style="position:static;border-radius:var(--r-xl);box-shadow:var(--s-card-soft)"><div class="reply-mode-bar"><span class="reply-mode-bar__t">正在回复 阿泽</span><span class="reply-mode-bar__x"><svg><use href="#i-x"/></svg></span></div><div class="input-bar"><div class="input-bar__field"><span>回复 @阿泽</span></div><div class="input-bar__actions"><span class="ib-ico ib-ico--at">@</span><span class="ib-ico"><svg><use href="#i-smile"/></svg></span><span class="ib-ico"><svg><use href="#i-image"/></svg></span></div></div></div><span class="lab">回复中（replyingTo · placeholder 换 replyToPlaceholder）</span></div>
+        <div class="cell" style="width:343px"><div class="detail-input-bar" style="position:static;border-radius:var(--r-xl);box-shadow:var(--s-card-soft)"><div class="input-bar"><div class="input-bar__field"><b>周末一起去图书馆吗</b></div><div class="input-bar__actions"><span class="ib-ico ib-ico--at">@</span><span class="ib-ico"><svg><use href="#i-smile"/></svg></span><span class="ib-ico"><svg><use href="#i-image"/></svg></span><span class="ib-send">发送</span></div></div></div><span class="lab">已输入 · 发送胶囊出现</span></div>
+        <div class="cell" style="width:343px"><div class="detail-input-bar" style="position:static;border-radius:var(--r-xl);box-shadow:var(--s-card-soft)"><div class="input-bar__thumbs"><span class="input-bar__thumb"><img src="assets/demo/xiaoman-photo-2.png" alt=""><span class="input-bar__thumb-x">×</span></span><span class="input-bar__thumb"><img src="assets/demo/xiaoman-photo-4.png" alt=""><span class="input-bar__thumb-x">×</span></span></div><div class="input-bar"><div class="input-bar__field"><span>说点什么...</span></div><div class="input-bar__actions"><span class="ib-ico ib-ico--at">@</span><span class="ib-ico"><svg><use href="#i-smile"/></svg></span><span class="ib-ico"><svg><use href="#i-image"/></svg></span></div></div></div><span class="lab">待发图（限 3 张 · 60px 缩略图 + 移除）</span></div>
+        <div class="cell" style="width:343px"><div class="detail-input-bar" style="position:static;border-radius:var(--r-xl);box-shadow:var(--s-card-soft)"><div class="input-bar"><div class="input-bar__field"><span>说点什么...</span></div><div class="input-bar__actions"><span class="ib-ico ib-ico--at">@</span><span class="ib-ico ib-ico--on"><svg><use href="#i-smile"/></svg></span><span class="ib-ico"><svg><use href="#i-image"/></svg></span></div></div><div class="emoji-panel" style="border-bottom-left-radius:0;border-bottom-right-radius:0"><i>😀</i><i>😂</i><i>🥰</i><i>😍</i><i>😊</i><i>🙂</i><i>😉</i><i>🤩</i><i>😘</i><i>😜</i><i>😭</i><i>😅</i></div></div><span class="lab">表情面板（COMMON_EMOJIS 30 枚 · 8 列）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>相似同学「你可能还想认识」· 3 态</h3>
+      <p class="hint">R2b-L04-D07：默认折叠为一行入口，把首屏下半屏让给评论列表；展开后才出标题 + 卡片。
+        数据取 <code>mockSimilarAuthors</code>（南风 / 北岛），同校者才出校友徽章。</p>
+      <div class="row">
+        <div class="cell" style="width:343px"><div class="demo"><div class="similar-toggle" style="padding:0"><span>看更多相似同学</span></div></div><span class="lab">折叠态（similarExpanded=false）</span></div>
+        <div class="cell" style="width:343px"><div class="demo"><div class="similar-header"><div class="similar-title">你可能还想认识</div><div class="similar-sub">兴趣相投的同学</div></div>
+          <div class="similar-list"><div class="similar-card"><div class="similar-main">
+            <span class="similar-avatar avatar"><img src="assets/demo/person-05.png" alt=""><span class="similar-avatar__badge"><svg><use href="#i-school"/></svg></span></span>
+            <div class="similar-info"><div class="similar-name-row"><span class="similar-name">南风</span><span class="identity-tag"><svg><use href="#i-school"/></svg><span>校友</span></span></div>
+              <div class="similar-headline">97年 · 深圳 · 产品经理 · 本科</div>
+              <div class="similar-interests"><span class="l">共同兴趣：</span><span class="v">阅读、旅行</span></div></div></div>
+            <div class="similar-actions"><span class="action-btn action-btn--follow">+ 关注</span><span class="action-btn action-btn--message">私信</span></div>
+          </div></div></div><span class="lab">展开 · 未关注（isAlumni=true 才出徽章）</span></div>
+        <div class="cell" style="width:343px"><div class="demo"><div class="similar-card" style="margin-top:0"><div class="similar-main">
+          <span class="similar-avatar avatar"><img src="assets/demo/person-10.png" alt=""></span>
+          <div class="similar-info"><div class="similar-name-row"><span class="similar-name">北岛</span></div>
+            <div class="similar-headline">93年 · 成都 · 创业者 · 博士</div>
+            <div class="similar-interests"><span class="l">共同兴趣：</span><span class="v">阅读</span></div></div></div>
+          <div class="similar-actions"><span class="action-btn action-btn--follow action-btn--follow-active">已关注</span><span class="action-btn action-btn--message">私信</span></div>
+        </div></div><span class="lab">展开 · 已关注（非校友，无徽章）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>评论区头 · 排序 2 态 + 计数</h3>
+      <p class="hint">计数用全角括号（R13-L03-D03）且取服务端总数 <code>currentPost.comments</code>，
+        与已加载根评论条数不同源（P1-02）；排序钮无底无圆角（R2b-L04-D04），仅文字 + 箭头。</p>
+      <div class="row">
+        <div class="cell" style="width:343px"><div class="demo"><div class="comments-header" style="margin:0"><span class="comments-title">全部评论</span><span class="comments-count">（32）</span><span class="comments-sort"><span>最热</span><svg><use href="#i-chev-d"/></svg></span></div></div><span class="lab">commentSort = hot（点赞降序）</span></div>
+        <div class="cell" style="width:343px"><div class="demo"><div class="comments-header" style="margin:0"><span class="comments-title">全部评论</span><span class="comments-count">（32）</span><span class="comments-sort"><span>最新</span><svg><use href="#i-chev-d"/></svg></span></div></div><span class="lab">commentSort = latest（时间降序）</span></div>
+        <div class="cell" style="width:343px"><div class="demo"><div class="comments-header" style="margin:0"><span class="comments-title">全部评论</span><span class="comments-count">（0）</span><span class="comments-sort"><span>最热</span><svg><use href="#i-chev-d"/></svg></span></div>
+          <div class="comments-empty" style="padding:16px 0"><span>暂无评论，快来抢沙发吧</span></div></div><span class="lab">0 条：排序钮仍在（源码无隐藏分支）+ 空态文案</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页无页内私有色值；源码 <code>$green-primary/$green-light/$pink-primary</code> 分别归口 brand / brand-50 / romance-500。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">校徽 · 话题 · 位置 · 回复 · 计数胶囊</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">徽章/话题/回复条底 · 竖线</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FBF2"></span><div><div class="sw__n">品牌浅底<code>--c-bg-brand</code></div><div class="sw__u">位置胶囊（与 brand-50 不同档）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫 500<code>--c-romance-500</code></div><div class="sw__u">已赞红心 · 共同兴趣 · 私信渐变</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">未找到态主按钮（AA 6.45:1）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器底<code>--c-bg-container</code></div><div class="sw__u">本页页底（源码重声明为白）· 卡 · 楼层</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#9AA39F"></span><div><div class="sw__n">占位文本<code>--c-text-placeholder</code></div><div class="sw__u">源码 $text-tertiary 真值档（=neutral-400）</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页七档；正文与楼层同为 --fs-lg，靠颜色分层不靠字号。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">帖子详情</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">全部评论</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600</span><span class="type__p" style="font-size:15px;font-weight:600">小鹿 · 认真征友，希望能遇到…</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/400</span><span class="type__p" style="font-size:14px">阿泽 · 同在北京，可以认识一下吗？</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/500</span><span class="type__p" style="font-size:13px;font-weight:500">#诚意征友 · 看更多相似同学</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500">北京大学 · 回复 · 私信</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;color:var(--c-text-tertiary)">3 分钟前 · 最热 · 0/200</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/500</span><span class="type__p" style="font-size:10px;font-weight:500;color:var(--c-brand)">诚意帖 · 校友 · 爱心计数</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px；本页高频是 32rpx 侧缩与 24rpx 卡缩。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-3 6px</b><i style="width:6px"></i><span>话题 gap · 楼层间距</span></div>
+        <div class="space__i"><b>--sp-4 8px</b><i style="width:8px"></i><span>图格 gap · 吸底栏 gap</span></div>
+        <div class="space__i"><b>--sp-6 12px</b><i style="width:12px"></i><span>评论区/相似区侧缩</span></div>
+        <div class="space__i"><b>--sp-7 16px</b><i style="width:16px"></i><span>正文/作者行侧缩 · 卡内边距</span></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 图格 · 楼层</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 评论区卡</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 未找到卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>胶囊 · 按钮 · 头像</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>照片位全部引用盘上真演示素材，无灰块</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/xiaoman-photo-1.png" alt="">
+      <div class="asset__b"><b>assets/demo/xiaoman-photo-1.png</b><p>正文图格首图（mock post-1 真值消费的是 <code>static/assets/images/portraits/p1.jpg</code>，不在 §8 许可清单内，按 §8 用演示人设素材代位）。</p><div class="m">本页 --1 档 · 通栏 1:1 · --r-lg</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-avatar.png" alt="">
+      <div class="asset__b"><b>assets/demo/xiaoman-avatar.png</b><p>作者行头像（mock 真值 <code>AVATARS.AVATAR_13</code> 同上代位）。头像加载失败时源码回落首字圆底 <code>initialOf()</code>，画板不画该分支。</p><div class="m">40px 圆 · 楼中楼 24px · 楼层 32px</div></div></div>
+    <div class="asset"><img src="assets/demo/person-05.png" alt="">
+      <div class="asset__b"><b>assets/demo/person-01 · 02 · 05 · 10</b><p>评论者与相似同学头像，取 §8 人格头像池，按池内顺序就近取用（不主张与 mock 作者昵称的性别一致）；作者名仍是 fixtures 真名（阿泽/橙子/南风/北岛）。</p><div class="m">头像池共 21 张，本页用 4 张</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-photo-3.png" alt="">
+      <div class="asset__b"><b>F09 全屏查看层</b><p><code>imageViewerVisible</code> 分支：aspectFit、80% 视高、底 <code>rgba(0,0,0,.92)</code>（base 无该档，见下）。</p><div class="m">点遮罩关闭 · z-index 2000</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>理想图逐位对账（登记表第 14 行 · 真值位「—」，本页无必须留空的分数位）：</b>
+        ① 理想图作者行是「阿辰 · 摄影圈 · 30 分钟前 · 关注」，画板取 mock 档 feed 首条真值「小鹿 · 诚意帖 · 5 分钟前 · + 关注」——
+        分类标签由 <code>categoryId</code> 决定，文案由 <code>village.follow</code> 决定，非自创。
+        ② 理想图正文「周末去爬山拍到了云海…」是设计示例句；源码 <code>displayContent</code> 在 2026-10-26 已改为
+        「真档不伪造正文」（real 档原样透传），画板按 fixtures 正文画。
+        ③ 理想图位置行是「北京大学·未名湖校区 · 距你 1.2km」，源码 <code>.post-location__distance</code> 是<b>空节点</b>
+        （MP-R2-DETAIL-001 写死假距离已移除，无数据绑定、无 i18n）⇒ 画板只画校区名，距离位留空。
+        ④ 理想图 4 图（首图横幅 + 3 方格）：源码 2026-10-13 起恒 1:1 方格、张数只决定列数，且 fixtures 最多 2 图 ⇒
+        §01 按真数据画单图，多图形态在 §02 枚举。
+        ⑤ 理想图评论区 2 楼 + 楼中楼 + 256/32 计数：登记表点名「评论区按真实数据画，不要编楼层」⇒
+        §01 F01 画 post-1 fixtures 的 2 楼（无楼中楼），F03 画 post-2 的 0 评论空态，楼中楼形态移入 §02；
+        256/32 与 128/32、45/18 同为<b>演示计数，非真值</b>。
+        ⑥ 理想图「你可能还想认识」模块在源码里默认折叠为「看更多相似同学」一行（R2b-L04-D07），
+        画板 F03 画折叠入口、§02 画展开卡（<code>mockSimilarAuthors</code> 南风 / 北岛）。</li>
+      <li><b>第三种差异（需主控裁定，非代理选择）：</b>理想图的楼中楼是<b>灰底圆角块</b>，源码 <code>.comment-replies</code> 是
+        <b>左 2px 绿竖线 + 白底行</b>（<code>$bg-page</code> 被本页重声明为 #FFFFFF）。登记表第 14 行只点名「按真实数据画」，
+        未覆盖该几何冲突；画板按 §10「与源码不符时按源码画」取竖线形态，并在此登记。</li>
+      <li><b>白压白（源码自证问题，画板按源码如实画）：</b>本页 <code>.detail-page</code> 把 <code>--c-bg-page</code> 重声明为
+        #FFFFFF，而楼层 <code>.comment-item</code>、楼中楼 <code>.comment-reply</code>、相似卡 <code>.similar-author-card</code>、
+        输入胶囊 <code>.input-bar__field</code>、转发文本域/关闭钮六处底色都取 <code>$bg-page</code> ⇒ 与容器同色、边界不可辨。
+        源码已在 R12-L03-D05 为未找到卡单独补过 1rpx 描边，其余六处未处理。</li>
+      <li><b>实况帧过期：</b><code>reports/verify/2026-10-26/50-fidelity/frames/帖子详情-1-top.png</code> 的赞评转行整行缺席
+        （源码 <code>.post-actions-inline</code> 无条件渲染），且该帧把输入胶囊画出可见浅灰底，而源码
+        <code>.input-bar__field</code> 底取 <code>$bg-page</code>→本页白（上一条），二者只可能有一处与现行代码一致
+        ⇒ 该帧拍的是后端种子帖（星辰 · 南开大学，数据不在客户端盘上），与本页 mock 档不同源，按 §10 以源码为准，该帧需重拍。</li>
+      <li>本页在 village 分包，无 tabbar、无原生导航栏（页头由页面自画白底带）——画板若出现 tabbar 即为错。</li>
+      <li>评论计数（32）取服务端总数、楼层只出 2 条，是 P1-02 已知口径差，非画板错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 帖子详情页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

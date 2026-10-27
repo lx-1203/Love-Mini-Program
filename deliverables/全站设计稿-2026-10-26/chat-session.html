@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 聊天会话页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取自 design-variables.scss v4.0.0；rpx÷2=px） ===== */
+/* 气泡家族 --bubble-*（design-variables.scss :646-657，board-base.css 未登记，1:1 镜像声明） */
+.phone { --c-bubble-other: #FFFFFF;
+  --bubble-max-width: 58%; --bubble-padding-y: 7px; --bubble-padding-x: 11px;
+  --bubble-radius-main: 10px; --bubble-radius-tail: 2px; --bubble-shadow: none;
+  --bubble-font-size: 14px; --bubble-line-height: 1.6; --bubble-emoji-font-size: 28px;
+  --bubble-avatar-size: 32px; --bubble-avatar-border: 1px solid var(--c-bg-container);
+  --bubble-status-icon-size: 10px; }
+
+/* ---------- 页壳：分包页无原生导航栏，头部为 ChatHeader 自绘件 ---------- */
+.cp { position: absolute; inset: 0; display: flex; flex-direction: column;
+  background: var(--c-bg-page); overflow: hidden; }
+.sb2 { position: absolute; top: 0; left: 0; width: 100%; height: 44px; display: flex;
+  justify-content: space-between; align-items: flex-end; padding: 0 24px 7px;
+  font-size: 12px; font-weight: 700; color: var(--c-text-primary); z-index: 6; }
+.sb2__r { display: flex; gap: 5px; align-items: center; }
+.sb2--inv { color: var(--c-text-inverse); }
+.sb2__r svg { width: 15px; height: 15px; }
+/* 微信胶囊（系统件，实测 x288-369 / y50-76，几何为系统值） */
+.capsule { position: absolute; top: 50px; right: 6px; width: 87px; height: 31px;
+  border-radius: 16px; background: rgba(255,255,255,.6); border: 0.5px solid rgba(15,23,42,.08);
+  display: flex; align-items: center; z-index: 7; }
+.capsule__dots { flex: 1; display: flex; justify-content: center; gap: 3px; }
+.capsule__dots i { width: 4px; height: 4px; border-radius: 2px; background: var(--c-text-secondary); }
+.capsule__div { width: 0.5px; height: 18px; background: rgba(15,23,42,.12); }
+.capsule__home { flex: 1; display: flex; align-items: center; justify-content: center; }
+.capsule__home i { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--c-text-secondary);
+  position: relative; }
+.capsule__home i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 4px; height: 4px;
+  border-radius: 50%; background: var(--c-text-secondary); }
+
+/* ---------- ChatHeader（chat-header 实测：--statusbar 44 + padding 10 + 行高 44 + 10） ---------- */
+.chat-header { display: flex; align-items: center; gap: 8px; flex: none;
+  padding: 54px 92px 10px 12px; background: var(--c-bg-page);
+  border-bottom: 1px solid var(--c-border-light); }
+.chat-header__back { width: 44px; height: 44px; flex: none; display: flex; align-items: center;
+  justify-content: center; font-size: 28px; line-height: 1; color: var(--c-brand); }
+.chat-header__back--err { color: var(--c-brand-800); }
+.chat-header__ava { width: 40px; height: 40px; border-radius: 50%; flex: none; position: relative;
+  background: var(--c-brand-50); color: var(--c-brand); font-size: 15px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; }
+.chat-header__dot { position: absolute; right: -2px; bottom: -2px; width: 12px; height: 12px;
+  border-radius: 50%; background: var(--c-brand); border: 1.5px solid var(--c-bg-page); }
+.chat-header__main { flex: 1; min-width: 0; }
+.chat-header__row { display: flex; align-items: center; gap: 4px; }
+.chat-header__name { font-size: 16px; font-weight: 700; color: var(--c-text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.chat-header__row svg { width: 14px; height: 14px; color: var(--c-romance); flex: none; }
+.chat-header__days { font-size: 11px; color: var(--c-romance); flex: none; }
+.chat-header__status { display: block; margin-top: 2px; font-size: 12px; color: var(--c-text-placeholder); }
+.chat-header__more { width: 44px; height: 44px; flex: none; display: flex; align-items: center;
+  justify-content: center; font-size: 20px; color: var(--c-text-tertiary); letter-spacing: 1px; }
+
+/* ---------- 状态带 ---------- */
+.rel { flex: none; margin: 2px 8px 0; padding: 6px 8px; border-radius: var(--r-lg);
+  background: var(--c-bg-container); border: 1px solid var(--c-border-light);
+  display: flex; flex-direction: column; gap: 2px; }
+.rel__row { display: flex; align-items: center; gap: 2px; }
+.rtag { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px;
+  border: 1px solid currentColor; font-size: 12px; font-weight: 600; line-height: 1.4; }
+.rtag--chatting { color: var(--c-brand); background: var(--c-brand-50); }
+.rtag--just { color: var(--c-text-placeholder); background: var(--c-border-light); }
+.rtag--amb { color: var(--c-romance); background: var(--c-romance-50); }
+.rtag--follow { color: var(--c-status-info); background: var(--c-brand-50); }
+.rel__score { flex: 1; font-size: var(--fs-xs); color: var(--c-text-secondary); }
+.rel__meta { font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+.sact { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start;
+  padding: 6px 11px; border-radius: 999px; background: var(--c-brand); color: #fff;
+  font-size: 12px; font-weight: 600; }
+
+.temp-banner { flex: none; margin: 2px 8px 0; padding: 6px 10px; border-radius: var(--r-lg);
+  background: linear-gradient(135deg, var(--c-brand-50) 0%, var(--c-romance-50) 100%);
+  border: 1px solid var(--c-brand-100); text-align: center;
+  display: flex; flex-direction: column; gap: 2px; }
+.temp-banner__t { font-size: var(--fs-base); color: var(--c-romance); font-weight: 600; }
+.temp-banner__c { font-size: var(--fs-sm); color: var(--c-romance); font-weight: 500; }
+.temp-banner__h { font-size: var(--fs-xs); color: var(--c-text-secondary); }
+
+.signal { flex: none; margin: 2px 8px 0; padding: 6px 8px; border-radius: var(--r-lg);
+  background: var(--c-bg-container); border: 1px solid var(--c-border-light);
+  display: flex; flex-direction: column; gap: 8px; }
+.signal__row { display: flex; align-items: center; justify-content: space-between; }
+.signal__count { font-size: var(--fs-base); color: var(--c-text-primary); font-weight: 600; }
+.signal__pct { font-size: var(--fs-sm); color: var(--c-brand-400); font-weight: 700; }
+.signal__bar { height: 6px; border-radius: 999px; background: var(--c-border-light); overflow: hidden; }
+.signal__bar i { display: block; height: 100%; width: 30%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--c-brand-400), var(--c-romance-300)); }
+.signal__lv { display: flex; flex-direction: column; gap: 2px; }
+.signal__l { display: flex; align-items: center; gap: 6px; opacity: .55; font-size: var(--fs-base);
+  color: var(--c-text-primary); }
+.signal__l--on { opacity: 1; }
+.signal__d { width: 20px; height: 20px; border-radius: 50%; flex: none;
+  background: var(--c-border-light); border: 1px solid var(--c-border-default);
+  display: flex; align-items: center; justify-content: center; font-size: var(--fs-xs);
+  color: var(--c-text-secondary); }
+.signal__l--on .signal__d { background: var(--c-brand-500); border-color: var(--c-brand-500); }
+.signal__l--on .signal__d svg { width: 12px; height: 12px; color: #fff; }
+.signal__l--next .signal__d { border-color: var(--c-brand-400); color: var(--c-brand-400); }
+.signal__hint { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.signal__hint span { font-size: var(--fs-sm); color: var(--c-text-secondary); }
+.signal__hint b { color: var(--c-brand-400); font-weight: 600; }
+.signal__hint em { font-style: normal; color: var(--c-romance); font-weight: 600; }
+.qcard { flex: none; margin: 2px 8px 0; padding: 10px 12px; border-radius: var(--r-lg);
+  background: linear-gradient(135deg, var(--c-brand-50) 0%, var(--c-bg-page) 100%);
+  border-left: 3px solid var(--c-brand-400); display: flex; flex-direction: column; gap: 2px; }
+.qcard__l { font-size: var(--fs-sm); color: var(--c-brand-400); font-weight: 600; }
+.qcard__c { font-size: var(--fs-base); color: var(--c-text-secondary); line-height: 1.5; }
+.qcard__a { font-size: var(--fs-xs); color: var(--c-text-tertiary); align-self: flex-end; }
+
+/* ---------- 消息流 ---------- */
+.chat-scroll { flex: 1; min-height: 0; overflow: hidden; padding: 0 6px;
+  display: flex; flex-direction: column; }
+.chat-scroll--bottom { justify-content: flex-end; }
+.chat-scroll--center { justify-content: center; }
+.chat-list { display: flex; flex-direction: column; gap: 8px; padding: 6px 0; }
+.chat-time-bar { align-self: center; font-size: var(--fs-xs); color: var(--c-text-secondary);
+  background: var(--c-overlay-faint); border-radius: 999px; padding: 3px 12px; margin: 6px 0; flex: none; }
+
+.bub-wrap { display: flex; flex-direction: column; max-width: var(--bubble-max-width); }
+.bub-wrap--self { align-self: flex-end; }
+.bub-wrap--peer { align-self: flex-start; }
+.bub-wrap--center { align-self: center; }
+.bub-row { display: flex; align-items: flex-start; gap: 8px; }
+.bub-row--self { flex-direction: row-reverse; }
+.ava { width: var(--bubble-avatar-size); height: var(--bubble-avatar-size); border-radius: 999px;
+  flex: none; border: var(--bubble-avatar-border); display: flex; align-items: center;
+  justify-content: center; font-size: 13px; font-weight: 700; }
+.ava--peer { background: var(--c-brand-50); color: var(--c-brand); }
+.ava--self { background: var(--c-bg-surface); color: var(--c-text-secondary); }
+.bub { display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  padding: var(--bubble-padding-y) var(--bubble-padding-x);
+  border-radius: var(--bubble-radius-main); box-shadow: var(--bubble-shadow); }
+.bub--peer { background: var(--c-bubble-other); color: var(--c-text-primary);
+  border-radius: var(--bubble-radius-tail) var(--bubble-radius-main) var(--bubble-radius-main) var(--bubble-radius-main); }
+.bub--self { background: var(--c-brand); color: var(--c-text-inverse);
+  border-radius: var(--bubble-radius-main) var(--bubble-radius-tail) var(--bubble-radius-main) var(--bubble-radius-main); }
+.bub__body { font-size: var(--bubble-font-size); line-height: var(--bubble-line-height);
+  word-break: break-word; text-align: left; }
+.bub__body--emoji { font-size: var(--bubble-emoji-font-size); line-height: 1.2; padding: 2px 0; }
+.bub__foot { display: flex; align-items: center; justify-content: flex-end; gap: 1px; height: 12px; }
+.bub__foot svg { width: var(--bubble-status-icon-size); height: var(--bubble-status-icon-size);
+  color: var(--c-text-inverse); opacity: .85; }
+.bub__quote { display: flex; gap: 2px; padding: 2px 6px; border-radius: var(--r-md); margin-bottom: 1px; }
+.bub--peer .bub__quote { background: rgba(15,23,42,.04); }
+.bub--self .bub__quote { background: rgba(255,255,255,.2); }
+.bub__quote-bar { width: 1px; border-radius: 2px; flex: none; }
+.bub--peer .bub__quote-bar { background: var(--c-brand); }
+.bub--self .bub__quote-bar { background: rgba(255,255,255,.5); }
+.bub__quote-c { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.bub__quote-s { font-size: var(--fs-xs); font-weight: 600; opacity: .8; }
+.bub__quote-b { font-size: var(--fs-sm); opacity: .7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bub__img { width: 158px; height: 108px; border-radius: var(--bubble-radius-main);
+  background: var(--c-bg-surface); display: flex; align-items: center; justify-content: center; }
+.bub__img svg { width: 26px; height: 26px; color: var(--c-text-placeholder); }
+.bub--recalled { background: transparent; box-shadow: none; }
+.bub--recalled .bub__body { font-size: var(--fs-sm); color: var(--c-text-tertiary);
+  font-style: italic; text-align: center; }
+.bub--system .bub__body { color: var(--c-text-secondary); font-size: var(--bubble-font-size); }
+
+.voice { display: inline-flex; align-items: center; gap: 7px; padding: 9px 12px;
+  border-radius: var(--r-lg) var(--r-sm) var(--r-lg) var(--r-lg); background: var(--c-brand-50);
+  color: var(--c-brand-700); min-width: 70px; }
+.voice__wave { display: flex; align-items: flex-end; gap: 1px; height: 16px; }
+.voice__wave i { width: 3px; border-radius: 1.5px; background: var(--c-brand-300); }
+.voice__d { font-size: var(--fs-base); font-weight: 600; }
+
+.typing { display: flex; align-items: flex-end; gap: 8px; padding: 2px 0; flex: none; }
+.typing__b { display: flex; align-items: center; gap: 4px; padding: 6px 10px;
+  border-radius: var(--bubble-radius-tail) var(--bubble-radius-main) var(--bubble-radius-main) var(--bubble-radius-main);
+  background: var(--c-bubble-other); }
+.typing__t { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.typing__dots { display: flex; gap: 2px; }
+.typing__dots i { width: 4px; height: 4px; border-radius: 999px; background: var(--c-text-placeholder); }
+.unread { position: absolute; left: 50%; bottom: 160px; transform: translateX(-50%); z-index: 8;
+  display: inline-flex; align-items: center; padding: 5px 16px; border-radius: 999px;
+  background: var(--c-bg-container); border: 1px solid var(--c-border-light);
+  box-shadow: var(--s-card-soft); }
+.unread span { font-size: var(--fs-sm); color: var(--c-brand-500); font-weight: 600; }
+
+.match-greeting { display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 12px 12px 8px; }
+.match-greeting__tip { display: inline-flex; padding: 3px 10px; border-radius: 999px;
+  background: var(--c-border-light); max-width: 84%; }
+.match-greeting__text { font-size: var(--fs-base); color: var(--c-text-tertiary); text-align: center; }
+.match-greeting__btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.match-greeting__btn { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--c-brand);
+  background: var(--c-brand-50); }
+.match-greeting__btn span { font-size: var(--fs-md); color: var(--c-brand); font-weight: 600; }
+.chat-empty-hint { display: block; text-align: center; color: var(--c-text-tertiary);
+  font-size: var(--fs-sm); padding: 24px 16px; }
+.meta-warn { display: block; color: var(--c-error); font-weight: 600; text-align: center;
+  font-size: var(--fs-base); padding: 8px 0; }
+
+/* 骨架 */
+.skeleton { padding: 12px 16px; }
+.skeleton__row { display: flex; margin-bottom: 12px; }
+.skeleton__row--l { justify-content: flex-start; }
+.skeleton__row--r { justify-content: flex-end; }
+.skeleton__b { height: 36px; border-radius: var(--r-xl); background: var(--c-bg-surface); }
+.skeleton__b--w60 { width: 60%; } .skeleton__b--w40 { width: 40%; }
+
+/* 错误态 */
+.echat { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 0; }
+.echat svg { width: 60px; height: 60px; color: var(--c-text-tertiary); }
+.echat b { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-secondary); margin-top: 8px; }
+.chat-input-error { display: flex; align-items: center; justify-content: center; gap: 12px;
+  min-height: 44px; }
+.chat-input-error__btn { min-height: 44px; padding: 0 16px; border-radius: 999px;
+  background: var(--c-brand-50); display: flex; align-items: center; justify-content: center; }
+.chat-input-error__btn span { font-size: var(--fs-lg); font-weight: 600; color: var(--c-brand-800); }
+
+/* ---------- 输入区 ---------- */
+.chat-input-area { flex: none; background: var(--c-bg-container);
+  border-top: 1px solid var(--c-border-light); padding: 2px 8px 20px;
+  display: flex; flex-direction: column; gap: 2px; position: relative; }
+.chat-input-area--kb { padding-bottom: 6px; }
+.wechat-input-bar { display: flex; align-items: center; gap: 2px; min-height: 44px;
+  padding: 6px 8px; background: var(--c-bg-container); border-top: 1px solid var(--c-border-light);
+  border-radius: var(--r-lg); box-sizing: border-box; }
+.wechat-input-bar__icon { width: 32px; height: 32px; border-radius: 999px; flex: none;
+  background: var(--c-bg-surface); display: flex; align-items: center; justify-content: center; }
+.wechat-input-bar__icon svg { width: 22px; height: 22px; color: var(--c-text-secondary); }
+.wechat-input-bar__input { flex: 1; min-width: 0; height: 32px; border-radius: var(--r-md);
+  padding: 0 8px; background: var(--c-bg-surface); font-size: var(--fs-lg); color: var(--c-text-primary);
+  display: flex; align-items: center; white-space: nowrap; overflow: hidden; }
+.wechat-input-bar__input--ph { color: var(--c-text-placeholder); }
+.wechat-input-bar__input--dis { opacity: .55; }
+.wechat-input-bar__send { background: var(--c-brand); border-radius: 999px; padding: 0 20px;
+  height: 36px; flex: none; display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--s-brand); }
+.wechat-input-bar__send span { color: var(--c-text-inverse); font-size: var(--fs-lg); font-weight: 600; }
+.wechat-input-bar__send--dis { background: var(--c-status-disabled); box-shadow: none; }
+.wechat-input-bar__send--dis span { color: var(--c-text-tertiary); }
+
+.quote-reply-bar { display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 8px; border-radius: var(--r-md);
+  background: linear-gradient(135deg, var(--c-romance-50) 0%, var(--c-bg-surface) 100%);
+  border-left: 2px solid var(--c-romance); }
+.quote-reply-bar__l { font-size: var(--fs-xs); color: var(--c-romance); font-weight: 600; }
+.quote-reply-bar__b { font-size: var(--fs-sm); color: var(--c-text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.quote-reply-bar svg { width: 14px; height: 14px; color: var(--c-text-tertiary); flex: none; padding: 4px; }
+
+.break-question { padding: 10px 12px; border-top: 1px solid var(--c-border-light);
+  background: var(--c-bg-surface); }
+.bq__row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.bq__lead { font-size: var(--fs-base); color: var(--c-text-secondary); font-weight: 700; }
+.bq__chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.bq__chip { padding: 3px 9px; border-radius: 999px; background: var(--c-brand-50);
+  color: var(--c-brand-600); font-size: var(--fs-sm); font-weight: 700; }
+.bq__opener { margin-top: 8px; display: flex; flex-direction: column; gap: 3px;
+  padding: 8px 10px; border-radius: 10px; background: var(--c-romance-50);
+  border: 1px solid var(--c-romance-300); }
+.bq__opener-l { font-size: var(--fs-sm); color: var(--c-romance); font-weight: 700; }
+.bq__opener-t { font-size: var(--fs-md); color: var(--c-text-primary); }
+
+.temp-action-row { display: flex; gap: 6px; margin-top: 6px; }
+.temp-action-btn { flex: 1; height: 40px; border-radius: var(--r-md); display: flex;
+  align-items: center; justify-content: center; font-size: var(--fs-base); font-weight: 600; }
+.temp-action-btn--sec { background: var(--c-brand-50); border: 1px solid var(--c-brand-200);
+  color: var(--c-text-primary); }
+.temp-action-btn--dan { background: var(--c-romance-50); border: 1px solid var(--c-romance-300);
+  color: var(--c-error); }
+.temp-action-btn--dis { opacity: .5; }
+
+.emoji-panel { display: flex; flex-wrap: wrap; gap: 2px; padding: 10px 8px;
+  background: var(--c-bg-container); border-top: 1px solid var(--c-border-light);
+  max-height: 194px; overflow: hidden; }
+.emoji-panel__i { width: calc((100% - 14px) / 8); height: 40px; border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center; }
+.emoji-panel__i span { width: 28px; height: 28px; line-height: 28px; text-align: center;
+  font-size: 24px; background: var(--c-bg-surface); border-radius: var(--r-sm); }
+
+/* 系统键盘（F08，几何为系统件） */
+.kb { flex: none; height: 236px; background: var(--c-border-light); padding: 10px 6px 14px;
+  display: flex; flex-direction: column; gap: 7px; }
+.kb__row { display: flex; gap: 5px; }
+.kb__k { flex: 1; height: 36px; background: var(--c-bg-container); border-radius: 5px;
+  display: flex; align-items: center; justify-content: center; font-size: 15px;
+  color: var(--c-text-primary); }
+.kb__k--wide { flex: 1.6; }
+.kb__k--sp { flex: 5.4; }
+.kb__k--go { background: var(--c-status-info); color: #fff; font-size: 14px; }
+
+/* ---------- 弹层 ---------- */
+.overlay { position: absolute; inset: 0; background: rgba(0,0,0,.4); z-index: 9; }
+.overlay--c { display: flex; align-items: center; justify-content: center; }
+.overlay--b { display: flex; align-items: flex-end; }
+.lp-menu { display: flex; flex-direction: column; background: var(--c-bg-container);
+  border-radius: var(--r-xl); overflow: hidden; min-width: 120px; box-shadow: var(--s-modal); }
+.lp-menu__i { padding: 14px 28px; text-align: center; font-size: var(--fs-lg); color: var(--c-text-primary); }
+.lp-menu__i--d { color: var(--c-error); }
+.sheet { width: 100%; background: var(--c-bg-container); border-radius: 12px 12px 0 0;
+  padding: 16px 16px 22px; }
+.sheet__title { text-align: center; padding-bottom: 12px; border-bottom: 1px solid var(--c-border-light);
+  font-size: var(--fs-md); font-weight: 600; color: var(--c-text-primary); }
+.sheet__grid { display: flex; gap: 16px; padding: 16px 8px; }
+.mi { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 72px; }
+.mi__ic { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-brand-500) 100%);
+  box-shadow: var(--s-brand); }
+.mi__ic svg { width: 22px; height: 22px; color: #fff; }
+.mi__lab { font-size: var(--fs-sm); color: var(--c-text-primary); }
+.sheet__cancel { margin-top: 8px; height: 44px; border-radius: var(--r-md);
+  background: var(--c-bg-surface); display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-md); font-weight: 500; color: var(--c-text-primary); }
+.nav-list { display: flex; flex-direction: column; padding: 6px 0; }
+.nav-item { padding: 12px 10px; font-size: var(--fs-md); color: var(--c-text-primary); border-radius: var(--r-md); }
+.nav-item--d { color: var(--c-error); }
+.fwd-item { display: flex; align-items: center; gap: 8px; padding: 8px 6px; }
+.fwd-item .ava { width: 36px; height: 36px; font-size: 14px; }
+.fwd-item b { font-size: var(--fs-md); font-weight: 500; color: var(--c-text-primary); }
+.ava-menu__head { display: flex; align-items: center; gap: 10px; padding-bottom: 12px;
+  border-bottom: 1px solid var(--c-border-light); }
+.ava-menu__head .ava { width: 48px; height: 48px; font-size: 18px; }
+.ava-menu__head b { font-size: 16px; font-weight: 700; color: var(--c-text-primary); }
+.ava-menu__acts { display: flex; gap: 10px; padding: 14px 0 10px; }
+.ava-menu__act { flex: 1; padding: 14px 0; border-radius: 10px; background: var(--c-bg-surface);
+  text-align: center; font-size: var(--fs-md); font-weight: 600; color: var(--c-brand); }
+
+/* ---------- §02 演示底 ---------- */
+.demo-list { display: flex; flex-direction: column; gap: 8px; width: 330px;
+  padding: 8px; background: var(--c-bg-page); border-radius: var(--r-xl); }
+.demo-bar { width: 330px; background: var(--c-bg-container); border-radius: var(--r-lg);
+  border: 1px solid var(--c-border-light); }
+.sheet--demo { width: 330px; border-radius: 12px; border: 1px solid var(--c-border-light);
+  box-shadow: var(--s-card-soft); }
+.strip--demo { width: 330px; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格，与工程 IMAGE_PATHS 图标体系对应） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.2c.8 1.5 2 2.2 3.5 2.2s2.7-.7 3.5-2.2"/><path d="M9 9.8h.01"/><path d="M15 9.8h.01"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5.5v13"/><path d="M5.5 12h13"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 8.6h3.1L8.6 6h6.8l1.5 2.6H20a1.6 1.6 0 0 1 1.6 1.6v8A1.6 1.6 0 0 1 20 19.8H4a1.6 1.6 0 0 1-1.6-1.6v-8A1.6 1.6 0 0 1 4 8.6z"/><circle cx="12" cy="14" r="3.3"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.8l4.6 4.6L19.5 7"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.3 4.3 2.6 18.2a1.9 1.9 0 0 0 1.7 2.8h15.4a1.9 1.9 0 0 0 1.7-2.8L13.7 4.3a1.9 1.9 0 0 0-3.4 0z"/><path d="M12 9.5v4.5"/><path d="M12 17.5h.01"/></symbol>
+  <symbol id="i-img" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.4"/><circle cx="8.8" cy="10" r="1.6"/><path d="M6.5 17l4.2-4.5 3 2.8 3.2-3.6L21 15.5"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.3 4.9 13.4a4.6 4.6 0 1 1 6.5-6.5l.6.6.6-.6a4.6 4.6 0 1 1 6.5 6.5z"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9.5 6.5 5 5.5-5 5.5"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>聊天会话页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/chat/chat-session/index</code>。
+     本页是全站规范文档 §3.7 对应的微信式双人气泡会话页：自绘 ChatHeader（头像 / 昵称 / 认识天数 / 在线态）、
+     关系状态带与临时会话带、微信 5 分钟时间条 + 多形态气泡消息流、常驻输入区（表情 / ＋ / 输入框 / 常显发送）。
+     §3.7 此前只有文字规范、无整页基准图——本画板即该页第一张帧基准，共 11 屏。</p>
+  <div class="cover__meta">
+    <span>路由 <b>chat/chat-session</b></span>
+    <span>分包 <b>chat</b>（无 tabbar）</span>
+    <span>状态 <b>11 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1845</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前仅 §3.7 文字规范 · 无整页基准图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 11 屏</h2>
+    <p>加载 / 空会话 / 正常会话 / typing·新消息 / 错误 / 临时会话 / 已结束 / 键盘 / 表情 / ＋面板 / 长按菜单</p></div>
+  <div class="sec__sub">本页状态机共 19 个渲染分支，来自
+    <code>!isUnlocked</code> · <code>pageErrorMessage</code> · <code>messagesStore.loading</code> ·
+    <code>messagesStore.errorMessage</code> · <code>showMatchGreeting（= userMessageCount===0 且非错误非加载）</code> ·
+    <code>relationshipInfo</code> · <code>isTempSession || tempLoadFailed</code>（内含 <code>tempSessionEnded</code> 文案切换）·
+    <code>fromSignal</code> · <code>peerTyping && isPrivateSession</code> · <code>unreadHintVisible</code> ·
+    <code>isSessionClosed</code> · <code>keyboardHeight&gt;0</code> · <code>quoteContext</code> · <code>quoteReply</code> ·
+    <code>emojiPanelVisible</code> · <code>moreMenuVisible</code> · <code>longPressMenu.visible</code> ·
+    <code>navMenuVisible / forwardSheet.visible / avatarMenuVisible</code>。
+    本画板画出其中 11 屏；LockScreen（未登录整页闸门，跨页共享组件）不在本页重复画；
+    三个同骨架底部弹层与数据驱动横幅在 §02 组件规范中枚举。页头为 ChatHeader 自绘件（非原生导航栏），
+    右侧为微信胶囊让位带。帧即视口，超出 812px 裁掉，裁切说明只写题注。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">加载中 · 气泡骨架</span><span class="d">messagesStore.loading · 头部与输入栏照常渲染</span></figcaption>
+      <div class="phone">
+        <div class="cp">
+          <div class="chat-header">
+            <span class="chat-header__back">‹</span>
+            <span class="chat-header__ava">小</span>
+            <span class="chat-header__main">
+              <span class="chat-header__row"><span class="chat-header__name">小满</span><svg class="ico--fill" style="color:var(--c-romance)"><use href="#i-heart"/></svg><span class="chat-header__days">认识 3 天</span></span>
+              <span class="chat-header__status">在线</span>
+            </span>
+            <span class="chat-header__more">···</span>
+          </div>
+          <div class="chat-scroll">
+            <div class="skeleton">
+              <div class="skeleton__row skeleton__row--l"><div class="skeleton__b skeleton__b--w60"></div></div>
+              <div class="skeleton__row skeleton__row--r"><div class="skeleton__b skeleton__b--w40"></div></div>
+              <div class="skeleton__row skeleton__row--l"><div class="skeleton__b skeleton__b--w60"></div></div>
+              <div class="skeleton__row skeleton__row--r"><div class="skeleton__b skeleton__b--w40"></div></div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <div class="wechat-input-bar">
+              <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span>
+              <span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span>
+              <span class="wechat-input-bar__input wechat-input-bar__input--ph">输入消息...</span>
+              <span class="wechat-input-bar__send wechat-input-bar__send--dis"><span>发送</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="capsule"><span class="capsule__dots"><i></i><i></i><i></i></span><span class="capsule__div"></span><span class="capsule__home"><i></i></span></div>
+        <div class="sb2"><span>9:41</span><span class="sb2__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">空会话 · 匹配引导 + 破冰</span><span class="d">showMatchGreeting · 引导在消息流首行、破冰卡在输入栏上方</span></figcaption>
+      <div class="phone">
+        <div class="cp">
+          <div class="chat-header">
+            <span class="chat-header__back">‹</span>
+            <span class="chat-header__ava">小</span>
+            <span class="chat-header__main">
+              <span class="chat-header__row"><span class="chat-header__name">小满</span><svg class="ico--fill" style="color:var(--c-romance)"><use href="#i-heart"/></svg><span class="chat-header__days">认识 3 天</span></span>
+              <span class="chat-header__status">在线</span>
+            </span>
+            <span class="chat-header__more">···</span>
+          </div>
+          <div class="chat-scroll chat-scroll--center">
+            <div class="match-greeting">
+              <span class="match-greeting__tip"><span class="match-greeting__text">你们已互相匹配成功，打个招呼开启聊天吧～</span></span>
+              <span class="match-greeting__btns">
+                <span class="match-greeting__btn"><span>你平时喜欢做什么？</span></span>
+                <span class="match-greeting__btn"><span>今天在学校吗？</span></span>
+              </span>
+            </div>
+            <span class="chat-empty-hint">会话刚建立，还没有消息。</span>
+          </div>
+          <div class="chat-input-area">
+            <div class="break-question">
+              <span class="bq__row">
+                <span class="bq__lead">你们共同喜欢</span>
+                <span class="bq__chips"><span class="bq__chip">胶片摄影</span><span class="bq__chip">夜跑</span><span class="bq__chip">民谣</span></span>
+              </span>
+              <span class="bq__opener">
+                <span class="bq__opener-l">推荐开场</span>
+                <span class="bq__opener-t">食堂哪个窗口好吃？</span>
+              </span>
+            </div>
+            <div class="wechat-input-bar">
+              <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span>
+              <span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span>
+              <span class="wechat-input-bar__input wechat-input-bar__input--ph">输入消息...</span>
+              <span class="wechat-input-bar__send wechat-input-bar__send--dis"><span>发送</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="capsule"><span class="capsule__dots"><i></i><i></i><i></i></span><span class="capsule__div"></span><span class="capsule__home"><i></i></span></div>
+        <div class="sb2"><span>9:41</span><span class="sb2__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">正常会话 · 气泡全形态</span><span class="d">贴底视口 · ↑顶部裁掉首组消息，纯 emoji/引用气泡见 §02</span></figcaption>
+      <div class="phone">
+        <div class="cp">
+          <div class="chat-header">
+            <span class="chat-header__back">‹</span>
+            <span class="chat-header__ava">小</span>
+            <span class="chat-header__main">
+              <span class="chat-header__row"><span class="chat-header__name">小满</span><svg class="ico--fill" style="color:var(--c-romance)"><use href="#i-heart"/></svg><span class="chat-header__days">认识 3 天</span></span>
+              <span class="chat-header__status">在线</span>
+            </span>
+            <span class="chat-header__more">···</span>
+          </div>
+          <div class="rel">
+            <span class="rel__row"><span class="rtag rtag--chatting">聊天中</span><span class="rel__score">亲密度 —</span></span>
+          </div>
+          <div class="chat-scroll chat-scroll--bottom">
+            <div class="chat-list">
+              <div class="chat-time-bar">昨天 21:03</div>
+              <div class="bub-wrap bub-wrap--peer">
+                <div class="bub-row">
+                  <span class="ava ava--peer">小</span>
+                  <div class="bub bub--peer"><span class="bub__body">开题答辩结束了吗？老师为难你没有？</span></div>
+                </div>
+              </div>
+              <div class="bub-wrap bub-wrap--self">
+                <div class="bub-row bub-row--self">
+                  <span class="ava ava--self">我</span>
+                  <div class="bub bub--self"><span class="bub__body">刚结束…数据部分被怼了半小时，脑子都是空的 😂</span><span class="bub__foot"><svg><use href="#i-check"/></svg><svg><use href="#i-check"/></svg></span></div>
+                </div>
+              </div>
+              <div class="bub-wrap bub-wrap--peer">
+                <div class="bub-row">
+                  <span class="ava ava--peer">小</span>
+                  <div class="bub bub--peer"><span class="bub__body">哈哈哈哈心疼你一秒钟，剩下的五十九秒我在笑</span></div>
+                </div>
+              </div>
+              <div class="bub-wrap bub-wrap--self">
+                <div class="bub-row bub-row--self">
+                  <span class="ava ava--self">我</span>
+                  <div class="bub bub--self"><span class="voice"><span class="voice__wave"><i style="height:6px"></i><i style="height:10px"></i><i style="height:7px"></i></span><span class="voice__d">7″</span></span><span class="bub__foot"><svg><use href="#i-check"/></svg><svg><use href="#i-check"/></svg></span></div>
+                </div>
+              </div>
+              <div class="bub-wrap bub-wrap--peer">
+                <div class="bub-row">
+                  <span class="ava ava--peer">小</span>
+                  <div class="bub bub--peer"><span class="bub__body">下周我要中期检查，PPT 改了八版还不满意，周末陪我去图书馆再顺一遍？</span></div>
+                </div>
+              </div>
+              <div class="bub-wrap bub-wrap--self">
+                <div class="bub-row bub-row--self">
+                  <span class="ava ava--self">我</span>
+                  <div class="bub bub--self"><span class="bub__body">行，老位置三楼靠窗，我给你占座</span><span class="bub__foot"><svg><use href="#i-check"/></svg><svg><use href="#i-check"/></svg></span></div>
+                </div>
+              </div>
+              <div class="chat-time-bar">昨天 22:47</div>
+              <div class="bub-wrap bub-wrap--peer">
+                <div class="bub-row">
+                  <span class="ava ava--peer">小</span>
+                  <div class="bub bub--peer"><span class="bub__img"><svg><use href="#i-img"/></svg></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <div class="wechat-input-bar">
+              <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span>
+              <span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span>
+              <span class="wechat-input-bar__input wechat-input-bar__input--ph">输入消息...</span>
+              <span class="wechat-input-bar__send wechat-input-bar__send--dis"><span>发送</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="capsule"><span class="capsule__dots"><i></i><i></i><i></i></span><span class="capsule__div"></span><span class="capsule__home"><i></i></span></div>
+        <div class="sb2"><span>9:41</span><span class="sb2__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">输入中提示 + 新消息条</span><span class="d">peerTyping && isPrivateSession · unreadHintVisible 同帧演示</span></figcaption>
+      <div class="phone">
+        <div class="cp">
+          <div class="chat-header">
+            <span class="chat-header__back">‹</span>
+            <span class="chat-header__ava">小</span>
+            <span class="chat-header__main">
+              <span class="chat-header__row"><span class="chat-header__name">小满</span><svg class="ico--fill" style="color:var(--c-romance)"><use href="#i-heart"/></svg><span class="chat-header__days">认识 3 天</span></span>
+              <span class="chat-header__status">在线</span>
+            </span>
+            <span class="chat-header__more">···</span>
+          </div>
+          <div class="chat-scroll chat-scroll--bottom">
+            <div class="chat-list">
+              <div class="chat-time-bar">星期三 09:12</div>
+              <div class="bub-wrap bub-wrap--self">
+                <div class="bub-row bub-row--self">
+                  <span class="ava ava--self">我</span>
+                  <div class="bub bub--self"><span class="bub__body">占好座了，三楼靠窗老位置</span><span class="bub__foot"><svg><use href="#i-check"/></svg><svg><use href="#i-check"/></svg></span></div>
+                </div>
+              </div>
+              <div class="bub-wrap bub-wrap--peer">
+                <div class="bub-row">
+                  <span class="ava ava--peer">小</span>
+                  <div class="bub bub--peer"><span class="bub__body">收到！马上出门</span></div>
+                </div>
+              </div>
+              <div class="typing">
+                <span class="ava ava--peer" style="border:1px solid var(--c-bg-container)">小</span>
+                <span class="typing__b"><span class="typing__t">对方正在输入...</span><span class="typing__dots"><i></i><i></i><i></i></span></span>
+              </div>
+            </div>
+          </div>
+          <div class="unread"><span>有新消息 ↓</span></div>
+          <div class="chat-input-area">
+            <div class="wechat-input-bar">
+              <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span>
+              <span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span>
+              <span class="wechat-input-bar__input wechat-input-bar__input--ph">输入消息...</span>
+              <span class="wechat-input-bar__send wechat-input-bar__send--dis"><span>发送</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="capsule"><span class="capsule__dots"><i></i><i></i><i></i></span><span class="capsule__div"></span><span class="capsule__home"><i></i></span></div>
+        <div class="sb2"><span>9:41</span><span class="sb2__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">错误态</span><span class="d">pageErrorMessage · 身份带整条撤下，输入区仅剩两个出口</span></figcaption>
+      <div class="phone">
+        <div class="cp">
+          <div class="chat-header" style="padding-right:12px">
+            <span class="chat-header__back chat-header__back--err">‹</span>
+          </div>
+          <div class="chat-scroll">
+            <div class="echat"><svg><use href="#i-warn"/></svg><b>会话不存在或已失效</b></div>
+          </div>
+          <div class="chat-input-area">
+            <div class="chat-input-error">
+              <span class="chat-input-error__btn"><span>返回</span></span>
+              <span class="chat-input-error__btn"><span>消息</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="capsule"><span class="capsule__dots"><i></i><i></i><i></i></span><span class="capsule__div"></span><span class="capsule__home"><i></i></span></div>
+        <div class="sb2"><span>9:41</span><span class="sb2__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">临时匿名会话 · 进行中</span><span class="d">isTempSession · 标题/横幅/倒计时 + 交换与结束双按钮</span></figcaption>
+      <div class="phone">
+        <div class="cp">
+          <div class="chat-header">
+            <span class="chat-header__back">‹</span>
+            <span class="chat-header__ava" style="background:var(--c-romance-50);color:var(--c-romance)">匿</span>
+            <span class="chat-header__main">
+              <span class="chat-header__row"><span class="chat-header__name">24小时临时聊天</span><svg class="ico--fill" style="color:var(--c-romance)"><use href="#i-heart"/></svg><span class="chat-header__days">认识 1 天</span></span>
+              <span class="chat-header__status">离线</span>
+            </span>
+            <span class="chat-header__more">···</span>
+          </div>
+          <div class="temp-banner">
+            <span class="temp-banner__t">24小时临时聊天，双方身份匿名</span>
+            <span class="temp-banner__c">剩余时间：23:41:07</span>
+            <span class="temp-banner__h">24 小时倒计时和联系方式交换都由状态机驱动。</span>
+          </div>
+          <div class="chat-scroll chat-scroll--bottom">
+            <div class="chat-list">
+              <div class="chat-time-bar">昨天 20:15</div>
+              <div class="bub-wrap bub-wrap--peer">
+                <div class="bub-row">
+                  <span class="ava ava--peer">匿</span>
+                  <div class="bub bub--peer"><span class="bub__body">嗨，你平时周末都喜欢做些什么？</span></div>
+                </div>
+              </div>
+              <div class="bub-wrap bub-wrap--self">
+                <div class="bub-row bub-row--self">
+                  <span class="ava ava--self">我</span>
+                  <div class="bub bub--self"><span class="bub__body">去操场跑步，或者窝在宿舍看展的直播回放，你呢？</span><span class="bub__foot"><svg><use href="#i-check"/></svg><svg><use href="#i-check"/></svg></span></div>
+                </div>
+              </div>
+              <div class="bub-wrap bub-wrap--peer">
+                <div class="bub-row">
+                  <span class="ava ava--peer">匿</span>
+                  <div class="bub bub--peer"><span class="bub__body">我也爱跑步！下次约个晨跑？</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <div class="wechat-input-bar">
+              <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span>
+              <span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span>
+              <span class="wechat-input-bar__input wechat-input-bar__input--ph">输入消息...</span>
+              <span class="wechat-input-bar__send wechat-input-bar__send--dis"><span>发送</span></span>
+            </div>
+            <div class="temp-action-row">
+              <span class="temp-action-btn temp-action-btn--sec">同意交换</span>
+              <span class="temp-action-btn temp-action-btn--dan">结束会话</span>
+            </div>
+          </div>
+        </div>
+        <div class="capsule"><span class="capsule__dots"><i></i><i></i><i></i></span><span class="capsule__div"></span><span class="capsule__home"><i></i></span></div>
+        <div class="sb2"><span>9:41</span><span class="sb2__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">临时会话 · 已结束</span><span class="d">tempSessionEnded + isSessionClosed · 输入禁用、警示句在流内</span></figcaption>
+      <div class="phone">
+        <div class="cp">
+          <div class="chat-header">
+            <span class="chat-header__back">‹</span>
+            <span class="chat-header__ava" style="background:var(--c-romance-50);color:var(--c-romance)">匿</span>
+            <span class="chat-header__main">
+              <span class="chat-header__row"><span class="chat-header__name">24小时临时聊天</span><svg class="ico--fill" style="color:var(--c-romance)"><use href="#i-heart"/></svg><span class="chat-header__days">认识 1 天</span></span>
+              <span class="chat-header__status">离线</span>
+            </span>
+            <span class="chat-header__more">···</span>
+          </div>
+          <div class="temp-banner">
+            <span class="temp-banner__t">会话已结束</span>
+            <span class="temp-banner__h">24 小时倒计时和联系方式交换都由状态机驱动。</span>
+          </div>
+          <div class="chat-scroll chat-scroll--bottom">
+            <div class="chat-list">
+              <div class="bub-wrap bub-wrap--peer">
+                <div class="bub-row">
+                  <span class="ava ava--peer">匿</span>
+                  <div class="bub bub--peer"><span class="bub__body">今天聊得很开心</span></div>
+                </div>
+              </div>
+              <div class="bub-wrap bub-wrap--self">
+                <div class="bub-row bub-row--self">
+                  <span class="ava ava--self">我</span>
+                  <div class="bub bub--self"><span class="bub__body">是呀，可惜时间到啦</span><span class="bub__foot"><svg><use href="#i-check"/></svg><svg><use href="#i-check"/></svg></span></div>
+                </div>
+              </div>
+              <span class="meta-warn">会话已结束，无法继续发送消息。</span>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <div class="wechat-input-bar">
+              <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span>
+              <span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span>
+              <span class="wechat-input-bar__input wechat-input-bar__input--ph wechat-input-bar__input--dis">会话已结束</span>
+              <span class="wechat-input-bar__send wechat-input-bar__send--dis"><span>发送</span></span>
+            </div>
+            <div class="temp-action-row">
+              <span class="temp-action-btn temp-action-btn--sec">同意交换</span>
+              <span class="temp-action-btn temp-action-btn--dan">结束会话</span>
+            </div>
+          </div>
+        </div>
+        <div class="capsule"><span class="capsule__dots"><i></i><i></i><i></i></span><span class="capsule__div"></span><span class="capsule__home"><i></i></span></div>
+        <div class="sb2"><span>9:41</span><span class="sb2__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F08 -->
+    <figure class="frame">
+      <figcaption><b>F08</b><span class="t">键盘弹起 · 草稿已填</span><span class="d">keyboardHeight>0 · 输入区去安全区 padding 贴键盘</span></figcaption>
+      <div class="phone">
+        <div class="cp">
+          <div class="chat-header">
+            <span class="chat-header__back">‹</span>
+            <span class="chat-header__ava">小</span>
+            <span class="chat-header__main">
+              <span class="chat-header__row"><span class="chat-header__name">小满</span><svg class="ico--fill" style="color:var(--c-romance)"><use href="#i-heart"/></svg><span class="chat-header__days">认识 3 天</span></span>
+              <span class="chat-header__status">在线</span>
+            </span>
+            <span class="chat-header__more">···</span>
+          </div>
+          <div class="chat-scroll chat-scroll--bottom">
+            <div class="chat-list">
+              <div class="chat-time-bar">昨天 22:47</div>
+              <div class="bub-wrap bub-wrap--peer">
+                <div class="bub-row">
+                  <span class="ava ava--peer">小</span>
+                  <div class="bub bub--peer"><span class="bub__body">周六有没有空？想去看那个莫奈展</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area chat-input-area--kb">
+            <div class="wechat-input-bar">
+              <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span>
+              <span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span>
+              <span class="wechat-input-bar__input">周六一起去美术馆看莫奈展？我提前约票</span>
+              <span class="wechat-input-bar__send"><span>发送</span></span>
+            </div>
+          </div>
+          <div class="kb">
+            <div class="kb__row"><span class="kb__k">q</span><span class="kb__k">w</span><span class="kb__k">e</span><span class="kb__k">r</span><span class="kb__k">t</span><span class="kb__k">y</span><span class="kb__k">u</span><span class="kb__k">i</span><span class="kb__k">o</span><span class="kb__k">p</span></div>
+            <div class="kb__row" style="padding:0 14px"><span class="kb__k">a</span><span class="kb__k">s</span><span class="kb__k">d</span><span class="kb__k">f</span><span class="kb__k">g</span><span class="kb__k">h</span><span class="kb__k">j</span><span class="kb__k">k</span><span class="kb__k">l</span></div>
+            <div class="kb__row"><span class="kb__k kb__k--wide">⇧</span><span class="kb__k">z</span><span class="kb__k">x</span><span class="kb__k">c</span><span class="kb__k">v</span><span class="kb__k">b</span><span class="kb__k">n</span><span class="kb__k">m</span><span class="kb__k kb__k--wide">⌫</span></div>
+            <div class="kb__row"><span class="kb__k kb__k--wide">123</span><span class="kb__k">😊</span><span class="kb__k kb__k--sp">空格</span><span class="kb__k kb__k--go">发送</span></div>
+          </div>
+        </div>
+        <div class="capsule"><span class="capsule__dots"><i></i><i></i><i></i></span><span class="capsule__div"></span><span class="capsule__home"><i></i></span></div>
+        <div class="sb2"><span>9:41</span><span class="sb2__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F09 -->
+    <figure class="frame">
+      <figcaption><b>F09</b><span class="t">表情面板展开</span><span class="d">emojiPanelVisible · 与键盘互斥（键盘收起）· 8 列 × 4 行</span></figcaption>
+      <div class="phone">
+        <div class="cp">
+          <div class="chat-header">
+            <span class="chat-header__back">‹</span>
+            <span class="chat-header__ava">小</span>
+            <span class="chat-header__main">
+              <span class="chat-header__row"><span class="chat-header__name">小满</span><svg class="ico--fill" style="color:var(--c-romance)"><use href="#i-heart"/></svg><span class="chat-header__days">认识 3 天</span></span>
+              <span class="chat-header__status">在线</span>
+            </span>
+            <span class="chat-header__more">···</span>
+          </div>
+          <div class="chat-scroll chat-scroll--bottom">
+            <div class="chat-list">
+              <div class="bub-wrap bub-wrap--peer">
+                <div class="bub-row">
+                  <span class="ava ava--peer">小</span>
+                  <div class="bub bub--peer"><span class="bub__body">展厅排队的人好多哈哈哈</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <div class="wechat-input-bar">
+              <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span>
+              <span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span>
+              <span class="wechat-input-bar__input wechat-input-bar__input--ph">输入消息...</span>
+              <span class="wechat-input-bar__send wechat-input-bar__send--dis"><span>发送</span></span>
+            </div>
+            <div class="emoji-panel">
+              <span class="emoji-panel__i"><span>😀</span></span><span class="emoji-panel__i"><span>😁</span></span><span class="emoji-panel__i"><span>😂</span></span><span class="emoji-panel__i"><span>🤣</span></span><span class="emoji-panel__i"><span>😊</span></span><span class="emoji-panel__i"><span>😍</span></span><span class="emoji-panel__i"><span>🥰</span></span><span class="emoji-panel__i"><span>😘</span></span>
+              <span class="emoji-panel__i"><span>😎</span></span><span class="emoji-panel__i"><span>🤩</span></span><span class="emoji-panel__i"><span>🥳</span></span><span class="emoji-panel__i"><span>😋</span></span><span class="emoji-panel__i"><span>😜</span></span><span class="emoji-panel__i"><span>🤔</span></span><span class="emoji-panel__i"><span>🥺</span></span><span class="emoji-panel__i"><span>😭</span></span>
+              <span class="emoji-panel__i"><span>😤</span></span><span class="emoji-panel__i"><span>😡</span></span><span class="emoji-panel__i"><span>🤷</span></span><span class="emoji-panel__i"><span>😇</span></span><span class="emoji-panel__i"><span>😴</span></span><span class="emoji-panel__i"><span>🥱</span></span><span class="emoji-panel__i"><span>🤝</span></span><span class="emoji-panel__i"><span>👍</span></span>
+              <span class="emoji-panel__i"><span>👎</span></span><span class="emoji-panel__i"><span>👏</span></span><span class="emoji-panel__i"><span>🙏</span></span><span class="emoji-panel__i"><span>💪</span></span><span class="emoji-panel__i"><span>❤️</span></span><span class="emoji-panel__i"><span>💔</span></span><span class="emoji-panel__i"><span>✨</span></span><span class="emoji-panel__i"><span>🎉</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="capsule"><span class="capsule__dots"><i></i><i></i><i></i></span><span class="capsule__div"></span><span class="capsule__home"><i></i></span></div>
+        <div class="sb2"><span>9:41</span><span class="sb2__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F10 -->
+    <figure class="frame">
+      <figcaption><b>F10</b><span class="t">「＋」更多功能面板</span><span class="d">moreMenuVisible · 底部弹层 + 遮罩</span></figcaption>
+      <div class="phone">
+        <div class="cp">
+          <div class="chat-header">
+            <span class="chat-header__back">‹</span>
+            <span class="chat-header__ava">小</span>
+            <span class="chat-header__main">
+              <span class="chat-header__row"><span class="chat-header__name">小满</span><svg class="ico--fill" style="color:var(--c-romance)"><use href="#i-heart"/></svg><span class="chat-header__days">认识 3 天</span></span>
+              <span class="chat-header__status">在线</span>
+            </span>
+            <span class="chat-header__more">···</span>
+          </div>
+          <div class="chat-scroll chat-scroll--bottom">
+            <div class="chat-list">
+              <div class="bub-wrap bub-wrap--peer">
+                <div class="bub-row">
+                  <span class="ava ava--peer">小</span>
+                  <div class="bub bub--peer"><span class="bub__body">你拍的樱花树太好看了，教教我</span></div>
+                </div>
+              </div>
+              <div class="bub-wrap bub-wrap--self">
+                <div class="bub-row bub-row--self">
+                  <span class="ava ava--self">我</span>
+                  <div class="bub bub--self"><span class="bub__body">下次出门带上你，现场教学</span><span class="bub__foot"><svg><use href="#i-check"/></svg><svg><use href="#i-check"/></svg></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <div class="wechat-input-bar">
+              <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span>
+              <span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span>
+              <span class="wechat-input-bar__input wechat-input-bar__input--ph">输入消息...</span>
+              <span class="wechat-input-bar__send wechat-input-bar__send--dis"><span>发送</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="overlay overlay--b">
+          <div class="sheet">
+            <div class="sheet__title">更多功能</div>
+            <div class="sheet__grid">
+              <span class="mi"><span class="mi__ic"><svg><use href="#i-camera"/></svg></span><span class="mi__lab">发送图片</span></span>
+            </div>
+            <div class="sheet__cancel">取消</div>
+          </div>
+        </div>
+        <div class="sb2 sb2--inv"><span>9:41</span><span class="sb2__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F11 -->
+    <figure class="frame">
+      <figcaption><b>F11</b><span class="t">消息长按菜单</span><span class="d">longPressMenu.visible · 私信会话无「撤回」（仅 isSelf && isTempSession）</span></figcaption>
+      <div class="phone">
+        <div class="cp">
+          <div class="chat-header">
+            <span class="chat-header__back">‹</span>
+            <span class="chat-header__ava">小</span>
+            <span class="chat-header__main">
+              <span class="chat-header__row"><span class="chat-header__name">小满</span><svg class="ico--fill" style="color:var(--c-romance)"><use href="#i-heart"/></svg><span class="chat-header__days">认识 3 天</span></span>
+              <span class="chat-header__status">在线</span>
+            </span>
+            <span class="chat-header__more">···</span>
+          </div>
+          <div class="chat-scroll chat-scroll--bottom">
+            <div class="chat-list">
+              <div class="bub-wrap bub-wrap--self">
+                <div class="bub-row bub-row--self">
+                  <span class="ava ava--self">我</span>
+                  <div class="bub bub--self"><span class="bub__body">明天下午没课，去操场等你</span><span class="bub__foot"><svg><use href="#i-check"/></svg></span></div>
+                </div>
+              </div>
+              <div class="bub-wrap bub-wrap--peer">
+                <div class="bub-row">
+                  <span class="ava ava--peer">小</span>
+                  <div class="bub bub--peer"><span class="bub__body">好，带两杯芋泥啵啵</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <div class="wechat-input-bar">
+              <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span>
+              <span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span>
+              <span class="wechat-input-bar__input wechat-input-bar__input--ph">输入消息...</span>
+              <span class="wechat-input-bar__send wechat-input-bar__send--dis"><span>发送</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="overlay overlay--c">
+          <div class="lp-menu">
+            <div class="lp-menu__i">复制</div>
+            <div class="lp-menu__i">转发</div>
+            <div class="lp-menu__i">引用</div>
+            <div class="lp-menu__i lp-menu__i--d">删除</div>
+            <div class="lp-menu__i">取消</div>
+          </div>
+        </div>
+        <div class="sb2 sb2--inv"><span>9:41</span><span class="sb2__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">气泡规格（R20 / design-variables.scss :646-657 令牌实测值）：max-width 58% · padding 14/22rpx ·
+    圆角 20rpx + 尾 4rpx · 正文 28rpx/行高1.6 · 纯 emoji 56rpx · 头像 64rpx 顶对齐 · <b>双方阴影统一禁用</b> ·
+    对方气泡纯白。下列全部按此渲染（rpx÷2 后 58% 以「头像+气泡」整体容器计量）。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>气泡 · 消息流全形态（ChatBubble）</h3>
+      <p class="hint">左白右绿；self 右上尾、peer 左上尾；送达勾仅 self 显示（sent 单勾 / delivered·read 双勾）。历史 voice 消息由本组件兜底展示（录音入口已下线）。图片位为灰底占位，不放网图。</p>
+      <div class="row">
+        <div class="cell"><div class="demo-list">
+          <div class="bub-wrap bub-wrap--peer"><div class="bub-row"><span class="ava ava--peer">小</span><div class="bub bub--peer"><span class="bub__body">对方文本气泡 · 纯白无阴影</span></div></div></div>
+          <div class="bub-wrap bub-wrap--self"><div class="bub-row bub-row--self"><span class="ava ava--self">我</span><div class="bub bub--self"><span class="bub__body">我方文本气泡 · --c-brand</span><span class="bub__foot"><svg><use href="#i-check"/></svg><svg><use href="#i-check"/></svg></span></div></div></div>
+          <div class="bub-wrap bub-wrap--self"><div class="bub-row bub-row--self"><span class="ava ava--self">我</span><div class="bub bub--self"><span class="bub__body bub__body--emoji">🥹🫶</span><span class="bub__foot"></span></div></div></div>
+        </div><span class="lab">文本（双方）/ 纯 emoji 56rpx</span></div>
+        <div class="cell"><div class="demo-list">
+          <div class="bub-wrap bub-wrap--self"><div class="bub-row bub-row--self"><span class="ava ava--self">我</span><div class="bub bub--self"><span class="voice"><span class="voice__wave"><i style="height:6px"></i><i style="height:10px"></i><i style="height:7px"></i></span><span class="voice__d">12″</span></span><span class="bub__foot"><svg><use href="#i-check"/></svg></span></div></div></div>
+          <div class="bub-wrap bub-wrap--peer"><div class="bub-row"><span class="ava ava--peer">小</span><div class="bub bub--peer"><span class="bub__img"><svg><use href="#i-img"/></svg></span></div></div></div>
+          <div class="bub-wrap bub-wrap--peer"><div class="bub-row"><span class="ava ava--peer">小</span><div class="bub bub--peer"><span class="bub__quote"><span class="bub__quote-bar"></span><span class="bub__quote-c"><span class="bub__quote-s">我</span><span class="bub__quote-b">脑子都是空的</span></span></span><span class="bub__body">现在好点没？请你喝芋泥啵啵</span></div></div></div>
+          <div class="bub-wrap bub-wrap--center"><div class="bub bub--recalled"><span class="bub__body bub__body--recalled">你撤回了一条消息</span></div></div>
+        </div><span class="lab">语音 VoicePill / 图片占位 / 引用 / 撤回（居中无底）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>输入栏 · 全状态（wechat-input-bar）</h3>
+      <p class="hint">§3.7 写的「语音」输入模式在源码已下线（「语音功能已移除」注释），输入栏实际 = 表情键 + 「＋」键 + input + 常显发送。发送空草稿置灰（--c-status-disabled）、有草稿品牌绿高亮；placeholder 三切换：输入消息... / 输入回复...（引用中）/ 会话已结束（closed，输入禁用）。</p>
+      <div class="row" style="gap:10px">
+        <div class="cell"><div class="demo-bar"><div class="wechat-input-bar">
+          <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span><span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span><span class="wechat-input-bar__input wechat-input-bar__input--ph">输入消息...</span><span class="wechat-input-bar__send wechat-input-bar__send--dis"><span>发送</span></span>
+        </div></div><span class="lab">默认 · 发送禁用</span></div>
+        <div class="cell"><div class="demo-bar"><div class="wechat-input-bar">
+          <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span><span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span><span class="wechat-input-bar__input">三楼靠窗见</span><span class="wechat-input-bar__send"><span>发送</span></span>
+        </div></div><span class="lab">已填草稿 · 高亮可发</span></div>
+        <div class="cell"><div class="demo-bar">
+          <div class="quote-reply-bar" style="margin-bottom:2px"><span><span class="quote-reply-bar__l">引用 对方：</span><br><span class="quote-reply-bar__b">现在好点没？请你喝芋泥啵啵</span></span><svg><use href="#i-x"/></svg></div>
+          <div class="wechat-input-bar">
+            <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span><span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span><span class="wechat-input-bar__input wechat-input-bar__input--ph">输入回复...</span><span class="wechat-input-bar__send wechat-input-bar__send--dis"><span>发送</span></span>
+          </div>
+        </div><span class="lab">quoteReply 预览条（点击取消）</span></div>
+        <div class="cell"><div class="demo-bar"><div class="wechat-input-bar">
+          <span class="wechat-input-bar__icon"><svg><use href="#i-smile"/></svg></span><span class="wechat-input-bar__icon"><svg><use href="#i-plus"/></svg></span><span class="wechat-input-bar__input wechat-input-bar__input--ph wechat-input-bar__input--dis">会话已结束</span><span class="wechat-input-bar__send wechat-input-bar__send--dis"><span>发送</span></span>
+        </div></div><span class="lab">isSessionClosed · 整栏禁用</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>弹层菜单 · 五类全枚举</h3>
+      <p class="hint">长按菜单居中、其余为底部弹层（.more-menu-sheet / .avatar-menu-sheet）。「撤回」显隐条件 = <code>longPressMenu.isSelf && isTempSession</code>，私信会话不展示（R4-00072）。F10/F11 已出整帧，此处补齐其余三类同骨架弹层。</p>
+      <table class="tbl" style="margin-bottom:14px">
+        <tr><th>弹层</th><th>条目（i18n 逐字）</th><th>触发条件</th></tr>
+        <tr><td>长按菜单</td><td>复制 / 转发 / 引用 /（撤回·仅临时会话自消息）/ 删除(红) / 取消</td><td><code>longPressMenu.visible</code></td></tr>
+        <tr><td>顶部「···」</td><td>查看对方主页 / 消息免打扰↔关闭免打扰 / 拉黑(红) / 举报 / 取消</td><td><code>navMenuVisible</code></td></tr>
+        <tr><td>＋面板</td><td>发送图片(占位) / 取消</td><td><code>moreMenuVisible</code></td></tr>
+        <tr><td>转发面板</td><td>会话头像+昵称列表（空则「暂无可转发的会话」）/ 取消</td><td><code>forwardSheet.visible</code></td></tr>
+        <tr><td>头像菜单</td><td>看主页 / 拍一拍 / 取消（点 ChatHeader 头像；双击=拍一拍）</td><td><code>avatarMenuVisible</code></td></tr>
+      </table>
+      <div class="row">
+        <div class="cell"><div class="sheet sheet--demo">
+          <div class="sheet__title">更多操作</div>
+          <div class="nav-list">
+            <div class="nav-item">查看对方主页</div>
+            <div class="nav-item">消息免打扰</div>
+            <div class="nav-item nav-item--d">拉黑</div>
+            <div class="nav-item">举报</div>
+          </div>
+          <div class="sheet__cancel">取消</div>
+        </div><span class="lab">顶部「···」菜单</span></div>
+        <div class="cell"><div class="sheet sheet--demo">
+          <div class="ava-menu__head"><span class="ava ava--peer">小</span><b>小满</b></div>
+          <div class="ava-menu__acts"><span class="ava-menu__act">看主页</span><span class="ava-menu__act">拍一拍</span></div>
+          <div class="sheet__cancel">取消</div>
+        </div><span class="lab">头像菜单（2026-08-23）</span></div>
+        <div class="cell"><div class="sheet sheet--demo">
+          <div class="sheet__title">转发</div>
+          <div style="padding:6px 0">
+            <div class="fwd-item"><span class="ava ava--peer">阿</span><b>阿辰</b></div>
+            <div class="fwd-item"><span class="ava ava--self">星</span><b>星辰</b></div>
+            <div class="fwd-item"><span class="ava ava--peer">小</span><b>小溪</b></div>
+          </div>
+          <div class="sheet__cancel">取消</div>
+        </div><span class="lab">转发会话选择</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>页头状态带 · 全枚举</h3>
+      <p class="hint">页头与消息流之间另有四条数据驱动带：关系状态区 <code>relationshipInfo</code>、临时会话带 <code>isTempSession||tempLoadFailed</code>（F06/F07 已整帧）、缘分速配带 <code>fromSignal</code>、引用上下文卡 <code>quoteContext</code>。关系分「亲密度」按产品裁定不回填，画板显示 <code>—</code>，共同兴趣行后端未下发即整行隐藏（宁缺毋造）。</p>
+      <div class="row" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <div class="cell"><div class="rel strip--demo" style="margin:0">
+          <span class="rel__row"><span class="rtag rtag--chatting">聊天中</span><span class="rel__score">亲密度 —</span></span>
+          <span class="sact">一起去上次的书店逛逛 ›</span>
+        </div><span class="lab">relationship-status（标签四档：刚认识/聊天中/暧昧中/互相关注）</span></div>
+        <div class="cell"><div class="signal strip--demo" style="margin:0">
+          <span class="signal__row"><span class="signal__count">已互动 6 条消息</span><span class="signal__pct">30%</span></span>
+          <div class="signal__bar"><i></i></div>
+          <div class="signal__lv">
+            <span class="signal__l signal__l--on"><span class="signal__d"><svg><use href="#i-check"/></svg></span>地区 · 年龄 · 学校</span>
+            <span class="signal__l signal__l--on"><span class="signal__d"><svg><use href="#i-check"/></svg></span>兴趣爱好</span>
+            <span class="signal__l signal__l--next" style="opacity:1"><span class="signal__d">3</span>照片</span>
+            <span class="signal__l"><span class="signal__d">4</span>语音状态</span>
+            <span class="signal__l"><span class="signal__d">5</span>主页</span>
+          </div>
+          <span class="signal__hint"><span>再互发 4 条解锁「照片」</span></span>
+        </div><span class="lab">signal-banner（缘分速配 · 全档解锁时改为「已解锁全部信息…」+「查看 TA 的主页」）</span></div>
+        <div class="cell"><div class="qcard strip--demo" style="margin:0">
+          <span class="qcard__l">引用自「周末观展搭子」</span>
+          <span class="qcard__c">"樱花大道那篇是你拍的吧？求个机位教程！"</span>
+          <span class="qcard__a">-- 周岚</span>
+        </div><span class="lab">quote-card（兴趣圈「打招呼」进线时出现在输入区顶部）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>与 design-variables.scss 一一对应，可直接抄进 SCSS</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用以下档位；源页私有色已归一（对照见 §04）。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">我方气泡 · 发送按钮 · 返回键 · 建议动作</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3;border:1px solid #DDE3E0"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">破冰按钮底 · 语音条底 · 错误态动作底（原 --c-bg-brand）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">错误态返回键/动作文字（5.9:1 可达档）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫<code>--c-romance</code></div><div class="sw__u">「认识 N 天」· 临时横幅文字 · 页头心形</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">对方气泡<code>--c-bubble-other</code></div><div class="sw__u">peer 气泡 · 输入区（2026-08-09 定论纯白）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">聊天背景 · 页头同底（2026-08-26 统一）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">输入底<code>--c-bg-surface</code></div><div class="sw__u">输入框/圆形键底（原 --c-neutral-50 归一）· 图片占位</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">结束会话字 · 拉黑/删除 · 已结束警示</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#DCE5E2"></span><div><div class="sw__n">禁用<code>--c-status-disabled</code></div><div class="sw__u">空草稿发送按钮底</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶 / 气泡规格</h3><p class="hint">R20 令牌（design-variables.scss :646-657，rpx÷2）：max-width 58% · padding 7/11px · 圆角 10px + 尾 2px · 正文 14px/1.6 · 纯 emoji 28px · 头像 32px 顶对齐 · 双方阴影 none。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">页头昵称 32/700</span><span class="type__p" style="font-size:16px;font-weight:700">小满</span></div>
+        <div class="type__i"><span class="type__m">气泡正文 28/1.6</span><span class="type__p" style="font-size:14px;font-weight:400">行，老位置三楼靠窗，我给你占座</span></div>
+        <div class="type__i"><span class="type__m">发送/输入 28</span><span class="type__p" style="font-size:14px;font-weight:600">发送</span></div>
+        <div class="type__i"><span class="type__m">时间条 --fs-xs 20/10px</span><span class="type__p" style="font-size:10px;font-weight:400">昨天 21:03</span></div>
+        <div class="type__i"><span class="type__m">页头状态 --fs-base 24/12px</span><span class="type__p" style="font-size:12px;font-weight:400;color:var(--c-text-placeholder)">在线</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>头像-气泡间距 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>列表行距 16rpx</b><i style="width:8px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:2px 10px 10px 10px"></b>气泡 尾2+主10<br>20rpx + 尾4rpx</div>
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>输入框 · 临时按钮</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>状态带 · 输入栏</div>
+        <div class="rad__i"><b style="border-radius:999px"></b>--r-full<br>时间条 · 胶囊 · 发送</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>全部走工程既有图标体系，无新素材缺口</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>图片消息 / 头像位 · 灰底占位</b><p>图片气泡（160rpx 圆角灰底 + 图像图标）、双方头像（字占位「小 / 我」）、转发列表头像均为占位形态：真实数据来自 person-avatars 池与用户上传，设计稿不得放网图。</p><div class="m">--c-bg-surface · 图片 max-width 420rpx=210px</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>IMAGE_PATHS · smile / plus / camera / close / check-white / warning</b><p>输入栏表情键与「＋」键（44rpx=22px，--c-text-secondary）、＋面板相机（96rpx 绿渐变圆底）、送达白勾（20rpx，仅 self）、错误态三角警示（EmptyState network 预设，120rpx=60px）。本画板以同形 lucide 描边 SVG 复刻。</p><div class="m">工程侧为 <code>&lt;image&gt;</code> 外链 SVG，currentColor 烘焙问题见 ChatHeader R6-L14-D01 注记</div></div></div>
+  </div>
+  <div class="note">
+    <b>基准声明：</b>聊天会话页此前只有《全站设计规范与逐页设计稿说明》§3.7 文字规范、无整页基准图，本画板是它的第一张帧基准（§01 的 11 屏即验收对照帧）。凡源码渲染与 §3.7 冲突之处均以源码实况画出，逐条登记如下（画板不修）：
+    <ul>
+      <li><b>§3.7「输入栏（语音/文字/表情/加号）」与实况冲突：</b>语音输入模式已从本页源码下线（index.vue 注释「语音功能已移除」），输入栏实际 = 表情键 + 「＋」键 + input + 常显发送；语音仅作为历史 VoicePill 消息兜底渲染（F03 已画）。</li>
+      <li><b>§3.7 四段结构「顶部…→ 匹配成功引导 + 破冰问题 chips → 消息流」与实况冲突：</b>MatchGreetingTip 实际渲染在消息流内部首行（<code>v-if showMatchGreeting</code>，空会话时垂直居中），BreakQuestion 卡片实际在输入栏正上方（输入区内），均非「页头下引导区」。按源码实况画（F02）。</li>
+      <li><b>§3.7 组件清单含 IcebreakerSuggestions，本页源码未引用</b>（破冰卡实际是 BreakQuestion；IcebreakerSuggestions 为 messages 页件）。§3.7 未提的 ActivityCard（活动卡片消息）与 HeartSignal 本页模板有分支但为纯数据驱动，未整帧，仅在此登记。</li>
+      <li><b>§3.7 未提的实况分支：</b>页头与消息流之间还有关系状态带（relationshipInfo）、缘分速配带（fromSignal）、引用卡（quoteContext）三段；错误态整条身份带撤下、输入区仅剩「返回/消息」（R11-L11-D15/D17，F05）。</li>
+      <li><b>气泡规格 R20 与令牌逐条一致，无冲突</b>：--bubble-max-width 58% / padding 14·22rpx / 圆角 20+4rpx / 正文 28rpx·1.6 / 纯 emoji 56rpx / 头像 64rpx 顶对齐 / --bubble-shadow none（双方禁用）/ 对方气泡 --c-bubble-other #FFFFFF 纯白，均与 §3.7 逐字对上。ChatBubble :259 注释仍写旧值「84%」为未同步的陈旧注释，以令牌值为准。</li>
+      <li><b>58% 口径注明：</b>max-width 量在「头像+气泡」整体容器 .bubble-wrap 上，气泡本体实际更窄（§3.7 未写明口径）。</li>
+      <li><b>临时/普通会话页头兜底值：</b>「认识 1 天」「离线」是前端兜底渲染（relationDays 缺省 1、online 初值折叠 false），源码已登记 NOT-FIXABLE-HERE→F2，本画板按实况照画（F06/F07）。</li>
+      <li><b>私有色归一对照（改令牌、留注记）：</b>ChatHeader 私写 #36C99A/#222/#999/#666/#FF6B81 → --c-brand/--c-text-primary/--c-text-placeholder/--c-text-tertiary/--c-romance；--c-neutral-50 #F7FAF9（键底/输入底）与 --c-bg-brand #E8FBF2（语音条/错误动作底）→ 就近 --c-bg-surface / --c-brand-50；BreakQuestion 全套私色（#f8fffc/#eaf9f2/#22a976/#fff0f6/#ffd2e3/#e94d87）→ --c-bg-surface/--c-brand-50/--c-brand-600/--c-romance-50/--c-romance-300/--c-romance；temp 横幅边 --c-brand-shadow-tint → --c-brand-100；助手气泡 #E8F8F1 → --c-brand-50；时间条底 --c-overlay-faint 与遮罩 --c-black-overlay-mid（rgba 中性/黑）无登记档位，按 base 同源 rgba 中性色保留字面值。--bubble-* 家族与 --c-bubble-other 未登记进 board-base.css（BASE_PROBLEM 已回报），本画板按 design-variables.scss :637/646-657 1:1 声明使用。</li>
+      <li><b>不捏造分数：</b>关系状态带「亲密度」按产品裁定不回填，画板显示「—」（无后端快照即整区不渲染）；signal 进度 30% 为消息数换算的互动进度，非匹配度类数值。</li>
+      <li><b>LockScreen（<code>v-if="!isUnlocked"</code>）</b>为跨页共享未登录闸门组件，不在本画板重复出帧。</li>
+      <li>本页在 chat 分包，无 tabbar——画板若出现 tabbar 即为错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 聊天会话页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1845（面积 1,571,940 px，对齐 素材/理想效果图 语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

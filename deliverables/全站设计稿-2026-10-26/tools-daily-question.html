@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 每日一问页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（tools/daily-question：绿渐变紧凑页头 + 签到门槛卡 + 题目卡 + 回答区 + 回答列表） ===== */
+.dqh { position: absolute; top: 0; left: 0; width: 100%; z-index: 4; display: flex; align-items: center;
+  justify-content: space-between; padding: 52px 16px 12px;
+  background: linear-gradient(135deg, var(--c-brand) 0%, var(--c-brand-300) 100%); }
+.dqh__back { min-width: 40px; font-size: var(--fs-base); color: var(--c-brand-900); font-weight: 500; padding: 2px 0; }
+.dqh__t { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-brand-900); }
+.dqh__sp { min-width: 40px; }
+.dqb { position: absolute; top: 92px; left: 0; width: 100%; bottom: 0; overflow: hidden;
+  background: var(--c-gradient-page); padding: 6px 12px 12px; }
+/* 锁定卡 */
+.lk { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 6px 16px;
+  padding: 30px 18px; background: var(--c-bg-container); border-radius: var(--card-radius);
+  box-shadow: var(--s-card-soft); border: var(--c-border-card); text-align: center; }
+.lk__ic { width: 40px; height: 40px; color: var(--c-brand-800); margin-bottom: 6px; }
+.lk__t { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); }
+.lk__d { font-size: var(--fs-md); color: var(--c-text-secondary); line-height: 1.6; }
+.lk__cta { margin-top: 8px; padding: 10px 24px; background: var(--c-brand-800); border-radius: var(--r-full);
+  font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-inverse); }
+.lk__cta--load { opacity: 0.72; }
+.lk-back { margin: 10px auto 16px; padding: 0 12px; min-height: 44px; display: flex; align-items: center;
+  border-radius: var(--r-full); border: 1px solid var(--c-border-default); background: var(--c-bg-container);
+  font-size: var(--fs-lg); color: var(--c-text-secondary); }
+/* 加载 / 错误 */
+.st { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 60px 18px; text-align: center; }
+.st__sp { width: 22px; height: 22px; border: 2px solid var(--c-border-light); border-top-color: var(--c-brand);
+  border-radius: var(--r-circle); }
+.st__t { font-size: var(--fs-md); color: var(--c-text-tertiary); line-height: 1.6; }
+.st__rt { padding: 6px 16px; border-radius: var(--r-full); background: var(--c-bg-brand);
+  font-size: var(--fs-md); font-weight: 600; color: var(--c-brand-700); }
+/* 题目卡 */
+.qc { margin: 8px 12px; padding: 24px; border-radius: var(--r-xxl); position: relative; overflow: hidden;
+  background: linear-gradient(135deg, var(--c-bg-brand) 0%, var(--c-bg-romance) 100%);
+  box-shadow: 0 4px 16px var(--c-brand-shadow-tint); }
+.qc::before { content: ""; position: absolute; top: -20px; right: -20px; width: 80px; height: 80px;
+  border-radius: var(--r-circle); background: radial-gradient(circle, var(--c-romance-50) 0%, transparent 70%); }
+.qc__bg { display: inline-flex; padding: 2px 10px; border-radius: var(--r-full); background: var(--c-brand);
+  box-shadow: var(--s-brand-sm); margin-bottom: 12px; position: relative; }
+.qc__bt { font-size: var(--fs-sm); color: var(--c-text-inverse); font-weight: 600; }
+.qc__q { display: block; font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary);
+  line-height: 1.6; margin-bottom: 10px; position: relative; }
+.qc__d { font-size: var(--fs-sm); color: var(--c-text-tertiary); font-weight: 500; }
+/* 回答区 */
+.as { margin: 0 12px 12px; padding: 16px; background: var(--c-bg-container); border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft); border: var(--c-border-card); }
+.as__t { display: block; font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); margin-bottom: 10px; }
+.ta { width: 100%; min-height: 96px; padding: 12px; border-radius: var(--r-lg); background: var(--c-bg-page);
+  font-size: var(--fs-md); color: var(--c-text-primary); line-height: 1.7; border: 1px solid transparent; margin-bottom: 12px; }
+.ta--ph { color: var(--c-text-placeholder); }
+.ta--focus { border-color: var(--c-brand); background: var(--c-bg-container); box-shadow: 0 0 0 3px var(--c-brand-shadow-tint); }
+.aact { display: flex; align-items: center; justify-content: space-between; }
+.an { display: flex; align-items: center; gap: 6px; padding: 6px 0; }
+.an__c { width: 20px; height: 20px; border-radius: var(--r-md); border: 1px solid var(--c-border-light);
+  background: var(--c-bg-container); display: flex; align-items: center; justify-content: center; }
+.an__c--on { background: var(--c-brand); border-color: var(--c-brand); box-shadow: var(--s-brand-sm); }
+.an__c svg { width: 13px; height: 13px; color: var(--c-neutral-0); }
+.an__l { font-size: var(--fs-md); color: var(--c-text-secondary); }
+.sbtn { padding: 10px 18px; border-radius: var(--r-full); background: var(--c-brand); box-shadow: var(--s-float-btn);
+  font-size: var(--fs-md); font-weight: 600; color: var(--c-text-inverse); display: flex; align-items: center; gap: 6px; }
+.sbtn--dis { background: var(--c-bg-page); box-shadow: none; color: var(--c-text-tertiary); }
+/* 已回答提示 */
+.ah { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0 12px 12px; padding: 12px;
+  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand-bg-tint));
+  border: 1px solid var(--c-brand-100); border-radius: var(--r-lg); }
+.ah svg { width: 18px; height: 18px; color: var(--c-brand); }
+.ah__t { font-size: var(--fs-md); color: var(--c-brand); font-weight: 600; }
+/* 回答列表 */
+.al { margin: 0 12px; }
+.al__h { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; padding: 0 2px; }
+.al__ti { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.al__ct { font-size: var(--fs-sm); color: var(--c-brand); background: var(--c-bg-brand);
+  padding: 1px 8px; border-radius: var(--r-full); font-weight: 600; }
+.ac { padding: 16px; background: var(--c-bg-container); border-radius: var(--r-xl); box-shadow: var(--s-card-soft);
+  margin-bottom: 8px; border: var(--c-border-card); }
+.ac__h { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ac__av { width: 32px; height: 32px; border-radius: var(--r-circle); flex: none; overflow: hidden;
+  background: linear-gradient(135deg, var(--c-bg-brand), var(--c-brand-100)); border: 1.5px solid var(--c-bg-brand);
+  display: flex; align-items: center; justify-content: center; }
+.ac__av img { width: 100%; height: 100%; object-fit: cover; }
+.ac__ch { font-size: var(--fs-md); font-weight: 700; color: var(--c-brand); }
+.ac__if { display: flex; flex-direction: column; gap: 1px; }
+.ac__nm { font-size: var(--fs-md); font-weight: 600; color: var(--c-text-primary); }
+.ac__tm { font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+.ac__ct { display: block; font-size: var(--fs-md); color: var(--c-text-primary); line-height: 1.8;
+  background: var(--c-bg-page); padding: 10px; border-radius: var(--r-md); }
+.lm { display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: var(--r-full);
+  background: var(--c-bg-container); border: var(--c-border-card); margin-top: 8px;
+  font-size: var(--fs-md); color: var(--c-text-tertiary); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.4"/><path d="M8 10.5V7.6a4 4 0 0 1 8 0v2.9"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.2 12.4l2.6 2.6 5-5.6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.6l4.4 4.4L19 7"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.8v4.8"/><path d="M12 16.2h.01"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>每日一问页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/tools/daily-question/index</code>。
+     门槛是<b>今日签到</b>（非登录、非资料完善度）：未签到整页只有锁卡 + 返回出口；签到后按
+     加载 → 题目 → 回答（一次性）→ 他人回答列表 走。
+     本页回答正文的字数上限是 <b>500</b>，与帖子正文的 1000 是<b>两条独立链</b>（详见 §04）。</p>
+  <div class="cover__meta">
+    <span>路由 <b>tools/daily-question</b></span>
+    <span>分包 <b>tools</b>（无 tabbar）</span>
+    <span>状态 <b>7 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 7 屏</h2>
+    <p>未签到 / 加载 / 失败 / 未答两态 / 已答两态</p></div>
+  <div class="sec__sub">本页状态机有 <b>7 态</b>，来自
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="!checkInStore.checkedIn"</code> →
+    <code style="font-family:var(--mono);font-size:11.5px">loading &amp;&amp; !todayQuestion</code> →
+    <code style="font-family:var(--mono);font-size:11.5px">dailyQuestionStore.errorMessage &amp;&amp; !todayQuestion</code> →
+    <code style="font-family:var(--mono);font-size:11.5px">!hasAnswered &amp;&amp; todayQuestion</code> →
+    <code style="font-family:var(--mono);font-size:11.5px">hasAnswered</code> 后接
+    <code style="font-family:var(--mono);font-size:11.5px">answers.length &gt; 0</code> / <code style="font-family:var(--mono);font-size:11.5px">v-else-if="!loading &amp;&amp; hasAnswered"</code>（空态）。
+    题目与回答两条内容逐字取自仓内 mock 夹具（<code style="font-family:var(--mono);font-size:11.5px">stores/daily-question.ts:166-197</code>），
+    <b>未在页面里造新文案</b>；回答时间由 <code style="font-family:var(--mono);font-size:11.5px">formatAnswerTime()</code> 的相对档（刚刚 / N分钟前 / N小时前 / N天前）给出。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">未签到 · 门槛卡</span><span class="d">checkedIn=false · 题目与回答区整块不出</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="dqh"><span class="dqh__back">返回</span><span class="dqh__t">每日一问</span><span class="dqh__sp"></span></div>
+        <div class="dqb">
+          <div class="lk">
+            <svg class="lk__ic"><use href="#i-lock"/></svg>
+            <span class="lk__t">签到后解锁</span>
+            <span class="lk__d">完成今日签到即可参与每日一问</span>
+            <span class="lk__cta">去签到</span>
+          </div>
+          <div class="lk-back">返回</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">已签到 · 题目加载中</span><span class="d">loading &amp;&amp; !todayQuestion</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="dqh"><span class="dqh__back">返回</span><span class="dqh__t">每日一问</span><span class="dqh__sp"></span></div>
+        <div class="dqb">
+          <div class="st"><div class="st__sp"></div><span class="st__t">正在加载...</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">已签到 · 加载失败</span><span class="d">errorMessage &amp;&amp; !todayQuestion · 重试</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="dqh"><span class="dqh__back">返回</span><span class="dqh__t">每日一问</span><span class="dqh__sp"></span></div>
+        <div class="dqb">
+          <div class="st">
+            <span class="st__t">问题加载失败，请稍后重试</span>
+            <span class="st__rt">重试</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">已签到 · 未回答 · 空输入</span><span class="d">提交禁用（trim 为空）· 上限 500</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="dqh"><span class="dqh__back">返回</span><span class="dqh__t">每日一问</span><span class="dqh__sp"></span></div>
+        <div class="dqb">
+          <div class="qc">
+            <span class="qc__bg"><span class="qc__bt">今日话题</span></span>
+            <span class="qc__q">你理想中的第一次约会是什么样？</span>
+            <span class="qc__d">2026-05-22</span>
+          </div>
+          <div class="as">
+            <span class="as__t">写下你的回答</span>
+            <div class="ta ta--ph">分享你的想法...</div>
+            <div class="aact">
+              <div class="an"><span class="an__c"></span><span class="an__l">匿名回答</span></div>
+              <div class="sbtn sbtn--dis">提交回答</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">未回答 · 已填写 + 匿名勾选</span><span class="d">focus 态 · 提交可用 · 答案区下方无计数</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="dqh"><span class="dqh__back">返回</span><span class="dqh__t">每日一问</span><span class="dqh__sp"></span></div>
+        <div class="dqb">
+          <div class="qc">
+            <span class="qc__bg"><span class="qc__bt">今日话题</span></span>
+            <span class="qc__q">你理想中的第一次约会是什么样？</span>
+            <span class="qc__d">2026-05-22</span>
+          </div>
+          <div class="as">
+            <span class="as__t">写下你的回答</span>
+            <div class="ta ta--focus">想先一起去海边看一次日出，回来路上找家小馆子吃早饭，边走边说这周都发生了什么。</div>
+            <div class="aact">
+              <div class="an"><span class="an__c an__c--on"><svg><use href="#i-check"/></svg></span><span class="an__l">匿名回答</span></div>
+              <div class="sbtn">提交回答</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">已回答 · 他人回答列表</span><span class="d">输入区整块消失 · 尾件「没有更多回答了」</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="dqh"><span class="dqh__back">返回</span><span class="dqh__t">每日一问</span><span class="dqh__sp"></span></div>
+        <div class="dqb">
+          <div class="qc">
+            <span class="qc__bg"><span class="qc__bt">今日话题</span></span>
+            <span class="qc__q">你理想中的第一次约会是什么样？</span>
+            <span class="qc__d">2026-05-22</span>
+          </div>
+          <div class="ah"><svg><use href="#i-ok"/></svg><span class="ah__t">你已回答今日问题</span></div>
+          <div class="al">
+            <div class="al__h"><span class="al__ti">大家的回答</span><span class="al__ct">2</span></div>
+            <div class="ac">
+              <div class="ac__h"><span class="ac__av"><span class="ac__ch">鹿</span></span>
+                <span class="ac__if"><span class="ac__nm">小鹿</span><span class="ac__tm">30分钟前</span></span></div>
+              <span class="ac__ct">希望是在一个安静的咖啡馆，两个人慢慢聊天，不用太刻意，就是那种很自然的感觉。</span>
+            </div>
+            <div class="ac">
+              <div class="ac__h"><span class="ac__av"><span class="ac__ch">?</span></span>
+                <span class="ac__if"><span class="ac__nm">匿名用户</span><span class="ac__tm">1小时前</span></span></div>
+              <span class="ac__ct">想一起去公园散步，看夕阳，然后一起吃个晚饭。不需要多浪漫，重要的是两个人在一起。</span>
+            </div>
+            <div class="lm">没有更多回答了</div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">已回答 · 零回答空态</span><span class="d">answers.length===0 &amp;&amp; !loading</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="dqh"><span class="dqh__back">返回</span><span class="dqh__t">每日一问</span><span class="dqh__sp"></span></div>
+        <div class="dqb">
+          <div class="qc">
+            <span class="qc__bg"><span class="qc__bt">今日话题</span></span>
+            <span class="qc__q">你理想中的第一次约会是什么样？</span>
+            <span class="qc__d">2026-05-22</span>
+          </div>
+          <div class="ah"><svg><use href="#i-ok"/></svg><span class="ah__t">你已回答今日问题</span></div>
+          <div class="st"><span class="st__t">还没有回答</span><span class="st__t">还没有其他人回答，快来看看吧</span></div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">五类件：回答输入域（含 <b>500 字上限</b>）、提交按钮、匿名勾选、门槛卡 CTA、回答卡头像位。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>回答输入域 · 四态（上限 500 字，<b>无计数器</b>）</h3>
+      <p class="hint"><code>&lt;textarea maxlength="500"&gt;</code>（<code>index.vue:242</code>）——微信原生硬截，<b>静默</b>：不打断、不提示、页面上也没有 <code>N/500</code> 那一行。</p>
+      <div class="row">
+        <div class="cell" style="width:100%"><div class="as" style="margin:0;padding:10px;box-shadow:none"><div class="ta ta--ph" style="min-height:64px;margin:0">分享你的想法...</div></div><span class="lab">placeholder（<code>inputPlaceholder</code>）</span></div>
+        <div class="cell" style="width:100%"><div class="as" style="margin:0;padding:10px;box-shadow:none"><div class="ta ta--focus" style="min-height:64px;margin:0">想先一起去海边看一次日出，回来路上找家小馆子吃早饭。</div></div><span class="lab">focus + 已填（2rpx 透明边框转 <code>--c-brand</code>）</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>链</th><th>位置</th><th>阈值</th><th>越界表现</th></tr>
+        <tr><td>① 输入端硬截</td><td><code>index.vue:242</code> <code>maxlength="500"</code></td><td><b>500</b>（字面量）</td><td>第 501 字<b>静默不入库</b>，画面无任何反馈</td></tr>
+        <tr><td>② store 参数校验</td><td><code>stores/daily-question.ts:321</code></td><td><b>500</b>（另一处字面量）</td><td><code>storeErrors.dailyQuestion.answerContentTooLong</code>「回答内容不能超过500字」→ toast</td></tr>
+        <tr><td>对照：帖子正文</td><td><code>stores/village/constants.ts:20</code> <code>MAX_CONTENT_LENGTH</code></td><td><b>1000</b>（导出常量）</td><td><code>postContentTooLong</code>「帖子内容不能超过{n}字」+ 发布页 <code>0/1000</code> 计数</td></tr>
+      </table>
+      <p class="hint" style="margin-top:10px">⇒ <b>两条链不是一回事</b>：每日一问的 500 是<b>本页独有的独立口径</b>（两处硬编码字面量、无导出常量、无计数 UI，且 ② 经 ① 之后在本页<b>不可达</b>）；帖子/评论的 1000 走 <code>MAX_CONTENT_LENGTH</code> 常量 + <code>{n}</code> 插值文案 + 发布页计数器。<b>不在画板层统一</b>，见 §04。</p>
+    </div>
+
+    <div class="panel">
+      <h3>提交按钮 · 四态</h3>
+      <p class="hint">禁用判据 <code>!answerContent.trim() || isSubmitting</code>；禁用态底转 <code>--c-bg-page</code>、墨色转 <code>--c-text-tertiary</code>、投影清零。</p>
+      <div class="row">
+        <div class="cell"><div class="sbtn sbtn--dis">提交回答</div><span class="lab">disabled（空 / 纯空格）</span></div>
+        <div class="cell"><div class="sbtn">提交回答</div><span class="lab">default</span></div>
+        <div class="cell"><div class="sbtn sbtn--dis"><i class="spin" style="border-color:var(--c-text-placeholder);border-top-color:var(--c-text-tertiary)"></i>提交中...</div><span class="lab">submitting（<code>submittingBtn</code>）</span></div>
+        <div class="cell"><div class="sbtn" style="opacity:.72">提交回答</div><span class="lab">active（按压）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>匿名勾选 · 两态 + 对回答卡的影响</h3>
+      <p class="hint">勾选后 <code>isAnonymous=true</code>：提交时 store 把 <code>authorName</code> 写成空串，列表侧 <code>answer.isAnonymous</code> 决定昵称与头像位。</p>
+      <div class="row">
+        <div class="cell"><div class="an"><span class="an__c"></span><span class="an__l">匿名回答</span></div><span class="lab">未勾（白底 + <code>--c-border-light</code> 框）</span></div>
+        <div class="cell"><div class="an"><span class="an__c an__c--on"><svg><use href="#i-check"/></svg></span><span class="an__l">匿名回答</span></div><span class="lab">已勾（<code>--c-brand</code> 底 + 白勾 26rpx）</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>回答卡作者位</th><th>昵称</th><th>头像位</th></tr>
+        <tr><td>实名 + 有头像</td><td><code>authorName</code></td><td>真图 32px</td></tr>
+        <tr><td>实名 + 无头像</td><td><code>authorName</code></td><td>绿渐变圆 + <code>authorName[0]</code></td></tr>
+        <tr><td>匿名</td><td><code>anonymousUser</code>「匿名用户」</td><td>绿渐变圆 + <code>"?"</code></td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>门槛卡 CTA · 两态 + 兜底出口</h3>
+      <p class="hint">「去签到」/「签到中…」是<b>模板内硬编码中文</b>（<code>index.vue:181</code>，未接 i18n）；
+        签到成功出 <code>unlockSuccess</code> toast，失败出 <code>storeErrors</code>/兜底文案 toast。</p>
+      <div class="row">
+        <div class="cell"><div class="lk__cta">去签到</div><span class="lab">default（<code>--c-brand-800</code> 底）</span></div>
+        <div class="cell"><div class="lk__cta lk__cta--load">签到中…</div><span class="lab">isCheckingIn（opacity .72）</span></div>
+        <div class="cell"><div class="lk-back">返回</div><span class="lab">锁定页唯一第二出口（<code>dailyQuestion.back</code>）</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>空态（answers 为 0）</th><th>主文案</th><th>副文案</th></tr>
+        <tr><td>已回答 · 无人答</td><td>还没有回答</td><td>还没有其他人回答，快来看看吧</td></tr>
+        <tr><td>未回答时</td><td colspan="2"><b>不出空态</b>——<code>v-else-if="!loading &amp;&amp; hasAnswered"</code> 要求已回答；且 <code>onMounted</code> 只在 <code>hasAnswered</code> 时才拉列表（后端 422 拒绝未答题拉取）</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">页头是绿渐变窄带（非样板的品牌三段带），页头墨色统一走 <code>--c-brand-900</code>。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:linear-gradient(135deg,#36C99A,#75E1B7)"></span><div><div class="sw__n">页头渐变<code>--c-brand → --c-brand-300</code></div><div class="sw__u">顶部窄带</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#0B4A38"></span><div><div class="sw__n">品牌 900<code>--c-brand-900</code></div><div class="sw__u">「每日一问」「返回」墨色（压渐变 4.87–6.44:1）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">品牌 800<code>--c-brand-800</code></div><div class="sw__u">「去签到」CTA</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:linear-gradient(135deg,#E8FBF2,#FFF1F6)"></span><div><div class="sw__n">题目卡渐变<code>--c-bg-brand → --c-bg-romance</code></div><div class="sw__u">今日话题卡底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">话题徽标 · 提交钮 · 已回答文案 · 头像字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">输入底<code>--c-bg-page</code></div><div class="sw__u">textarea · 答案正文底 · 禁用钮底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#D1F5E7"></span><div><div class="sw__n">品牌 100<code>--c-brand-100</code></div><div class="sw__u">已回答条描边（替身，见 §04）· 头像渐变末档</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页七档；题目正文 18px/700 是页面内最大字号（页头只有 16px）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">你理想中的第一次约会是什么样？</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">每日一问 · 签到后解锁</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600·700</span><span class="type__p" style="font-size:15px;font-weight:700">大家的回答 · 小鹿</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">写下你的回答 · 去签到</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400·600</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-text-secondary)">完成今日签到即可参与每日一问</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500">返回</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/500·600</span><span class="type__p" style="font-size:11px;font-weight:600">今日话题 · 2026-05-22 · 2</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/400</span><span class="type__p" style="font-size:10px;color:var(--c-text-tertiary)">30分钟前</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 投影</h3><p class="hint">rpx ÷ 2 = px。内容列左右各 12px（<code>--sp-6</code>），卡内衬 16px（<code>--sp-8</code>），题目卡内衬 24px（<code>--sp-9</code>）。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-9 48rpx</b><i style="width:24px"></i></div>
+        <div class="space__i"><b>--sp-8 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>12rpx · 答案正文底</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 输入域 · 已回答条</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 回答卡 · 回答区</div>
+        <div class="rad__i"><b style="border-radius:16px"></b>--r-xxl<br>32rpx · 题目卡</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--card-radius<br>40rpx · 门槛卡</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>回答卡头像位走真素材；锁形 / 勾为描边替身</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/person-01-avatar.png" alt="">
+      <div class="asset__b"><b>回答卡头像位（32px）</b><p>源码判据 <code>v-if="answer.authorAvatar"</code> → 真图，否则绿渐变圆 + 首字。本页 mock 两条回答的 <code>authorAvatar</code> 均为<b>空串</b> ⇒ 首屏（F06）如实画成首字兜底档；<b>有头像</b>那一档在 §02 用 <code>person-01-avatar.png</code>（上方真素材）枚举，不留灰块。</p><div class="m">32px · 1.5px --c-bg-brand 描边</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-avatar.png" alt="">
+      <div class="asset__b"><b>ICONS_COMMON.LOCK_SVG / ICONS_EMOJI.CHECK_CIRCLE</b><p>门槛卡锁图标（80rpx=40px）与已回答条的圆圈勾（<code>&lt;image&gt;</code> 18px）在源码里是包内素材；画板按 §4 用同语义 lucide 描边 symbol 替身。<b>无 NEED_ASSET</b>。</p><div class="m">锁 40px · 勾条 18px</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>500 字上限口径结论：两条独立链，不统一。</b>每日一问的 500 出现在<b>两处硬编码字面量</b>——输入端 <code>maxlength="500"</code>（<code>index.vue:242</code>）与 store 校验 <code>content.length &gt; 500</code>（<code>stores/daily-question.ts:321</code>，文案 <code>storeErrors.dailyQuestion.answerContentTooLong</code>「回答内容不能超过500字」，<b>数字写死在文案里、无 <code>{n}</code> 插值</b>）；帖子/评论正文走 <code>MAX_CONTENT_LENGTH = 1000</code>（<code>stores/village/constants.ts:20</code>，文案 <code>postContentTooLong</code>「帖子内容不能超过{n}字」带插值，发布页另有 <code>0/1000</code> 计数器）。两链<b>数值不同、来源不同、常量形态不同、有无计数 UI 也不同</b> ⇒ 画板按各自实况画，不做统一。</li>
+      <li>由此推论：<b>「超过 500 字」的报错在本页经输入端硬截后不可达</b>（textarea 已截住第 501 字，粘贴同样被截），store 那一档只在直调 <code>submitAnswer()</code>（非本页入口）时才可能命中。画板<b>不画</b>「超限报错」屏，那不是本页可达状态。</li>
+      <li>本页<b>没有</b>字数计数器节点（对比 <code>support/feedback</code> 页有 <code>{{ form.content.length }}/5000</code> 一行）⇒ 用户看不到自己写到哪儿，属在册产品问题，画板如实不补。</li>
+      <li>F03 的错误行是 <code>dailyQuestionStore.errorMessage || t("dailyQuestion.loadFailed")</code> 两值之一：画板取<b>兜底串</b>「问题加载失败，请稍后重试」（<code>zh-CN.ts:3866</code>）；实际命中时更多是 store 写入的「加载每日一问失败」（<code>storeErrors.dailyQuestion.loadQuestionFailed</code>，<code>zh-CN.ts:4021</code>）或后端原文，两串形态同位同形。</li>
+      <li>「去签到」/「签到中…」（<code>index.vue:181</code>）与「校园主页/收起」一类是<b>模板内硬编码中文</b>，未接 i18n；本页其余文案全部逐字取自 <code>dailyQuestion.*</code> 键。</li>
+      <li>题目与回答内容取自仓内 mock 夹具（<code>stores/daily-question.ts:166-197</code>：问题「你理想中的第一次约会是什么样？」、日期 <code>2026-05-22</code>、两条回答原文、匿名一条 <code>authorName=""</code>）⇒ <b>演示数据，非真值</b>；作者昵称「小鹿」随夹具原样保留（§3.4 的真名池只约束<b>由画板自选</b>的人设，不覆盖仓内既有夹具文本）。F05 输入框内那句是<b>画板演示输入</b>，非 i18n、非后端值。</li>
+      <li>回答<b>条数徽标「2」</b>绑 <code>answers.length</code>，与 F06 画出的两条一一对应（不是照抄 mock 的 <code>answerCount</code>）；列表尾件两态：<code>answerHasMore</code> 为真出「加载更多」（点一下变「加载中...」），为假出「没有更多回答了」（F06 画的是后者）。</li>
+      <li>源码引用的 <code>--c-gradient-float-btn</code>（徽标 / 提交钮 / 勾选底）、<code>--c-brand-border-tint</code>（已回答条描边）、<code>--c-romance-bg-tint</code>（题目卡右上光晕）、<code>--r-pill</code> 四档在 <code>board-base.css</code> 中<b>未登记</b>（前三档 <code>design-variables.scss</code> 有真值，<code>--r-pill</code> 在 <code>styles/tokens.scss:102</code> 是 <code>--r-full</code> 的别名）。画板改用<b>同值/最近已登记档</b>替身：渐变→<code>--c-brand</code>（其 SCSS 真值即 <code>linear-gradient(135deg,#36C99A,#36C99A)</code>，同色）、<code>--r-pill</code>→<code>--r-full</code>、条描边→<code>--c-brand-100</code>、光晕→<code>--c-romance-50</code>；后两档为近似替身，已按缺令牌上报 <code>BASE_PROBLEM</code>。</li>
+      <li>本页在 <b>tools 分包</b>、<code>navigationStyle: custom</code>：页头由页面自画窄绿带（返回是文字「返回」，非箭头），<b>无原生导航栏、无 tabbar</b>。状态栏按 <code>pages.json</code> 的 <code>navigationBarTextStyle: black</code> 画成<b>深色</b>压在绿带上（源码注释已裁定不改白）。</li>
+      <li>门槛是<b>今日签到</b>（<code>checkInStore.checkedIn</code>），与登录/资料完善度无关：未签到时<b>题目卡、回答区、回答列表三者全部不渲染</b>（<code>v-else</code> 整块），只剩锁卡 + 返回出口（R6-L08-D17 补的第二出口）。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 每日一问页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（deviceScaleFactor 2.273，画框 375 × 812）
+</footer>
+
+</div>
+</body>
+</html>

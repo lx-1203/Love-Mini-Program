@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 反馈历史页高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 已登记令牌，rpx ÷ 2 = px） ===== */
+
+/* AppShell（fixed 默认 true）+ 页面自绘的一行式 header 槽 */
+.hdrfix { position: absolute; top: 0; left: 0; width: 100%; z-index: 7; background: var(--c-bg-page);
+  padding: 54px var(--page-padding) 10px; }
+.hhd { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.hhd__back { width: 44px; height: 44px; box-sizing: border-box; flex: none; display: flex;
+  align-items: center; justify-content: center; }
+.hhd__circle { width: 32px; height: 32px; box-sizing: border-box; border-radius: var(--r-full);
+  background: var(--c-bg-container); border: var(--c-border-card); display: flex; align-items: center;
+  justify-content: center; color: var(--c-text-primary); }
+.hhd__glyph { font-size: 26px; font-weight: 700; line-height: 1; }
+.hhd__texts { display: flex; flex-direction: column; min-width: 0; }
+.hhd__title { font-size: var(--fs-7xl); font-weight: 700; line-height: 1.2; color: var(--c-text-primary); }
+.hhd__sub { margin-top: 2px; font-size: var(--fs-base); line-height: 1.5; color: var(--c-text-secondary); }
+
+/* 帧内长页（滚动位裁视口） */
+.shot { position: absolute; left: 0; top: 0; width: 100%; padding: 0 var(--page-padding);
+  padding-top: 134px; display: flex; flex-direction: column; }
+.shot--up120 { transform: translateY(-120px); }
+
+/* 类型筛选条（不在卡内） */
+.fbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--sp-4); flex: none; }
+.fchip { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;
+  min-height: 44px; padding: 8px 11px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: 1px solid var(--c-border-light); }
+.fchip--active { background: var(--c-bg-brand); border-color: var(--c-brand-800); }
+.fchip__t { font-size: var(--fs-md); color: var(--c-text-secondary); }
+.fchip--active .fchip__t { color: var(--c-brand-800); font-weight: 600; }
+.fchip--press { transform: scale(0.98); opacity: 0.92; }
+
+/* SectionCard（compact） */
+.seccard { display: flex; flex-direction: column; gap: var(--sp-4); padding: var(--sp-7); flex: none;
+  border-radius: var(--r-card); background: var(--c-bg-container);
+  border: var(--c-border-card); box-shadow: var(--card-shadow); }
+.seccard__t { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); }
+
+/* 记录项 */
+.rec { border-top: 0.5px solid var(--c-border-light); padding: 9px 0; }
+.rec:first-child { border-top: 0; padding-top: 0; }
+.rec__hd { display: flex; flex-direction: column; gap: 5px; padding: 3px 2px; }
+.rec__top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rec__title { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); flex: 1; }
+.rec__sum { font-size: var(--fs-md); color: var(--c-text-secondary); line-height: 1.6; }
+.rec__meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rec__time { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.rec__hint { font-size: var(--fs-base); color: var(--c-brand); font-weight: 500; }
+
+/* 展开详情区 */
+.rec__det { margin-top: 6px; padding: var(--sp-4); background: var(--c-bg-page); border-radius: var(--r-lg);
+  display: flex; flex-direction: column; gap: var(--sp-4); }
+.det { display: flex; flex-direction: column; gap: 4px; }
+.det--reply { padding-top: 6px; border-top: 0.5px dashed var(--c-border-light); }
+.det__l { font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-tertiary); }
+.det__c { font-size: var(--fs-md); color: var(--c-text-primary); line-height: 1.7; }
+.attg { display: flex; flex-wrap: wrap; gap: 6px; }
+.att { width: 80px; height: 80px; border-radius: var(--r-md); background: var(--c-bg-container); overflow: hidden; }
+.att img { width: 100%; height: 100%; object-fit: cover; }
+.detload { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 0; }
+.detload .spin { width: 18px; height: 18px; border: 1.5px solid var(--c-border-light);
+  border-top-color: var(--c-brand); border-radius: var(--r-full); }
+.detload__t { font-size: var(--fs-base); color: var(--c-text-tertiary); }
+
+/* 错误卡（v-if="errorMessage"，整块列表被替掉） */
+.errcard { display: flex; flex-direction: column; align-items: center; gap: var(--sp-4); padding: var(--sp-8);
+  flex: none; border-radius: var(--r-card); background: var(--c-bg-container);
+  border: var(--c-border-card); box-shadow: var(--card-shadow); }
+.errcard__t { font-size: var(--fs-md); color: var(--c-text-secondary); text-align: center; line-height: 1.6; }
+.errcard__btn { padding: 6px 12px; background: var(--c-brand); border-radius: var(--r-full);
+  font-size: var(--fs-md); font-weight: 600; color: var(--c-text-inverse); }
+
+/* EmptyState（type=no-data，本页传 description ⇒ 两句都在） */
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; flex: none; }
+.empty svg { width: 60px; height: 60px; color: var(--c-text-placeholder); margin-bottom: 8px; }
+.empty__msg { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-secondary); }
+.empty__sub { font-size: var(--fs-md); color: var(--c-text-placeholder); margin-top: 4px; }
+
+/* StatusState 药丸 */
+.pill { display: inline-flex; align-items: center; gap: 3px; width: fit-content; flex: none;
+  padding: 1px 8px; border-radius: var(--r-full); font-size: var(--fs-md); font-weight: 600; line-height: 1.4; }
+.pill svg { width: 14px; height: 14px; }
+.pill--brand { background: var(--c-brand-50); color: var(--c-brand); }
+.pill--success { background: var(--c-success-bg-tint); color: var(--c-success); }
+.pill--warning { background: var(--c-warning-bg-tint); color: var(--c-warning); }
+
+/* 系统层 */
+.sb { z-index: 130; }
+.toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 120;
+  max-width: 64%; padding: 12px var(--sp-7); border-radius: var(--r-lg); background: var(--c-text-primary);
+  color: var(--c-bg-container); font-size: var(--fs-lg); line-height: 1.4; text-align: center; }
+.mask { position: absolute; inset: 0; background: var(--c-bg-overlay); z-index: 110;
+  display: flex; align-items: center; justify-content: center; }
+.viewer { position: absolute; inset: 0; z-index: 115; background: var(--c-neutral-900);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-6); }
+.viewer img { width: 343px; height: 343px; border-radius: var(--r-md); object-fit: cover; }
+.viewer__x { position: absolute; right: 16px; top: 60px; width: 32px; height: 32px; border-radius: var(--r-full);
+  background: var(--c-overlay-mid); color: var(--c-text-inverse); display: flex; align-items: center; justify-content: center; }
+.viewer__x svg { width: 16px; height: 16px; }
+.viewer__c { font-size: var(--fs-base); color: var(--c-text-inverse); }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M12 3 4 7v10l8 4 8-4V7z"/><path d="M4 7l8 4 8-4"/><path d="M12 11v10"/></symbol>
+  <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/></symbol>
+  <symbol id="i-signal" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>反馈历史页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/profile-extra/feedback/history</code>。
+     它是反馈域的另一半：提交页
+     <code style="font-family:var(--mono);font-size:12.5px">subpackages/support/feedback/index</code>
+     负责写入与摘要，本页负责<b>按类型筛选 + 点开看详情</b>，两页共用
+     <code style="font-family:var(--mono);font-size:12.5px">feedbackStore.submissions</code>。
+     页头是一行式（返回圆钮与标题同排，走 AppShell 的 <code style="font-family:var(--mono);font-size:12.5px">#header</code> 槽，R11-L11-D14），
+     与同域其它页的两行式页头不同档。本页状态机有 <b>7</b> 个可见态，逐屏画全作为该页验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>profile-extra/feedback/history</b></span>
+    <span>分包 <b>profile-extra</b>（无 tabbar）</span>
+    <span>配套 <b>support/feedback</b></span>
+    <span>状态 <b>7 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无验收基准图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 7 屏</h2>
+    <p>列表 / 展开详情 / 含附件展开 / 详情加载中 / 筛选空态 / 错误态 / 附件预览</p></div>
+  <div class="sec__sub">本页状态机有 <b>7</b> 态，来自这些实际分支：
+    ① <code>v-if="errorMessage"</code> 的错误卡（整块列表被替掉）；
+    ② <code>v-else-if="filteredSubmissions.length === 0"</code> 的 EmptyState（本页<b>传</b> description，两句都在）；
+    ③ <code>v-else</code> 的记录列表；
+    ④ <code>v-if="expandedId === item.id"</code> 的展开详情区，其内再分
+       <code>v-if="detailLoading[item.id]"</code>（spinner）与 <code>v-else-if="detailCache[item.id]"</code>（内容）；
+    ⑤ 详情内 <code>v-if="(detailCache[id]?.attachments?.length ?? 0) &gt; 0</code> 的附件段与
+       <code>v-if="detailCache[id]?.latestReplyContent"</code> 的回复段；
+    ⑥ 行内三元 <code>expandedId === item.id ? common.collapse : feedback.historyViewDetail</code>（「收起」/「查看详情」）；
+    ⑦ <code>handleAttachmentTap()</code> → <code>uni.previewImage</code> 的全屏系统层。
+    筛选 chip 的 <code>activeFilter</code> 与深链 <code>?id=</code> 的自动展开都并入下面对应屏；
+    帧即视口，被裁掉的区间只写题注 <code>.d</code>，不写进画面。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">列表态 · 筛选「全部」</span><span class="d">store 预置 2 条 · 均收起 · 本屏无裁切</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hhd">
+          <span class="hhd__back"><span class="hhd__circle"><span class="hhd__glyph">‹</span></span></span>
+          <span class="hhd__texts"><span class="hhd__title">反馈历史</span><span class="hhd__sub">按类型筛选，点开记录查看详情</span></span>
+        </div></div>
+        <div class="shot">
+          <div class="fbar">
+            <span class="fchip fchip--active"><span class="fchip__t">全部</span></span>
+            <span class="fchip"><span class="fchip__t">反馈</span></span>
+            <span class="fchip"><span class="fchip__t">建议</span></span>
+            <span class="fchip"><span class="fchip__t">活动提案</span></span>
+          </div>
+          <div class="seccard">
+            <span class="seccard__t">反馈历史</span>
+            <div class="rec"><div class="rec__hd">
+              <div class="rec__top"><span class="rec__title">视频主视觉需要稳定兜底</span><span class="pill pill--warning"><svg><use href="#i-dot"/></svg>处理中</span></div>
+              <span class="rec__sum">兜底逻辑已经纳入客户端壳层处理。</span>
+              <div class="rec__meta"><span class="rec__time">2026-05-18 09:18</span><span class="rec__hint">查看详情</span></div>
+            </div></div>
+            <div class="rec"><div class="rec__hd">
+              <div class="rec__top"><span class="rec__title">首页保留讨论和活动入口</span><span class="pill pill--success"><svg><use href="#i-dot"/></svg>已查看</span></div>
+              <span class="rec__sum">已接受，纳入第一版 IA 调整。</span>
+              <div class="rec__meta"><span class="rec__time">2026-05-17 18:42</span><span class="rec__hint">查看详情</span></div>
+            </div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">展开详情 · 预置记录（附件段不渲染）</span><span class="d">expandedId=1 · 提示换「收起」</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hhd">
+          <span class="hhd__back"><span class="hhd__circle"><span class="hhd__glyph">‹</span></span></span>
+          <span class="hhd__texts"><span class="hhd__title">反馈历史</span><span class="hhd__sub">按类型筛选，点开记录查看详情</span></span>
+        </div></div>
+        <div class="shot">
+          <div class="fbar">
+            <span class="fchip fchip--active"><span class="fchip__t">全部</span></span>
+            <span class="fchip"><span class="fchip__t">反馈</span></span>
+            <span class="fchip"><span class="fchip__t">建议</span></span>
+            <span class="fchip"><span class="fchip__t">活动提案</span></span>
+          </div>
+          <div class="seccard">
+            <span class="seccard__t">反馈历史</span>
+            <div class="rec"><div class="rec__hd">
+              <div class="rec__top"><span class="rec__title">视频主视觉需要稳定兜底</span><span class="pill pill--warning"><svg><use href="#i-dot"/></svg>处理中</span></div>
+              <span class="rec__sum">兜底逻辑已经纳入客户端壳层处理。</span>
+              <div class="rec__meta"><span class="rec__time">2026-05-18 09:18</span><span class="rec__hint">收起</span></div>
+            </div>
+            <div class="rec__det">
+              <div class="det"><span class="det__l">反馈内容</span><span class="det__c">兜底逻辑已经纳入客户端壳层处理。</span></div>
+              <div class="det det--reply"><span class="det__l">最新回复</span><span class="det__c">兜底逻辑已经纳入客户端壳层处理。</span></div>
+            </div>
+            </div>
+            <div class="rec"><div class="rec__hd">
+              <div class="rec__top"><span class="rec__title">首页保留讨论和活动入口</span><span class="pill pill--success"><svg><use href="#i-dot"/></svg>已查看</span></div>
+              <span class="rec__sum">已接受，纳入第一版 IA 调整。</span>
+              <div class="rec__meta"><span class="rec__time">2026-05-17 18:42</span><span class="rec__hint">查看详情</span></div>
+            </div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">展开详情 · 含 3 图附件 + 最新回复</span><span class="d">attachments&gt;0 分支 · 演示态（见 §04）</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hhd">
+          <span class="hhd__back"><span class="hhd__circle"><span class="hhd__glyph">‹</span></span></span>
+          <span class="hhd__texts"><span class="hhd__title">反馈历史</span><span class="hhd__sub">按类型筛选，点开记录查看详情</span></span>
+        </div></div>
+        <div class="shot">
+          <div class="fbar">
+            <span class="fchip fchip--active"><span class="fchip__t">全部</span></span>
+            <span class="fchip"><span class="fchip__t">反馈</span></span>
+            <span class="fchip"><span class="fchip__t">建议</span></span>
+            <span class="fchip"><span class="fchip__t">活动提案</span></span>
+          </div>
+          <div class="seccard">
+            <span class="seccard__t">反馈历史</span>
+            <div class="rec"><div class="rec__hd">
+              <div class="rec__top"><span class="rec__title">校园活动报名页返回后丢表单</span><span class="pill pill--brand"><svg><use href="#i-dot"/></svg>已提交</span></div>
+              <span class="rec__sum">你的提交已进入处理队列。</span>
+              <div class="rec__meta"><span class="rec__time">2026-10-26 09:41</span><span class="rec__hint">收起</span></div>
+            </div>
+            <div class="rec__det">
+              <div class="det"><span class="det__l">反馈内容</span><span class="det__c">点进详情再返回，报名表单会被清空，希望保留草稿。</span></div>
+              <div class="det"><span class="det__l">附件图片</span>
+                <div class="attg">
+                  <span class="att"><img src="assets/demo/post-4.jpg" alt=""></span>
+                  <span class="att"><img src="assets/demo/post-5.jpg" alt=""></span>
+                  <span class="att"><img src="assets/demo/post-6.jpg" alt=""></span>
+                </div>
+              </div>
+              <div class="det det--reply"><span class="det__l">最新回复</span><span class="det__c">你的提交已进入处理队列。</span></div>
+            </div>
+            </div>
+            <div class="rec"><div class="rec__hd">
+              <div class="rec__top"><span class="rec__title">视频主视觉需要稳定兜底</span><span class="pill pill--warning"><svg><use href="#i-dot"/></svg>处理中</span></div>
+              <span class="rec__sum">兜底逻辑已经纳入客户端壳层处理。</span>
+              <div class="rec__meta"><span class="rec__time">2026-05-18 09:18</span><span class="rec__hint">查看详情</span></div>
+            </div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">详情加载中 · detailLoading[id]</span><span class="d">v-if 先于 v-else-if · 首屏无缓存</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hhd">
+          <span class="hhd__back"><span class="hhd__circle"><span class="hhd__glyph">‹</span></span></span>
+          <span class="hhd__texts"><span class="hhd__title">反馈历史</span><span class="hhd__sub">按类型筛选，点开记录查看详情</span></span>
+        </div></div>
+        <div class="shot">
+          <div class="fbar">
+            <span class="fchip fchip--active"><span class="fchip__t">全部</span></span>
+            <span class="fchip"><span class="fchip__t">反馈</span></span>
+            <span class="fchip"><span class="fchip__t">建议</span></span>
+            <span class="fchip"><span class="fchip__t">活动提案</span></span>
+          </div>
+          <div class="seccard">
+            <span class="seccard__t">反馈历史</span>
+            <div class="rec"><div class="rec__hd">
+              <div class="rec__top"><span class="rec__title">视频主视觉需要稳定兜底</span><span class="pill pill--warning"><svg><use href="#i-dot"/></svg>处理中</span></div>
+              <span class="rec__sum">兜底逻辑已经纳入客户端壳层处理。</span>
+              <div class="rec__meta"><span class="rec__time">2026-05-18 09:18</span><span class="rec__hint">收起</span></div>
+            </div>
+            <div class="rec__det">
+              <div class="detload"><span class="spin"></span><span class="detload__t">加载中...</span></div>
+            </div>
+            </div>
+            <div class="rec"><div class="rec__hd">
+              <div class="rec__top"><span class="rec__title">首页保留讨论和活动入口</span><span class="pill pill--success"><svg><use href="#i-dot"/></svg>已查看</span></div>
+              <span class="rec__sum">已接受，纳入第一版 IA 调整。</span>
+              <div class="rec__meta"><span class="rec__time">2026-05-17 18:42</span><span class="rec__hint">查看详情</span></div>
+            </div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">筛选「活动提案」· 该类型 0 条</span><span class="d">v-else-if length===0 · 两句都在</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hhd">
+          <span class="hhd__back"><span class="hhd__circle"><span class="hhd__glyph">‹</span></span></span>
+          <span class="hhd__texts"><span class="hhd__title">反馈历史</span><span class="hhd__sub">按类型筛选，点开记录查看详情</span></span>
+        </div></div>
+        <div class="shot">
+          <div class="fbar">
+            <span class="fchip"><span class="fchip__t">全部</span></span>
+            <span class="fchip"><span class="fchip__t">反馈</span></span>
+            <span class="fchip"><span class="fchip__t">建议</span></span>
+            <span class="fchip fchip--active"><span class="fchip__t">活动提案</span></span>
+          </div>
+          <div class="empty"><svg><use href="#i-box"/></svg><span class="empty__msg">暂无反馈记录</span><span class="empty__sub">提交反馈后将在此处显示</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">错误态 · 列表整块被错误卡替换</span><span class="d">v-if="errorMessage" 优先级最高 · 重试可点</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hhd">
+          <span class="hhd__back"><span class="hhd__circle"><span class="hhd__glyph">‹</span></span></span>
+          <span class="hhd__texts"><span class="hhd__title">反馈历史</span><span class="hhd__sub">按类型筛选，点开记录查看详情</span></span>
+        </div></div>
+        <div class="shot">
+          <div class="fbar">
+            <span class="fchip fchip--active"><span class="fchip__t">全部</span></span>
+            <span class="fchip"><span class="fchip__t">反馈</span></span>
+            <span class="fchip"><span class="fchip__t">建议</span></span>
+            <span class="fchip"><span class="fchip__t">活动提案</span></span>
+          </div>
+          <div class="errcard">
+            <span class="errcard__t">反馈历史加载失败，请稍后重试</span>
+            <span class="errcard__btn">重试</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">附件全屏预览层 · previewImage</span><span class="d">点缩略图 → 系统层盖住整页（非页面 DOM）</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hdrfix"><div class="hhd">
+          <span class="hhd__back"><span class="hhd__circle"><span class="hhd__glyph">‹</span></span></span>
+          <span class="hhd__texts"><span class="hhd__title">反馈历史</span><span class="hhd__sub">按类型筛选，点开记录查看详情</span></span>
+        </div></div>
+        <div class="shot">
+          <div class="fbar"><span class="fchip fchip--active"><span class="fchip__t">全部</span></span></div>
+        </div>
+        <div class="viewer">
+          <img src="assets/demo/post-4.jpg" alt="">
+          <span class="viewer__c">1/3</span>
+          <span class="viewer__x"><svg><use href="#i-x"/></svg></span>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页交互件五类：类型筛选 chip / 记录行（收起·展开）/ 详情区四段 / 错误卡 / 系统层（预览·toast）。
+    文案取 <code>feedback.*</code>、<code>feedbackHistory.*</code>、<code>feedbackStatus.*</code>、<code>common.*</code> 现值；
+    页头副标题是源码里的<b>硬编码中文常量</b>（<code>HISTORY_SUBTITLE</code>），不走 i18n——见 §04。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>类型筛选 chip · 四枚 × 三档</h3>
+      <p class="hint">选中条件 <code>activeFilter === opt.value</code>；选中档是「浅底 + 深字 + 深描边」（R11-L11-D13，原白字压 <code>--c-brand</code> 实测 2.10:1）。
+        切筛选会 <code>expandedId = null</code> 并重新拉列表（<code>switchFilter</code>），故不存在「筛选中且仍展开」的画面。</p>
+      <div class="row">
+        <div class="cell"><div class="fchip"><span class="fchip__t">反馈</span></div><span class="lab">default（白底 · 1px --c-border-light）</span></div>
+        <div class="cell"><div class="fchip fchip--active"><span class="fchip__t">全部</span></div><span class="lab">active（初始值）</span></div>
+        <div class="cell"><div class="fchip fchip--active fchip--press"><span class="fchip__t">建议</span></div><span class="lab">按压 press-feedback--active</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>value</th><th>label（现值）</th><th>store.load 入参</th></tr>
+        <tr><td><code class="plain">all</code></td><td>全部</td><td><code>undefined</code>（不筛选）</td></tr>
+        <tr><td><code class="plain">FEEDBACK</code></td><td>反馈</td><td><code>"FEEDBACK"</code></td></tr>
+        <tr><td><code class="plain">SUGGESTION</code></td><td>建议</td><td><code>"SUGGESTION"</code></td></tr>
+        <tr><td><code class="plain">ACTIVITY_PROPOSAL</code></td><td>活动提案</td><td><code>"ACTIVITY_PROPOSAL"</code></td></tr>
+      </table>
+      <p class="hint" style="margin-top:12px">注意筛选是<b>双轨</b>的：chip 只改 <code>activeFilter</code> 供 <code>filteredSubmissions</code> 本地过滤，
+        同时 <code>loadList(filter)</code> 又按类型重新拉数据；两条口径同值时看不出问题，store 与本地过滤不一致时以本地过滤为准。</p>
+    </div>
+
+    <div class="panel">
+      <h3>记录行 · 两态 + 药丸五档</h3>
+      <p class="hint">整行 <code>@tap="toggleExpand(item.id)"</code>；右下提示是三元
+        <code>expandedId === item.id ? common.collapse : feedback.historyViewDetail</code>。
+        同一时刻只有一行展开（<code>expandedId</code> 是单值，非 Set）。</p>
+      <div class="row">
+        <div class="cell" style="width:300px"><div class="seccard" style="padding:12px"><div class="rec" style="border:0;padding:0">
+          <div class="rec__top"><span class="rec__title">视频主视觉需要稳定兜底</span><span class="pill pill--warning"><svg><use href="#i-dot"/></svg>处理中</span></div>
+          <span class="rec__sum">兜底逻辑已经纳入客户端壳层处理。</span>
+          <div class="rec__meta"><span class="rec__time">2026-05-18 09:18</span><span class="rec__hint">查看详情</span></div>
+        </div></div><span class="lab">收起（默认）</span></div>
+        <div class="cell" style="width:300px"><div class="seccard" style="padding:12px"><div class="rec" style="border:0;padding:0">
+          <div class="rec__top"><span class="rec__title">视频主视觉需要稳定兜底</span><span class="pill pill--warning"><svg><use href="#i-dot"/></svg>处理中</span></div>
+          <span class="rec__sum">兜底逻辑已经纳入客户端壳层处理。</span>
+          <div class="rec__meta"><span class="rec__time">2026-05-18 09:18</span><span class="rec__hint">收起</span></div>
+        </div></div><span class="lab">展开（提示换「收起」）</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>status</th><th>label（feedbackStatus.*）</th><th>tone</th></tr>
+        <tr><td><code class="plain">submitted</code></td><td>已提交</td><td>brand（浅绿底 + <code>--c-brand</code> 字）</td></tr>
+        <tr><td><code class="plain">processing</code></td><td>处理中</td><td>warning</td></tr>
+        <tr><td><code class="plain">reviewed</code></td><td>已查看</td><td>success</td></tr>
+        <tr><td><code class="plain">planned</code></td><td>已排期</td><td>warning</td></tr>
+        <tr><td><code class="plain">converted</code></td><td>已转活动</td><td>success</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>详情区 · 四段全枚举</h3>
+      <p class="hint">容器 <code>.record__detail</code> 底取 <code>--c-bg-page</code>（与页面底同值 ⇒ 在白卡内是一块"浅绿井"）；
+        段之间 <code>--sp-4</code>，回复段带虚线上边框。</p>
+      <div class="row">
+        <div class="cell" style="width:240px"><div class="rec__det" style="margin:0"><div class="detload"><span class="spin"></span><span class="detload__t">加载中...</span></div></div><span class="lab">v-if="detailLoading[id]"（<code>common.loading</code>）</span></div>
+        <div class="cell" style="width:240px"><div class="rec__det" style="margin:0"><div class="det"><span class="det__l">反馈内容</span><span class="det__c">点进详情再返回，报名表单会被清空，希望保留草稿。</span></div></div><span class="lab">内容段（必有，v-else-if 命中）</span></div>
+        <div class="cell" style="width:240px"><div class="rec__det" style="margin:0"><div class="det"><span class="det__l">附件图片</span><div class="attg"><span class="att"><img src="assets/demo/post-1.jpg" alt=""></span><span class="att"><img src="assets/demo/post-2.jpg" alt=""></span></div></div></div><span class="lab">附件段 v-if length&gt;0（80px 格）</span></div>
+        <div class="cell" style="width:240px"><div class="rec__det" style="margin:0"><div class="det det--reply"><span class="det__l">最新回复</span><span class="det__c">你的提交已进入处理队列。</span></div></div><span class="lab">回复段 v-if latestReplyContent</span></div>
+        <div class="cell" style="width:240px"><div class="rec__det" style="margin:0"><div class="det"><span class="det__l">反馈内容</span><span class="det__c">—</span></div></div><span class="lab">详情接口返回空字段时的兜底（画板不美化）</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>组合</th><th>渲染结果</th><th>出现于</th></tr>
+        <tr><td>loading</td><td>只有 spinner + 「加载中...」</td><td>F04</td></tr>
+        <tr><td>cache 命中 · attachments=[]</td><td>内容段 + 回复段，<b>无附件段</b></td><td>F02（store 预置两条即此形态）</td></tr>
+        <tr><td>cache 命中 · attachments 非空</td><td>内容段 + 附件段 + 回复段</td><td>F03（演示态）</td></tr>
+        <tr><td>cache 命中 · 无 latestReplyContent</td><td>回复段整块不渲染</td><td>§02 存档</td></tr>
+        <tr><td>两者皆假（详情还没回）</td><td><code>.record__detail</code> 空白井</td><td>失败瞬间的一帧，不立屏</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>错误卡 / 空态 · 两成因两分支</h3>
+      <p class="hint"><code>v-if="errorMessage"</code> 排在空态与列表之前 ⇒ 错误时<b>整块列表被替换</b>，用户看不到任何记录。</p>
+      <div class="row">
+        <div class="cell" style="width:240px"><div class="errcard" style="padding:16px"><span class="errcard__t">反馈历史加载失败，请稍后重试</span><span class="errcard__btn">重试</span></div><span class="lab">错误卡（<code>common.retry</code>）</span></div>
+        <div class="cell" style="width:240px"><div class="empty" style="padding:16px 20px"><svg><use href="#i-box"/></svg><span class="empty__msg">暂无反馈记录</span><span class="empty__sub">提交反馈后将在此处显示</span></div><span class="lab">空态（本页传 description）</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>成因</th><th>来源</th><th>附带动作</th></tr>
+        <tr><td>列表拉取失败</td><td><code>feedbackStore.errorMessage</code>（MP-R1-FEEDBACKHIST-001 改读 store，原 catch 分支不可达）</td><td>点「重试」→ <code>handleRetry()</code> → <code>errorHaptic()</code> + <code>loadList()</code></td></tr>
+        <tr><td>详情拉取失败</td><td><code>error.message</code> 或 <code>feedback.historyLoadFailed</code></td><td>同一错误卡 + <code>uni.showToast</code> 同串 + <b><code>expandedId</code> 归 null（展开被收起）</b></td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>页头返回件 · 一行式（本页自绘）</h3>
+      <p class="hint">R11-L11-D14 把 AppShell 默认头部换成 <code>#header</code> 槽：返回圆钮与标题<b>同排</b>，
+        与同域 tasks / dnd / official-chat 一档、与本页以外多数页的两行式不同档。
+        热区 88rpx=44px，视觉圆底 64rpx=32px，箭头是<b>字符</b>「‹」（52rpx=26px）而非包内素材。</p>
+      <div class="row">
+        <div class="cell"><span class="hhd__back"><span class="hhd__circle"><span class="hhd__glyph">‹</span></span></span><span class="lab">default</span></div>
+        <div class="cell"><span class="hhd__back" style="opacity:.7"><span class="hhd__circle"><span class="hhd__glyph">‹</span></span></span><span class="lab">按压（press-feedback--active）</span></div>
+        <div class="cell" style="width:240px"><div class="hhd"><span class="hhd__back"><span class="hhd__circle"><span class="hhd__glyph">‹</span></span></span><span class="hhd__texts"><span class="hhd__title" style="font-size:28px">反馈历史</span><span class="hhd__sub">按类型筛选，点开记录查看详情</span></span></div><span class="lab">整行档（标题 28px + 副标题 12px）</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>出口</th><th>条件</th><th>去向</th></tr>
+        <tr><td>返回</td><td><code>uni.navigateBack({delta:1})</code></td><td>回提交页（support/feedback），页面栈与表单值保留</td></tr>
+        <tr><td>返回失败兜底</td><td><code>fail</code> 回调</td><td><code>switchTab</code> 到「我的」，再失败 <code>reLaunch</code> 首页</td></tr>
+        <tr><td>深链进入</td><td>提交页 <code>goDetail(id)</code> → <code>?id=</code></td><td><code>loadQueryId()</code> 在 300ms 后自动 <code>toggleExpand(id)</code>，等价于 F02/F03 的展开态</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Toast / 系统层 · 枚举</h3>
+      <p class="hint">本页 toast 只有详情失败一处；预览走 <code>uni.previewImage</code> 全屏系统层（F07）。</p>
+      <table class="tbl">
+        <tr><th>触发</th><th>文案现值</th><th>型</th></tr>
+        <tr><td><code>getSubmissionDetail</code> 抛错且非 Error</td><td>反馈历史加载失败，请稍后重试</td><td><code>icon:"none"</code></td></tr>
+        <tr><td>同上 · error.message 有值</td><td>后端原文（画板不预设）</td><td><code>icon:"none"</code></td></tr>
+        <tr><td>点附件缩略图</td><td>—</td><td>系统全屏预览层（黑底 + <code>n/总数</code>）</td></tr>
+      </table>
+      <div class="row" style="margin-top:14px">
+        <div class="cell" style="width:240px"><div class="toast" style="position:static;transform:none">反馈历史加载失败，请稍后重试</div><span class="lab">toast 几何：居中浮层 · 无图标</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位，与 design-variables.scss 一一对应</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">页内零私有色值；源文件 <code>var(--x, 十六进制)</code> 的兜底值一律不进画板。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-page)"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">AppShell 底 · 吸顶头带 · 详情井底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-container);border:1px solid var(--c-border-default)"></span><div><div class="sw__n">容器白<code>--c-bg-container</code></div><div class="sw__u">SectionCard · 筛选 chip · 返回圆底 · 附件格底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-brand)"></span><div><div class="sw__n">主色浅底<code>--c-bg-brand</code></div><div class="sw__u">选中 chip 底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand)"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">「查看详情」提示字 · 重试钮底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-50)"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">已提交药丸底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-800)"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">选中 chip 字与描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-warning)"></span><div><div class="sw__n">警告<code>--c-warning</code></div><div class="sw__u">处理中 / 已排期药丸字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-warning-bg-tint)"></span><div><div class="sw__n">警告浅底<code>--c-warning-bg-tint</code></div><div class="sw__u">处理中 / 已排期药丸底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-success)"></span><div><div class="sw__n">成功<code>--c-success</code></div><div class="sw__u">已查看 / 已转活动药丸字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-success-bg-tint)"></span><div><div class="sw__n">成功浅底<code>--c-success-bg-tint</code></div><div class="sw__u">已查看 / 已转活动药丸底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-neutral-900)"></span><div><div class="sw__n">最深中性<code>--c-neutral-900</code></div><div class="sw__u">预览层黑底（与 <code>--c-text-primary</code> 同值）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-overlay-mid)"></span><div><div class="sw__n">遮罩<code>--c-overlay-mid</code></div><div class="sw__u">预览层关闭钮底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-text-placeholder)"></span><div><div class="sw__n">占位字<code>--c-text-placeholder</code></div><div class="sw__u">空态图标 · 空态副句</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-border-light)"></span><div><div class="sw__n">浅描边<code>--c-border-light</code></div><div class="sw__u">chip 未选描边 · 行分隔 · 虚线</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到七档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/700</span><span class="type__p" style="font-size:28px;font-weight:700">反馈历史</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">反馈历史（卡标题，与页头同串）</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/700</span><span class="type__p" style="font-size:14px;font-weight:700">视频主视觉需要稳定兜底</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/600</span><span class="type__p" style="font-size:13px;font-weight:600">处理中 · 已查看 · 重试</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-text-secondary)">兜底逻辑已经纳入客户端壳层处理。</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500;color:var(--c-brand)">查看详情 · 收起</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/600</span><span class="type__p" style="font-size:11px;font-weight:600;color:var(--c-text-tertiary)">反馈内容 · 附件图片 · 最新回复 · 2026-05-18 09:18</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-1 2rpx</b><i style="width:1px"></i></div>
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--sp-8 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>12rpx · 附件格</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 详情井</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · SectionCard · 错误卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>chip · 药丸 · 返回圆底</div>
+      </div>
+      <p class="hint" style="margin-top:14px">源文件里 <code>--r-lg</code> / <code>--r-md</code> 的兜底写 16rpx / 12rpx，
+        与令牌真值 20rpx / 12rpx 不同——画板一律取令牌真值，兜底值不采纳。
+        热区口径：chip 与返回件按仓内 <code>AppShell.vue:334</code> 的 88rpx=44px 落屏（R11-L11-D11 补的 min-height）。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 · 与实况的已知差异</h2><p>附件位取 assets/demo 真素材；缺陷只登记不修</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/post-4.jpg" alt="">
+      <div class="asset__b"><b>assets/demo/post-1.jpg … post-6.jpg</b>
+        <p>详情附件格（160rpx=80px · aspectFill）与全屏预览位用盘上真演示素材，以便判圆角、密度与黑底压图关系。
+           真机上这些是用户上传的截图；<code>services/mocks/fixtures.ts</code> 预置两条记录的 <code>attachments</code> 均为空数组，
+           故 F03/F07 是<b>演示渲染路径</b>（数据来自提交页上传后 <code>createSubmission</code> 写入的 attachments），非预置真值。</p>
+        <div class="m">80×80 · --r-md · gap 6px</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-avatar.png" alt="" style="object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_COMMON.BOX_SVG / 字符「‹」</b>
+        <p>空态 no-data 立方体走工程既有素材（120rpx=60px，画板用同几何 lucide 描边替身）；
+           返回件<b>不是素材</b>而是模板里的字面字符「‹」（<code>.history-header__back-glyph</code>，52rpx=26px，色 <code>--c-text-primary</code>）——
+           同域 setup/interest 页的 R6-B66/D22 已把同类字符箭头换成 <code>ICONS_COMMON.BACK</code> 素材，本页仍是字符。</p>
+        <div class="m">60px 替身 / 26px 字符 · 字形随系统字体</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>反馈两页的衔接（本域口径）：</b>入口两个——提交页 <code>goHistory()</code>（<code>navigateTo</code>，<b>跨分包</b> support → profile-extra，不带参数 ⇒ 落在 F01 列表态）
+        与提交页记录行 <code>goDetail(id)</code>（带 <code>?id=</code> ⇒ 300ms 后自动展开，落在 F02/F03 态）。
+        出口一个——本页返回件 <code>navigateBack</code> 回提交页（栈与表单值保留），失败才 <code>switchTab</code>「我的」→ <code>reLaunch</code> 首页。
+        两页共用 <code>feedbackStore.submissions</code>：提交页新写入的记录本页立刻可见，反之本页 <code>loadList()</code> 成功后会<b>清空详情缓存</b>（infra R2-00103）。</li>
+      <li><b>页头副标题是硬编码中文常量（缺陷）：</b><code>HISTORY_SUBTITLE = "按类型筛选，点开记录查看详情"</code> 直接写在 <code>&lt;script&gt;</code> 里，
+        既给 <code>AppShell :subtitle</code> 又给自绘 header 用，<b>未走 i18n</b> ⇒ 英文环境下整页其余文案翻成英文、这一句仍是中文。画板按实况照画，不改源码。</li>
+      <li><b>详情加载失败会把整块列表换成错误卡（缺陷）：</b><code>v-if="errorMessage"</code> 排在空态与列表之前，且 <code>toggleExpand</code> 的 catch 里同时
+        <code>expandedId = null</code> ⇒ 用户点开某条记录失败后，既看不到列表也看不到展开行，只得到一句不带 id 的错误文案 + 一个「重试」（重试走的是<b>列表</b> <code>loadList()</code>，不是重拉详情）。画板如实照画。</li>
+      <li>卡标题与页头标题同为 <code>feedback.historyTitle</code>「反馈历史」，同屏出现两次；提交页里同一 key 也用作第二张卡标题。</li>
+      <li>返回件与标题同排的一行式页头（R11-L11-D14）与全站多数页的两行式（返回胶囊独占一行）不同档——本画板按本页源码实际形态画，不代表全站口径。</li>
+      <li><b>演示数据口径：</b>两条记录逐字取 <code>services/mocks/fixtures.ts</code> 预置（标题/摘要来自 <code>mockData.submissions.title1|2 / reply1|2</code>，
+        <code>status</code> 分别写死 <code>processing</code> / <code>reviewed</code>，<code>submittedAt</code> 为 ISO 串），时间显示按 <code>utils/time</code> 'full' 预设算成 <code>YYYY-MM-DD HH:mm</code>；
+        F03 的「已提交 + 处理队列」行取 <code>createSubmission</code> 的写死值（<code>status:"submitted"</code> + <code>mockData.submissions.queueReply</code>），提交时刻取画板时钟 9:41。
+        本页无任何分数/百分比位，故无「真值位留空」项。</li>
+      <li>本页在 profile-extra 分包，<b>无 tabbar</b>、无原生导航栏（AppShell 传 <code>:show-tab-bar="false"</code>）；画板若出现 tabbar 即为错。</li>
+      <li>AppShell 的 <code>fixed</code> 默认 true（R8-L07-D15）⇒ 页头吸顶、背景 <code>--c-bg-page</code>；本页未显式传该 prop，画板按默认档画吸顶带。</li>
+      <li>不入静态画板的时序/动效项：深链自动展开的 300ms 定时器（<code>onUnmounted</code> 清理）、spinner 旋转、<code>press-feedback</code> 缩放、<code>previewImage</code> 的滑动切换。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 反馈历史页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1,572,192 px，对齐 素材/理想效果图 语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

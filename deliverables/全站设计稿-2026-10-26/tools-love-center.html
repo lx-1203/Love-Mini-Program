@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 恋爱中心首页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，不写私有色值） ===== */
+/* AppShell 页头：白胶囊「‹ 返回」+ 28px 大标题，页面底 --c-bg-page（AppShell.vue:42-52/110-140） */
+.sh { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 0 var(--page-padding);
+  background: var(--c-bg-page); overflow: hidden; }
+.sh__inner { padding-top: 54px; }
+.sh__back { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; min-width: 44px;
+  padding: 10px 12px 10px 8px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: 0.5px solid var(--c-border-light); box-shadow: var(--s-sm); }
+.sh__back svg { width: 16px; height: 16px; color: var(--c-brand-800); }
+.sh__back span { font-size: var(--fs-base); color: var(--c-brand-800); font-weight: 500; }
+.sh__title { display: block; font-size: var(--fs-7xl); font-weight: 700; color: var(--c-text-primary);
+  margin-top: 8px; line-height: 1.25; letter-spacing: -0.3px; }
+.sh__sub { display: block; font-size: var(--fs-base); color: var(--c-text-secondary); margin-top: 4px; line-height: 1.5; }
+.sh__body { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+
+/* 区块（love-center__section：margin 10px 0；标题 18px/700） */
+.lc-sec__t { display: block; font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); margin-bottom: 8px; }
+
+/* 快捷入口 / 恋爱测试：单行白卡（padding 12px 10px · 圆角 --card-radius · 图标 24px） */
+.lc-row { display: flex; align-items: center; gap: 6px; padding: 12px 10px; border-radius: var(--card-radius);
+  background: var(--c-bg-container); box-shadow: var(--card-shadow); }
+.lc-row + .lc-row { margin-top: 6px; }
+.lc-row__ic { width: 24px; height: 24px; flex: none; color: var(--c-brand-700); }
+.lc-row__t { flex: 1; font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.lc-row__a { font-size: var(--fs-2xl); color: var(--c-text-tertiary); line-height: 1; }
+
+/* 四板块宫格（2 列等宽 · gap 6px · 图标 28px · 标题 15px/700 · 说明 14px） */
+.lc-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.lc-board { width: calc((100% - 6px) / 2); box-sizing: border-box; display: flex; flex-direction: column; gap: 4px;
+  padding: 10px; border-radius: var(--card-radius); background: var(--c-bg-container); box-shadow: var(--card-shadow); }
+.lc-board__ic { width: 28px; height: 28px; color: var(--c-brand-700); }
+.lc-board__t { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.lc-board__d { font-size: var(--fs-lg); color: var(--c-text-secondary); line-height: 1.5; }
+/* 封存态（:class 命中 love-center__board--sealed）：卡底落浅底档、文字走 secondary、角标独立一档 */
+.lc-board--sealed { background: var(--c-bg-surface); box-shadow: var(--s-sm); }
+.lc-board--sealed .lc-board__ic { color: var(--c-text-placeholder); }
+.lc-board--sealed .lc-board__t { color: var(--c-text-secondary); font-weight: 600; }
+.lc-sealed { align-self: flex-start; font-size: var(--fs-sm); color: var(--c-text-secondary);
+  background: var(--c-border-strong); padding: 2px 6px; border-radius: var(--r-full); }
+
+/* 按压态（hover-class="press-feedback--active"，全站既有件） */
+.lc-press { opacity: 0.72; transform: scale(0.985); }
+
+.jump { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.6; }
+.jump__n { flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--c-brand-50);
+  color: var(--c-brand-700); font-weight: 800; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+.jump code { font-family: var(--mono); font-size: 11px; color: var(--c-brand-700); background: var(--c-brand-50);
+  padding: 1px 5px; border-radius: 4px; }
+
+/* §04 素材带：本页无照片位，只摆图标槽对照（画板自绘描边符号，非演示素材） */
+.asset__stage { height: 120px; background: var(--c-bg-surface); display: flex; align-items: center;
+  justify-content: center; gap: 14px; }
+.asset__stage .st-ic { width: 28px; height: 28px; color: var(--c-brand-700); }
+.asset__stage--flat .none { font-size: 12px; color: var(--c-text-placeholder); }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格；工程侧这些位是 IMAGE_PATHS.ICONS_EMOJI/* 彩-svg，画板统一用描边符号表达同义形） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 6.5 9 12l5.5 5.5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s6.4-5.6 6.4-10.2A6.4 6.4 0 0 0 5.6 10.8C5.6 15.4 12 21 12 21z"/><circle cx="12" cy="10.6" r="2.4"/></symbol>
+  <symbol id="i-heart2" viewBox="0 0 24 24"><path d="M9.2 18.6c-2.6-1.8-5.4-4-5.4-6.8A3.4 3.4 0 0 1 9.2 8.2c.7 0 1.3.3 1.8.7"/><path d="M14.8 18.6c2.6-1.8 5.4-4 5.4-6.8a3.4 3.4 0 0 0-5.4-3.6c-.7 0-1.3.3-1.8.7"/><path d="M11 12.9c.4.4.6.8.6.8s.2-.4.6-.8"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 6.6C10.6 5.4 8.8 4.8 6.6 4.8H4v13h2.6c2.2 0 4 .6 5.4 1.8 1.4-1.2 3.2-1.8 5.4-1.8H20v-13h-2.6c-2.2 0-4 .6-5.4 1.8z"/><path d="M12 6.6v13"/></symbol>
+  <symbol id="i-speech" viewBox="0 0 24 24"><path d="M4 5.6h16v10.8H9.6L5.6 20v-3.6H4z"/><path d="M8 9.4h8M8 12.4h5"/></symbol>
+  <symbol id="i-cap" viewBox="0 0 24 24"><path d="M12 4.6 2.8 8.6 12 12.6l9.2-4z"/><path d="M6.6 10.6v4.7c0 1.7 2.4 3 5.4 3s5.4-1.3 5.4-3v-4.7"/><path d="M21.2 8.6v5.4"/></symbol>
+  <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M9.4 4.6h2.2a1.6 1.6 0 1 1 3.2 0h2.2v4h-.4a1.6 1.6 0 1 0 0 3.2h.4v4h-4.4v-.4a1.6 1.6 0 1 0-3.2 0v.4H7v-4h-.4a1.6 1.6 0 1 1 0-3.2H7v-4z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>恋爱中心 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/tools/love-center/index</code>。
+     本页是恋爱域的 hub：三段结构（快捷入口 / 恋爱咨询四板块 / 恋爱测试），本身不承载内容，
+     只负责分流到三个子页与帮助客服页。四板块与快捷入口都受商业化开关（批次 A5）管辖，
+     因此本页的状态机不是「有没有数据」而是「闸门开到哪一档」——本画板把两档画全，
+     并在 §01/§02 逐条钉死「哪个入口跳哪条路由」，与三张子页画板互为对照。</p>
+  <div class="cover__meta">
+    <span>路由 <b>tools/love-center/index</b></span>
+    <span>分包 <b>tools</b>（无 tabbar）</span>
+    <span>状态 <b>2 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 2 屏</h2>
+    <p>商业化缺省档（双闸关闭） / 商业化开启档</p></div>
+  <div class="sec__sub">本页状态机有 <b>2 态</b>，来自源码两处条件：
+    ① <code>quickEntries</code> 计算属性里的 <code>if (appConfig.isCommerceOn("course"))</code>
+    （index.vue:52-54，决定快捷入口是 1 行还是 2 行）；
+    ② <code>:class="{ 'love-center__board--sealed': isBoardSealed(board.id) }"</code> +
+    <code>v-if="isBoardSealed(board.id)"</code>（index.vue:151、:162，
+    <code>isBoardSealed = (id==="love-course"||id==="social-course") &amp;&amp; !isCommerceOn("consult")</code>，:75-77）。
+    「恋爱测试」区与四板块本体<b>恒渲染</b>（R6-L09-D06 已把整段 <code>v-if</code> 降级成置灰），
+    <code>appConfig.isCommerceOn</code> 在 <code>commerce.enabled</code> 与子闸都 <code>=== true</code> 时才放行
+    （stores/app-config.ts:64-77），real 档后端未下发 <code>commerce.*</code> ⇒ F01 是现网默认画面。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">商业化缺省档 · course/consult 双关</span><span class="d">现网默认 · 课程两卡封存 · 三段全量入框无裁切</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">恋爱中心</span>
+            <div class="sh__body">
+
+              <section>
+                <span class="lc-sec__t">快捷入口</span>
+                <div class="lc-row"><svg class="lc-row__ic"><use href="#i-pin"/></svg><span class="lc-row__t">附近的人</span><span class="lc-row__a">›</span></div>
+              </section>
+
+              <section>
+                <span class="lc-sec__t">恋爱咨询</span>
+                <div class="lc-grid">
+                  <div class="lc-board"><svg class="lc-board__ic"><use href="#i-heart2"/></svg><span class="lc-board__t">恋爱咨询</span><span class="lc-board__d">情感问题，专业解答</span></div>
+                  <div class="lc-board lc-board--sealed"><svg class="lc-board__ic"><use href="#i-book"/></svg><span class="lc-board__t">恋爱课程</span><span class="lc-board__d">系统提升恋爱能力</span><span class="lc-sealed">功能封存中</span></div>
+                  <div class="lc-board"><svg class="lc-board__ic"><use href="#i-speech"/></svg><span class="lc-board__t">社交咨询</span><span class="lc-board__d">突破社交困境</span></div>
+                  <div class="lc-board lc-board--sealed"><svg class="lc-board__ic"><use href="#i-cap"/></svg><span class="lc-board__t">社交课程</span><span class="lc-board__d">轻松掌握社交技巧</span><span class="lc-sealed">功能封存中</span></div>
+                </div>
+              </section>
+
+              <section>
+                <span class="lc-sec__t">恋爱测试</span>
+                <div class="lc-row"><svg class="lc-row__ic"><use href="#i-puzzle"/></svg><span class="lc-row__t">MBTI 人格测试</span><span class="lc-row__a">›</span></div>
+              </section>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">商业化开启档 · course+consult 放行</span><span class="d">快捷入口增至 2 行 · 四卡全可用</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">恋爱中心</span>
+            <div class="sh__body">
+
+              <section>
+                <span class="lc-sec__t">快捷入口</span>
+                <div class="lc-row"><svg class="lc-row__ic"><use href="#i-pin"/></svg><span class="lc-row__t">附近的人</span><span class="lc-row__a">›</span></div>
+                <div class="lc-row"><svg class="lc-row__ic"><use href="#i-heart2"/></svg><span class="lc-row__t">恋爱咨询课程</span><span class="lc-row__a">›</span></div>
+              </section>
+
+              <section>
+                <span class="lc-sec__t">恋爱咨询</span>
+                <div class="lc-grid">
+                  <div class="lc-board"><svg class="lc-board__ic"><use href="#i-heart2"/></svg><span class="lc-board__t">恋爱咨询</span><span class="lc-board__d">情感问题，专业解答</span></div>
+                  <div class="lc-board"><svg class="lc-board__ic"><use href="#i-book"/></svg><span class="lc-board__t">恋爱课程</span><span class="lc-board__d">系统提升恋爱能力</span></div>
+                  <div class="lc-board"><svg class="lc-board__ic"><use href="#i-speech"/></svg><span class="lc-board__t">社交咨询</span><span class="lc-board__d">突破社交困境</span></div>
+                  <div class="lc-board"><svg class="lc-board__ic"><use href="#i-cap"/></svg><span class="lc-board__t">社交课程</span><span class="lc-board__d">轻松掌握社交技巧</span></div>
+                </div>
+              </section>
+
+              <section>
+                <span class="lc-sec__t">恋爱测试</span>
+                <div class="lc-row"><svg class="lc-row__ic"><use href="#i-puzzle"/></svg><span class="lc-row__t">MBTI 人格测试</span><span class="lc-row__a">›</span></div>
+              </section>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+
+  <div class="note" style="margin-top:24px">
+    <b>四个入口的跳转关系（本页唯一的承重信息，须与三张子页画板对得上）：</b>
+    <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">
+      <div class="jump"><span class="jump__n">1</span><span>快捷入口「附近的人」<code>quickEntries[0]</code> → <code>ROUTES.LOVE_CENTER.NEARBY</code> = <code>/subpackages/tools/love-center/nearby</code>（:49 绑 <code>ICONS_COMMON.LOCATION</code>；<code>goToQuickEntry()</code> :59-62 走 <code>uni.navigateTo</code>）→ 画板 <b>tools-love-center-nearby.html</b></span></div>
+      <div class="jump"><span class="jump__n">2</span><span>快捷入口「恋爱咨询课程」<code>quickEntries[1]</code>（仅 F02 出现）→ <code>ROUTES.LOVE_CENTER.CONSULTING</code> = <code>/subpackages/tools/love-center/consulting</code>（:53）→ 画板 <b>tools-love-center-consulting.html</b></span></div>
+      <div class="jump"><span class="jump__n">3</span><span>板块「恋爱咨询」/「社交咨询」→ <code>ROUTES.HELP</code> = <code>/subpackages/tools/help/index</code>（<code>onBoardTap()</code> :86-89）。<b>这两个板块不进本页的四个子页画板</b>，落点是帮助与客服页；画板 <b>tools-love-center-consulting.html</b> 不是它们的目的地，别混。</span></div>
+      <div class="jump"><span class="jump__n">4</span><span>板块「恋爱课程」/「社交课程」→ 未封存时 <code>ROUTES.LOVE_CENTER.CONSULTING</code>（:95）；封存时（F01）<b>不跳转</b>，只弹 <code>commerce.sealedToast</code>「功能封存中，暂不可用」（:91-94，R6-L09-D06：不再跳进一个只有封存卡的页面）</span></div>
+      <div class="jump"><span class="jump__n">5</span><span>测试「MBTI 人格测试」→ <code>ROUTES.LOVE_CENTER.MBTI</code> = <code>/subpackages/tools/love-center/mbti</code>（<code>onTestTap()</code> :99-102）→ 画板 <b>tools-love-center-mbti.html</b></span></div>
+    </div>
+    <ul>
+      <li>序号 1/2/5 是画板上带 <code>›</code> 箭头的三行；序号 3/4 是宫格四卡。四个「子页方向」＝ nearby / consulting / mbti / help，其中 help 属另一单元（C7），本页只登记落点。</li>
+      <li>本页 <code>onShareAppMessage</code>（:105-111）分享的是<b>个人主页</b> <code>/pages/profile/index</code>，不是本页路由——标题取 <code>profile.shareProfileTitle</code>。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页三类可点件都挂在 <code>press-feedback</code> + <code>hover-class="press-feedback--active"</code>（工程侧统一按压反馈），
+    状态差异全部来自商业化开关，不来自数据有无。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>四板块卡 · 三态</h3>
+      <p class="hint">开放 / 封存 / 按压。封存的判定只认两个 id：<code>isBoardSealed = (love-course | social-course) && !isCommerceOn("consult")</code>——
+        两张「咨询」卡<b>永远不会</b>被封存（落点 ROUTES.HELP 与开关无关）。</p>
+      <div class="row">
+        <div class="cell" style="width:168px"><div class="lc-board"><svg class="lc-board__ic"><use href="#i-book"/></svg><span class="lc-board__t">恋爱课程</span><span class="lc-board__d">系统提升恋爱能力</span></div><span class="lab">开放（consult=true）</span></div>
+        <div class="cell" style="width:168px"><div class="lc-board lc-board--sealed"><svg class="lc-board__ic"><use href="#i-book"/></svg><span class="lc-board__t">恋爱课程</span><span class="lc-board__d">系统提升恋爱能力</span><span class="lc-sealed">功能封存中</span></div><span class="lab">封存（现网默认）</span></div>
+        <div class="cell" style="width:168px"><div class="lc-board lc-press"><svg class="lc-board__ic"><use href="#i-heart2"/></svg><span class="lc-board__t">恋爱咨询</span><span class="lc-board__d">情感问题，专业解答</span></div><span class="lab">按压 press-feedback--active</span></div>
+      </div>
+      <table class="tbl" style="margin-top:14px">
+        <tr><th>态</th><th>卡底</th><th>图标</th><th>标题/说明</th><th>角标</th></tr>
+        <tr><td>开放</td><td><code>--c-bg-container</code></td><td>彩色 SVG 素材</td><td><code>--c-text-primary</code> / <code>--c-text-secondary</code></td><td>无</td></tr>
+        <tr><td>封存</td><td><code>--c-bg-surface</code></td><td><code>saturate(0.2)</code>（画板以 <code>--c-text-placeholder</code> 表达同效）</td><td><code>--c-text-secondary</code>（R15-L07-D16 已停用整卡 opacity）</td><td><code>--c-border-strong</code> 底 + 11px 字</td></tr>
+        <tr><td>按压</td><td colspan="4"><code>press-feedback--active</code>（全站既有件，本页不单独定义）</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>入口行 · 出现条件枚举</h3>
+      <p class="hint">快捷入口区与恋爱测试区同用一套行几何（<code>.lc-row</code>），差别只在<b>出现条件</b>。</p>
+      <table class="tbl">
+        <tr><th>行</th><th>条件</th><th>默认档</th><th>开启档</th></tr>
+        <tr><td>附近的人</td><td>无（数组常量 <code>:49</code>）</td><td>出现</td><td>出现</td></tr>
+        <tr><td>恋爱咨询课程</td><td><code>isCommerceOn("course")</code></td><td><b>缺席</b></td><td>出现</td></tr>
+        <tr><td>MBTI 人格测试</td><td>无（<code>testEntries</code> 常量 <code>:35-37</code>）</td><td>出现</td><td>出现</td></tr>
+      </table>
+      <p class="hint" style="margin-top:12px">R10-P2-014 曾把快捷入口里的 MBTI 行删掉（与「恋爱测试」区重复），
+        所以「快捷入口」区在开启档也只有 2 行——画第三行 = 回归。</p>
+      <div class="row" style="margin-top:10px">
+        <div class="cell" style="width:300px"><div class="lc-row"><svg class="lc-row__ic"><use href="#i-pin"/></svg><span class="lc-row__t">附近的人</span><span class="lc-row__a">›</span></div><span class="lab">default（44px+ 触控热区，R6-L09-D07②）</span></div>
+        <div class="cell" style="width:300px"><div class="lc-row lc-press"><svg class="lc-row__ic"><use href="#i-puzzle"/></svg><span class="lc-row__t">MBTI 人格测试</span><span class="lc-row__a">›</span></div><span class="lab">按压</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>AppShell 页头 · 共用件（本页不改）</h3>
+      <p class="hint">三页共用（love-center / help / security，AppShell.vue:110-117 注释自证）。
+        返回是<b>白胶囊 + 图标 + 文字「返回」</b>，墨色 <code>--c-brand-800</code> #156B51（R10-L07-D07 由 #36C99A 收深，白底 6.45:1）；
+        大标题 <code>--fs-7xl</code> 28px/700（R10-L13-D09 由 22px 升档，避免与区块标题 18px 塌层）。</p>
+      <div class="row">
+        <div class="cell"><span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span><span class="lab">返回胶囊</span></div>
+        <div class="cell"><span class="sh__title">恋爱中心</span><span class="lab">页头标题（key: showcase.groups.home.items.loveCenter.title）</span></div>
+      </div>
+      <p class="hint" style="margin-top:10px">页头标题在 R7-L07-D05 前误引 <code>home.loveConsulting</code>「恋爱咨询」，
+        与第二个板块标题逐字重复；画板按现值「恋爱中心」画，出现「恋爱咨询」作页头 = 回归。</p>
+    </div>
+
+    <div class="panel">
+      <h3>区块标题 · 一档三处</h3>
+      <p class="hint">「快捷入口」「恋爱咨询」「恋爱测试」三段标题同用 <code>--fs-3xl</code> 18px/700 + <code>--c-text-primary</code>（R6-L09-D04 由 14px 升档）。
+        文案逐字取 <code>contentPages.entries.sectionTitle</code> / <code>home.loveConsulting</code> / <code>home.loveTestEntry</code>。</p>
+      <div class="row">
+        <div class="cell"><span class="lc-sec__t">快捷入口</span><span class="lab">contentPages.entries.sectionTitle</span></div>
+        <div class="cell"><span class="lc-sec__t">恋爱咨询</span><span class="lab">home.loveConsulting</span></div>
+        <div class="cell"><span class="lc-sec__t">恋爱测试</span><span class="lab">home.loveTestEntry</span></div>
+      </div>
+      <p class="hint" style="margin-top:10px">段间距 <code>margin: var(--sp-5) 0</code>（10px）+ 卡间隙 <code>--sp-3</code>（6px）；
+        水平 gutter 单一来源交回 AppShell（R6-L09-D03：本页曾叠出 24px 双 gutter）。</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>与 design-variables.scss 一一对应，可直接抄进 SCSS</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用这八档，未引入任何页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">.love-center 背景（AppShell 同底）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器<code>--c-bg-container</code></div><div class="sw__u">开放卡 · 入口行 · 返回胶囊</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">浅底<code>--c-bg-surface</code></div><div class="sw__u">封存卡卡底（R15-L07-D16）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#C2CAC6"></span><div><div class="sw__n">强描边<code>--c-border-strong</code></div><div class="sw__u">「功能封存中」角标底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">品牌 800<code>--c-brand-800</code></div><div class="sw__u">返回胶囊文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1F8D6A"></span><div><div class="sw__n">品牌 700<code>--c-brand-700</code></div><div class="sw__u">画板内描边图标替身色</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">主文字<code>--c-text-primary</code></div><div class="sw__u">页头标题 · 区块标题 · 卡标题</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">三级文字<code>--c-text-tertiary</code></div><div class="sw__u">行尾 › 箭头</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到六档（rpx÷2）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 56/700</span><span class="type__p" style="font-size:28px;font-weight:700">恋爱中心</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 36/700</span><span class="type__p" style="font-size:18px;font-weight:700">快捷入口 · 恋爱咨询</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 36/400</span><span class="type__p" style="font-size:18px;font-weight:400;color:var(--c-text-tertiary)">›</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 30/700</span><span class="type__p" style="font-size:15px;font-weight:700">附近的人 · MBTI 人格测试</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 28/400</span><span class="type__p" style="font-size:14px;font-weight:400;color:var(--c-text-secondary)">情感问题，专业解答</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 22/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-secondary)">功能封存中</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:20px"></b>--card-radius<br>40rpx · 卡与入口行（R6-L09-D02）</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>角标 · 返回胶囊</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 画板内未使用，仅对照</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>工程侧 5 枚图标全部有在册素材，本页无素材缺口</p></div>
+  <div class="assets">
+    <div class="asset"><div class="asset__stage">
+        <svg class="st-ic"><use href="#i-heart2"/></svg><svg class="st-ic"><use href="#i-book"/></svg>
+        <svg class="st-ic"><use href="#i-speech"/></svg><svg class="st-ic"><use href="#i-cap"/></svg>
+        <svg class="st-ic"><use href="#i-puzzle"/></svg><svg class="st-ic"><use href="#i-pin"/></svg>
+      </div>
+      <div class="asset__b"><b>ICONS_EMOJI.*（5 枚）+ ICONS_COMMON.LOCATION</b><p>四板块与测试行的图标真身在工程侧是彩色 SVG：
+        <code>DOUBLE_HEART</code> / <code>BOOK</code> / <code>SPEECH</code> / <code>GRAD_CAP</code> / <code>PUZZLE</code>（index.vue:28-37），
+        快捷入口首行是 <code>ICONS_COMMON.LOCATION</code>（PNG，R6-L09-D01 由 SVG 改指，因 icons/location 根目录不在两棵树内会渲染成 0 墨迹空槽）。
+        画板按 §4 用 lucide 描边符号表达同义形，烘焙色由素材车道 F1 统一负责；上面一排是宫格 28px 档的对照带。</p>
+        <div class="m">宫格 28px · 入口行 24px · mode=aspectFit</div></div></div>
+    <div class="asset"><div class="asset__stage asset__stage--flat">
+        <span class="none">本页无照片位</span>
+      </div>
+      <div class="asset__b"><b>演示素材引用 · 0 件</b><p>恋爱中心是纯导航 hub，盘上没有任何头像 / 封面 / 帖子配图位，
+        故规范 §8「照片位不许留灰占位」在本页不产生引用条件，本页也没有 <code>assets/demo/*</code> 依赖。</p>
+        <div class="m">无 NEED_ASSET</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li>本页在 <code>subpackages/tools</code> 分包，<b>无 tabbar</b>、无原生导航栏——页头由 AppShell 自绘；画板若出现 tabbar 即为错。</li>
+      <li><b>分数位：本页一个都没有。</b>hub 不展示任何匹配度/共同点/计数读数，符合规范 §3.3「不捏造数据」，无需留空骨架。</li>
+      <li>R6-L09-D06 的降级是刻意设计：四板块<b>恒渲染</b>，课程两卡只能置灰。若某帧看到「恋爱咨询」区整段消失或只剩两张白卡，即为回归（这是该条缺陷的原表现）。</li>
+      <li>工程侧 <code>.love-center__board--sealed .love-center__board-icon</code> 用 <code>filter: saturate(0.2)</code> 降饱和，
+        而画板图标是单色描边（无饱和度可言），故以 <code>--c-text-placeholder</code> 表达同一降级语义；真实渲染以素材为准。</li>
+      <li>页底无固定留白件（R6-L09-D07① 已删 120rpx spacer），内容到「恋爱测试」卡为止；三段全量在 812px 视口内<b>全部入框、无裁切</b>，
+        卡下方的空带来自 <code>.shell{min-height:100vh}</code> 的页面底（AppShell.vue:12），属工程实况不是画板留白。</li>
+      <li>快捷入口行与恋爱测试行几何完全同源（padding <code>var(--sp-6) var(--sp-5)</code>、圆角 <code>--card-radius</code>、标题 <code>--fs-xl</code>、行尾 <code>›</code>），
+        两区只是语义分组不同——画成两种控件 = 错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 恋爱中心首页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（画框 375 × 812，2.273×）
+</footer>
+
+</div>
+</body>
+</html>

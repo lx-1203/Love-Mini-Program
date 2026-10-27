@@ -149,9 +149,9 @@ public class User {
      * 现增加数据库字段支持 BCrypt 哈希存储，由 RealAuthService 优先校验数据库哈希，
      * 环境变量作为兜底。校验通过 {@link org.springframework.security.crypto.password.PasswordEncoder#matches} 完成。</p>
      *
-     * <p>历史明文兼容：V2026.06.25.0002 迁移脚本已将所有管理员密码升级为 BCrypt 哈希，
-     * 但 RealAuthService#loginAsAdmin 仍保留对历史明文密码的兼容校验与自动迁移逻辑（一次性升级），
-     * 以应对手工录入异常等边界场景。</p>
+     * <p>2026-10-25 安全收口：管理员登录只接受 BCrypt 哈希，不再兼容历史明文，
+     * 也不再自动迁移。历史明文行必须通过受控重置写入新的 BCrypt 哈希后才会被接受；
+     * 已知泄露的哈希由 AdminPasswordValidator 拒绝。</p>
      *
      * <p>Task 0.5.1 安全加固：使用 {@link JsonIgnore} 标注，确保 User 实体在任何 JSON
      * 序列化场景下（包括 Entity 被误直接返回 Controller、日志输出、调试接口等）

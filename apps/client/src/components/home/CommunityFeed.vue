@@ -399,11 +399,13 @@ function feedImageSrc(img: string): string {
   padding-right: 16rpx;
 }
 
+/* 2026-10-26 对齐理想图（首页.png 社区动态）：一行 3 张窄卡（原 320rpx 一行约 2 张）；
+   「关注」胶囊为理想图之后接入的真实关注能力（MP-R1-HOME-014，2026-09-20），保留功能仅压紧尺寸 */
 .post-card {
-  width: 320rpx;
+  width: 216rpx;
   flex-shrink: 0;
-  padding: 20rpx;
-  border-radius: 40rpx;
+  padding: 16rpx;
+  border-radius: 32rpx;
   background: #ffffff;
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
@@ -412,12 +414,12 @@ function feedImageSrc(img: string): string {
 .post-card__head {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  gap: 8rpx;
 }
 
 .post-card__avatar {
-  width: 56rpx;
-  height: 56rpx;
+  width: 44rpx;
+  height: 44rpx;
   border-radius: 50%;
   background: #F0F2F5;
   flex-shrink: 0;
@@ -448,13 +450,13 @@ function feedImageSrc(img: string): string {
 }
 
 .post-card__name {
-  font-size: 24rpx;
+  font-size: 22rpx;
   font-weight: 700;
   color: #222222;
 }
 
 .post-card__school {
-  font-size: 18rpx;
+  font-size: 17rpx;
   color: #36C99A;
   overflow: hidden;
   white-space: nowrap;
@@ -462,13 +464,13 @@ function feedImageSrc(img: string): string {
 }
 
 .post-card__time {
-  font-size: 18rpx;
+  font-size: 17rpx;
   color: #999999;
 }
 
 .post-card__follow {
   flex-shrink: 0;
-  padding: 6rpx 18rpx;
+  padding: 4rpx 12rpx;
   border-radius: 999rpx;
   background: #E8FBF2;
 }
@@ -488,7 +490,7 @@ function feedImageSrc(img: string): string {
 }
 
 .post-card__follow-text {
-  font-size: 20rpx;
+  font-size: 18rpx;
   color: #36C99A;
   font-weight: 600;
 }
@@ -496,10 +498,11 @@ function feedImageSrc(img: string): string {
 .post-card__content {
   display: -webkit-box;
   /* R20（2026-09-08）：固定两行高度——此前无图帖缺图片行导致同排卡片高度参差、
-     底部无法对齐（社区动态排版错落杂乱）；正文恒占两行基线，卡片高度对齐 */
-  min-height: calc(24rpx * 1.5 * 2);
-  margin-top: 14rpx;
-  font-size: 24rpx;
+     底部无法对齐（社区动态排版错落杂乱）；正文恒占两行基线，卡片高度对齐
+     2026-10-26：窄卡字号同步收敛 24→22rpx */
+  min-height: calc(22rpx * 1.5 * 2);
+  margin-top: 12rpx;
+  font-size: 22rpx;
   color: #333333;
   line-height: 1.5;
   -webkit-line-clamp: 2;
@@ -515,20 +518,20 @@ function feedImageSrc(img: string): string {
 
 .post-card__meta {
   display: flex;
-  gap: 20rpx;
-  margin-top: 14rpx;
+  gap: 14rpx;
+  margin-top: 12rpx;
 }
 
 /* 2026-09-03 修复：stat 图标缺尺寸规则 → 原生 image 默认 320x240
-   把 meta 行撑到 265px（卡片下方"大灰块"的元凶） */
+   把 meta 行撑到 265px（卡片下方"大灰块"的元凶）；窄卡同步 32→26rpx */
 .post-card__stat-icon {
   display: block;
-  width: 32rpx;
-  height: 32rpx;
+  width: 26rpx;
+  height: 26rpx;
 }
 
 .post-card__stat {
-  font-size: 20rpx;
+  font-size: 18rpx;
   color: #999999;
 }
 

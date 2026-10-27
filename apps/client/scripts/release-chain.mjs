@@ -110,6 +110,7 @@ function readBand(dir) {
 const STEPS = [
   { name: "check-band-outdir-collision", args: ["scripts/check-band-outdir-collision.mjs", "--mode", "real"], snapshotBefore: false },
   { name: "check-mp-image-styles", args: ["scripts/check-mp-image-styles.mjs", "--strict"], snapshotBefore: false },
+  { name: "check-token-refs", args: ["scripts/check-token-refs.mjs", "--strict"], snapshotBefore: false },
   { name: "check-statusbar-offset", args: ["scripts/check-statusbar-offset.mjs"], snapshotBefore: false },
   { name: "check-tabbar-consistency", args: ["scripts/check-tabbar-consistency.mjs"], snapshotBefore: false },
   { name: "check-project-rules", args: ["scripts/check-project-rules.mjs"], snapshotBefore: false },

@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 圈子主页（摄影圈）高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌；rpx÷2=px；源码锚见 §04） ===== */
+.hero { position: absolute; top: 0; left: 0; right: 0; height: 220px; overflow: hidden; }
+.hero__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hero__mask { position: absolute; top: 0; left: 0; right: 0; height: 80px;
+  background: linear-gradient(180deg, rgba(0,0,0,.35) 0%, rgba(0,0,0,0) 100%); }
+.hero__scrim { position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.62) 30%, rgba(0,0,0,.86) 100%); }
+.hero__acts { position: absolute; top: 52px; left: 12px; right: 12px; display: flex;
+  align-items: center; justify-content: space-between; z-index: 2; }
+.hero__btn { width: 32px; height: 32px; border-radius: 9999px; background: rgba(0,0,0,.3);
+  display: flex; align-items: center; justify-content: center; flex: none; color: var(--c-neutral-0); }
+.hero__btn svg { width: 18px; height: 18px; }
+.hero__chev { font-size: 22px; line-height: 1; color: var(--c-neutral-0); font-weight: 600; transform: translateY(-1px); }
+.hero__info { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 0 16px 16px; }
+.imain { display: flex; align-items: flex-start; gap: 12px; }
+.iavatar { width: 56px; height: 56px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,.85);
+  overflow: hidden; flex: none; }
+.iavatar img { width: 100%; height: 100%; object-fit: cover; }
+.ibody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.ititlerow { display: flex; align-items: center; gap: 6px; }
+.iname { font-size: 17px; font-weight: 600; color: var(--c-neutral-0); }
+.ihot { font-size: var(--fs-xs); color: var(--c-apricot-500); background: var(--c-apricot-50);
+  border-radius: var(--r-sm); padding: 1px 6px; }
+.idesc { font-size: 13px; color: var(--c-text-inverse); line-height: 1.45; }
+.imeta { font-size: var(--fs-base); color: rgba(255,255,255,.85); }
+.ijoin { flex: none; align-self: center; background: var(--c-brand-800); border-radius: 9999px;
+  padding: 9px 16px; font-size: 13px; font-weight: 600; color: var(--c-neutral-0); white-space: nowrap; }
+.tagrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.tagchip { background: var(--c-overlay-strong); border: 1px solid rgba(255,255,255,.18);
+  border-radius: 9999px; padding: 5px 12px; font-size: var(--fs-base); color: var(--c-text-inverse); }
+
+.tabs { position: absolute; top: 220px; left: 0; right: 0; z-index: 3; display: flex; align-items: center;
+  background: var(--c-bg-container); border-radius: var(--r-xxl) var(--r-xxl) 0 0;
+  box-shadow: 0 -4px 16px rgba(31,42,37,.06); padding: 0 12px; }
+.tab { position: relative; flex: 1 1 auto; display: flex; flex-direction: column; align-items: center;
+  padding: 12px 0 10px; font-size: 14px; color: var(--c-text-tertiary); white-space: nowrap; }
+.tab--wide { flex: 2 1 auto; }
+.tab--on { color: var(--c-brand-800); font-weight: 600; }
+.tab__bar { position: absolute; bottom: 0; width: 24px; height: 3px; border-radius: 2px; background: var(--c-brand-800); }
+
+.sheet { position: absolute; top: 266px; left: 0; right: 0; bottom: 0; overflow: hidden;
+  background: var(--c-bg-page); padding-bottom: 70px; }
+.pinned { display: flex; align-items: center; gap: 8px; margin: 12px 12px 0; background: var(--c-brand-50);
+  border-radius: var(--r-lg); padding: 10px 12px; }
+.pinned__b { flex: none; font-size: var(--fs-xs); font-weight: 600; color: var(--c-brand-600);
+  background: var(--c-bg-container); border-radius: var(--r-sm); padding: 2px 6px; }
+.pinned__t { flex: 1; font-size: var(--fs-base); color: var(--c-brand-700);
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pinned__a { width: 14px; height: 14px; flex: none; color: var(--c-brand-600); }
+
+.feed { margin: 12px 12px 0; background: var(--c-bg-container); border-radius: var(--r-xl); padding: 14px; }
+.feed__author { display: flex; align-items: flex-start; gap: 10px; }
+.feed__av { width: 38px; height: 38px; border-radius: 50%; overflow: hidden; flex: none; }
+.feed__av img { width: 100%; height: 100%; object-fit: cover; }
+.feed__abody { flex: 1; min-width: 0; }
+.feed__arow { display: flex; align-items: center; gap: 6px; }
+.feed__nick { font-size: 14px; font-weight: 600; color: var(--c-text-primary); }
+.feed__school { display: flex; align-items: center; gap: 3px; background: var(--c-brand-50);
+  border-radius: var(--r-sm); padding: 2px 6px; }
+.feed__school svg { width: 11px; height: 11px; color: var(--c-brand-600); }
+.feed__school span { font-size: var(--fs-xs); color: var(--c-brand-600); }
+.feed__time { display: block; margin-top: 3px; font-size: var(--fs-base); color: var(--c-text-tertiary); }
+.feed__more { width: 16px; height: 16px; flex: none; color: var(--c-text-tertiary); margin-top: 2px; }
+.feed__body { margin-top: 10px; }
+.feed__tag { display: inline-block; font-size: 13px; font-weight: 600; color: var(--c-brand-700);
+  background: var(--c-brand-50); border-radius: var(--r-sm); padding: 2px 6px; margin-right: 6px;
+  vertical-align: 2px; }
+.feed__text { font-size: 14px; line-height: 1.6; color: var(--c-text-primary); }
+.feed__imgs { display: flex; gap: 6px; margin-top: 10px; }
+.feed__imgs img { flex: 1; height: 95px; border-radius: var(--r-lg); object-fit: cover; min-width: 0; }
+.feed__acts { display: flex; align-items: center; gap: 24px; margin-top: 12px; }
+.feed__act { display: flex; align-items: center; gap: 5px; font-size: var(--fs-base); color: var(--c-text-tertiary); }
+.feed__act svg { width: 18px; height: 18px; }
+.feed__act--on { color: var(--c-brand-500); }
+.topics-link { display: flex; align-items: center; justify-content: center; gap: 4px; margin: 12px 12px 0;
+  padding: 12px; background: var(--c-bg-container); border-radius: var(--r-lg);
+  font-size: 13px; font-weight: 600; color: var(--c-brand-800); }
+
+.tab-empty { margin: 12px; padding: 48px 0; background: var(--c-bg-container); border-radius: var(--r-xl);
+  display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--c-text-placeholder); }
+
+.bottom { position: absolute; bottom: 0; left: 0; right: 0; z-index: 8; display: flex; align-items: center;
+  gap: 12px; padding: 10px 16px 24px; background: var(--c-bg-container);
+  box-shadow: 0 -2px 8px rgba(31,42,37,.06); }
+.bottom__cta { flex: 1; height: 44px; border-radius: 9999px; background: var(--c-brand-800);
+  display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600;
+  color: var(--c-neutral-0); }
+.bottom__fab { width: 44px; height: 44px; border-radius: 50%; background: var(--c-brand-900);
+  border: 1px solid var(--c-brand-900); display: flex; align-items: center; justify-content: center;
+  flex: none; color: var(--c-neutral-0); }
+.bottom__fab svg { width: 20px; height: 20px; }
+
+/* 未知圈空态（.circle-notfound） */
+.nf { position: absolute; inset: 0; background: var(--c-bg-page); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 48px; text-align: center; }
+.nf__img { width: 140px; height: 140px; margin-bottom: 12px; background: var(--c-bg-surface);
+  border-radius: var(--r-xl); display: flex; align-items: center; justify-content: center;
+  color: var(--c-text-placeholder); }
+.nf__img svg { width: 64px; height: 64px; }
+.nf__t { font-size: 16px; font-weight: 700; color: var(--c-text-primary); margin-bottom: 6px; }
+.nf__d { font-size: 13px; color: var(--c-text-tertiary); margin-bottom: 24px; }
+.nf__b { padding: 12px 36px; border-radius: 9999px; background: var(--c-brand);
+  font-size: 14px; font-weight: 600; color: var(--c-neutral-0); }
+
+/* §02 用：玻璃片样例（自带定位上下文，不让子级的 absolute 逃出画框） */
+.chipdemo { position: relative; width: 300px; height: 74px; border-radius: var(--r-lg); overflow: hidden;
+  background: url(assets/demo/circle-cover-photography.jpg) center/cover no-repeat;
+  display: flex; align-items: flex-end; padding: 0 10px 10px; }
+.chipdemo::after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,.62) 30%, rgba(0,0,0,.86) 100%); }
+.chipdemo__row { position: relative; z-index: 2; display: flex; gap: 8px; }
+
+/* 骨架态（SkeletonBlock variant=list rows=4） */
+.sk { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--c-bg-page);
+  padding: 56px 12px 12px; }
+.sk__card { display: flex; gap: 10px; padding: 12px; margin-bottom: 10px; border-radius: var(--r-xl);
+  background: var(--c-bg-container); }
+.sk__av { width: 44px; height: 44px; border-radius: 50%; flex: none; background: var(--c-bg-surface); }
+.sk__lines { flex: 1; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+.sk__l { height: 12px; border-radius: var(--r-lg); background: var(--c-bg-surface); }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 描边风格） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15.4V4"/><path d="M8.4 7.4 12 3.8l3.6 3.6"/><path d="M5 12.6v6.4a1.6 1.6 0 0 0 1.6 1.6h10.8A1.6 1.6 0 0 0 19 19v-6.4"/></symbol>
+  <symbol id="i-school" viewBox="0 0 24 24"><path d="M12 3.2 3 7.4l9 4.2 9-4.2z"/><path d="M6.6 9.6v5.1c0 1.9 2.4 3.4 5.4 3.4s5.4-1.5 5.4-3.4V9.6"/><path d="M21 7.4v6.2"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.2 4.9 13a4.6 4.6 0 0 1 6.5-6.5l.6.6.6-.6A4.6 4.6 0 0 1 19.1 13z"/></symbol>
+  <symbol id="i-comment" viewBox="0 0 24 24"><path d="M20.6 11.4a8.2 8.2 0 0 1-8.6 8.2 9 9 0 0 1-3.6-.7L3.4 20.6l1.7-5a8.2 8.2 0 0 1-.9-3.8 8.2 8.2 0 0 1 8.6-8.2 8.2 8.2 0 0 1 7.8 7.8z"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.4" class="ico--fill" style="fill:currentColor;stroke:none"/><circle cx="12" cy="12" r="1.4" class="ico--fill" style="fill:currentColor;stroke:none"/><circle cx="18.5" cy="12" r="1.4" class="ico--fill" style="fill:currentColor;stroke:none"/></symbol>
+  <symbol id="i-arrow-r" viewBox="0 0 24 24"><path d="M9 5.5 15.6 12 9 18.5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M16.6 3.6a2.3 2.3 0 0 1 3.3 3.3L7.4 19.4l-4 1 1-4z"/><path d="M14.4 5.8 17.7 9.1"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.4" y="4.6" width="17.2" height="14.8" rx="2.4"/><circle cx="9" cy="10" r="1.8"/><path d="M3.4 16.4 8.6 12l4 3.6 3-2.6 4.6 4"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>圈子主页（摄影圈） <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/circles/circles/circle-home?circleId=…</code>。
+     本页是兴趣圈的内容主页：通栏封面（下沿叠圈名/简介/统计/加入钮/标签 chips）→ 五签页签白 sheet →
+     置顶公告条 → 动态流 → 底部固定栏（加入 / 发帖 + 悬浮铅笔）。
+     对应理想效果图 <code style="font-family:var(--mono);font-size:12.5px">素材/理想效果图/圈子详情，摄影圈参考.png</code>
+     （登记表第 12 行）。理想图那一排「等 8 位朋友已加入」在源码里已被整块撤下（R12-L04-D08），本画板按撤下后的形态定基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>circles/circle-home</b></span>
+    <span>分包 <b>circles</b>（无 tabbar）</span>
+    <span>状态 <b>5 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>理想图 圈子详情，摄影圈参考.png（登记表第 12 行）</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 5 屏</h2>
+    <p>动态·未加入 / 动态·已加入 / 其它 tab 空态 / 未知圈 / 骨架</p></div>
+  <div class="sec__sub">本页顶层状态机有 <b>3 支</b>，来自模板根节点的 <code>v-if / v-else-if / v-else</code>
+    （<code>circle-home.vue:485 / :504 / :509</code>）：<code>isUnknownCircle</code> → 未知圈空态；
+    <code>!circlesFetchSettled</code> → 骨架态；否则内容态。
+    内容态再乘三个开关：五签 <code>activeTab</code>（<code>:51</code>，非 posts 一律走同一空态块）、
+    <code>joined</code>（<code>:141</code>，同时换 hero 钮与底栏钮两处）、
+    数据档 <code>useMock()</code>（决定公告 / 圈标签 / 点赞位三处有无，<code>:145 / :154 / :299</code>）。
+    F01 取「演示数据档 · 动态 tab · 未加入」——与理想图同一支；F02/F03 换 joined 与 tab；
+    F04/F05 画另两支顶层态。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">内容态 · 动态 tab · 未加入 · 演示数据档</span><span class="d">第二帖视口下沿裁切 · 底栏常驻</span></figcaption>
+      <div class="phone">
+        <div class="hero">
+          <img class="hero__img" src="assets/demo/circle-cover-photography.jpg" alt="">
+          <div class="hero__scrim"></div>
+          <div class="hero__mask"></div>
+          <div class="hero__acts">
+            <span class="hero__btn"><span class="hero__chev">‹</span></span>
+            <span class="hero__btn"><svg><use href="#i-share"/></svg></span>
+          </div>
+          <div class="hero__info">
+            <div class="imain">
+              <span class="iavatar"><img src="assets/demo/circle-cover-photography.jpg" alt=""></span>
+              <div class="ibody">
+                <div class="ititlerow"><span class="iname">摄影圈</span><span class="ihot">热门</span></div>
+                <div class="idesc">用镜头记录生活的美好瞬间</div>
+                <div class="imeta">1.2w 人加入 · 362 条动态</div>
+              </div>
+              <span class="ijoin">加入圈子</span>
+            </div>
+            <div class="tagrow">
+              <span class="tagchip">摄影技巧</span><span class="tagchip">风景拍摄</span>
+              <span class="tagchip">人像写真</span><span class="tagchip">城市漫游</span>
+            </div>
+          </div>
+        </div>
+        <div class="tabs">
+          <span class="tab tab--on">动态<span class="tab__bar"></span></span>
+          <span class="tab">精华</span><span class="tab">活动</span><span class="tab">作品墙</span>
+          <span class="tab tab--wide">成员 1.2w</span>
+        </div>
+        <div class="sheet">
+          <div class="pinned">
+            <span class="pinned__b">置顶</span>
+            <span class="pinned__t">【圈规】友善交流，尊重原创，分享美好瞬间</span>
+            <svg class="pinned__a"><use href="#i-arrow-r"/></svg>
+          </div>
+
+          <div class="feed">
+            <div class="feed__author">
+              <span class="feed__av"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+              <div class="feed__abody">
+                <div class="feed__arow"><span class="feed__nick">阿辰</span>
+                  <span class="feed__school"><svg><use href="#i-school"/></svg><span>北京大学</span></span></div>
+                <span class="feed__time">30 分钟前</span>
+              </div>
+              <svg class="feed__more"><use href="#i-more"/></svg>
+            </div>
+            <div class="feed__body">
+              <div class="feed__text"><span class="feed__tag"># 校园风光</span>周末去爬山拍到了云海，太震撼了！</div>
+            </div>
+            <div class="feed__imgs">
+              <img src="assets/demo/post-placeholder.jpg" alt="">
+              <img src="assets/demo/post-2.jpg" alt="">
+              <img src="assets/demo/post-8.jpg" alt="">
+            </div>
+            <div class="feed__acts">
+              <span class="feed__act"><svg><use href="#i-heart"/></svg>256</span>
+              <span class="feed__act"><svg><use href="#i-comment"/></svg>32</span>
+            </div>
+          </div>
+
+          <div class="feed">
+            <div class="feed__author">
+              <span class="feed__av"><img src="assets/demo/person-01-avatar.png" alt=""></span>
+              <div class="feed__abody">
+                <div class="feed__arow"><span class="feed__nick">光影捕手</span>
+                  <span class="feed__school"><svg><use href="#i-school"/></svg><span>清华大学</span></span></div>
+                <span class="feed__time">2 小时前</span>
+              </div>
+              <svg class="feed__more"><use href="#i-more"/></svg>
+            </div>
+            <div class="feed__body">
+              <div class="feed__text"><span class="feed__tag"># 人像写真</span>夕阳下的校园，氛围感拉满～</div>
+            </div>
+            <div class="feed__imgs">
+              <img src="assets/demo/circle-cover-photography.jpg" alt="">
+              <img src="assets/demo/circle-cover-music.jpg" alt="">
+              <img src="assets/demo/circle-cover-travel.jpg" alt="">
+            </div>
+            <div class="feed__acts">
+              <span class="feed__act feed__act--on"><svg class="ico--fill" style="fill:currentColor;stroke:none"><use href="#i-heart"/></svg>128</span>
+              <span class="feed__act"><svg><use href="#i-comment"/></svg>18</span>
+            </div>
+          </div>
+
+          <div class="feed">
+            <div class="feed__author">
+              <span class="feed__av"><img src="assets/demo/person-02-avatar.png" alt=""></span>
+              <div class="feed__abody">
+                <div class="feed__arow"><span class="feed__nick">老鹰视觉</span>
+                  <span class="feed__school"><svg><use href="#i-school"/></svg><span>复旦大学</span></span></div>
+                <span class="feed__time">3 小时前</span>
+              </div>
+              <svg class="feed__more"><use href="#i-more"/></svg>
+            </div>
+            <div class="feed__body">
+              <div class="feed__text"><span class="feed__tag"># 器材交流</span>最近入手了新镜头，分享一下使用感受～</div>
+            </div>
+          </div>
+        </div>
+        <div class="bottom">
+          <span class="bottom__cta">加入圈子</span>
+          <span class="bottom__fab"><svg><use href="#i-edit"/></svg></span>
+        </div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">内容态 · 动态 tab · 已加入</span><span class="d">joined 换两处钮：hero「已加入」+ 底栏「在圈内发帖」</span></figcaption>
+      <div class="phone">
+        <div class="hero">
+          <img class="hero__img" src="assets/demo/circle-cover-photography.jpg" alt="">
+          <div class="hero__scrim"></div>
+          <div class="hero__mask"></div>
+          <div class="hero__acts">
+            <span class="hero__btn"><span class="hero__chev">‹</span></span>
+            <span class="hero__btn"><svg><use href="#i-share"/></svg></span>
+          </div>
+          <div class="hero__info">
+            <div class="imain">
+              <span class="iavatar"><img src="assets/demo/circle-cover-photography.jpg" alt=""></span>
+              <div class="ibody">
+                <div class="ititlerow"><span class="iname">摄影圈</span><span class="ihot">热门</span></div>
+                <div class="idesc">用镜头记录生活的美好瞬间</div>
+                <div class="imeta">1.2w 人加入 · 362 条动态</div>
+              </div>
+              <span class="ijoin">已加入</span>
+            </div>
+            <div class="tagrow">
+              <span class="tagchip">摄影技巧</span><span class="tagchip">风景拍摄</span>
+              <span class="tagchip">人像写真</span><span class="tagchip">城市漫游</span>
+            </div>
+          </div>
+        </div>
+        <div class="tabs">
+          <span class="tab tab--on">动态<span class="tab__bar"></span></span>
+          <span class="tab">精华</span><span class="tab">活动</span><span class="tab">作品墙</span>
+          <span class="tab tab--wide">成员 1.2w</span>
+        </div>
+        <div class="sheet">
+          <div class="pinned">
+            <span class="pinned__b">置顶</span>
+            <span class="pinned__t">【圈规】友善交流，尊重原创，分享美好瞬间</span>
+            <svg class="pinned__a"><use href="#i-arrow-r"/></svg>
+          </div>
+          <div class="feed">
+            <div class="feed__author">
+              <span class="feed__av"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+              <div class="feed__abody">
+                <div class="feed__arow"><span class="feed__nick">阿辰</span>
+                  <span class="feed__school"><svg><use href="#i-school"/></svg><span>北京大学</span></span></div>
+                <span class="feed__time">30 分钟前</span>
+              </div>
+              <svg class="feed__more"><use href="#i-more"/></svg>
+            </div>
+            <div class="feed__body">
+              <div class="feed__text"><span class="feed__tag"># 校园风光</span>周末去爬山拍到了云海，太震撼了！</div>
+            </div>
+            <div class="feed__imgs">
+              <img src="assets/demo/post-placeholder.jpg" alt="">
+              <img src="assets/demo/post-2.jpg" alt="">
+              <img src="assets/demo/post-8.jpg" alt="">
+            </div>
+            <div class="feed__acts">
+              <span class="feed__act"><svg><use href="#i-heart"/></svg>256</span>
+              <span class="feed__act"><svg><use href="#i-comment"/></svg>32</span>
+            </div>
+          </div>
+          <div class="topics-link">查看全部话题<span style="font-size:14px;line-height:1">›</span></div>
+        </div>
+        <div class="bottom">
+          <span class="bottom__cta">在圈内发帖</span>
+          <span class="bottom__fab"><svg><use href="#i-edit"/></svg></span>
+        </div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">内容态 · 精华 tab（非动态四签通用）</span><span class="d">activeTab!=='posts' · 公告条仍在场</span></figcaption>
+      <div class="phone">
+        <div class="hero">
+          <img class="hero__img" src="assets/demo/circle-cover-photography.jpg" alt="">
+          <div class="hero__scrim"></div>
+          <div class="hero__mask"></div>
+          <div class="hero__acts">
+            <span class="hero__btn"><span class="hero__chev">‹</span></span>
+            <span class="hero__btn"><svg><use href="#i-share"/></svg></span>
+          </div>
+          <div class="hero__info">
+            <div class="imain">
+              <span class="iavatar"><img src="assets/demo/circle-cover-photography.jpg" alt=""></span>
+              <div class="ibody">
+                <div class="ititlerow"><span class="iname">摄影圈</span><span class="ihot">热门</span></div>
+                <div class="idesc">用镜头记录生活的美好瞬间</div>
+                <div class="imeta">1.2w 人加入 · 362 条动态</div>
+              </div>
+              <span class="ijoin">加入圈子</span>
+            </div>
+            <div class="tagrow">
+              <span class="tagchip">摄影技巧</span><span class="tagchip">风景拍摄</span>
+              <span class="tagchip">人像写真</span><span class="tagchip">城市漫游</span>
+            </div>
+          </div>
+        </div>
+        <div class="tabs">
+          <span class="tab">动态</span>
+          <span class="tab tab--on">精华<span class="tab__bar"></span></span>
+          <span class="tab">活动</span><span class="tab">作品墙</span>
+          <span class="tab tab--wide">成员 1.2w</span>
+        </div>
+        <div class="sheet">
+          <div class="pinned">
+            <span class="pinned__b">置顶</span>
+            <span class="pinned__t">【圈规】友善交流，尊重原创，分享美好瞬间</span>
+            <svg class="pinned__a"><use href="#i-arrow-r"/></svg>
+          </div>
+          <div class="tab-empty">该板块暂无内容，敬请期待</div>
+        </div>
+        <div class="bottom">
+          <span class="bottom__cta">加入圈子</span>
+          <span class="bottom__fab"><svg><use href="#i-edit"/></svg></span>
+        </div>
+        <div class="sb sb--onbrand"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">未知圈空态</span><span class="d">isUnknownCircle · real 档缺参/无效 id/拉取失败</span></figcaption>
+      <div class="phone">
+        <div class="nf">
+          <span class="nf__img"><svg><use href="#i-image"/></svg></span>
+          <span class="nf__t">圈子不存在或已解散</span>
+          <span class="nf__d">去看看别的圈子吧</span>
+          <span class="nf__b">返回</span>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">骨架态（冷启动 / 深链未落定）</span><span class="d">!circlesFetchSettled · 禁止提前渲染演示圈</span></figcaption>
+      <div class="phone">
+        <div class="sk">
+          <div class="sk__card"><span class="sk__av"></span><div class="sk__lines">
+            <span class="sk__l" style="width:40%"></span><span class="sk__l" style="width:90%"></span><span class="sk__l" style="width:70%"></span></div></div>
+          <div class="sk__card"><span class="sk__av"></span><div class="sk__lines">
+            <span class="sk__l" style="width:40%"></span><span class="sk__l" style="width:90%"></span><span class="sk__l" style="width:70%"></span></div></div>
+          <div class="sk__card"><span class="sk__av"></span><div class="sk__lines">
+            <span class="sk__l" style="width:40%"></span><span class="sk__l" style="width:90%"></span><span class="sk__l" style="width:70%"></span></div></div>
+          <div class="sk__card"><span class="sk__av"></span><div class="sk__lines">
+            <span class="sk__l" style="width:40%"></span><span class="sk__l" style="width:90%"></span><span class="sk__l" style="width:70%"></span></div></div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每类交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页四类交互件：加入/发帖双态（hero 钮与底栏主 CTA 同源联动）、五签页签（含吸顶态）、
+    动态卡（演示档 / 真实档两种形态）、置顶公告条（有 / 无）。
+    底栏那颗悬浮铅笔是常驻件，不随 <code>joined</code> 变化。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>加入 / 发帖 · 两处联动两态</h3>
+      <p class="hint">判据同一个 <code>joined</code>：<code>.info-join</code>（<code>:559-563</code>）与
+        <code>.bottom-bar</code>（<code>:692-697</code>）必须同帧同向；hero 文案
+        <code>circle.home.joinCta</code>「加入圈子」↔ <code>circle.joinedBtn</code>「已加入」，
+        底栏「加入圈子」↔ <code>circle.home.postInCircle</code>「在圈内发帖」。</p>
+      <div class="row">
+        <div class="cell"><span class="ijoin" style="display:inline-flex">加入圈子</span><span class="lab">hero · 未加入</span></div>
+        <div class="cell"><span class="ijoin" style="display:inline-flex;background:var(--c-brand-900)">加入圈子</span><span class="lab">hero · 按压 --active</span></div>
+        <div class="cell"><span class="ijoin" style="display:inline-flex">已加入</span><span class="lab">hero · 已加入（无独立底色档）</span></div>
+        <div class="cell" style="width:186px"><div class="bottom__cta" style="position:static">加入圈子</div><span class="lab">底栏 · 未加入（主 CTA）</span></div>
+        <div class="cell" style="width:186px"><div class="bottom__cta" style="position:static">在圈内发帖</div><span class="lab">底栏 · 已加入</span></div>
+        <div class="cell"><span class="bottom__fab" style="position:static"><svg><use href="#i-edit"/></svg></span><span class="lab">悬浮铅笔（常驻，深底 --c-brand-900）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>五签页签 · 三态</h3>
+      <p class="hint">TAB_KEYS 固定五签（<code>:54</code>），成员签拼 <code>formatMemberCount</code>（<code>:475-479</code>）。
+        选中档 <code>--c-brand-800</code> + 24×3px 下划线（R10-L03-D18：改前 brand-500 压白 2.06:1，选中比未选还淡）。
+        吸顶态（<code>.tabs--pinned</code>）另补状态栏内衬与胶囊预留，顶帧不补（R10-L03-D19）。</p>
+      <div class="row">
+        <div class="cell"><span class="tab" style="background:var(--c-bg-container);border:0.5px solid var(--c-border-light);border-radius:8px;padding:12px 14px 10px">动态</span><span class="lab">default #5d6c7b→--c-text-tertiary</span></div>
+        <div class="cell"><span class="tab tab--on" style="background:var(--c-bg-container);border:0.5px solid var(--c-border-light);border-radius:8px;padding:12px 14px 10px">动态<span class="tab__bar" style="bottom:2px"></span></span><span class="lab">active + 下划线</span></div>
+        <div class="cell"><span class="tab tab--wide" style="background:var(--c-bg-container);border:0.5px solid var(--c-border-light);border-radius:8px;padding:12px 14px 10px">成员 1.2w</span><span class="lab">成员档（flex 2 1 auto）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>动态卡 · 演示档 / 真实档两种形态</h3>
+      <table class="tbl">
+        <tr><th>位</th><th>演示档（useMock，= 理想图）</th><th>真实档（后端 CircleTopicView）</th></tr>
+        <tr><td>作者头像</td><td>mock 无 avatar 字段 ⇒ 回退 <code>DEFAULT_AVATAR</code></td><td><code>author.avatar</code>，空则同回退</td></tr>
+        <tr><td>校名 pill</td><td>渲染（北京大学 等）</td><td><b>不渲染</b>（后端无学校字段，<code>:164-165</code>）</td></tr>
+        <tr><td>标签</td><td><code># {{ tag }}</code>（mock 专属）</td><td>无该字段 ⇒ 不渲染</td></tr>
+        <tr><td>标题行</td><td>无（mock 只有正文）</td><td><code>.feed-title</code> 15px/600 一行</td></tr>
+        <tr><td>点赞位</td><td>渲染（256 / 128 / 89，<b>演示计数</b>）</td><td><b>整块不渲染</b>（无 likeCount 列，R11-L04-D14）</td></tr>
+        <tr><td>评论位</td><td>渲染</td><td>渲染（<code>replyCount</code>）</td></tr>
+        <tr><td>配图</td><td>三张，<code>slice(0,3)</code></td><td>同，无视频态</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>置顶公告条 · hero 叠层 · 有无两态</h3>
+      <p class="hint">公告判据 <code>pinnedNotice</code>（<code>:154-156</code>）＝ <code>useMock() ? t('circle.home.pinnedNotice') : ''</code>，
+        空串 ⇒ <code>v-if</code> 整条不渲染（不留空绿带）。圈标签 chips 同判据（<code>:145-147</code>）。
+        话题直达 chips（<code>:578</code>）只在真实话题有标题时出现，与标签 chips 同族玻璃片样式。</p>
+      <div class="row">
+        <div class="cell" style="width:300px"><div class="pinned" style="margin:0"><span class="pinned__b">置顶</span><span class="pinned__t">【圈规】友善交流，尊重原创，分享美好瞬间</span><svg class="pinned__a"><use href="#i-arrow-r"/></svg></div><span class="lab">演示档 · 有公告</span></div>
+        <div class="cell" style="width:300px"><div class="pinned" style="margin:0;background:var(--c-bg-page);border:1px dashed var(--c-border-default)"><span class="pinned__t" style="color:var(--c-text-placeholder)">real 档无公告数据 ⇒ 整条不渲染</span></div><span class="lab">真实档 · 无公告（此处不留空带）</span></div>
+        <div class="cell" style="width:300px"><div class="chipdemo"><div class="chipdemo__row"><span class="tagchip">摄影技巧</span><span class="tagchip">风景拍摄</span></div></div><span class="lab">标签玻璃片 · 压封面遮罩</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">图上白字走 <code>--c-text-inverse</code> / <code>--c-neutral-0</code>，未引入页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">hero 加入钮 · 底栏主 CTA · 选中签</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#0B4A38"></span><div><div class="sw__n">主色 900<code>--c-brand-900</code></div><div class="sw__u">悬浮铅笔底 · 按压态</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">置顶条底 · 校名 pill · 标签 pill</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1F8D6A"></span><div><div class="sw__n">主色 700<code>--c-brand-700</code></div><div class="sw__u">置顶文案字 · 话题标签字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(15,23,42,.7)"></span><div><div class="sw__n">图上徽标底<code>--c-overlay-strong</code></div><div class="sw__u">标签 / 话题玻璃片</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFF7ED;border:1px solid #FFEDD5"></span><div><div class="sw__n">杏 50 / 500<code>--c-apricot-50</code></div><div class="sw__u">热门角标底与字（源码真值档缺登记，见 §04）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">白 sheet 之下的列表底色</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">rpx÷2=px；本页实际用到七档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">34rpx→17/600</span><span class="type__p" style="font-size:17px;font-weight:600">摄影圈</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/600</span><span class="type__p" style="font-size:16px;font-weight:600">加入圈子 · 圈子不存在或已解散</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600</span><span class="type__p" style="font-size:15px;font-weight:600">动态 · 精华 · 作品墙</span></div>
+        <div class="type__i"><span class="type__m">28rpx→14/600</span><span class="type__p" style="font-size:14px;font-weight:600">阿辰 · 周末去爬山拍到了云海</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px">用镜头记录生活的美好瞬间</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px;color:var(--c-text-tertiary)">1.2w 人加入 · 362 条动态　30 分钟前</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/400</span><span class="type__p" style="font-size:10px;color:var(--c-brand-600)">热门 · 置顶 · 北京大学</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 高度</h3><p class="hint">hero 440rpx=220px 是理想图实测同位（白 sheet 顶缘 ≈ 帧高 27%）。</p>
+      <div class="space">
+        <div class="space__i"><b>hero 440rpx</b><i style="width:220px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>gutter 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:8px"></b>--r-lg<br>16rpx · 置顶条 / 配图</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 动态卡</div>
+        <div class="rad__i"><b style="border-radius:16px"></b>--r-xxl<br>32rpx · 白 sheet 顶缘</div>
+        <div class="rad__i"><b style="border-radius:999px"></b>--r-full<br>999rpx · 钮 / chip</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 &amp; 与实况的已知差异</h2><p>照片位全部走盘上真素材，唯一灰块见 NEED_ASSET</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/circle-cover-photography.jpg" alt="" style="height:120px">
+      <div class="asset__b"><b>covers/circle-cover-photography.jpg</b><p>hero 头图与圈内缩略头像同一张（<code>coverImage = circleCoverFor(name)</code>，<code>:138</code>）。登记表第 12 行「封面沿用既有素材」即此张，与列表页首卡同源。</p><div class="m">通栏 375×220 · aspectFill · 叠 86% 墨色遮罩</div></div></div>
+    <div class="asset"><img src="assets/demo/post-2.jpg" alt="" style="height:120px">
+      <div class="asset__b"><b>posts/post-placeholder.jpg · post-2 · post-8</b><p>首帖三图逐字取自 <code>feedItems[0].images</code>（<code>:188-197</code>，R4 那轮为贴「爬山云海」语义把 post-5 换成 post-2）。第二帖三图是 <code>CIRCLE_COVERS.PHOTO/MUSIC/TRAVEL</code>（<code>:209-213</code>）。</p><div class="m">95px 高 · 三列等分 · --r-lg</div></div></div>
+    <div class="asset"><img src="assets/demo/person-03-avatar.png" alt="" style="height:120px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>avatars/person-01..03-avatar.png</b><p>三帖作者头像。<b>注意：源码 mock 的 feedItems 没有 avatar 字段</b>（<code>:180-234</code>），模板回退 <code>IMAGE_PATHS.DEFAULT_AVATAR</code> ⇒ 真机三帖会是同一枚默认头像。画板按理想图的三张不同脸取公共池，差异登记在下方。</p><div class="m">38px · 圆形</div></div></div>
+  </div>
+
+  <div class="note">
+    <b>与实况的已知差异 · 真值口径登记（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>好友头像重叠行：本页不画（已复核属实）。</b>列表页 <code>circles/index.vue:530</code> 仍渲染该行，
+        其计数优先取后端 <code>friendJoinedCount</code>（<code>CircleController.java:194</code> 下发），真身是
+        <code>RealCircleService.java:191-195</code> 的 <code>estimateFriendJoinedCount = clamp(round(memberCount/1000),3,99)</code>
+        —— <b>估算值，不是好友加入数</b>；三枚头像由 <code>PEOPLE.AVATAR_1~3</code> 公共池按圈 id 字符码取模拼出
+        （<code>index.vue:305-321</code>，源码自注 :301-303「不指向任何真实用户」）。
+        本页 <code>circle-home.vue:551-557</code> 已按 R12-L04-D08 把整行连同 <code>:236-248</code> 的脚本与四条死样式一并撤下，
+        撤下理由与登记表第 13 行（校园圈裁定 A）同一条。
+        <b>理想图此处为「等 8 位朋友已加入」+ 三枚头像，源码已整块撤下，画板按撤下后的形态画、不画回。</b>
+        <code>FALLBACK_CIRCLE.friendJoinedCount: 8</code>（<code>:72</code>）是撤下后残留的无消费者字段，不是画它的理由。</li>
+      <li><b>演示计数登记（登记表通用规则第 3 条）：</b>hero 的「1.2w 人加入 · 362 条动态」与三帖的
+        256/32、128/18、89/12 赞评，逐字取自本页 <code>FALLBACK_CIRCLE</code>（<code>:64-73</code>）与
+        <code>feedItems</code>（<code>:180-234</code>）的 mock 字面量——<b>演示计数，非真值</b>。
+        real 档同一圈子实测读数是「1.2w 人加入 · 6 条动态」（<code>countTopicsByCircleIds</code> 实算），
+        且真实话题无 likeCount 列 ⇒ 点赞位整块不渲染。</li>
+      <li><b>理想图有、源码没有的三处（按源码画，逐条登记）：</b>
+        ① hero 右上那枚「⋯」是微信胶囊（系统件，真机由 <code>padding-right: calc(--capsule-right + 104px)</code> 避让），
+        源码 <code>.hero-actions-right</code> 只有分享钮 ⇒ 不画；
+        ② 第二帖第三张配图上的「00:12」时长角标——<code>.feed-images</code> 只渲染图片、无视频态 ⇒ 不画；
+        ③ 首帖时间行的「30 分钟前 · 北京大学」把校名重复了一遍，源码 <code>.feed-time</code> 只有 <code>timeText</code>，
+        校名只在昵称后的 pill 出现一次 ⇒ 按源码画。</li>
+      <li><b>理想图与源码形态不一致的一处（按图画，登记）：</b>话题标签理想图是「# 校园风光」浅绿胶囊内联在正文前，
+        源码 <code>.feed-tag</code> 是 <code>display:block</code> 的纯绿字单独一行（<code>:1229-1233</code>）。
+        本画板按 §7「组件形态照图」画胶囊内联，并在此登记该差异；若要按源码回直排，改这一处即可。</li>
+      <li><b>作者头像：</b>见上节 asset 注——真机三帖同一枚 <code>DEFAULT_AVATAR</code>，画板用三张不同脸贴理想图。</li>
+      <li><b>热门阈值两页不一致：</b>本页 <code>isHot = memberCount &gt;= 10000</code>（<code>:373</code>），
+        列表页 <code>HOT_THRESHOLD = 8000</code>（<code>index.vue:235</code>）⇒ 6532~9999 区间的圈子列表带角标、主页不带。
+        全站阈值归一不在本车道。</li>
+      <li><b>圈名后缀：</b>本页 <code>.info-name</code> 直绑 <code>circle.name</code>，没有列表页那层
+        <code>circleTitle()</code> 补「圈」的展示层（<code>index.vue:361-364</code>）⇒ 演示圈 name 自带「摄影圈」，
+        而 real 档 DB name 是「摄影」，主页会少一个字。登记为全站口径问题。</li>
+      <li><b>不画 tabbar、不画原生导航栏：</b>本页在 circles 分包、<code>navigationStyle: custom</code>，
+        通栏封面自己承担页头（返回 ‹ 与分享是页面自绘的半透黑圆钮）。
+        理想图无 tabbar，本画板亦无；画了即退稿。</li>
+      <li><b>帧即视口：</b>F01 的第二帖互动行与第三帖、F02 的「查看全部话题」出口都在 812px 视口下沿之外，
+        由出图自然裁切；裁切说明只写在题注 <code>.d</code>，画面内不留任何裁切注记。</li>
+      <li><b>NEED_ASSET: apps/client/src/static/assets/images/mascot/mascot_cry.png</b>
+        —— F04 未知圈空态的吉祥物（<code>:133 NOT_FOUND_MASCOT</code>，280rpx=140px）。
+        素材池 52 件里没有这枚页专属插画，按规范 §8 不自造、不跨目录引用，F04 该位暂以同尺寸灰底占位（唯一灰块，原因即此）。</li>
+      <li><b>BASE_PROBLEM：</b><code>assets/board-base.css</code> 缺源码在本页在用的四档——
+        <code>--c-badge-on-image-bg / --c-badge-on-image-text / --c-overlay-border-light</code>（标签玻璃片三件，
+        前两者值等同已登记的 <code>--c-overlay-strong</code> / <code>--c-text-inverse</code>，第三个 rgba(255,255,255,.18) 无处可取）、
+        <code>.info-hot</code> 的 #e6731c / #fdf0e3（暂落 <code>--c-apricot-500</code> / <code>--c-apricot-50</code>）、
+        <code>.tab-text</code> 的 #5d6c7b（暂落 <code>--c-text-tertiary</code>）、
+        <code>.tab-empty-text</code> 的 #8595a4（暂落 <code>--c-text-placeholder</code>）。
+        本页未新增任何令牌，近似档均在对应色板格与此处标明。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 圈子主页（摄影圈）高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

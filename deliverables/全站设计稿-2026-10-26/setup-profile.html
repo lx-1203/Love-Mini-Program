@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 基础资料页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律由源文件 <style> 的 rpx÷2 换算，色/字阶/圆角取 base 已登记令牌） ===== */
+
+/* 帧内长页：整页内容放在 .shot 里，按滚动位 translateY 裁出视口（帧即视口） */
+.shot { position: absolute; left: 0; top: 0; width: 100%; padding-bottom: 24px; }
+
+/* 页头：注册页同款全出血插图位（源 480rpx + 状态栏；画板不内嵌 raster，用品牌浅渐层占位） */
+.hero { position: relative; width: 100%; height: 284px;
+  background: linear-gradient(160deg, var(--c-brand-50) 0%, var(--c-brand-100) 42%, var(--c-romance-50) 100%); }
+.hero__blob { position: absolute; border-radius: var(--r-full); }
+.hero__blob--a { width: 190px; height: 190px; right: -46px; top: 44px; background: var(--c-brand-100); opacity: .7; }
+.hero__blob--b { width: 120px; height: 120px; right: 84px; top: 150px; background: var(--c-romance-50); }
+.hero__blob--c { width: 76px; height: 76px; left: 210px; top: 56px; background: var(--c-brand-50); }
+.hero__fade { position: absolute; left: 0; right: 0; bottom: 0; height: 52px;
+  background: linear-gradient(180deg, rgba(238,247,242,0), var(--c-bg-page)); }
+.hero__back { position: absolute; left: 16px; top: 88px; width: 34px; height: 34px; border-radius: var(--r-full);
+  background: rgba(255,255,255,.78); box-shadow: 0 2px 8px rgba(15,23,42,.08);
+  display: flex; align-items: center; justify-content: center; color: var(--c-text-primary); z-index: 3; }
+.hero__back svg { width: 20px; height: 20px; }
+.hero__txt { position: absolute; left: 24px; top: 148px; z-index: 2; display: flex; flex-direction: column; }
+.hero__eyebrow { font-size: var(--fs-xs); font-weight: 800; letter-spacing: 2px; color: var(--c-brand-700); margin-bottom: 5px; }
+.hero__title { font-size: var(--fs-5xl); font-weight: 800; line-height: 1.2; color: var(--c-text-primary); }
+.hero__sub { margin-top: 6px; font-size: var(--fs-md); line-height: 1.55; color: var(--c-text-secondary); }
+
+/* 吸顶标题条（v-if="stickyHeaderVisible"，滚动 ≥ 88rpx 出现） */
+.stickybar { position: absolute; top: 0; left: 0; width: 100%; height: 100px; z-index: 7;
+  background: var(--c-bg-container); border-bottom: 0.5px solid var(--c-border-light);
+  display: flex; align-items: flex-end; gap: 8px; padding: 0 111px 6px 12px; }
+.stickybar__back { width: 44px; height: 44px; border-radius: var(--r-full); flex: none;
+  display: flex; align-items: center; justify-content: center; color: var(--c-text-primary); }
+.stickybar__back svg { width: 20px; height: 20px; }
+.stickybar__t { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); }
+
+/* 表单卡：骑压插图 64rpx（32px）· 圆角 40rpx = --r-card */
+.formcard { position: relative; z-index: 2; margin: -32px 20px 0; background: var(--c-bg-container);
+  border-radius: var(--r-card); padding: 20px;
+  box-shadow: 0 8px 24px rgba(15,23,42,.06), 0 2px 8px rgba(15,23,42,.04); }
+/* 滚动后的帧：卡片从吸顶条下方继续向上延伸（顶部圆角不可见） */
+.formcard--cont { margin-top: 0; border-radius: 0 0 var(--r-card) var(--r-card); }
+
+/* 向导进度条（SetupProgress 组件的本页实例，variant 随身份切换） */
+.prog { background: var(--c-bg-container); border: 0.5px solid var(--c-border-light); border-radius: var(--r-lg);
+  padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.prog__hd { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.prog__cur { font-size: var(--fs-base); color: var(--c-text-tertiary); font-weight: 500; }
+.prog__lbl { font-size: var(--fs-md); color: var(--c-text-primary); font-weight: 700; }
+.prog__bar { display: flex; align-items: center; padding: 0 1px; }
+.prog__wrap { display: flex; align-items: center; flex: 1; min-width: 0; }
+.prog__wrap--last { flex: 0 0 auto; }
+.prog__dot { width: 28px; height: 28px; border-radius: var(--r-full); flex: none; border: 1px solid var(--c-border-default);
+  background: var(--c-bg-surface); display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-secondary); }
+.prog__dot--current { border: 1.5px solid var(--c-brand); background: var(--c-brand-50); color: var(--c-brand-700);
+  box-shadow: 0 0 0 3px rgba(54,201,154,.18); }
+.prog__dot--completed { border-color: var(--c-brand); background: var(--c-brand); color: var(--c-text-inverse); }
+.prog__dot--completed svg { width: 12px; height: 12px; }
+.prog__line { flex: 1; height: 2px; background: var(--c-border-default); border-radius: var(--r-sm); margin: 0 1px; min-width: 12px; }
+.prog__labels { display: flex; align-items: center; padding: 0 3px; }
+.prog__li { flex: 1; font-size: var(--fs-base); color: var(--c-text-tertiary); font-weight: 500; white-space: nowrap; }
+.prog__li--last { flex: 0 0 auto; text-align: right; }
+.prog__li--current { color: var(--c-text-primary); font-weight: 700; }
+
+/* 卡内分组小标题（文字 + 延伸线） */
+.cap { display: flex; align-items: center; gap: 8px; margin: 20px 0 12px; }
+.cap--first { margin-top: 4px; }
+.cap__t { font-size: var(--fs-base); font-weight: 700; color: var(--c-text-primary); }
+.cap__line { flex: 1; height: 1px; background: var(--c-border-light); }
+
+/* 头像行 */
+.avrow { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.av { position: relative; width: 72px; height: 72px; flex: none; }
+.av__img { width: 72px; height: 72px; border-radius: var(--r-full); background: var(--c-border-light);
+  border: 2px solid var(--c-bg-container); box-shadow: 0 2px 8px rgba(15,23,42,.08);
+  display: flex; align-items: center; justify-content: center; color: var(--c-text-placeholder); }
+.av__img svg { width: 30px; height: 30px; }
+.av__badge { position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%);
+  padding: 2px 8px; border-radius: var(--r-full); background: var(--c-brand-800); white-space: nowrap;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-inverse); }
+.av__mask { position: absolute; inset: 0; border-radius: var(--r-full); background: rgba(15,23,42,.45);
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-inverse); }
+.avside { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.avside__l { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); }
+.avside__h { font-size: var(--fs-base); line-height: 1.5; color: var(--c-text-tertiary); }
+
+/* 照片墙 */
+.pw__head { display: flex; align-items: baseline; gap: 8px; margin: 4px 0 8px; }
+.pw__label { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); }
+.pw__hint { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.pw { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pw__slot { position: relative; width: 100%; height: 93px; border-radius: var(--r-xl); overflow: hidden;
+  background: var(--c-bg-surface); }
+.pw__slot--empty { border: 1px dashed var(--c-text-tertiary); }
+.pw__plus { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-5xl); font-weight: 400; line-height: 1; color: var(--c-brand-800); }
+.pw__ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--c-bg-surface); color: var(--c-border-strong); }
+.pw__ph svg { width: 26px; height: 26px; }
+.pw__del { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; border-radius: var(--r-full);
+  background: rgba(15,23,42,.55); display: flex; align-items: center; justify-content: center;
+  color: var(--c-text-inverse); }
+.pw__del svg { width: 11px; height: 11px; }
+.pw__mask { position: absolute; inset: 0; background: rgba(15,23,42,.45);
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-inverse); }
+
+/* 字段框（96rpx 高 · 24rpx 圆角 · 图标 + 占位文） */
+.field { display: flex; align-items: center; min-height: 48px; border-radius: var(--r-xl);
+  padding: 0 14px; margin-bottom: 12px; background: var(--c-bg-surface);
+  border: 1px solid var(--c-border-default); }
+.field--area { align-items: flex-start; padding-top: 10px; padding-bottom: 10px; }
+.field--focus { background: var(--c-bg-container); border: 1.5px solid var(--c-brand);
+  box-shadow: 0 0 0 3px rgba(54,201,154,.12); }
+.field--err { background: var(--c-romance-50); border: 1.5px solid var(--c-error);
+  box-shadow: 0 0 0 3px rgba(229,69,77,.10); }
+.field--off { opacity: .55; }
+.field__ic { width: 18px; height: 18px; margin-right: 10px; flex: none; color: var(--c-text-secondary); }
+.field__ic--area { margin-top: 5px; }
+.field__txt { flex: 1; min-width: 0; font-size: var(--fs-xl); font-weight: 500; color: var(--c-text-primary); line-height: 1.55; }
+.field__txt--ph { color: var(--c-text-placeholder); font-weight: 400; }
+.field__chev { width: 16px; height: 16px; flex: none; opacity: .6; color: var(--c-text-secondary); }
+.flabel { display: block; margin: 0 0 4px; font-size: var(--fs-sm); font-weight: 500; line-height: 1.4; color: var(--c-text-secondary); }
+.ferr { display: flex; align-items: center; gap: 4px; margin: -6px 0 10px 4px; color: var(--c-error); }
+.ferr svg { width: 13px; height: 13px; flex: none; }
+.ferr span { font-size: var(--fs-base); font-weight: 500; line-height: 1.35; }
+
+/* 身份单选（注册第 1 步分支） */
+.ident { display: flex; flex-direction: column; gap: 8px; }
+.ident__o { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 14px;
+  border-radius: var(--r-xl); background: var(--c-bg-surface); border: 1px solid var(--c-border-default); }
+.ident__o--on { background: var(--c-bg-container); border: 1.5px solid var(--c-brand);
+  box-shadow: 0 0 0 3px rgba(54,201,154,.12); }
+.ident__r { width: 20px; height: 20px; border-radius: var(--r-full); flex: none;
+  border: 1.5px solid var(--c-border-default); background: var(--c-bg-container);
+  display: flex; align-items: center; justify-content: center; }
+.ident__o--on .ident__r { border-color: var(--c-brand); }
+.ident__dot { width: 11px; height: 11px; border-radius: var(--r-full); background: var(--c-brand); }
+.ident__main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ident__l { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); }
+.ident__o--on .ident__l { color: var(--c-brand-800); }
+.ident__d { font-size: var(--fs-sm); line-height: 1.5; color: var(--c-text-tertiary); }
+
+/* 主按钮 */
+.cta { display: flex; align-items: center; justify-content: center; gap: 6px; height: 48px; margin-top: 20px;
+  border-radius: var(--r-xl); background: var(--c-brand-800); box-shadow: 0 4px 16px rgba(21,107,81,.28);
+  font-size: var(--fs-xl); font-weight: 700; letter-spacing: .4px; color: var(--c-text-inverse); }
+.cta--dis { background: var(--c-status-disabled); box-shadow: none; }
+.cta--load { opacity: .72; }
+.cta__spin { width: 15px; height: 15px; border-radius: var(--r-full); border: 2px solid rgba(255,255,255,.35);
+  border-top-color: #fff; flex: none; }
+
+/* 底部说明 */
+.safety { display: block; margin: 14px 24px 0; font-size: var(--fs-sm); line-height: 1.75;
+  color: var(--c-text-secondary); text-align: center; }
+
+/* 原生弹窗（uni.showModal）与提示 */
+.scrim { position: absolute; inset: 0; background: rgba(15,23,42,.45); z-index: 8; }
+.modal { position: absolute; left: 37px; top: 300px; width: 300px; border-radius: var(--r-xxl); overflow: hidden;
+  background: var(--c-bg-container); box-shadow: var(--s-modal); z-index: 9; }
+.modal__hd { padding: 20px 20px 8px; text-align: center; font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.modal__bd { padding: 0 20px 16px; text-align: center; font-size: var(--fs-md); line-height: 1.6; color: var(--c-text-secondary); }
+.modal__row { display: flex; border-top: 0.5px solid var(--c-border-light); }
+.modal__b { flex: 1; height: 44px; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-lg); color: var(--c-text-secondary); }
+.modal__b + .modal__b { border-left: 0.5px solid var(--c-border-light); font-weight: 600; color: var(--c-error); }
+.toast { position: absolute; left: 48px; right: 48px; bottom: 120px; z-index: 9; padding: 12px 14px;
+  border-radius: var(--r-lg); background: rgba(26,30,28,.86); color: var(--c-text-inverse);
+  font-size: var(--fs-md); text-align: center; line-height: 1.5; }
+.toast--dark { background: rgba(26,30,28,.86); }
+
+/* §02 微缩件 */
+.mini { padding: 12px; background: var(--c-bg-page); border-radius: var(--r-xl); }
+.mini .field { margin-bottom: 0; }
+.mini .cta { margin-top: 0; }
+.cell .cta { width: 186px; }
+.cell .mini { width: 250px; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（描边位全部对应源文件 ICONS_COMMON / REGISTER_ICONS 的 lucide 同形件） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-message" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h8"/><path d="M8 9h5"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></symbol>
+  <symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></symbol>
+  <symbol id="i-ruler" viewBox="0 0 24 24"><path d="M21.3 8.7 15.3 2.7a1 1 0 0 0-1.4 0L2.7 13.9a1 1 0 0 0 0 1.4l6 6a1 1 0 0 0 1.4 0l11.2-11.2a1 1 0 0 0 0-1.4Z"/><path d="m7.5 10.5 2 2"/><path d="m10.5 7.5 2 2"/><path d="m13.5 4.5 2 2"/><path d="m4.5 13.5 2 2"/></symbol>
+  <symbol id="i-cap" viewBox="0 0 24 24"><path d="M21.4 10.9a1 1 0 0 0 0-1.9L12.8 6.2a2 2 0 0 0-1.6 0L2.6 9a1 1 0 0 0 0 1.9l8.6 3.3a2 2 0 0 0 1.6 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-5.54 10.19-7.4 11.79a1 1 0 0 1-1.2 0C9.54 20.19 4 14.99 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M9.9 15.5A2 2 0 0 0 8.5 14.1l-6.1-1.6a.5.5 0 0 1 0-.9L8.5 9.9A2 2 0 0 0 9.9 8.5l1.6-6.1a.5.5 0 0 1 .9 0l1.6 6.1a2 2 0 0 0 1.4 1.4l6.1 1.6a.5.5 0 0 1 0 .9l-6.1 1.6a2 2 0 0 0-1.4 1.4l-1.6 6.1a.5.5 0 0 1-.9 0z"/><path d="M20 3v4"/><path d="M18 5h4"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.8v4.8"/><path d="M12 16.2h.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>基础资料页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/setup/profile/index</code>。
+     这是注册主链的第一站，也是全站被引用最多的一页：同一个 <code>.vue</code> 承担两种入口
+     （<code>wizard</code> 注册向导 / <code>?entry=edit</code> 编辑资料），页内还要落头像、6 格照片墙、
+     5 个必填字段、6 个可选字段与身份分流单选。本画板把 <code>v-if</code>／三元分支逐屏画全（9 屏），
+     作为该页的验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>setup/profile</b></span>
+    <span>分包 <b>setup</b>（无 tabbar）</span>
+    <span>状态 <b>9 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 9 屏</h2>
+    <p>wizard/edit 两模式 × 空表单/填写/校验/回显 + 媒体上传 + 拦截弹窗 + 提交中</p></div>
+  <div class="sec__sub">本页状态机有 <b>9 态</b>，全部来自源码分支，不靠推测：
+    <code>v-if="entryMode === 'wizard'"</code>（进度条有无）、
+    <code>:variant="identity === 'non_student' ? 'non-student' : 'student'"</code>（5 步 / 4 步）、
+    <code>v-if="isAvatarUploading"</code>、
+    <code>v-if="url"</code> / <code>v-else</code> / <code>v-else-if="url"</code>（槽位三态）、
+    <code>v-if="errors.&lt;field&gt;"</code>（5 个必填的行内错误）、
+    <code>'field--focus': focusField === …</code>、
+    <code>'field--error': !!errors.grade</code>／<code>!!errors.height</code>、
+    <code>gradeLabel || t("pleaseSelect")</code> 等 4 处 picker 回显三元、
+    <code>isSubmitting ? submitSaving : entryMode === 'edit' ? submitSaveEdit : submitSave</code> 与
+    <code>'submit-btn--disabled': !formComplete</code>、
+    <code>v-if="stickyHeaderVisible"</code>（滚动 ≥ 88rpx 吸顶条）。
+    页面无原生导航栏：首屏页头是全出血 hero 插图 + 白底圆形返回（<code>.hero__back</code>），
+    滚动后换成不透明吸顶条。整页高约 1900px，帧即视口 375×812，被裁掉的区间写在题注 <code>.d</code> 里。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">wizard · 学生 · 空表单</span><span class="d">5 步进度 · ↓裁切至昵称行</span></figcaption>
+      <div class="phone">
+        <div class="shot">
+          <div class="hero">
+            <span class="hero__blob hero__blob--a"></span><span class="hero__blob hero__blob--b"></span><span class="hero__blob hero__blob--c"></span>
+            <div class="hero__fade"></div>
+            <span class="hero__back"><svg><use href="#i-back"/></svg></span>
+            <div class="hero__txt">
+              <span class="hero__eyebrow">XUNMI · CAMPUS</span>
+              <span class="hero__title">基础资料</span>
+              <span class="hero__sub">完善你的资料，让更多人了解你</span>
+            </div>
+          </div>
+          <div class="formcard">
+            <div style="margin-bottom:16px">
+              <div class="prog">
+                <div class="prog__hd"><span class="prog__cur">第 1/5 步</span><span class="prog__lbl">基本信息</span></div>
+                <div class="prog__bar">
+                  <div class="prog__wrap"><span class="prog__dot prog__dot--current">1</span><span class="prog__line"></span></div>
+                  <div class="prog__wrap"><span class="prog__dot">2</span><span class="prog__line"></span></div>
+                  <div class="prog__wrap"><span class="prog__dot">3</span><span class="prog__line"></span></div>
+                  <div class="prog__wrap"><span class="prog__dot">4</span><span class="prog__line"></span></div>
+                  <div class="prog__wrap prog__wrap--last"><span class="prog__dot">5</span></div>
+                </div>
+                <div class="prog__labels">
+                  <span class="prog__li prog__li--current">基本信息</span>
+                  <span class="prog__li">校园认证</span>
+                  <span class="prog__li">时间安排</span>
+                  <span class="prog__li">推荐偏好</span>
+                  <span class="prog__li prog__li--last">完成</span>
+                </div>
+              </div>
+            </div>
+            <div class="cap"><span class="cap__t">头像与照片</span><span class="cap__line"></span></div>
+            <div class="avrow">
+              <div class="av"><span class="av__img"><svg><use href="#i-user"/></svg></span><span class="av__badge">更换头像</span></div>
+              <div class="avside"><span class="avside__l">头像</span>
+                <span class="avside__h">真实头像与照片能显著提升匹配通过率，上传后将进入平台审核</span></div>
+            </div>
+            <div class="pw__head"><span class="pw__label">照片墙</span><span class="pw__hint">最多 6 张，点击空位添加</span></div>
+            <div class="pw">
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+            </div>
+            <div class="cap"><span class="cap__t">基础信息</span><span class="cap__line"></span></div>
+            <div class="field"><svg class="field__ic"><use href="#i-user"/></svg><span class="field__txt field__txt--ph">请输入昵称</span></div>
+            <div class="field field--area"><svg class="field__ic field__ic--area"><use href="#i-message"/></svg><span class="field__txt field__txt--ph">一句话介绍自己，让 TA 更快认识你</span></div>
+            <div class="field"><svg class="field__ic"><use href="#i-book"/></svg><span class="field__txt field__txt--ph">请选择</span><svg class="field__chev"><use href="#i-chevron"/></svg></div>
+          </div>
+          <span class="safety">资料仅用于校园身份核验与匹配推荐，保存后即时生效</span>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">edit · 已存资料回显</span><span class="d">无进度条 · 头像/照片已占位 · ↓裁切至年级行前</span></figcaption>
+      <div class="phone">
+        <div class="shot">
+          <div class="hero">
+            <span class="hero__blob hero__blob--a"></span><span class="hero__blob hero__blob--b"></span><span class="hero__blob hero__blob--c"></span>
+            <div class="hero__fade"></div>
+            <span class="hero__back"><svg><use href="#i-back"/></svg></span>
+            <div class="hero__txt">
+              <span class="hero__eyebrow">XUNMI · CAMPUS</span>
+              <span class="hero__title">基础资料</span>
+              <span class="hero__sub">完善你的资料，让更多人了解你</span>
+            </div>
+          </div>
+          <div class="formcard">
+            <div class="cap cap--first"><span class="cap__t">头像与照片</span><span class="cap__line"></span></div>
+            <div class="avrow">
+              <div class="av"><span class="av__img"><svg><use href="#i-user"/></svg></span><span class="av__badge">更换头像</span></div>
+              <div class="avside"><span class="avside__l">头像</span>
+                <span class="avside__h">真实头像与照片能显著提升匹配通过率，上传后将进入平台审核</span></div>
+            </div>
+            <div class="pw__head"><span class="pw__label">照片墙</span><span class="pw__hint">最多 6 张，点击空位添加</span></div>
+            <div class="pw">
+              <div class="pw__slot"><span class="pw__ph"><svg><use href="#i-image"/></svg></span><span class="pw__del"><svg><use href="#i-x"/></svg></span></div>
+              <div class="pw__slot"><span class="pw__ph"><svg><use href="#i-image"/></svg></span><span class="pw__del"><svg><use href="#i-x"/></svg></span></div>
+              <div class="pw__slot"><span class="pw__ph"><svg><use href="#i-image"/></svg></span><span class="pw__del"><svg><use href="#i-x"/></svg></span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+            </div>
+            <div class="cap"><span class="cap__t">基础信息</span><span class="cap__line"></span></div>
+            <div class="field"><svg class="field__ic"><use href="#i-user"/></svg><span class="field__txt">小满</span></div>
+            <div class="field field--area"><svg class="field__ic field__ic--area"><use href="#i-message"/></svg>
+              <span class="field__txt">傍晚在操场跑步，周末泡图书馆<br>偶尔想去听一场 live</span></div>
+            <div class="field"><svg class="field__ic"><use href="#i-book"/></svg><span class="field__txt">大三</span><svg class="field__chev"><use href="#i-chevron"/></svg></div>
+            <div class="field"><svg class="field__ic"><use href="#i-smile"/></svg><span class="field__txt">小满同学</span></div>
+          </div>
+          <span class="safety">资料仅用于校园身份核验与匹配推荐，保存后即时生效</span>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">wizard · 填写中（吸顶条 + 聚焦态）</span><span class="d">scrollTop ≥ 44px · ↑hero/媒体已滚出 · ↓裁切至未来城市行</span></figcaption>
+      <div class="phone">
+        <div class="shot" style="padding-top:100px">
+          <div class="formcard formcard--cont">
+            <div class="cap cap--first" style="margin-top:0"><span class="cap__t">基础信息</span><span class="cap__line"></span></div>
+            <div class="field"><svg class="field__ic"><use href="#i-user"/></svg><span class="field__txt">小满</span></div>
+            <div class="field field--area field--focus"><svg class="field__ic field__ic--area"><use href="#i-message"/></svg>
+              <span class="field__txt">傍晚在操场跑步，周末泡图书馆，偶尔想去听一场 live｜</span></div>
+            <div class="field"><svg class="field__ic"><use href="#i-book"/></svg><span class="field__txt field__txt--ph">请选择</span><svg class="field__chev"><use href="#i-chevron"/></svg></div>
+            <div class="field"><svg class="field__ic"><use href="#i-smile"/></svg><span class="field__txt field__txt--ph">称呼偏好</span></div>
+            <div class="cap"><span class="cap__t">基本资料</span><span class="cap__line"></span></div>
+            <div class="field"><svg class="field__ic"><use href="#i-ruler"/></svg><span class="field__txt field__txt--ph">请选择</span><svg class="field__chev"><use href="#i-chevron"/></svg></div>
+            <div class="field"><svg class="field__ic"><use href="#i-cap"/></svg><span class="field__txt">本科</span><svg class="field__chev"><use href="#i-chevron"/></svg></div>
+            <div class="field"><svg class="field__ic"><use href="#i-heart"/></svg><span class="field__txt field__txt--ph">请选择</span><svg class="field__chev"><use href="#i-chevron"/></svg></div>
+            <span class="flabel">籍贯省份</span>
+            <div class="field"><svg class="field__ic"><use href="#i-pin"/></svg><span class="field__txt field__txt--ph">如：广东</span></div>
+            <span class="flabel">籍贯城市</span>
+            <div class="field"><svg class="field__ic"><use href="#i-pin"/></svg><span class="field__txt field__txt--ph">如：广州</span></div>
+            <span class="flabel">未来城市</span>
+            <div class="field"><svg class="field__ic"><use href="#i-building"/></svg><span class="field__txt field__txt--ph">如：广州</span></div>
+            <div class="field field--area"><svg class="field__ic field__ic--area"><use href="#i-sparkles"/></svg><span class="field__txt field__txt--ph">用关键词描述你期望的TA，如：温柔、爱运动、学霸、高个子（用空格或逗号分隔，匹配会优先推荐）</span></div>
+          </div>
+        </div>
+        <div class="stickybar"><span class="stickybar__back"><svg><use href="#i-back"/></svg></span><span class="stickybar__t">基础资料</span></div>
+        <div class="sb sb--onbrand" style="background:var(--c-bg-container);color:var(--c-text-primary)"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">wizard · 校验拦截（必填 5 项全缺）</span><span class="d">点保存后 · 红框+抖动定格 · ↓裁切至籍贯省份行</span></figcaption>
+      <div class="phone">
+        <div class="shot" style="padding-top:100px">
+          <div class="formcard formcard--cont">
+            <div class="cap cap--first" style="margin-top:0"><span class="cap__t">基础信息</span><span class="cap__line"></span></div>
+            <div class="field field--err"><svg class="field__ic"><use href="#i-user"/></svg><span class="field__txt field__txt--ph">请输入昵称</span></div>
+            <div class="ferr"><svg><use href="#i-alert"/></svg><span>请输入昵称</span></div>
+            <div class="field field--area field--err"><svg class="field__ic field__ic--area"><use href="#i-message"/></svg><span class="field__txt field__txt--ph">一句话介绍自己，让 TA 更快认识你</span></div>
+            <div class="ferr"><svg><use href="#i-alert"/></svg><span>请输入简介</span></div>
+            <div class="field field--err"><svg class="field__ic"><use href="#i-book"/></svg><span class="field__txt field__txt--ph">请选择</span><svg class="field__chev"><use href="#i-chevron"/></svg></div>
+            <div class="ferr"><svg><use href="#i-alert"/></svg><span>请选择年级</span></div>
+            <div class="field field--err"><svg class="field__ic"><use href="#i-smile"/></svg><span class="field__txt field__txt--ph">称呼偏好</span></div>
+            <div class="ferr"><svg><use href="#i-alert"/></svg><span>请填写称谓</span></div>
+            <div class="cap"><span class="cap__t">基本资料</span><span class="cap__line"></span></div>
+            <div class="field field--err"><svg class="field__ic"><use href="#i-ruler"/></svg><span class="field__txt field__txt--ph">请选择</span><svg class="field__chev"><use href="#i-chevron"/></svg></div>
+            <div class="ferr"><svg><use href="#i-alert"/></svg><span>请选择身高</span></div>
+            <div class="field"><svg class="field__ic"><use href="#i-cap"/></svg><span class="field__txt field__txt--ph">请选择</span><svg class="field__chev"><use href="#i-chevron"/></svg></div>
+            <div class="field"><svg class="field__ic"><use href="#i-heart"/></svg><span class="field__txt field__txt--ph">请选择</span><svg class="field__chev"><use href="#i-chevron"/></svg></div>
+            <span class="flabel">籍贯省份</span>
+            <div class="field"><svg class="field__ic"><use href="#i-pin"/></svg><span class="field__txt field__txt--ph">如：广东</span></div>
+          </div>
+        </div>
+        <div class="stickybar"><span class="stickybar__back"><svg><use href="#i-back"/></svg></span><span class="stickybar__t">基础资料</span></div>
+        <div class="sb" style="background:var(--c-bg-container);color:var(--c-text-primary)"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">wizard · 必填齐备（回显后待提交）</span><span class="d">formComplete=true · ↓裁切至主按钮前</span></figcaption>
+      <div class="phone">
+        <div class="shot" style="padding-top:100px">
+          <div class="formcard formcard--cont">
+            <div class="cap cap--first" style="margin-top:0"><span class="cap__t">基本资料</span><span class="cap__line"></span></div>
+            <div class="field"><svg class="field__ic"><use href="#i-ruler"/></svg><span class="field__txt">168cm</span><svg class="field__chev"><use href="#i-chevron"/></svg></div>
+            <div class="field"><svg class="field__ic"><use href="#i-cap"/></svg><span class="field__txt">本科</span><svg class="field__chev"><use href="#i-chevron"/></svg></div>
+            <div class="field"><svg class="field__ic"><use href="#i-heart"/></svg><span class="field__txt">未婚</span><svg class="field__chev"><use href="#i-chevron"/></svg></div>
+            <span class="flabel">籍贯省份</span>
+            <div class="field"><svg class="field__ic"><use href="#i-pin"/></svg><span class="field__txt">广东</span></div>
+            <span class="flabel">籍贯城市</span>
+            <div class="field"><svg class="field__ic"><use href="#i-pin"/></svg><span class="field__txt">广州</span></div>
+            <span class="flabel">未来城市</span>
+            <div class="field"><svg class="field__ic"><use href="#i-building"/></svg><span class="field__txt">上海</span></div>
+            <div class="field field--area"><svg class="field__ic field__ic--area"><use href="#i-sparkles"/></svg>
+              <span class="field__txt">温柔 爱运动 有边界感</span></div>
+            <div class="cap"><span class="cap__t">你的身份</span><span class="cap__line"></span></div>
+            <div class="ident">
+              <div class="ident__o ident__o--on"><span class="ident__r"><span class="ident__dot"></span></span>
+                <span class="ident__main"><span class="ident__l">在校学生 / 毕业生</span><span class="ident__d">解锁同校匹配与校友圈子，走校园认证流程</span></span></div>
+              <div class="ident__o"><span class="ident__r"></span>
+                <span class="ident__main"><span class="ident__l">非学生职场人士</span><span class="ident__d">跳过校园认证，快速完成注册</span></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="stickybar"><span class="stickybar__back"><svg><use href="#i-back"/></svg></span><span class="stickybar__t">基础资料</span></div>
+        <div class="sb" style="background:var(--c-bg-container);color:var(--c-text-primary)"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">媒体上传中 · 头像 + 槽位双遮罩</span><span class="d">isMediaUploading · ↓裁切至昵称行</span></figcaption>
+      <div class="phone">
+        <div class="shot">
+          <div class="hero">
+            <span class="hero__blob hero__blob--a"></span><span class="hero__blob hero__blob--b"></span><span class="hero__blob hero__blob--c"></span>
+            <div class="hero__fade"></div>
+            <span class="hero__back"><svg><use href="#i-back"/></svg></span>
+            <div class="hero__txt">
+              <span class="hero__eyebrow">XUNMI · CAMPUS</span>
+              <span class="hero__title">基础资料</span>
+              <span class="hero__sub">完善你的资料，让更多人了解你</span>
+            </div>
+          </div>
+          <div class="formcard">
+            <div style="margin-bottom:16px">
+              <div class="prog">
+                <div class="prog__hd"><span class="prog__cur">第 1/5 步</span><span class="prog__lbl">基本信息</span></div>
+                <div class="prog__bar">
+                  <div class="prog__wrap"><span class="prog__dot prog__dot--current">1</span><span class="prog__line"></span></div>
+                  <div class="prog__wrap"><span class="prog__dot">2</span><span class="prog__line"></span></div>
+                  <div class="prog__wrap"><span class="prog__dot">3</span><span class="prog__line"></span></div>
+                  <div class="prog__wrap"><span class="prog__dot">4</span><span class="prog__line"></span></div>
+                  <div class="prog__wrap prog__wrap--last"><span class="prog__dot">5</span></div>
+                </div>
+                <div class="prog__labels">
+                  <span class="prog__li prog__li--current">基本信息</span>
+                  <span class="prog__li">校园认证</span>
+                  <span class="prog__li">时间安排</span>
+                  <span class="prog__li">推荐偏好</span>
+                  <span class="prog__li prog__li--last">完成</span>
+                </div>
+              </div>
+            </div>
+            <div class="cap"><span class="cap__t">头像与照片</span><span class="cap__line"></span></div>
+            <div class="avrow">
+              <div class="av"><span class="av__img"><svg><use href="#i-user"/></svg></span>
+                <span class="av__mask">上传中...</span><span class="av__badge">更换头像</span></div>
+              <div class="avside"><span class="avside__l">头像</span>
+                <span class="avside__h">真实头像与照片能显著提升匹配通过率，上传后将进入平台审核</span></div>
+            </div>
+            <div class="pw__head"><span class="pw__label">照片墙</span><span class="pw__hint">最多 6 张，点击空位添加</span></div>
+            <div class="pw">
+              <div class="pw__slot"><span class="pw__ph"><svg><use href="#i-image"/></svg></span><span class="pw__mask">上传中...</span></div>
+              <div class="pw__slot"><span class="pw__ph"><svg><use href="#i-image"/></svg></span><span class="pw__del"><svg><use href="#i-x"/></svg></span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+            </div>
+            <div class="cap"><span class="cap__t">基础信息</span><span class="cap__line"></span></div>
+            <div class="field"><svg class="field__ic"><use href="#i-user"/></svg><span class="field__txt field__txt--ph">请输入昵称</span></div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">删除确认拦截弹窗</span><span class="d">uni.showModal · 表单不可点</span></figcaption>
+      <div class="phone">
+        <div class="shot">
+          <div class="hero">
+            <span class="hero__blob hero__blob--a"></span><span class="hero__blob hero__blob--b"></span><span class="hero__blob hero__blob--c"></span>
+            <div class="hero__fade"></div>
+            <span class="hero__back"><svg><use href="#i-back"/></svg></span>
+            <div class="hero__txt">
+              <span class="hero__eyebrow">XUNMI · CAMPUS</span>
+              <span class="hero__title">基础资料</span>
+              <span class="hero__sub">完善你的资料，让更多人了解你</span>
+            </div>
+          </div>
+          <div class="formcard">
+            <div class="cap cap--first"><span class="cap__t">头像与照片</span><span class="cap__line"></span></div>
+            <div class="avrow">
+              <div class="av"><span class="av__img"><svg><use href="#i-user"/></svg></span><span class="av__badge">更换头像</span></div>
+              <div class="avside"><span class="avside__l">头像</span>
+                <span class="avside__h">真实头像与照片能显著提升匹配通过率，上传后将进入平台审核</span></div>
+            </div>
+            <div class="pw__head"><span class="pw__label">照片墙</span><span class="pw__hint">最多 6 张，点击空位添加</span></div>
+            <div class="pw">
+              <div class="pw__slot"><span class="pw__ph"><svg><use href="#i-image"/></svg></span><span class="pw__del"><svg><use href="#i-x"/></svg></span></div>
+              <div class="pw__slot"><span class="pw__ph"><svg><use href="#i-image"/></svg></span><span class="pw__del"><svg><use href="#i-x"/></svg></span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+              <div class="pw__slot pw__slot--empty"><span class="pw__plus">+</span></div>
+            </div>
+            <div class="cap"><span class="cap__t">基础信息</span><span class="cap__line"></span></div>
+            <div class="field"><svg class="field__ic"><use href="#i-user"/></svg><span class="field__txt">小满</span></div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="scrim"></div>
+        <div class="modal">
+          <div class="modal__hd">照片墙</div>
+          <div class="modal__bd">确定删除这张照片吗？</div>
+          <div class="modal__row"><span class="modal__b">取消</span><span class="modal__b">确定</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F08 -->
+    <figure class="frame">
+      <figcaption><b>F08</b><span class="t">wizard · 提交中</span><span class="d">isSubmitting · 输入全禁用 · ↑hero 至籍贯城市已滚出</span></figcaption>
+      <div class="phone">
+        <div class="shot" style="padding-top:100px">
+          <div class="formcard formcard--cont">
+            <span class="flabel">籍贯省份</span>
+            <div class="field field--off"><svg class="field__ic"><use href="#i-pin"/></svg><span class="field__txt">广东</span></div>
+            <span class="flabel">籍贯城市</span>
+            <div class="field field--off"><svg class="field__ic"><use href="#i-pin"/></svg><span class="field__txt">广州</span></div>
+            <span class="flabel">未来城市</span>
+            <div class="field field--off"><svg class="field__ic"><use href="#i-building"/></svg><span class="field__txt">上海</span></div>
+            <div class="field field--area field--off"><svg class="field__ic field__ic--area"><use href="#i-sparkles"/></svg>
+              <span class="field__txt">温柔 爱运动 有边界感</span></div>
+            <div class="cap"><span class="cap__t">你的身份</span><span class="cap__line"></span></div>
+            <div class="ident">
+              <div class="ident__o ident__o--on"><span class="ident__r"><span class="ident__dot"></span></span>
+                <span class="ident__main"><span class="ident__l">在校学生 / 毕业生</span><span class="ident__d">解锁同校匹配与校友圈子，走校园认证流程</span></span></div>
+              <div class="ident__o"><span class="ident__r"></span>
+                <span class="ident__main"><span class="ident__l">非学生职场人士</span><span class="ident__d">跳过校园认证，快速完成注册</span></span></div>
+            </div>
+            <div class="cta cta--load"><span class="cta__spin"></span>保存中...</div>
+          </div>
+          <span class="safety">资料仅用于校园身份核验与匹配推荐，保存后即时生效</span>
+        </div>
+        <div class="stickybar"><span class="stickybar__back"><svg><use href="#i-back"/></svg></span><span class="stickybar__t">基础资料</span></div>
+        <div class="sb" style="background:var(--c-bg-container);color:var(--c-text-primary)"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F09 -->
+    <figure class="frame">
+      <figcaption><b>F09</b><span class="t">edit · 非学生身份已选 · 待保存</span><span class="d">按钮「保 存」· ↑hero 至籍贯城市已滚出</span></figcaption>
+      <div class="phone">
+        <div class="shot" style="padding-top:100px">
+          <div class="formcard formcard--cont">
+            <span class="flabel">籍贯省份</span>
+            <div class="field"><svg class="field__ic"><use href="#i-pin"/></svg><span class="field__txt">广东</span></div>
+            <span class="flabel">籍贯城市</span>
+            <div class="field"><svg class="field__ic"><use href="#i-pin"/></svg><span class="field__txt">广州</span></div>
+            <span class="flabel">未来城市</span>
+            <div class="field"><svg class="field__ic"><use href="#i-building"/></svg><span class="field__txt">上海</span></div>
+            <div class="field field--area"><svg class="field__ic field__ic--area"><use href="#i-sparkles"/></svg>
+              <span class="field__txt">温柔 爱运动 有边界感</span></div>
+            <div class="cap"><span class="cap__t">你的身份</span><span class="cap__line"></span></div>
+            <div class="ident">
+              <div class="ident__o"><span class="ident__r"></span>
+                <span class="ident__main"><span class="ident__l">在校学生 / 毕业生</span><span class="ident__d">解锁同校匹配与校友圈子，走校园认证流程</span></span></div>
+              <div class="ident__o ident__o--on"><span class="ident__r"><span class="ident__dot"></span></span>
+                <span class="ident__main"><span class="ident__l">非学生职场人士</span><span class="ident__d">跳过校园认证，快速完成注册</span></span></div>
+            </div>
+            <div class="cta">保 存</div>
+          </div>
+          <span class="safety">资料仅用于校园身份核验与匹配推荐，保存后即时生效</span>
+        </div>
+        <div class="stickybar"><span class="stickybar__back"><svg><use href="#i-back"/></svg></span><span class="stickybar__t">基础资料</span></div>
+        <div class="sb" style="background:var(--c-bg-container);color:var(--c-text-primary)"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页的反馈是三通道并行的：字段级红框 + 抖动（<code>shakeField</code>）、行内错误文案（<code>errors.&lt;field&gt;</code>）、
+    整次结果 Toast（<code>uni.showToast</code>）。少任何一通道即为回归。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>字段框 · 五态（输入类）</h3>
+      <p class="hint">底 <code>--c-bg-surface</code> · 框 <code>--c-border-default</code>（R11-L12-D06 收口）· 高 96rpx · 圆角 24rpx。
+        字段名不上画面，只有图标 + 占位文（籍贯省 / 籍贯市 / 未来城市三行例外，见下方「可见字段名」）。</p>
+      <div class="row">
+        <div class="cell"><div class="mini"><div class="field"><svg class="field__ic"><use href="#i-user"/></svg><span class="field__txt field__txt--ph">请输入昵称</span></div></div><span class="lab">placeholder</span></div>
+        <div class="cell"><div class="mini"><div class="field"><svg class="field__ic"><use href="#i-user"/></svg><span class="field__txt">小满</span></div></div><span class="lab">已填</span></div>
+        <div class="cell"><div class="mini"><div class="field field--focus"><svg class="field__ic"><use href="#i-user"/></svg><span class="field__txt">小满</span></div></div><span class="lab">focus（品牌光环 6rpx）</span></div>
+        <div class="cell"><div class="mini"><div class="field field--err"><svg class="field__ic"><use href="#i-user"/></svg><span class="field__txt field__txt--ph">请输入昵称</span></div></div><span class="lab">error + 抖动 8rpx×2</span></div>
+        <div class="cell"><div class="mini"><div class="field field--off"><svg class="field__ic"><use href="#i-user"/></svg><span class="field__txt field__txt--ph">请输入昵称</span></div></div><span class="lab">disabled（:disabled="isSubmitting"）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>滚轮选择器 · 四态</h3>
+      <p class="hint">未选取 <code>gradeLabel || t("pleaseSelect")</code>（<code>--c-text-placeholder</code> 400），
+        已选取 <code>field__pick-text--filled</code>（<code>--c-text-primary</code> 500）；chevron 常驻指示可选。</p>
+      <div class="row">
+        <div class="cell"><div class="mini"><div class="field"><svg class="field__ic"><use href="#i-book"/></svg><span class="field__txt field__txt--ph">请选择</span><svg class="field__chev"><use href="#i-chevron"/></svg></div></div><span class="lab">未选</span></div>
+        <div class="cell"><div class="mini"><div class="field"><svg class="field__ic"><use href="#i-book"/></svg><span class="field__txt">大三</span><svg class="field__chev"><use href="#i-chevron"/></svg></div></div><span class="lab">已选</span></div>
+        <div class="cell"><div class="mini"><div class="field field--err"><svg class="field__ic"><use href="#i-ruler"/></svg><span class="field__txt field__txt--ph">请选择</span><svg class="field__chev"><use href="#i-chevron"/></svg></div></div><span class="lab">必填未选</span></div>
+        <div class="cell"><div class="mini"><div class="field field--off"><svg class="field__ic"><use href="#i-cap"/></svg><span class="field__txt">本科</span><svg class="field__chev"><use href="#i-chevron"/></svg></div></div><span class="lab">提交中禁用</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>主按钮 · 五态（置灰仍可点）</h3>
+      <p class="hint">文案三元：<code>isSubmitting ? submitSaving : entryMode === 'edit' ? submitSaveEdit : submitSave</code>。
+        禁用条件是 <code>!formComplete</code>（必填 5 项：昵称/简介/年级/称谓/身高），置灰态仍可点 —— 点了给「哪里没填对」的定位提示。</p>
+      <div class="row">
+        <div class="cell"><div class="cta cta--dis">保存并继续</div><span class="lab">wizard · 必填未齐</span></div>
+        <div class="cell"><div class="cta">保存并继续</div><span class="lab">wizard · 可提交</span></div>
+        <div class="cell"><div class="cta cta--load"><span class="cta__spin"></span>保存中...</div><span class="lab">loading</span></div>
+        <div class="cell"><div class="cta">保 存</div><span class="lab">edit（entry=edit）</span></div>
+        <div class="cell"><div class="cta cta--dis">保 存</div><span class="lab">edit · 必填未齐</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>头像 · 照片槽位 · 各三态</h3>
+      <p class="hint">照片槽按顺序上传（<code>index &gt; photoGallery.length</code> 时自动回落到下一空位）；
+        占用槽的 × 只是视觉指示，点整颗槽位才弹删除确认。</p>
+      <div class="row">
+        <div class="cell"><div class="av"><span class="av__img"><svg><use href="#i-user"/></svg></span><span class="av__badge">更换头像</span></div><span class="lab">头像 · 默认位</span></div>
+        <div class="cell"><div class="av"><span class="av__img"><svg><use href="#i-user"/></svg></span><span class="av__mask">上传中...</span><span class="av__badge">更换头像</span></div><span class="lab">头像 · 上传中</span></div>
+        <div class="cell"><div class="pw__slot pw__slot--empty" style="width:93px;height:93px"><span class="pw__plus">+</span></div><span class="lab">槽 · 空位</span></div>
+        <div class="cell"><div class="pw__slot" style="width:93px;height:93px"><span class="pw__ph"><svg><use href="#i-image"/></svg></span><span class="pw__del"><svg><use href="#i-x"/></svg></span></div><span class="lab">槽 · 已占 + ×</span></div>
+        <div class="cell"><div class="pw__slot" style="width:93px;height:93px"><span class="pw__ph"><svg><use href="#i-image"/></svg></span><span class="pw__mask">上传中...</span></div><span class="lab">槽 · 上传中</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>身份单选 + 向导进度条 variant</h3>
+      <p class="hint">同一处分支决定两件事：单选卡选中态（<code>identity === opt.value</code>）与
+        <code>SetupProgress</code> 的步数（<code>student</code>=5 步 / <code>non-student</code>=4 步），并决定保存后去向。</p>
+      <div class="row" style="margin-bottom:14px">
+        <div class="cell" style="width:300px"><div class="ident"><div class="ident__o ident__o--on"><span class="ident__r"><span class="ident__dot"></span></span>
+          <span class="ident__main"><span class="ident__l">在校学生 / 毕业生</span><span class="ident__d">解锁同校匹配与校友圈子，走校园认证流程</span></span></div></div><span class="lab">selected · 下一跳 校园认证</span></div>
+        <div class="cell" style="width:300px"><div class="ident"><div class="ident__o"><span class="ident__r"></span>
+          <span class="ident__main"><span class="ident__l">非学生职场人士</span><span class="ident__d">跳过校园认证，快速完成注册</span></span></div></div><span class="lab">未选 · 下一跳 时间安排</span></div>
+      </div>
+      <div class="row">
+        <div class="cell" style="width:300px"><div class="prog">
+          <div class="prog__hd"><span class="prog__cur">第 1/5 步</span><span class="prog__lbl">基本信息</span></div>
+          <div class="prog__bar"><div class="prog__wrap"><span class="prog__dot prog__dot--current">1</span><span class="prog__line"></span></div><div class="prog__wrap"><span class="prog__dot">2</span><span class="prog__line"></span></div><div class="prog__wrap"><span class="prog__dot">3</span><span class="prog__line"></span></div><div class="prog__wrap"><span class="prog__dot">4</span><span class="prog__line"></span></div><div class="prog__wrap prog__wrap--last"><span class="prog__dot">5</span></div></div>
+          <div class="prog__labels"><span class="prog__li prog__li--current">基本信息</span><span class="prog__li">校园认证</span><span class="prog__li">时间安排</span><span class="prog__li">推荐偏好</span><span class="prog__li prog__li--last">完成</span></div>
+        </div><span class="lab">wizard · student</span></div>
+        <div class="cell" style="width:300px"><div class="prog">
+          <div class="prog__hd"><span class="prog__cur">第 1/4 步</span><span class="prog__lbl">基本信息</span></div>
+          <div class="prog__bar"><div class="prog__wrap"><span class="prog__dot prog__dot--current">1</span><span class="prog__line"></span></div><div class="prog__wrap"><span class="prog__dot">2</span><span class="prog__line"></span></div><div class="prog__wrap"><span class="prog__dot">3</span><span class="prog__line"></span></div><div class="prog__wrap prog__wrap--last"><span class="prog__dot">4</span></div></div>
+          <div class="prog__labels"><span class="prog__li prog__li--current">基本信息</span><span class="prog__li">时间安排</span><span class="prog__li">推荐偏好</span><span class="prog__li prog__li--last">完成</span></div>
+        </div><span class="lab">wizard · non-student</span></div>
+        <div class="cell" style="width:300px"><div class="mini" style="display:flex;align-items:center;justify-content:center;height:64px;background:var(--c-bg-container);border:1px dashed var(--c-border-default)">
+          <span style="font-size:var(--fs-base);color:var(--c-text-placeholder)">edit 模式：整块不渲染</span></div><span class="lab">edit（v-if="entryMode === 'wizard'"）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>页头两型 + 可见字段名 + 拦截件</h3>
+      <p class="hint">子包页无原生导航栏：首屏是 hero 插图上的白底圆形返回，滚动 ≥ 88rpx 后是不透明吸顶条（R6-B67/D11）。</p>
+      <div class="row" style="margin-bottom:14px">
+        <div class="cell" style="width:300px"><div class="hero" style="height:150px;transform:none">
+          <span class="hero__fade"></span><span class="hero__back" style="top:20px"><svg><use href="#i-back"/></svg></span>
+          <div class="hero__txt" style="top:60px"><span class="hero__eyebrow">XUNMI · CAMPUS</span><span class="hero__title">基础资料</span></div></div>
+          <span class="lab">首屏 hero 返回（scroll &lt; 44px）</span></div>
+        <div class="cell" style="width:300px"><div style="position:relative;height:100px"><div class="stickybar" style="position:absolute">
+          <span class="stickybar__back"><svg><use href="#i-back"/></svg></span><span class="stickybar__t">基础资料</span></div></div>
+          <span class="lab">吸顶条（stickyHeaderVisible）</span></div>
+        <div class="cell" style="width:300px"><div class="mini"><span class="flabel">籍贯城市</span>
+          <div class="field"><svg class="field__ic"><use href="#i-pin"/></svg><span class="field__txt field__txt--ph">如：广州</span></div></div>
+          <span class="lab">仅 3 行有可见字段名（R11-L12-D05）</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>拦截/反馈件</th><th>触发条件</th><th>画面文案（逐字取 i18n）</th></tr>
+        <tr><td>showModal</td><td>点已占用槽</td><td>标题「照片墙」·「确定删除这张照片吗？」· 确定取 <code>--c-error</code></td></tr>
+        <tr><td>showActionSheet</td><td>点头像</td><td>「从相册选择」/「拍一张」</td></tr>
+        <tr><td>Toast（校验）</td><td>必填缺失即点保存</td><td>「请输入昵称」等 5 条，与行内错误同源</td></tr>
+        <tr><td>Toast（结果）</td><td>diff 为空 / PUT 成功 / 失败</td><td>「资料无变更」「保存成功」「保存失败，请稍后重试」</td></tr>
+        <tr><td>Toast（隐私）</td><td>未同意隐私指引</td><td>「请先同意隐私指引后再上传图片」</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>与 design-variables.scss 一一对应，可直接抄进 SCSS</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页画板只用这 11 档，未引入新的页内私有色值（源页私有色值见 §04 note）。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">主按钮 · 头像徽标 · 空位加号 · 选中项标题</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">聚焦描边 · 选中单选环 · 进度当前点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1F8D6A"></span><div><div class="sw__n">主色 700<code>--c-brand-700</code></div><div class="sw__u">hero eyebrow · 当前步序号</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3;border:1px solid #DDE3E0"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">hero 占位渐变 · 进度当前点底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFECEF;border:1px solid #DDE3E0"></span><div><div class="sw__n">浪漫 50<code>--c-romance-50</code></div><div class="sw__u">错误字段底（源页 #FEF5F6 的最近登记档）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">行内错误 · 抖动框 · 弹窗确定键</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页底<code>--c-bg-page</code></div><div class="sw__u">整页底色 · hero 渐隐终点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">输入底<code>--c-bg-surface</code></div><div class="sw__u">字段框 · 空槽位 · 未选身份卡</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#DDE3E0"></span><div><div class="sw__n">边框<code>--c-border-default</code></div><div class="sw__u">字段/槽位/未选项描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#DCE5E2"></span><div><div class="sw__n">禁用底<code>--c-status-disabled</code></div><div class="sw__u">必填未齐的主按钮</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">中性 500<code>--c-text-tertiary</code></div><div class="sw__u">空槽虚线（源页 --c-neutral-500 同值）</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到 8 档；源页 hero 三行是硬写 rpx 的非档位字号，画板按 §1.3 归位（见 §04）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/800</span><span class="type__p" style="font-size:22px;font-weight:800">基础资料（hero 标题）</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">基础资料（吸顶条标题）</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/500</span><span class="type__p" style="font-size:15px;font-weight:500">小满 · 一句话介绍自己，让 TA 更快认识你</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">头像 · 照片墙 · 在校学生 / 毕业生</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/700</span><span class="type__p" style="font-size:13px;font-weight:700">基本信息（当前步名）</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/700</span><span class="type__p" style="font-size:12px;font-weight:700">头像与照片 · 请输入昵称（行内错误）</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/500</span><span class="type__p" style="font-size:11px;font-weight:500">籍贯城市 · 最多 6 张，点击空位添加</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/800</span><span class="type__p" style="font-size:10px;font-weight:800;letter-spacing:2px">XUNMI · CAMPUS</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 进度条</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 字段/槽位/按钮</div>
+        <div class="rad__i"><b style="border-radius:16px"></b>--r-xxl<br>32rpx · 弹窗</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 表单卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>头像/徽标/圆点</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>描边图标全部对应工程注册资产；raster 素材只用占位</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>IMAGE_PATHS.REGISTER.HERO</b>
+        <p>页头全出血插图（<code>assets/images/register/reg-hero-illustration.jpg</code> 750×480）。画板不内嵌 raster，
+        以 <code>--c-brand-50 → --c-brand-100 → --c-romance-50</code> 渐层 + 52px 渐隐带占位；出图比对时该区域不计入像素差。</p>
+        <div class="m">高 480rpx + 状态栏 · 底部渐隐 104rpx · 表单卡骑压 −64rpx</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>IMAGE_PATHS.REGISTER_ICONS.*</b>
+        <p>字段图标 10 枚：<code>USER</code> <code>MESSAGE</code> <code>BOOK</code> <code>SMILE</code> <code>RULER</code>
+        <code>GRADUATION</code> <code>HEART</code> <code>MAP_PIN</code> <code>BUILDING</code> <code>SPARKLES</code>
+        （stroke #4A524E = <code>--c-text-secondary</code>）+ <code>CHEVRON_RIGHT</code>、<code>ALERT</code>、
+        <code>BACK</code>、<code>ICONS_COMMON.CLOSE_WHITE_SVG</code>。画板用同形 lucide symbol 复现。</p>
+        <div class="m">36rpx 字段图标 · 32rpx chevron · 26rpx 错误图标（尺寸写在宿主节点，R10-L05-D11）</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>用户实拍 · 头像 / 6 格照片墙</b>
+        <p>默认头像走 <code>IMAGE_PATHS.DEFAULT_AVATAR</code>；已上传位是用户自拍，设计稿不得放示例人像/网图（涉他人身份信息，且会诱导用户上传网图）。
+        本画板用灰底 + <code>#i-image</code> 描边占位，槽位几何与 <code>--c-bg-surface</code> 底色保持真值。</p>
+        <div class="m">头像 144rpx 圆 · 槽位 (100% − 32rpx)/3 正方形 · 圆角 24rpx</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li>源页 hero 三行文字是硬写非档位字号（标题 52rpx=26px / 副标题 25rpx=12.5px / eyebrow 19rpx=9.5px），
+        画板按 §1.3 分别取 <code>--fs-5xl</code> / <code>--fs-md</code> / <code>--fs-xs</code>；
+        照片墙空位「+」原 56rpx=28px 同理取 <code>--fs-5xl</code>。出图比对以画板档位为准。</li>
+      <li>源页此处为私有色值 #fef5f6（错误字段底），画板按 §1.1.3 取 <code>--c-romance-50</code>；
+        聚焦/错误光环原 <code>rgba(54,201,154,.12)</code> / <code>rgba(229,69,77,.10)</code> 为半透明，无对应色值令牌，画板保留同值 alpha。</li>
+      <li>源页此处使用未登记令牌名：<code>--c-neutral-500</code>（照片空位虚线 #6b7571，画板取同值 <code>--c-text-tertiary</code>）、
+        <code>--r-circle</code>（画板取 <code>--r-full</code>）、<code>--c-bg-brand</code> 与 <code>--c-brand-shadow-tint</code>（进度当前点，画板取 <code>--c-brand-50</code> 与同值 alpha）、
+        <code>--z-header</code> / <code>--capsule-right</code>（吸顶条层级与胶囊避让，画板按实测 100px 高度复现）。base 均未登记这些名字。</li>
+      <li>源页此处为私有色值 #E5454D（<code>uni.showModal</code> 的 <code>confirmColor</code>，写在 <code>&lt;script&gt;</code> 里），
+        画板按 §1.1.3 取 <code>--c-error</code>（同值）；弹窗本体是微信原生件，圆角/分隔线为系统几何，非页内可令牌项。</li>
+      <li>本页在 setup 分包、无原生导航栏，<b>不得出现 tabbar</b>——画板若出现即为错。</li>
+      <li>i18n 里 <code>setup.profile.identityHint</code>「身份决定注册步骤与推荐范围，随时可在「我的」中调整」在模板中未被渲染；
+        画板遵「文案逐字取自模板实际用到的 key」，故不画该行。另 <code>changeBackground</code>、
+        <code>goToProfileEditBg</code>、<code>labelGrade/placeholderGrade</code>、<code>labelHeight</code>、
+        <code>errHeightRange</code>、<code>errTagGroupMin</code>、<code>futurePlan*</code> 亦为源码未引用文案，同样不入画板。</li>
+      <li>页面无任何分数/合拍度字段，故本页不存在「不回填百分比」的占位问题；需要占位的只有用户实拍位（灰底），理由见上一张素材卡。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 基础资料页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

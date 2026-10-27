@@ -2704,7 +2704,7 @@ defineExpose({ noop });
   text-align: center;
   font-size: var(--fs-xs);
   color: var(--c-text-secondary);
-  background: var(--c-overlay-faint, rgba(0, 0, 0, 0.05));
+  background: var(--c-overlay-faint);
   border-radius: 999rpx;
   padding: 6rpx 24rpx;
   margin: var(--sp-3) 0;

@@ -76,7 +76,7 @@ function emojiAria(emoji: string): string {
   gap: var(--sp-2);
   padding: var(--sp-5) var(--sp-4);
   background: var(--c-bg-container, #FFFFFF);
-  border-top: 1rpx solid var(--c-divider, rgba(15, 23, 42, 0.06));
+  border-top: 1rpx solid var(--c-divider-light);
   max-height: 400rpx;
   overflow-y: auto;
 }

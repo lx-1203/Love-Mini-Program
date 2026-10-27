@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 村口浏览记录 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 令牌，无页内私有色值） ===== */
+/* 页头行：history.vue .history-head —— 无渐变带，页面底色 #EEF7F2 + 白圆返回 + 深色标题 */
+.hhead { position: absolute; top: 0; left: 0; width: 100%; z-index: 4;
+  display: flex; align-items: center; gap: 10px; padding: 56px 16px 8px; background: var(--c-bg-page); }
+.hback { width: 32px; height: 32px; border-radius: 50%; background: var(--c-bg-container);
+  border: var(--c-border-card); display: flex; align-items: center; justify-content: center; flex: none; }
+.hback svg { width: 17px; height: 17px; color: var(--c-neutral-700); }
+.hhead__title { font-size: var(--fs-2xl); font-weight: 600; color: var(--c-text-primary); }
+
+/* 顶部操作栏：白底满幅，左「共 N 条记录」右「清空记录」错误色胶囊 */
+.htoolbar { position: absolute; top: 96px; left: 0; width: 100%; z-index: 3;
+  display: flex; align-items: center; justify-content: space-between; padding: 12px 16px;
+  background: var(--c-bg-container); }
+.hcount { font-size: var(--fs-base); color: var(--c-text-secondary); }
+.hclear { padding: 4px 12px; border-radius: 12px;
+  background: rgba(229, 69, 77, 0.1); border: 0.5px solid rgba(229, 69, 77, 0.2); }
+.hclear span { font-size: var(--fs-base); font-weight: 600; color: var(--c-error); }
+
+/* 列表卡：history-item —— 圆角 20px 白卡，头像 44px + 摘要体 */
+.hlist { position: absolute; top: 138px; left: 0; width: 100%; z-index: 2; }
+.hitem { display: flex; gap: 10px; background: var(--c-bg-container); border-radius: var(--r-card);
+  box-shadow: var(--s-card-soft); margin: 8px 16px; padding: 14px 16px; }
+.hitem__avatar { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; flex: none;
+  background: var(--c-bg-surface); }
+.hitem__avatar img { width: 100%; height: 100%; object-fit: cover; }
+.hitem__avatar-text { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;
+  font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-inverse);
+  background: linear-gradient(135deg, var(--c-romance-300), var(--c-error)); }
+.hitem__body { flex: 1; min-width: 0; }
+.hitem__header { display: flex; align-items: center; justify-content: space-between; }
+.hitem__author { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); }
+.hitem__time { font-size: var(--fs-base); color: var(--c-text-secondary); }
+.hitem__title { display: block; margin-top: 4px; font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-primary); }
+.hitem__summary { display: -webkit-box; margin-top: 4px; font-size: var(--fs-md); color: var(--c-text-secondary);
+  line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.hitem__stats { display: flex; gap: 14px; margin-top: 8px; }
+.hitem__stat { font-size: var(--fs-base); color: var(--c-text-tertiary); }
+
+/* 加载 / 终止 */
+.hloading { position: absolute; top: 200px; left: 0; width: 100%; display: flex; flex-direction: column;
+  align-items: center; z-index: 2; }
+.hspin { width: 24px; height: 24px; border-radius: 50%; border: 3px solid var(--c-neutral-100);
+  border-top-color: var(--c-romance-500); animation: sp 0.8s linear infinite; }
+.hloading__text { margin-top: 8px; font-size: var(--fs-md); color: var(--c-text-secondary); }
+.hload-more { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 0; }
+.hload-more__spin { width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid var(--c-neutral-100);
+  border-top-color: var(--c-romance-500); animation: sp 0.8s linear infinite; }
+.hload-more__text { font-size: var(--fs-base); color: var(--c-text-placeholder); }
+
+/* 空态 EmptyState（type=no-data：盒图标 + 标题 + 副文案 + 去广场逛逛按钮） */
+.empty { position: absolute; top: 200px; left: 0; width: 100%; display: flex; flex-direction: column;
+  align-items: center; gap: 8px; padding: 0 32px; z-index: 2; }
+.empty__icon { width: 60px; height: 60px; color: var(--c-text-placeholder); }
+.empty__icon svg { width: 60px; height: 60px; }
+.empty__msg { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-secondary); margin-top: 6px; }
+.empty__sub { font-size: var(--fs-md); color: var(--c-text-placeholder); }
+.empty__action { margin-top: 14px; height: 38px; padding: 0 24px; border-radius: var(--r-full);
+  display: flex; align-items: center; background: linear-gradient(135deg, var(--c-brand-600), var(--c-brand));
+  box-shadow: var(--s-brand-sm); }
+.empty__action span { font-size: var(--fs-md); font-weight: 600; color: #fff; }
+
+/* 清空确认弹窗 */
+.mask { position: absolute; inset: 0; z-index: 8; background: var(--c-overlay-strong);
+  display: flex; align-items: center; justify-content: center; }
+.cdialog { width: 300px; background: var(--c-bg-container); border-radius: var(--r-xxl); padding: 24px 22px 18px;
+  box-shadow: var(--s-modal); text-align: center; }
+.cdialog__title { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); }
+.cdialog__desc { display: block; font-size: var(--fs-md); color: var(--c-text-secondary); margin-top: 8px; line-height: 1.6; }
+.cdialog__actions { display: flex; gap: 12px; margin-top: 20px; }
+.cdialog__btn { flex: 1; height: 44px; border-radius: var(--r-xl); display: flex; align-items: center;
+  justify-content: center; font-size: var(--fs-lg); font-weight: 600; }
+.cdialog__btn--cancel { background: var(--c-bg-surface); color: var(--c-text-secondary); }
+.cdialog__btn--confirm { background: var(--c-error); color: #fff; }
+.cspin { width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff; animation: sp 0.7s linear infinite; margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 8.5 12 4l8.5 4.5v7L12 20l-8.5-4.5z"/><path d="M3.5 8.5 12 13l8.5-4.5"/><path d="M12 13v7"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ===== 封面 ===== -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>村口浏览记录 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/village/village/history</code>。
+     该页记录用户在村口广场看过的帖子（<code>GET /api/v1/posts/history</code>）。页头为无渐变的页面底色行
+     （白圆返回 + 深色「浏览记录」标题），下有满幅白底操作栏（共 N 条记录 / 清空记录），再下是记录卡列表。
+     本页状态机有 6 态，含清空确认弹窗与其执行中子态。本页此前无理想效果图，版式按源码实况。</p>
+  <div class="cover__meta">
+    <span>路由 <b>village/history</b></span>
+    <span>分包 <b>village</b>（无 tabbar）</span>
+    <span>状态 <b>6 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ===== 01 状态稿 ===== -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 6 屏</h2>
+    <p>加载 / 有记录·到底 / 有记录·加载更多 / 空 / 清空弹窗 / 清空执行中</p></div>
+  <div class="sec__sub">本页状态机有 6 态，来自 <code>loadingHistory &amp;&amp; historyPosts.length===0</code>（加载）、
+    <code>historyPosts.length&gt;0</code>（有记录，底部再分 <code>isLoadingMore</code> 加载更多 / <code>!hasMore</code> 到底）、
+    <code>else</code>（空态 EmptyState）、以及 <code>showClearDialog</code> 弹窗（其确认键再分 <code>clearing</code> 执行中）。
+    页头行与操作栏在有记录态常驻；帧即视口，超出 812px 裁切，裁切说明写题注不写画面。</div>
+
+  <div class="frames">
+
+    <!-- F01 加载 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">加载态</span><span class="d">loadingHistory &amp;&amp; 空列表</span></figcaption>
+      <div class="phone">
+        <div class="hhead"><span class="hback"><svg><use href="#i-back"/></svg></span><span class="hhead__title">浏览记录</span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hloading"><span class="hspin"></span><span class="hloading__text">加载中...</span></div>
+      </div>
+    </figure>
+
+    <!-- F02 有记录·到底 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">有记录 · 到底</span><span class="d">!hasMore · 三卡均在视口内</span></figcaption>
+      <div class="phone">
+        <div class="hhead"><span class="hback"><svg><use href="#i-back"/></svg></span><span class="hhead__title">浏览记录</span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="htoolbar"><span class="hcount">共 3 条记录</span><span class="hclear"><span>清空记录</span></span></div>
+        <div class="hlist">
+          <div class="hitem">
+            <span class="hitem__avatar"><img src="assets/demo/person-01.png" alt=""></span>
+            <div class="hitem__body">
+              <div class="hitem__header"><span class="hitem__author">小满</span><span class="hitem__time">10分钟前</span></div>
+              <span class="hitem__title">汉服出行日，路上好多同袍</span>
+              <span class="hitem__summary">今天在街上遇到汉服出行活动，同袍们超级热情，还一起合了影！</span>
+              <div class="hitem__stats"><span class="hitem__stat">赞 42</span><span class="hitem__stat">藏 8</span><span class="hitem__stat">看 356</span><span class="hitem__stat">评 12</span></div>
+            </div>
+          </div>
+          <div class="hitem">
+            <span class="hitem__avatar"><img src="assets/demo/xiaoman-avatar.png" alt=""></span>
+            <div class="hitem__body">
+              <div class="hitem__header"><span class="hitem__author">周岚</span><span class="hitem__time">1小时前</span></div>
+              <span class="hitem__title">图书馆五楼靠窗的位置太好拍了</span>
+              <div class="hitem__stats"><span class="hitem__stat">赞 18</span><span class="hitem__stat">藏 3</span><span class="hitem__stat">看 120</span></div>
+            </div>
+          </div>
+          <div class="hitem">
+            <span class="hitem__avatar"><span class="hitem__avatar-text">辰</span></span>
+            <div class="hitem__body">
+              <div class="hitem__header"><span class="hitem__author">阿辰</span><span class="hitem__time">昨天</span></div>
+              <span class="hitem__title">求推荐学校附近好吃的火锅店</span>
+              <div class="hitem__stats"><span class="hitem__stat">赞 7</span><span class="hitem__stat">藏 1</span><span class="hitem__stat">看 88</span><span class="hitem__stat">评 20</span></div>
+            </div>
+          </div>
+          <div class="hload-more"><span class="hload-more__text">— 没有更多了 —</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 有记录·加载更多 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">有记录 · 加载更多中</span><span class="d">isLoadingMore · 三卡均在视口内</span></figcaption>
+      <div class="phone">
+        <div class="hhead"><span class="hback"><svg><use href="#i-back"/></svg></span><span class="hhead__title">浏览记录</span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="htoolbar"><span class="hcount">共 3 条记录</span><span class="hclear"><span>清空记录</span></span></div>
+        <div class="hlist">
+          <div class="hitem">
+            <span class="hitem__avatar"><img src="assets/demo/person-04.png" alt=""></span>
+            <div class="hitem__body">
+              <div class="hitem__header"><span class="hitem__author">星辰</span><span class="hitem__time">3小时前</span></div>
+              <span class="hitem__title">周末有没有一起去爬山的搭子</span>
+              <span class="hitem__summary">想找几个同学周末一起去香山，路线和装备我都查好了。</span>
+              <div class="hitem__stats"><span class="hitem__stat">赞 15</span><span class="hitem__stat">藏 4</span><span class="hitem__stat">看 210</span><span class="hitem__stat">评 7</span></div>
+            </div>
+          </div>
+          <div class="hitem">
+            <span class="hitem__avatar"><img src="assets/demo/person-06.png" alt=""></span>
+            <div class="hitem__body">
+              <div class="hitem__header"><span class="hitem__author">小溪</span><span class="hitem__time">昨天</span></div>
+              <span class="hitem__title">（无标题）</span>
+              <div class="hitem__stats"><span class="hitem__stat">赞 2</span><span class="hitem__stat">藏 0</span><span class="hitem__stat">看 34</span></div>
+            </div>
+          </div>
+          <div class="hitem">
+            <span class="hitem__avatar"><span class="hitem__avatar-text">岚</span></span>
+            <div class="hitem__body">
+              <div class="hitem__header"><span class="hitem__author">周岚</span><span class="hitem__time">2天前</span></div>
+              <span class="hitem__title">校园歌手大赛海选现场好热闹</span>
+              <div class="hitem__stats"><span class="hitem__stat">赞 26</span><span class="hitem__stat">藏 5</span><span class="hitem__stat">看 178</span></div>
+            </div>
+          </div>
+          <div class="hload-more"><span class="hload-more__spin"></span><span class="hload-more__text">加载中...</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 空态 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">空态 · EmptyState</span><span class="d">else 分支（无记录）</span></figcaption>
+      <div class="phone">
+        <div class="hhead"><span class="hback"><svg><use href="#i-back"/></svg></span><span class="hhead__title">浏览记录</span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="empty">
+          <span class="empty__icon"><svg><use href="#i-box"/></svg></span>
+          <span class="empty__msg">还没有浏览记录</span>
+          <span class="empty__sub">这里空空如也</span>
+          <span class="empty__action"><span>去广场逛逛</span></span>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 清空弹窗 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">清空确认弹窗</span><span class="d">showClearDialog · 叠在列表上</span></figcaption>
+      <div class="phone">
+        <div class="hhead"><span class="hback"><svg><use href="#i-back"/></svg></span><span class="hhead__title">浏览记录</span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="htoolbar"><span class="hcount">共 3 条记录</span><span class="hclear"><span>清空记录</span></span></div>
+        <div class="hlist">
+          <div class="hitem">
+            <span class="hitem__avatar"><img src="assets/demo/person-01.png" alt=""></span>
+            <div class="hitem__body">
+              <div class="hitem__header"><span class="hitem__author">小满</span><span class="hitem__time">10分钟前</span></div>
+              <span class="hitem__title">汉服出行日，路上好多同袍</span>
+              <div class="hitem__stats"><span class="hitem__stat">赞 42</span><span class="hitem__stat">藏 8</span><span class="hitem__stat">看 356</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="mask">
+          <div class="cdialog">
+            <span class="cdialog__title">清空浏览记录</span>
+            <span class="cdialog__desc">确定要清空全部浏览记录吗？此操作不可恢复</span>
+            <div class="cdialog__actions">
+              <span class="cdialog__btn cdialog__btn--cancel">取消</span>
+              <span class="cdialog__btn cdialog__btn--confirm">清空记录</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 清空执行中 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">清空执行中</span><span class="d">clearing · 确认键转圈 + 「加载中...」</span></figcaption>
+      <div class="phone">
+        <div class="hhead"><span class="hback"><svg><use href="#i-back"/></svg></span><span class="hhead__title">浏览记录</span></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="htoolbar"><span class="hcount">共 3 条记录</span><span class="hclear"><span>清空记录</span></span></div>
+        <div class="hlist">
+          <div class="hitem">
+            <span class="hitem__avatar"><img src="assets/demo/person-01.png" alt=""></span>
+            <div class="hitem__body">
+              <div class="hitem__header"><span class="hitem__author">小满</span><span class="hitem__time">10分钟前</span></div>
+              <span class="hitem__title">汉服出行日，路上好多同袍</span>
+              <div class="hitem__stats"><span class="hitem__stat">赞 42</span><span class="hitem__stat">藏 8</span><span class="hitem__stat">看 356</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="mask">
+          <div class="cdialog">
+            <span class="cdialog__title">清空浏览记录</span>
+            <span class="cdialog__desc">确定要清空全部浏览记录吗？此操作不可恢复</span>
+            <div class="cdialog__actions">
+              <span class="cdialog__btn cdialog__btn--cancel">取消</span>
+              <span class="cdialog__btn cdialog__btn--confirm"><span class="cspin"></span>加载中...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ===== 02 组件状态规范 ===== -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页交互件：记录列表四态、记录卡头像/摘要/统计、清空弹窗两态、清空记录按钮。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>记录列表 · 四态</h3>
+      <p class="hint">由 <code>loadingHistory</code> / <code>historyPosts.length</code> / <code>showClearDialog</code> 决定。</p>
+      <table class="tbl">
+        <tr><th>条件</th><th>呈现</th><th>文案</th></tr>
+        <tr><td>loadingHistory &amp;&amp; 空</td><td>粉转圈</td><td>加载中...</td></tr>
+        <tr><td>historyPosts.length&gt;0</td><td>操作栏 + 记录卡</td><td>共 {n} 条记录</td></tr>
+        <tr><td>else</td><td>EmptyState 盒图标</td><td>还没有浏览记录 / 去广场逛逛</td></tr>
+        <tr><td>showClearDialog</td><td>遮罩 + 确认弹窗</td><td>清空浏览记录</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>记录卡 · 头像 / 摘要 / 统计</h3>
+      <p class="hint">头像有源用真素材、无源回落首字（红渐变）；摘要行仅当与标题不同值时渲染（R6-L04-D06）；统计「赞/藏/看」恒显，「评」仅 comments&gt;0 时出现。</p>
+      <div class="row">
+        <div class="cell"><span class="hitem__avatar" style="width:44px;height:44px"><img src="assets/demo/person-01.png" alt=""></span><span class="lab">有头像</span></div>
+        <div class="cell"><span class="hitem__avatar" style="width:44px;height:44px"><span class="hitem__avatar-text">辰</span></span><span class="lab">无头像（首字）</span></div>
+        <div class="cell"><span class="hitem__stat">赞 42 · 藏 8 · 看 356 · 评 12</span><span class="lab">含评论数</span></div>
+        <div class="cell"><span class="hitem__stat">赞 18 · 藏 3 · 看 120</span><span class="lab">无评论（评键不出）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>清空弹窗 · 两态</h3>
+      <p class="hint">确认键文案 = <code>clearing ? common.loading : village.history.clear</code>；取消键走 <code>common.cancel</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:230px"><div class="cdialog" style="width:100%"><span class="cdialog__title">清空浏览记录</span><span class="cdialog__desc">确定要清空全部浏览记录吗？此操作不可恢复</span><div class="cdialog__actions"><span class="cdialog__btn cdialog__btn--cancel">取消</span><span class="cdialog__btn cdialog__btn--confirm">清空记录</span></div></div><span class="lab">默认</span></div>
+        <div class="cell" style="width:230px"><div class="cdialog" style="width:100%"><span class="cdialog__title">清空浏览记录</span><span class="cdialog__desc">确定要清空全部浏览记录吗？此操作不可恢复</span><div class="cdialog__actions"><span class="cdialog__btn cdialog__btn--cancel">取消</span><span class="cdialog__btn cdialog__btn--confirm"><span class="cspin"></span>加载中...</span></div></div><span class="lab">执行中（clearing）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>清空记录按钮 · 破坏性色档</h3>
+      <p class="hint">R8-L03-D16：破坏性入口由 romance 粉改错误红档（<code>--c-error</code> + 红 10% 底），粉绿撞色问题收口。</p>
+      <div class="row">
+        <div class="cell"><span class="hclear"><span>清空记录</span></span><span class="lab">清空记录（红档）</span></div>
+        <div class="cell"><span class="empty__action" style="display:inline-flex"><span>去广场逛逛</span></span><span class="lab">空态主行动（绿）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== 03 令牌 ===== -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用以下档，未引入页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">页头行底色（无渐变）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">去广场逛逛按钮</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">清空记录 · 弹窗确认</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF8DA1"></span><div><div class="sw__n">浪漫 300<code>--c-romance-300</code></div><div class="sw__u">无头像首字渐变起</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">表面底<code>--c-bg-surface</code></div><div class="sw__u">取消键 · 头像回落底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(15,23,42,.7)"></span><div><div class="sw__n">遮罩<code>--c-overlay-strong</code></div><div class="sw__u">弹窗背景蒙层</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到五档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-2xl 16/600</span><span class="type__p" style="font-size:16px;font-weight:600">浏览记录 · 弹窗标题</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600</span><span class="type__p" style="font-size:15px;font-weight:600">帖子标题</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">小满 · 作者名</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-text-secondary)">摘要两行截断</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px;font-weight:400;color:var(--c-text-tertiary)">赞 42 · 藏 8 · 看 356</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>section-gap 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>item gap 20rpx</b><i style="width:10px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 弹窗按钮</div>
+        <div class="rad__i"><b style="border-radius:16px"></b>--r-xxl<br>32rpx · 弹窗</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 记录卡</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 04 素材 + 差异 ===== -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 &amp; 与实况的已知差异</h2><p>头像用真演示素材，无灰块</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/person-01.png" alt="" style="height:150px;object-fit:cover">
+      <div class="asset__b"><b>assets/demo/person-*.png</b><p>记录卡作者头像（<code>item.post.author.avatar</code> 非空分支）。§8 要求头像位用盘上真素材。头像加载失败/无源时回落首字（红渐变），仍是本页真实分支。</p><div class="m">44px · aspectFill</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-avatar.png" alt="" style="height:150px;object-fit:cover">
+      <div class="asset__b"><b>真名池人设</b><p>演示人名按 §3.4 用真名池（小满/周岚/阿辰/星辰/小溪）。标题/摘要为帖子内容示例，赞/藏/看/评为帖子互动计数，非合拍度类分数。</p><div class="m">无分数类需留空</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>页头无渐变带：</b><code>history.vue</code> 页头是页面底色 <code>--c-bg-page</code> 上的白圆返回 + 深色标题（R8-L03-D15/D17），
+        与 tag-posts 的深绿渐变带不同形——本页状态栏文字因此为深色（非 onbrand 白）。</li>
+      <li><b>摘要行条件渲染：</b>R6-L04-D06 规定 <code>content</code> 与 <code>title</code> 同值时不渲染摘要行（真档种子 title==content），
+        画板 F02 首卡演示「标题+摘要」两行，第二/三卡演示「仅标题」分支。</li>
+      <li><b>无标题回落：</b><code>item.post.title</code> 为空时显示 <code>village.history.untitled</code>「（无标题）」（F03 小溪卡演示）。</li>
+      <li>本页在 village 分包，无原生导航栏、无 tabbar——出现 tabbar 即为错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 村口浏览记录高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx）
+</footer>
+
+</div>
+</body>
+</html>

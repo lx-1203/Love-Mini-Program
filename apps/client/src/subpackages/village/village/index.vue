@@ -1366,7 +1366,7 @@ onShareAppMessage(() => ({
   align-items: center;
   justify-content: center;
   gap: var(--sp-5);
-  padding: var(--sp-14) var(--sp-8);
+  padding: var(--sp-10) var(--sp-8);
 }
 
 .village-empty__action {

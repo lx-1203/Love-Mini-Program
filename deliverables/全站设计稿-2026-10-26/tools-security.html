@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 安全中心 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，不写私有色值） ===== */
+.sh { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 0 var(--page-padding);
+  background: var(--c-bg-page); overflow: hidden; }
+.sh__inner { padding-top: 54px; }
+.sh__back { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; min-width: 44px;
+  padding: 10px 12px 10px 8px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: 0.5px solid var(--c-border-light); box-shadow: var(--s-sm); }
+.sh__back svg { width: 16px; height: 16px; color: var(--c-brand-800); }
+.sh__back span { font-size: var(--fs-base); color: var(--c-brand-800); font-weight: 500; }
+.sh__title { display: block; font-size: var(--fs-7xl); font-weight: 700; color: var(--c-text-primary);
+  margin-top: 8px; line-height: 1.25; letter-spacing: -0.3px; }
+.sh__sub { display: block; font-size: var(--fs-base); color: var(--c-text-secondary); margin-top: 4px; line-height: 1.5; }
+
+/* SectionCard（compact：padding 16px · 圆角 --card-radius · 标题 18px/700 · 卡间距 12px） */
+.sc { background: var(--c-bg-container); border-radius: var(--card-radius); padding: 16px;
+  border: var(--c-border-card); box-shadow: var(--card-shadow); }
+.sc + .sc { margin-top: 12px; }
+.sc__t { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); margin-bottom: 8px; }
+
+/* 行（.sec-item：gap 10px · padding 12px 4px · 图标圆底 40px · 标题 14px/600 · 说明 14px 三级字） */
+.li { display: flex; align-items: center; gap: 10px; padding: 12px 4px; border-radius: var(--r-md); }
+.li + .li { border-top: 0.5px solid var(--c-border-light); }
+.li__w { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex: none; }
+.li__w svg { width: 20px; height: 20px; color: var(--c-text-secondary); }
+.li__w--blue { background: var(--c-tint-blue-soft); }
+.li__w--green { background: var(--c-bg-brand); }
+.li__w--lav { background: var(--c-lavender-100); }
+.li__w--sky { background: var(--c-tint-blue-soft); }
+.li__w--apple { background: var(--c-neutral-900); opacity: 0.5; }
+.li__w--apple svg { color: var(--c-neutral-0); }
+.li__i { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.li__lr { display: flex; align-items: center; gap: 6px; }
+.li__l { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.li__d { font-size: var(--fs-lg); color: var(--c-text-tertiary); }
+.li__a { font-size: var(--fs-2xl); color: var(--c-text-tertiary); line-height: 1; }
+.li__b { font-size: var(--fs-sm); color: var(--c-brand-800); background: var(--c-bg-brand);
+  padding: 2px 7px; border-radius: var(--r-full); white-space: nowrap; flex-shrink: 0; }
+.li--disabled .li__l { color: var(--c-text-tertiary); }
+.li--danger { justify-content: flex-start; }
+.li__l--danger { color: var(--c-error); font-size: 19px; font-weight: 700; }
+.li__kick { min-height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
+  padding: 7px 14px; border-radius: var(--r-full); background: var(--c-error-bg-tint); }
+.li__kick span { font-size: var(--fs-sm); color: var(--c-text-error-dark); }
+
+/* 应用内弹层（.sec-modal） */
+.mask { position: absolute; inset: 0; z-index: 9; background: var(--c-bg-overlay);
+  display: flex; align-items: center; justify-content: center; padding: 0 30px; }
+.mo { width: 100%; background: var(--c-neutral-0); border-radius: var(--r-lg); padding: 20px 18px;
+  display: flex; flex-direction: column; gap: 12px; }
+.mo__t { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); text-align: center; }
+.mo__b { font-size: var(--fs-base); color: var(--c-text-secondary); line-height: 1.7; }
+.mo__in { height: 44px; background: var(--c-bg-page); border-radius: var(--r-md); padding: 0 12px;
+  font-size: var(--fs-lg); color: var(--c-text-primary); display: flex; align-items: center; }
+.mo__in--ph { color: var(--c-text-tertiary); }
+.mo__in--dot { letter-spacing: 3px; font-family: var(--mono); }
+.mo__e { font-size: var(--fs-sm); color: var(--c-error); }
+.mo__acts { display: flex; gap: 10px; margin-top: 4px; }
+.mo__btn { flex: 1; height: 42px; border-radius: var(--r-full); display: flex; align-items: center;
+  justify-content: center; font-size: var(--fs-lg); font-weight: 600; }
+.mo__btn--cancel { background: var(--c-bg-page); color: var(--c-text-secondary); }
+.mo__btn--confirm { background: var(--c-brand-500); color: var(--c-neutral-0); }
+.mo__btn--danger { background: var(--c-error); color: var(--c-neutral-0); }
+
+/* 系统弹窗（uni.showModal，confirmColor = designTokens.color.error） */
+.sysm { position: absolute; inset: 0; z-index: 9; background: var(--c-gradient-mask-strong);
+  display: flex; align-items: center; justify-content: center; }
+.sysp { width: 280px; background: var(--c-bg-container); border-radius: var(--r-xl); overflow: hidden;
+  box-shadow: var(--s-modal); }
+.sysp__t { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); text-align: center;
+  padding: 20px 16px 0; }
+.sysp__b { font-size: var(--fs-lg); color: var(--c-text-secondary); text-align: center; line-height: 1.6; padding: 10px 16px 20px; }
+.sysp__r { display: flex; border-top: 0.5px solid var(--c-border-light); }
+.sysp__c { flex: 1; height: 46px; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-lg); color: var(--c-text-secondary); }
+.sysp__c + .sysp__c { border-left: 0.5px solid var(--c-border-light); }
+.sysp__c--ok { color: var(--c-error); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M14.5 6.5 9 12l5.5 5.5"/></symbol>
+  <symbol id="i-mobile" viewBox="0 0 24 24"><rect x="6.5" y="2.6" width="11" height="18.8" rx="2.6"/><path d="M10.6 18.6h2.8"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8.4" cy="12" r="3.8"/><path d="M12.2 12H21l-1.6 2.6M17.6 12v2.8"/></symbol>
+  <symbol id="i-wechat" viewBox="0 0 24 24"><path d="M9.4 4.2c-3.5 0-6.3 2.3-6.3 5.1 0 1.6.9 3.1 2.3 4.1l-.6 1.9 2.2-1.2c.6.2 1.3.3 2 .3h.4"/><path d="M15.4 9.2c3 0 5.4 2 5.4 4.6 0 1.4-.7 2.7-1.9 3.5l.5 1.7-2-.9c-.6.2-1.3.3-2 .3-3 0-5.4-2-5.4-4.6s2.4-4.6 5.4-4.6z"/><path d="M6.6 8.2h.01M11 8.2h.01M14 13h.01M17.4 13h.01"/></symbol>
+  <symbol id="i-apple" viewBox="0 0 24 24"><path d="M16.4 12.8c0-2 1.5-3 1.6-3.1-.9-1.3-2.3-1.5-2.8-1.5-1.2-.1-2.3.7-2.9.7s-1.5-.7-2.5-.7c-1.3 0-2.5.8-3.1 2-1.3 2.3-.3 5.7.9 7.6.6.9 1.4 2 2.4 1.9.9 0 1.3-.6 2.4-.6s1.4.6 2.4.6 1.7-.9 2.3-1.8c.7-1 1-2 1-2.1-.1 0-2-.8-2-3z"/><path d="M14.6 6.3c.5-.6.8-1.5.7-2.3-.7 0-1.6.5-2.1 1.1-.5.5-.8 1.4-.7 2.2.8.1 1.6-.4 2.1-1z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8.4 6.4h11M8.4 12h11M8.4 17.6h11"/><path d="M4.6 6.4h.01M4.6 12h.01M4.6 17.6h.01"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.2l7 2.6v5.4c0 4.2-2.9 7.6-7 9-4.1-1.4-7-4.8-7-9V5.8z"/><path d="M9.2 12.2l1.9 1.9 3.7-4"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M6.4 3.4h7.2L18.6 8v12.6H6.4z"/><path d="M13.4 3.6V8.2h4.8M9.2 12.6h6M9.2 16h6"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>安全中心 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/tools/security/index</code>。
+     五个分区（账号安全 / 第三方账号绑定 / 登录设备 / 隐私保护 / 危险操作）+ 四个应用内弹层 + 两个系统确认框，
+     是全站<b>危险操作最密</b>的一页：下线会话、改密、换绑手机、两层注销。
+     本画板把 9 个状态逐屏画全，并逐条钉死「哪些读数是后端真值、哪些是脱敏态、哪些恒不出现」。</p>
+  <div class="cover__meta">
+    <span>路由 <b>tools/security/index</b></span>
+    <span>分包 <b>tools</b>（无 tabbar）</span>
+    <span>状态 <b>10 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 10 屏</h2>
+    <p>主页面两档 + 改密 + 换绑手机两态 + 注销两层 + 两个系统确认框</p></div>
+  <div class="sec__sub">本页状态机有 <b>10 态</b>，条件逐条来自源码：
+    主页面两档由 <code>devices</code> 的数据源决定——<code>buildInitialDevices()</code>（:186-193，mock 档恒 1 行当前设备）
+    vs <code>loadDevices()</code>（:274-294，real 档 <code>GET /auth/devices</code> 覆盖为多行，含 <code>revoked</code> 行）；
+    四个弹层各由一个独立 <code>ref</code> 控制：<code>showChangePhoneModal</code>（:770）、<code>showPasswordModal</code>（:815）、
+    <code>showDeleteModal</code>（:867）、<code>showDeactivateModal</code>（:895）；
+    两个系统框走 <code>uni.showModal</code>：<code>kickDevice()</code>（:445）与 <code>onThirdPartyBindTap()</code>（:60）。
+    弹层内错误行由 <code>changePhoneError</code> / <code>passwordError</code> / <code>deleteError</code> 三个 <code>v-if</code> 决定（:790、:842、:914）。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">主页面 · mock 档（现网默认）</span><span class="d">未绑定手机 · 微信未绑定 · 设备恒 1 行</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">安全中心</span>
+            <span class="sh__sub">账号安全与隐私保护</span>
+
+            <div style="margin-top:14px">
+              <div class="sc">
+                <div class="sc__t">账号安全</div>
+                <div class="li"><span class="li__w li__w--blue"><svg><use href="#i-mobile"/></svg></span>
+                  <div class="li__i"><span class="li__l">绑定手机号</span><span class="li__d">未绑定手机号</span></div><span class="li__a">›</span></div>
+                <div class="li"><span class="li__w li__w--blue"><svg><use href="#i-key"/></svg></span>
+                  <div class="li__i"><span class="li__l">修改密码</span><span class="li__d">建议定期更换，保护账号安全</span></div><span class="li__a">›</span></div>
+              </div>
+
+              <div class="sc">
+                <div class="sc__t">第三方账号绑定</div>
+                <div class="li"><span class="li__w li__w--green"><svg><use href="#i-wechat"/></svg></span>
+                  <div class="li__i"><span class="li__l">绑定微信</span><span class="li__d">未绑定</span></div><span class="li__a">›</span></div>
+                <div class="li li--disabled"><span class="li__w li__w--apple"><svg><use href="#i-apple"/></svg></span>
+                  <div class="li__i"><span class="li__l">绑定 Apple</span><span class="li__d">当前环境不支持 Apple 登录</span></div></div>
+              </div>
+
+              <div class="sc">
+                <div class="sc__t">登录设备</div>
+                <div class="li"><span class="li__w li__w--green"><svg><use href="#i-list"/></svg></span>
+                  <div class="li__i"><div class="li__lr"><span class="li__l">iPhone 12/13</span><span class="li__b">当前设备</span></div>
+                    <span class="li__d">当前设备</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">主页面 · real 档（后端会话列表）</span><span class="d">已绑定态 + 多设备 + 下线钮 · ↓裁切至隐私保护前</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">安全中心</span>
+            <span class="sh__sub">账号安全与隐私保护</span>
+
+            <div style="margin-top:14px">
+              <div class="sc">
+                <div class="sc__t">账号安全</div>
+                <div class="li"><span class="li__w li__w--blue"><svg><use href="#i-mobile"/></svg></span>
+                  <div class="li__i"><span class="li__l">绑定手机号</span><span class="li__d">已绑定（号码脱敏）</span></div><span class="li__a">›</span></div>
+                <div class="li"><span class="li__w li__w--blue"><svg><use href="#i-key"/></svg></span>
+                  <div class="li__i"><span class="li__l">修改密码</span><span class="li__d">建议定期更换，保护账号安全</span></div><span class="li__a">›</span></div>
+              </div>
+
+              <div class="sc">
+                <div class="sc__t">第三方账号绑定</div>
+                <div class="li"><span class="li__w li__w--green"><svg><use href="#i-wechat"/></svg></span>
+                  <div class="li__i"><span class="li__l">绑定微信</span><span class="li__d">已绑定</span></div><span class="li__a">›</span></div>
+                <div class="li li--disabled"><span class="li__w li__w--apple"><svg><use href="#i-apple"/></svg></span>
+                  <div class="li__i"><span class="li__l">绑定 Apple</span><span class="li__d">当前环境不支持 Apple 登录</span></div></div>
+              </div>
+
+              <div class="sc">
+                <div class="sc__t">登录设备</div>
+                <div class="li"><span class="li__w li__w--green"><svg><use href="#i-list"/></svg></span>
+                  <div class="li__i"><div class="li__lr"><span class="li__l">手机号登录 · iPhone 12/13</span><span class="li__b">当前设备</span></div>
+                    <span class="li__d">10/26 09:41</span></div></div>
+                <div class="li"><span class="li__w li__w--green"><svg><use href="#i-list"/></svg></span>
+                  <div class="li__i"><span class="li__l">微信登录 · 10/12</span><span class="li__d">10/25 22:07</span></div>
+                  <div class="li__kick"><span>下线</span></div></div>
+                <div class="li"><span class="li__w li__w--green"><svg><use href="#i-list"/></svg></span>
+                  <div class="li__i"><span class="li__l">手机号登录 · 9/30</span><span class="li__d">已下线</span></div>
+                  <div class="li__kick"><span>下线</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">修改密码弹层 · 空表单</span><span class="d">三输入均 password 型 · 无错误行</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">安全中心</span>
+            <span class="sh__sub">账号安全与隐私保护</span>
+            <div style="margin-top:14px"><div class="sc"><div class="sc__t">账号安全</div>
+              <div class="li"><span class="li__w li__w--blue"><svg><use href="#i-mobile"/></svg></span><div class="li__i"><span class="li__l">绑定手机号</span><span class="li__d">未绑定手机号</span></div><span class="li__a">›</span></div>
+              <div class="li"><span class="li__w li__w--blue"><svg><use href="#i-key"/></svg></span><div class="li__i"><span class="li__l">修改密码</span><span class="li__d">建议定期更换，保护账号安全</span></div><span class="li__a">›</span></div>
+            </div></div>
+          </div>
+        </div>
+        <div class="mask">
+          <div class="mo">
+            <span class="mo__t">修改密码</span>
+            <div class="mo__in mo__in--ph">请输入当前密码</div>
+            <div class="mo__in mo__in--ph">请输入新密码（6-20 位）</div>
+            <div class="mo__in mo__in--ph">请再次输入新密码</div>
+            <div class="mo__acts">
+              <div class="mo__btn mo__btn--cancel">取消</div>
+              <div class="mo__btn mo__btn--confirm">确认</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">修改密码弹层 · 校验失败</span><span class="d">passwordMismatch · 错误行在输入之下钮之上</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">安全中心</span>
+            <span class="sh__sub">账号安全与隐私保护</span>
+            <div style="margin-top:14px"><div class="sc"><div class="sc__t">账号安全</div>
+              <div class="li"><span class="li__w li__w--blue"><svg><use href="#i-mobile"/></svg></span><div class="li__i"><span class="li__l">绑定手机号</span><span class="li__d">未绑定手机号</span></div><span class="li__a">›</span></div>
+              <div class="li"><span class="li__w li__w--blue"><svg><use href="#i-key"/></svg></span><div class="li__i"><span class="li__l">修改密码</span><span class="li__d">建议定期更换，保护账号安全</span></div><span class="li__a">›</span></div>
+            </div></div>
+          </div>
+        </div>
+        <div class="mask">
+          <div class="mo">
+            <span class="mo__t">修改密码</span>
+            <div class="mo__in mo__in--dot">••••••</div>
+            <div class="mo__in mo__in--dot">••••••••</div>
+            <div class="mo__in mo__in--dot">••••••</div>
+            <div class="mo__e">两次输入的密码不一致</div>
+            <div class="mo__acts">
+              <div class="mo__btn mo__btn--cancel">取消</div>
+              <div class="mo__btn mo__btn--confirm">确认</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">更换手机号弹层 · 空表单</span><span class="d">号码框 maxlength=11 · 二输入</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">安全中心</span>
+            <span class="sh__sub">账号安全与隐私保护</span>
+            <div style="margin-top:14px"><div class="sc"><div class="sc__t">账号安全</div>
+              <div class="li"><span class="li__w li__w--blue"><svg><use href="#i-mobile"/></svg></span><div class="li__i"><span class="li__l">绑定手机号</span><span class="li__d">未绑定手机号</span></div><span class="li__a">›</span></div>
+              <div class="li"><span class="li__w li__w--blue"><svg><use href="#i-key"/></svg></span><div class="li__i"><span class="li__l">修改密码</span><span class="li__d">建议定期更换，保护账号安全</span></div><span class="li__a">›</span></div>
+            </div></div>
+          </div>
+        </div>
+        <div class="mask">
+          <div class="mo">
+            <span class="mo__t">绑定手机号</span>
+            <div class="mo__in mo__in--ph">请输入新手机号</div>
+            <div class="mo__in mo__in--ph">请输入当前登录密码</div>
+            <div class="mo__acts">
+              <div class="mo__btn mo__btn--cancel">取消</div>
+              <div class="mo__btn mo__btn--confirm">确认</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">更换手机号弹层 · 提交中</span><span class="d">确认钮文案换「提交中...」</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">安全中心</span>
+            <span class="sh__sub">账号安全与隐私保护</span>
+            <div style="margin-top:14px"><div class="sc"><div class="sc__t">账号安全</div>
+              <div class="li"><span class="li__w li__w--blue"><svg><use href="#i-mobile"/></svg></span><div class="li__i"><span class="li__l">绑定手机号</span><span class="li__d">未绑定手机号</span></div><span class="li__a">›</span></div>
+              <div class="li"><span class="li__w li__w--blue"><svg><use href="#i-key"/></svg></span><div class="li__i"><span class="li__l">修改密码</span><span class="li__d">建议定期更换，保护账号安全</span></div><span class="li__a">›</span></div>
+            </div></div>
+          </div>
+        </div>
+        <div class="mask">
+          <div class="mo">
+            <span class="mo__t">绑定手机号</span>
+            <div class="mo__in">138 0000 0000</div>
+            <div class="mo__in mo__in--dot">••••••</div>
+            <div class="mo__acts">
+              <div class="mo__btn mo__btn--cancel">取消</div>
+              <div class="mo__btn mo__btn--confirm" style="opacity:.72">提交中...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">注销 · 第一层危险提醒</span><span class="d">无输入框 · 右钮红底</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">安全中心</span>
+            <span class="sh__sub">账号安全与隐私保护</span>
+            <div style="margin-top:14px"><div class="sc"><div class="sc__t">危险操作</div>
+              <div class="li li--danger"><div class="li__i"><span class="li__l li__l--danger">注销账号</span><span class="li__d">注销后账号与数据将被删除</span></div><span class="li__a">›</span></div>
+            </div></div>
+          </div>
+        </div>
+        <div class="mask">
+          <div class="mo">
+            <span class="mo__t">注销账号</span>
+            <span class="mo__b">注销后你的账号、资料与动态将被永久删除，且无法恢复。请谨慎操作。</span>
+            <div class="mo__acts">
+              <div class="mo__btn mo__btn--cancel">取消</div>
+              <div class="mo__btn mo__btn--danger">注销账号</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F08 -->
+    <figure class="frame">
+      <figcaption><b>F08</b><span class="t">注销 · 第二层凭据校验</span><span class="d">确认文字不匹配 · 错误行出现</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">安全中心</span>
+            <span class="sh__sub">账号安全与隐私保护</span>
+            <div style="margin-top:14px"><div class="sc"><div class="sc__t">危险操作</div>
+              <div class="li li--danger"><div class="li__i"><span class="li__l li__l--danger">注销账号</span><span class="li__d">注销后账号与数据将被删除</span></div><span class="li__a">›</span></div>
+            </div></div>
+          </div>
+        </div>
+        <div class="mask">
+          <div class="mo">
+            <span class="mo__t">注销账号</span>
+            <span class="mo__b">请输入「注销」确认删除，有密码账号还需输入旧密码</span>
+            <div class="mo__in">注消</div>
+            <div class="mo__in mo__in--dot">••••••</div>
+            <div class="mo__e">确认文字输入有误</div>
+            <div class="mo__acts">
+              <div class="mo__btn mo__btn--cancel">取消</div>
+              <div class="mo__btn mo__btn--danger">注销账号</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F09 -->
+    <figure class="frame">
+      <figcaption><b>F09</b><span class="t">下线设备 · 系统确认框</span><span class="d">uni.showModal · confirmColor 红</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">安全中心</span>
+            <span class="sh__sub">账号安全与隐私保护</span>
+            <div style="margin-top:14px"><div class="sc"><div class="sc__t">登录设备</div>
+              <div class="li"><span class="li__w li__w--green"><svg><use href="#i-list"/></svg></span><div class="li__i"><span class="li__l">微信登录 · 10/12</span><span class="li__d">10/25 22:07</span></div><div class="li__kick"><span>下线</span></div></div>
+            </div></div>
+          </div>
+        </div>
+        <div class="sysm">
+          <div class="sysp">
+            <div class="sysp__t">下线设备</div>
+            <div class="sysp__b">确定将「微信登录 · 10/12」下线吗？下线后该设备将需要重新登录。</div>
+            <div class="sysp__r"><div class="sysp__c">取消</div><div class="sysp__c sysp__c--ok">下线</div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F10 -->
+    <figure class="frame">
+      <figcaption><b>F10</b><span class="t">解绑微信 · 系统确认框</span><span class="d">仅 wechatBound=true 时可达</span></figcaption>
+      <div class="phone">
+        <div class="sh">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="sh__inner">
+            <span class="sh__back"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="sh__title">安全中心</span>
+            <span class="sh__sub">账号安全与隐私保护</span>
+            <div style="margin-top:14px"><div class="sc"><div class="sc__t">第三方账号绑定</div>
+              <div class="li"><span class="li__w li__w--green"><svg><use href="#i-wechat"/></svg></span><div class="li__i"><span class="li__l">绑定微信</span><span class="li__d">已绑定</span></div><span class="li__a">›</span></div>
+            </div></div>
+          </div>
+        </div>
+        <div class="sysm">
+          <div class="sysp">
+            <div class="sysp__t">解绑微信</div>
+            <div class="sysp__b">确定要解绑该第三方账号吗？</div>
+            <div class="sysp__r"><div class="sysp__c">取消</div><div class="sysp__c sysp__c--ok">解绑微信</div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  <div class="note" style="margin-top:24px">
+    <b>本页的入口与出口（与 hub / 其它画板对得上）：</b>
+    <ul>
+      <li>入口：本页从「我的」侧进入（<code>ROUTES.SECURITY</code>），<b>不在恋爱中心 hub 的四个入口之内</b>；
+        页头与 hub、consulting 同用 AppShell 白胶囊返回件。</li>
+      <li>出口：「权限设置」→ <code>ROUTES.PROFILE.PRIVACY</code>（:489-493）；「隐私政策」→
+        <code>SUBPACKAGE_ROUTES.LEGAL.PRIVACY</code>（:496-499，对应本目录 <code>legal-privacy.html</code> 画板）。</li>
+      <li>「登录记录」在本页<b>没有独立分区</b>：源码里它就是「登录设备」这一张卡的列表，
+        每行 = 一条后端会话记录（<code>GET /auth/devices</code> 的 <code>id/deviceId/platform/lastActiveAt/revoked/createdAt</code> 六列）。
+        画第五张「登录记录」卡 = 错。</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页的核心是<b>危险操作链路</b>：每一枚会改状态的动作都要能枚举出「触发 → 确认层 → 真值接口 → 失败提示 → 成功提示」五段，
+    少一段就是漏画。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>危险操作 · 全枚举（六条链）</h3>
+      <p class="hint">前三条走应用内弹层（<code>.sec-modal</code>），后两条走系统框（<code>uni.showModal</code>），注销是唯一的双层链。</p>
+      <table class="tbl">
+        <tr><th>动作</th><th>确认层</th><th>真值接口</th><th>失败提示</th><th>成功提示</th></tr>
+        <tr><td>修改密码</td><td>弹层 ×3 输入（F03/F04）</td><td class="plain"><code>submitPassword()</code> :380-415</td><td class="plain">「请输入当前密码」/「密码长度需在 6-20 位之间」/「两次输入的密码不一致」/「旧密码错误」/「修改失败，请重试」</td><td class="plain">「密码修改成功」或需重登时「密码已更新，请重新登录」</td></tr>
+        <tr><td>更换手机号</td><td>弹层 ×2 输入（F05/F06）</td><td class="plain"><code>submitChangePhone()</code> :320-359</td><td class="plain">「请输入正确的手机号」/「请输入当前登录密码」/「更换失败，请重试」</td><td class="plain">「手机号已更换」</td></tr>
+        <tr><td>注销账号</td><td><b>双层</b>：F07 提醒 → F08 输入「注销」+ 旧密码</td><td class="plain"><code>submitDeleteAccount()</code> :525-548</td><td class="plain">「确认文字输入有误」/「注销失败，请重试」</td><td class="plain">「账号已注销」</td></tr>
+        <tr><td>下线设备</td><td>系统框（F09），<code>confirmColor</code>=error</td><td class="plain">real：<code>POST /auth/devices/{id}/revoke</code>；mock：本地 storage 记 <code>KICKED_DEVICES</code></td><td class="plain">接口 message 或「下线失败，请重试」</td><td class="plain">「已下线该设备」</td></tr>
+        <tr><td>解绑微信</td><td>系统框（F10）</td><td class="plain"><b>无接口</b>——确认后只弹「第三方账号绑定与解绑暂未开放…」</td><td>—</td><td class="plain">演示提示（<code>security.thirdPartyDemoHint</code>）</td></tr>
+        <tr><td>绑定 Apple</td><td><b>不可触发</b>（死行，见下方第四面）</td><td>—</td><td>—</td><td>—</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>登录设备行 · 四态（含 mock/real 差异）</h3>
+      <p class="hint">行内主标题的生成规则：<b>当前设备</b>用本机 <code>uni.getDeviceInfo().model</code>（经 <code>trimModelLabel</code> 去尾括号、12 字截断）；
+        <b>非当前设备</b>用「登录方式 · 首登日期(createdAt)」，日期缺失才退回 deviceId 末四位。</p>
+      <div class="row">
+        <div class="cell" style="width:300px"><div class="sc" style="padding:8px"><div class="li"><span class="li__w li__w--green"><svg><use href="#i-list"/></svg></span><div class="li__i"><div class="li__lr"><span class="li__l">手机号登录 · iPhone 12/13</span><span class="li__b">当前设备</span></div><span class="li__d">10/26 09:41</span></div></div></div><span class="lab">当前设备（real）· 无「下线」钮（:693 <code>v-if="!device.isCurrent"</code>）</span></div>
+        <div class="cell" style="width:300px"><div class="sc" style="padding:8px"><div class="li"><span class="li__w li__w--green"><svg><use href="#i-list"/></svg></span><div class="li__i"><span class="li__l">微信登录 · 10/12</span><span class="li__d">10/25 22:07</span></div><div class="li__kick"><span>下线</span></div></div></div><span class="lab">可下线（副行 = lastActiveAt，格式 M/D HH:mm）</span></div>
+        <div class="cell" style="width:300px"><div class="sc" style="padding:8px"><div class="li"><span class="li__w li__w--green"><svg><use href="#i-list"/></svg></span><div class="li__i"><span class="li__l">手机号登录 · 9/30</span><span class="li__d">已下线</span></div><div class="li__kick"><span>下线</span></div></div></div><span class="lab">revoked=true 档（副行换成「已下线」，钮仍在）</span></div>
+        <div class="cell" style="width:300px"><div class="sc" style="padding:8px"><div class="li"><span class="li__w li__w--green"><svg><use href="#i-list"/></svg></span><div class="li__i"><div class="li__lr"><span class="li__l">iPhone 12/13</span><span class="li__b">当前设备</span></div><span class="li__d">当前设备</span></div></div></div><span class="lab">mock 档（F01 唯一一行：主标题只有型号，副行与徽章同为「当前设备」）</span></div>
+      </div>
+      <p class="hint" style="margin-top:12px">行内<b>没有</b>「未知位置」占位：<code>location</code> 在后端 View 里根本不存在（:155-157 判为 NEEDS-DATA），
+        模板 <code>{{ device.location ? location + ' · ' : '' }}</code> 恒走 falsy 分支。画出城市名 = 伪造。</p>
+    </div>
+
+    <div class="panel">
+      <h3>弹层输入框 · 四态 + 弹层按钮三档</h3>
+      <p class="hint">输入底 <code>--c-bg-page</code>（弹层是白卡，用页面底档做内凹区分）、高 44px、圆角 <code>--r-md</code>；
+        号码框 <code>type="number" maxlength="11"</code>，其余三枚 <code>type="password"</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="mo__in mo__in--ph">请输入新手机号</div><span class="lab">placeholder</span></div>
+        <div class="cell" style="width:186px"><div class="mo__in">138 0000 0000</div><span class="lab">已填（number 型明文）</span></div>
+        <div class="cell" style="width:186px"><div class="mo__in mo__in--dot">••••••</div><span class="lab">password 型（密文点）</span></div>
+        <div class="cell" style="width:186px"><div class="mo__in">注消</div><span class="lab">填错 → 下方错误行 <code>--c-error</code> 11px</span></div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <div class="cell" style="width:120px"><div class="mo__btn mo__btn--cancel">取消</div><span class="lab">cancel</span></div>
+        <div class="cell" style="width:120px"><div class="mo__btn mo__btn--confirm">确认</div><span class="lab">confirm（品牌绿）</span></div>
+        <div class="cell" style="width:120px"><div class="mo__btn mo__btn--danger">注销账号</div><span class="lab">danger（错误红）</span></div>
+        <div class="cell" style="width:120px"><div class="mo__btn mo__btn--confirm" style="opacity:.72">提交中...</div><span class="lab">提交中（文案换值 + opacity .72）</span></div>
+      </div>
+      <p class="hint" style="margin-top:12px">弹层遮罩 <code>--c-bg-overlay</code>(rgba(15,23,42,.45))、面板圆角 <code>--r-lg</code>；
+        点遮罩即关（<code>@tap</code> 绑在 mask 上，面板 <code>@tap.stop</code>）——注销第二层也不例外，<b>没有</b>「必须点取消」的强约束。</p>
+    </div>
+
+    <div class="panel">
+      <h3>行（sec-item）· 可点 / 不可点两档 + 图标四色档</h3>
+      <p class="hint">「›」是全站「可点导航行」的唯一信号（R7-L08-D08：Apple 行曾有箭头却点不动，已删）。</p>
+      <div class="row">
+        <div class="cell" style="width:300px"><div class="sc" style="padding:8px"><div class="li"><span class="li__w li__w--blue"><svg><use href="#i-shield"/></svg></span><div class="li__i"><span class="li__l">权限设置</span><span class="li__d">控制你的信息展示范围</span></div><span class="li__a">›</span></div></div><span class="lab">可点（role=button + press-feedback）</span></div>
+        <div class="cell" style="width:300px"><div class="sc" style="padding:8px"><div class="li li--disabled"><span class="li__w li__w--apple"><svg><use href="#i-apple"/></svg></span><div class="li__i"><span class="li__l">绑定 Apple</span><span class="li__d">当前环境不支持 Apple 登录</span></div></div></div><span class="lab">不可点（<code>aria-disabled</code>、无 @tap、<b>无箭头</b>、图标 opacity .5）</span></div>
+      </div>
+      <table class="tbl" style="margin-top:14px">
+        <tr><th>行</th><th>图标圆底档</th><th>说明行真值源</th></tr>
+        <tr><td>绑定手机号</td><td><code>--c-tint-blue-soft</code></td><td class="plain"><code>userSession.phoneBound</code> → 「已绑定（号码脱敏）」或「未绑定手机号」</td></tr>
+        <tr><td>修改密码</td><td><code>--c-tint-blue-soft</code>（R14-L07-D15 由粉档归口）</td><td class="plain">i18n 常量</td></tr>
+        <tr><td>绑定微信</td><td><code>--c-bg-brand</code></td><td class="plain"><code>userSession.loginMethod === "wechat"</code> → 已绑定 / 未绑定</td></tr>
+        <tr><td>绑定 Apple</td><td><code>--c-neutral-900</code>（深色实心 + 白 logo）</td><td class="plain">i18n 常量</td></tr>
+        <tr><td>登录设备 ×N</td><td><code>--c-bg-brand</code></td><td class="plain">后端会话列表</td></tr>
+        <tr><td>权限设置</td><td><code>--c-lavender-100</code></td><td class="plain">i18n 常量</td></tr>
+        <tr><td>隐私政策</td><td><code>--c-sky-50</code>（base 未登记，见 §04）</td><td class="plain">i18n 常量</td></tr>
+        <tr><td>注销账号</td><td><b>无图标</b>（危险行只有文字 + 箭头）</td><td class="plain">i18n 常量</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>与 design-variables.scss 一一对应，可直接抄进 SCSS</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用这些档，未引入页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">AppShell 底 · 弹层输入框 · cancel 钮</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器<code>--c-bg-container</code> / <code>--c-neutral-0</code></div><div class="sw__u">五张分区卡 · 弹层面板 · 返回胶囊</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8F4FD;border:1px solid #DDE3E0"></span><div><div class="sw__n">信息浅蓝<code>--c-tint-blue-soft</code></div><div class="sw__u">手机号 / 改密两行图标底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FBF2;border:1px solid #DDE3E0"></span><div><div class="sw__n">品牌浅底<code>--c-bg-brand</code></div><div class="sw__u">微信 / 设备行图标底 · 「当前设备」徽章</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EDE9FE;border:1px solid #DDE3E0"></span><div><div class="sw__n">薰衣草<code>--c-lavender-100</code></div><div class="sw__u">权限设置图标底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">品牌 800<code>--c-brand-800</code></div><div class="sw__u">返回文字 · 「当前设备」徽章墨</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">「注销账号」标题 · danger 钮 · 错误行 · 系统框确认字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(229,69,77,.1)"></span><div><div class="sw__n">错误浅底<code>--c-error-bg-tint</code></div><div class="sw__u">「下线」钮底（源码档为 --c-error-soft，见 §04）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#991B1B"></span><div><div class="sw__n">错误深字<code>--c-text-error-dark</code></div><div class="sw__u">「下线」钮文字（R14-L07-D14 浅底深字口径）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(15,23,42,.45)"></span><div><div class="sw__n">弹层遮罩<code>--c-bg-overlay</code></div><div class="sw__u">四个应用内弹层</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页七档，注意「危险行标题」是全站唯一 19px 特例。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 56/700</span><span class="type__p" style="font-size:28px;font-weight:700">安全中心</span></div>
+        <div class="type__i"><span class="type__m">38rpx=19px/700</span><span class="type__p" style="font-size:19px;font-weight:700;color:var(--c-error)">注销账号</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 36/700</span><span class="type__p" style="font-size:18px;font-weight:700">账号安全 · 登录设备</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 32/700</span><span class="type__p" style="font-size:16px;font-weight:700">修改密码</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 28/600</span><span class="type__p" style="font-size:14px;font-weight:600">绑定手机号 · 修改密码</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 28/400</span><span class="type__p" style="font-size:14px;font-weight:400;color:var(--c-text-tertiary)">未绑定手机号 · 建议定期更换，保护账号安全</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 22/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-error-dark)">下线 · 当前设备 · 错误行</span></div>
+      </div>
+      <p class="hint" style="margin-top:12px">19px 那档是 R13-L07-D07 的<b>刻意产物</b>：--c-error 压白卡 3.97:1 不达 4.5:1，
+        于是升 700 字重 + 抬到 19px 进入 WCAG 大字档吃 3:1 门槛（卡面原建议 18px 差半点进不了档）。不是随手写的大字号。</p>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:20px"></b>--card-radius<br>40rpx · 五张分区卡</div>
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>12rpx · 行 · 弹层输入框</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 弹层面板</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>徽章 · 「下线」钮 · 弹层钮</div>
+      </div>
+      <p class="hint" style="margin-top:12px">行几何：<code>padding: 24rpx 8rpx</code>（12px 4px）、图标圆底 <code>80rpx</code>=40px、图标 <code>40rpx</code>=20px、
+        行内 gap <code>20rpx</code>=10px；「下线」钮 <code>min-height:88rpx</code>=44px（R6-L09-D15 由 31px 提档）。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>8 枚行图标，无照片位、无素材缺口</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_EMOJI.*（6 枚）+ ICONS_V2.WECHAT_GREEN_SVG</b><p>行图标真身：<code>MOBILE</code> / <code>KEY</code> /
+        <code>LIST</code> / <code>SHIELD</code> / <code>FILE_TEXT</code> 走 <code>ICONS_EMOJI</code>，微信走
+        <code>resolveMediaUrl(ICONS_V2.WECHAT_GREEN_SVG)</code>（R6-L09-D08：该目录在 cdnPrefixes 已登记、后端 uploads 逐枚在盘，
+        缺的只是消费点解析器，<b>不是缺素材</b>）；Apple 是内联 data-uri SVG（深色圆底 + 白 logo，不引图片文件）。</p>
+        <div class="m">20px · 40px 圆底内 aspectFit</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>演示素材引用 · 0 件</b><p>安全中心没有任何头像 / 照片 / 封面位，规范 §8 的照片位条件在本页不触发，
+        不引用 <code>assets/demo/*</code>。</p><div class="m">无 NEED_ASSET</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li>本页在 <code>subpackages/tools</code> 分包，<b>无 tabbar</b>、无原生导航栏；画板出现 tabbar 即为错。</li>
+      <li><b>手机号读数口径：恒脱敏。</b><code>boundPhone</code>（:44-47）只输出「已绑定（号码脱敏）」或「未绑定手机号」两句 i18n，
+        源码注释自证「后端 UserSession 下发真实手机号后在此透出（当前仅展示脱敏态文案）」。
+        所以画板上<b>不允许出现任何 1xx-xxxx-xxxx 形态的号码</b>——包括 F02 已绑定档。
+        （F06 里的 138 0000 0000 是<b>用户正在输入的输入框内容</b>，属输入演示不是账号读数，与账号展示位不同源。）</li>
+      <li><b>设备/时间读数口径：全部有真值源</b>，故照画并标口径——主标题来自 <code>uni.getDeviceInfo().model</code> 或
+        <code>platform + createdAt</code>，副行来自 <code>lastActiveAt</code>（格式 <code>M/D HH:mm</code>）或 <code>revoked</code>→「已下线」。
+        本页<b>没有任何分数/百分比位</b>，规范 §7 的留空规则在本页无对象。</li>
+      <li>两处源码档在 board-base 未登记，画板按同族已登记档替身：<code>--c-error-soft</code>（#FEF5F6，「下线」钮底）→ <code>--c-error-bg-tint</code>(rgba(229,69,77,.1))；
+        <code>--c-sky-50</code>（#F0F9FF，隐私政策图标底）→ <code>--c-tint-blue-soft</code>(#E8F4FD)。两档真值请主控补进 base。</li>
+      <li>F01 的 mock 档设备行<b>主标题与副行、徽章三处同源</b>（<code>buildInitialDevices()</code> 把 <code>lastActive</code> 也填了 <code>security.currentDevice</code>），
+        所以画面上「当前设备」出现两次。这是源码事实，不在画板层修。</li>
+      <li>F02 内容超一屏：五张分区卡总高约 1000px，视口只到「隐私保护」前——裁切只写在题注里，画面内不出现任何裁切注记。</li>
+      <li>F09 / F10 是<b>微信系统弹窗</b>（<code>uni.showModal</code>），不是本页 DOM：几何与配色按系统件画
+        （280px 面板、无页头、确认字色取 <code>confirmColor: designTokens.color.error</code>），
+        因此这两屏的遮罩档比应用内弹层更深（<code>--c-gradient-mask-strong</code> .6 vs <code>--c-bg-overlay</code> .45）。</li>
+      <li>注销双层的第二层<b>可点遮罩关闭</b>（:895 <code>@tap="showDeactivateModal = false"</code>），
+        与「永久删除」的严重度不匹配——属源码问题，登记不修。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 安全中心高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（画框 375 × 812，2.273×）
+</footer>
+
+</div>
+</body>
+</html>

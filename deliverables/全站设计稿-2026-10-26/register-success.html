@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 注册成功页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（色/字/圆角一律走 base 令牌；几何 px 由 rpx ÷ 2 推得） ===== */
+.rgs-page { position: absolute; top: 0; left: 0; width: 375px; height: 812px; z-index: 2;
+  background: var(--c-bg-page); display: flex; flex-direction: column; align-items: center;
+  padding: 92px 24px 24px; box-sizing: border-box; }
+
+/* 插图 + 径向羽化（源码 .reg-success__img-wrap::after：素材自带不透明浅绿方底，须化进页底） */
+.rgs-img { position: relative; width: 236px; height: 236px; flex: none; }
+.rgs-img img { width: 236px; height: 236px; object-fit: contain; }
+.rgs-img::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, transparent 48%, var(--c-bg-page) 68%); }
+
+.rgs-title { margin-top: 4px; font-size: var(--fs-5xl); font-weight: 800; line-height: 1.2;
+  color: var(--c-text-primary); }
+.rgs-sub { margin-top: 8px; display: flex; flex-direction: column; align-items: center; }
+.rgs-sub span { font-size: var(--fs-md); line-height: 1.55; color: var(--c-text-tertiary); text-align: center; }
+
+.rgs-list { width: 100%; margin-top: 24px; background: var(--c-bg-container); border-radius: var(--r-card);
+  padding: 8px 16px; box-shadow: var(--card-shadow); }
+.rgs-row { display: flex; align-items: center; gap: 8px; padding: 12px 0; }
+.rgs-row + .rgs-row { border-top: 1px solid var(--c-border-default); }
+.rgs-row__ic { width: 16px; height: 16px; flex: none; color: var(--c-brand); }
+.rgs-row__t { flex: 1; font-size: var(--fs-lg); line-height: 1.55; color: var(--c-text-primary); }
+.rgs-row__tag { font-size: var(--fs-base); color: var(--c-text-tertiary); flex: none; }
+
+.rgs-btn { display: flex; align-items: center; justify-content: center; width: 100%; height: 48px;
+  margin-top: 24px; border-radius: var(--r-full); background: var(--c-brand-800); box-shadow: var(--s-brand);
+  font-size: var(--fs-xl); font-weight: 700; letter-spacing: .4px; color: var(--c-text-inverse); }
+.rgs-btn--press { transform: scale(.98); opacity: .92; }
+.rgs-alt { display: flex; align-items: center; justify-content: center; padding: 13px 12px; margin-top: 16px;
+  font-size: var(--fs-md); color: var(--c-text-tertiary); }
+
+/* §02 面板内的小件 */
+.rgs-mini { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--c-bg-container);
+  border-radius: var(--r-lg); box-shadow: var(--s-card-soft); width: 300px; }
+.rgs-box { position: relative; width: 120px; height: 120px; background: var(--c-brand-50);
+  border-radius: var(--r-sm); overflow: hidden; }
+.rgs-box img { width: 100%; height: 100%; object-fit: cover; }
+.rgs-box--masked::after { content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 50%, transparent 48%, var(--c-bg-page) 68%); }
+.rgs-box__lab { position: absolute; left: 0; right: 0; bottom: 4px; text-align: center; font-size: 10px;
+  color: var(--c-text-tertiary); }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6.5 9.5 17 4 11.5"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.2 12.4l2.6 2.6 5-5.6"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>注册成功页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">pages/register/success</code>（主包、非 Tab 页）。
+     注册接口成功即签发 JWT 并 <code style="font-family:var(--mono);font-size:12.5px">redirectTo</code> 到本页（自动登录，不再让用户输一次密码），
+     本页唯一职责是把用户推进「完善资料」12 步流程。源码 260 行，可见态只有两态，
+     差别在清单第一行右侧的状态字（路由带手机号 → 脱敏号；不带 → 「完成」）。</p>
+  <div class="cover__meta">
+    <span>路由 <b>pages/register/success</b></span>
+    <span>主包非 Tab 页 <b>无 tabbar</b></span>
+    <span>状态 <b>2 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 2 屏</h2>
+    <p>带脱敏手机号 / 无入参回退</p></div>
+  <div class="sec__sub">本页状态机有 2 态，来自
+    <code style="font-family:var(--mono);font-size:11.5px">rows[0].tag = maskedPhone || "完成"</code>，
+    而 <code style="font-family:var(--mono);font-size:11.5px">maskedPhone</code> 只在
+    <code style="font-family:var(--mono);font-size:11.5px">onLoad</code> 收到 11 位
+    <code style="font-family:var(--mono);font-size:11.5px">query.phone</code> 时才赋值（注册页成功分支确实会带：<code style="font-family:var(--mono);font-size:11.5px">redirectTo(REGISTER_SUCCESS + '?phone=…')</code>）。
+    整页内容底边在 721px（本画板与源码同几何，渲染实测；加页底 24px 内距共 745px），<b>不超 812px 视口 ⇒ 两屏均无裁切</b>。
+    页面模板里没有返回件、没有导航栏、没有 tabbar：唯一出口是主按钮与次级文字，这是实况，不是漏画（见 §04）。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">注册成功 · 路由带手机号</span><span class="d">主链路真实落点 · 状态字 = 脱敏号</span></figcaption>
+      <div class="phone">
+        <div class="rgs-page">
+          <div class="rgs-img"><img src="assets/demo/reg-success-illustration@3x.jpg" alt=""></div>
+          <span class="rgs-title">注册成功</span>
+          <div class="rgs-sub">
+            <span>欢迎加入寻觅，接下来用 1 分钟</span>
+            <span>把资料填成一张「恋爱名片」</span>
+          </div>
+          <div class="rgs-list">
+            <div class="rgs-row"><svg class="rgs-row__ic"><use href="#i-check"/></svg><span class="rgs-row__t">账号已创建并自动登录</span><span class="rgs-row__tag">138****8888</span></div>
+            <div class="rgs-row"><svg class="rgs-row__ic"><use href="#i-check"/></svg><span class="rgs-row__t">可开始匹配、加兴趣圈、发消息</span><span class="rgs-row__tag">已解锁</span></div>
+            <div class="rgs-row"><svg class="rgs-row__ic"><use href="#i-check"/></svg><span class="rgs-row__t">下一步：完善资料，遇见更准的同频</span><span class="rgs-row__tag">建议</span></div>
+          </div>
+          <div class="rgs-btn">完善我的资料 →</div>
+          <div class="rgs-alt">稍后再说，先随便逛逛</div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">注册成功 · 无 phone 入参（回退态）</span><span class="d">状态字 = 「完成」· 余下逐像素同 F01</span></figcaption>
+      <div class="phone">
+        <div class="rgs-page">
+          <div class="rgs-img"><img src="assets/demo/reg-success-illustration@3x.jpg" alt=""></div>
+          <span class="rgs-title">注册成功</span>
+          <div class="rgs-sub">
+            <span>欢迎加入寻觅，接下来用 1 分钟</span>
+            <span>把资料填成一张「恋爱名片」</span>
+          </div>
+          <div class="rgs-list">
+            <div class="rgs-row"><svg class="rgs-row__ic"><use href="#i-check"/></svg><span class="rgs-row__t">账号已创建并自动登录</span><span class="rgs-row__tag">完成</span></div>
+            <div class="rgs-row"><svg class="rgs-row__ic"><use href="#i-check"/></svg><span class="rgs-row__t">可开始匹配、加兴趣圈、发消息</span><span class="rgs-row__tag">已解锁</span></div>
+            <div class="rgs-row"><svg class="rgs-row__ic"><use href="#i-check"/></svg><span class="rgs-row__t">下一步：完善资料，遇见更准的同频</span><span class="rgs-row__tag">建议</span></div>
+          </div>
+          <div class="rgs-btn">完善我的资料 →</div>
+          <div class="rgs-alt">稍后再说，先随便逛逛</div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页只有四件：插图、清单卡、主按钮、次级文字。看似没有状态，
+    但每一件的取值都在 2026-10 的可达性/间距收口里被改过，画板必须钉住改后的值。</div>
+
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>清单行 · 状态字 2 态 + 分隔口径</h3>
+      <p class="hint">行高 = 12px 上下内距 + 14px 文本；行间分隔 <code>1px --c-border-default</code>（R10-L01-D08 由 <code>--c-border-light</code> 抬档，压白卡从 1.13:1 到可读）。</p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="rgs-mini"><svg class="rgs-row__ic"><use href="#i-check"/></svg><span class="rgs-row__t">账号已创建并自动登录</span><span class="rgs-row__tag">138****8888</span></div>
+        <div class="rgs-mini"><svg class="rgs-row__ic"><use href="#i-check"/></svg><span class="rgs-row__t">账号已创建并自动登录</span><span class="rgs-row__tag">完成</span></div>
+        <div class="rgs-mini"><svg class="rgs-row__ic"><use href="#i-check"/></svg><span class="rgs-row__t">可开始匹配、加兴趣圈、发消息</span><span class="rgs-row__tag">已解锁</span></div>
+        <div class="rgs-mini"><svg class="rgs-row__ic"><use href="#i-check"/></svg><span class="rgs-row__t">下一步：完善资料，遇见更准的同频</span><span class="rgs-row__tag">建议</span></div>
+      </div>
+      <table class="tbl" style="margin-top:18px">
+        <tr><th>位</th><th>取值</th><th>规则</th></tr>
+        <tr><td>状态字（第一行）</td><td><code>maskedPhone || "完成"</code></td><td>仅当 <code>onLoad</code> 拿到 11 位 <code>query.phone</code> 才脱敏；<code>maskPhone</code> 与注册页同源（utils/form-validator）</td></tr>
+        <tr><td>状态字（二、三行）</td><td>「已解锁」「建议」</td><td>常量，不随会话变化</td></tr>
+        <tr><td>状态字色</td><td><code>--c-text-tertiary</code></td><td>R11-L01-D10：原 <code>--c-text-placeholder</code> 压白卡 2.59:1，三枚状态字是本页唯一说明「到哪一步」的文字 ⇒ 提到 4.76:1</td></tr>
+        <tr><td>行图标</td><td><code>REGISTER_ICONS.CHECK_GREEN</code></td><td>16px 无圆框对勾（不是 check-circle 描边圆）</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>主按钮 + 次级出口</h3>
+      <p class="hint">主按钮 48px 高 · <code>--r-full</code> 胶囊 · 底 <code>--c-brand-800</code>（白字 6.45:1）· 阴影 <code>--s-brand</code>。
+        次级文字外覆 88rpx 热区（padding 13px 上下），MP-R2-…-002 把 <code>@tap</code> 从内层 text 移回按钮本体。</p>
+      <div class="row">
+        <div class="cell" style="width:300px"><div class="rgs-btn" style="margin:0">完善我的资料 →</div><span class="lab">default → <code>SETUP_PROGRESS.PROFILE</code></span></div>
+        <div class="cell" style="width:300px"><div class="rgs-btn rgs-btn--press" style="margin:0">完善我的资料 →</div><span class="lab">press（scale .98 + .92，100ms）</span></div>
+        <div class="cell" style="width:300px"><div class="rgs-alt" style="margin:0;border:1px dashed var(--c-border-default)">稍后再说，先随便逛逛</div><span class="lab">secondary → <code>switchTab(HOME)</code></span></div>
+      </div>
+      <table class="tbl" style="margin-top:18px">
+        <tr><th>状态</th><th>样式</th><th>说明</th></tr>
+        <tr><td>default</td><td>实色 <code>--c-brand-800</code></td><td>R10-L01-D07：原 brand→brand-400 渐变两端白字仅 2.10/1.85:1 ⇒ 去渐变走实色。本页局部钮，不触「共享渐变勿翻实色」</td></tr>
+        <tr><td>无 loading 态</td><td>—</td><td>本页是跳转终点，没有请求；<code>redirectTo</code> 已把注册页从栈里摘掉 ⇒ <b>回不去</b></td></tr>
+        <tr><td>次级文字</td><td>13px <code>--c-text-tertiary</code></td><td>无下划线、无按钮底：视觉权重低于主按钮，但它是唯一「不进 12 步向导」的出口</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>成功插图 · 羽化遮罩开/关</h3>
+      <p class="hint">素材 <code>reg-success-illustration</code> 是 600×600 不透明浅绿方底，直接贴页底会出现四边硬接缝；
+        源码用 <code>::after</code> 径向渐变（48% 内全透明 → 68% 起纯页底）把方角化进 <code>--c-bg-page</code>。</p>
+      <div class="row">
+        <div class="cell"><div class="rgs-box"><img src="assets/demo/reg-success-illustration@3x.jpg" alt=""><span class="rgs-box__lab">遮罩关（接缝）</span></div><span class="lab">旧稿形态</span></div>
+        <div class="cell"><div class="rgs-box rgs-box--masked"><img src="assets/demo/reg-success-illustration@3x.jpg" alt=""><span class="rgs-box__lab">遮罩开（现源码）</span></div><span class="lab">现源码形态</span></div>
+      </div>
+      <table class="tbl" style="margin-top:18px">
+        <tr><th>项</th><th>值</th></tr>
+        <tr><td>显示尺寸</td><td>236 × 236（472rpx）· <code>mode="aspectFit"</code> 居中</td></tr>
+        <tr><td>遮罩</td><td><code>radial-gradient(circle at 50% 50%, transparent 48%, --c-bg-page 68%)</code></td></tr>
+        <tr><td>正解</td><td>设计侧出一版透明底 PNG（已登记交业主侧）；遮罩是素材不动前提下的兜底，不是终态</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>页面结构尺寸 · SuccessLayout（px = rpx ÷ 2）</h3>
+      <p class="hint">整页 flex 纵向居中，无导航件；内容底边 721px、含页底内距 745px（渲染实测），视口 812px 内不裁切。</p>
+      <table class="tbl">
+        <tr><th>区块</th><th>尺寸 / 位置</th><th>说明</th></tr>
+        <tr><td>状态栏</td><td>375 × 44</td><td>系统区；页面上内距 = <code>statusbar + 96rpx</code> = 92px</td></tr>
+        <tr><td>插图</td><td>236 × 236 · 居中</td><td>上距 92px</td></tr>
+        <tr><td>标题</td><td>22/800 · 插图下 4px</td><td>「注册成功」</td></tr>
+        <tr><td>副标</td><td>13/400 · 标题下 8px · 两行</td><td>数组 <code>subLines</code> 分行（mp <code>&lt;text&gt;</code> 不解析字面 \n）</td></tr>
+        <tr><td>清单卡</td><td>宽 327 · 副标下 24px</td><td>圆角 20 · 内距 8/16 · 三行</td></tr>
+        <tr><td>主按钮</td><td>宽 327 × 48 · 卡下 24px</td><td><code>--sp-9</code>（R11-L01-D12 由 56rpx 孤值归口）</td></tr>
+        <tr><td>次级文字</td><td>按钮下 16px · 实高 47px</td><td>88rpx 热区口径，与注册页 <code>.agree__hit</code> 同档</td></tr>
+        <tr><td>页底留白</td><td>24px</td><td><code>calc(safe-area-inset-bottom + 48rpx)</code></td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页无页内私有色值；径向羽化的透明端用 <code>transparent</code> 关键字，不写 rgba 字面量。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页底<code>--c-bg-page</code></div><div class="sw__u">整页背景 · 插图羽化终点</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">卡底<code>--c-bg-container</code></div><div class="sw__u">清单卡</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">主按钮实色底（白字 6.45:1）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">清单行对勾图标</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">主文本<code>--c-text-primary</code></div><div class="sw__u">标题 · 清单正文</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">三级文本<code>--c-text-tertiary</code></div><div class="sw__u">副标 · 状态字 · 次级文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:rgba(255,255,255,.95);border:1px solid #DDE3E0"></span><div><div class="sw__n">反色<code>--c-text-inverse</code></div><div class="sw__u">主按钮文字（彩色底白字语义档）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#DDE3E0"></span><div><div class="sw__n">描边<code>--c-border-default</code></div><div class="sw__u">清单行分隔线</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">五档，全部有 <code>--fs-*</code> 对应，本页无档外孤值。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/800</span><span class="type__p" style="font-size:22px;font-weight:800">注册成功</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/700</span><span class="type__p" style="font-size:15px;font-weight:700;letter-spacing:.4px">完善我的资料 →</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/400</span><span class="type__p" style="font-size:14px;font-weight:400">可开始匹配、加兴趣圈、发消息</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400;color:#6B7571">欢迎加入寻觅，接下来用 1 分钟</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px;font-weight:400;color:#6B7571">已解锁 · 建议 · 138****8888</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 阴影</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4px</b><i style="width:4px"></i>标题与插图间距</div>
+        <div class="space__i"><b>--sp-4 8px</b><i style="width:8px"></i>副标上距 · 清单图标与文字</div>
+        <div class="space__i"><b>--sp-6 12px</b><i style="width:12px"></i>清单行上下内距</div>
+        <div class="space__i"><b>--sp-7 16px</b><i style="width:16px"></i>清单卡左右内距 · 次级文字上距</div>
+        <div class="space__i"><b>--sp-9 24px</b><i style="width:24px"></i>页面左右内距 · 清单卡与主按钮上距</div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · §02 小件</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 清单卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>胶囊 · 主按钮</div>
+      </div>
+      <table class="tbl" style="margin-top:18px">
+        <tr><th>阴影</th><th>令牌</th><th>本页用途</th></tr>
+        <tr><td>卡片</td><td><code>--card-shadow</code></td><td>清单卡（源码 0 8px 24px .06 + 0 2px 8px .04）</td></tr>
+        <tr><td>品牌</td><td><code>--s-brand</code></td><td>主按钮（R11-L01-D12 由裸 rgba 归口）</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与旧画板的已知差异</h2><p>差异清单为本单元主要产出</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/reg-success-illustration@3x.jpg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-page)">
+      <div class="asset__b"><b>IMAGE_PATHS.REGISTER.SUCCESS</b><p>成功页主插图，源码 <code>/static/assets/images/register/reg-success-illustration.jpg</code>，源件在 <code>deliverables/注册页/assets/reg-success-illustration@3x.jpg</code>（1024×1024，自带不透明浅绿方底）。素材未落 <code>assets/demo/</code> 前，本画板该位显示为空底 + 羽化圈（<b>不可用于像素比对</b>，落位后须重拍）。</p><div class="m">236 × 236 · aspectFit · NEED_ASSET</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>REGISTER_ICONS.CHECK_GREEN</b><p>清单行对勾，<code>/static/assets/icons/register/check-green.svg</code>，16px。本画板按 lucide 描边体系以 <code>--c-brand</code> 重绘；与注册页勾选框的 check-white 是两枚不同资产，不得互换。</p><div class="m">16 × 16 · 无圆框对勾</div></div></div>
+  </div>
+
+  <div class="note">
+    <b>A. 旧画板（2026-09 第 05 屏）有、现源码无：</b>
+    <ul>
+      <li><b>渐变主按钮</b>：旧稿「完善我的资料 →」是 brand→brand-400 渐变 + 24rpx 圆角矩形。现源码为纯 <code>--c-brand-800</code> 实色 + <code>--r-full</code> 胶囊（R10-L01-D07 可达性 + R6-L01-D05/D06 全站胶囊化两条收口）。<b>注意与注册页相反</b>：注册页主按钮仍是渐变，两页口径不同，画板各自按实况。</li>
+      <li><b>清单行图标 check-circle</b>：旧稿画的是描边圆里带勾。现源码用 <code>check-green.svg</code> 裸对勾，无圆框。</li>
+      <li><b>第一行右侧恒为「138****8888」</b>：旧稿把它当固定文案。现源码是条件态（<code>maskedPhone || "完成"</code>），故本画板拆成 F01/F02 两屏。</li>
+      <li><b>直接贴方图</b>：旧稿插图无遮罩，四边能看到素材自带的浅绿方底。现源码加了 <code>::after</code> 径向羽化（R11-L01-D09）。</li>
+      <li><b>清单行分隔线 <code>--c-border-light</code> / 状态字 <code>--c-text-placeholder</code> / 按钮上距 56rpx</b>：三处旧值在现源码里分别抬到 <code>--c-border-default</code>、<code>--c-text-tertiary</code>、<code>--sp-9</code>（R10-L01-D08 / R11-L01-D10 / R11-L01-D12）。</li>
+      <li><b>旧稿把成功屏画成「带背景氛围图的整页」</b>（<code>phone--bgimg</code> + <code>reg-bg-atmosphere</code>）：现源码页面只有纯色 <code>--c-bg-page</code>，<code>reg-bg-atmosphere@3x.jpg</code> 与 <code>reg-decor-elements@3x.jpg</code> 两件素材在源码里<b>零引用</b>——它们仍是旧设计包遗产，不是本页依赖。</li>
+    </ul>
+  </div>
+
+  <div class="note">
+    <b>B. 现源码有、旧画板无（新增验收点）：</b>
+    <ul>
+      <li><b>副标两行由数组 <code>subLines</code> 渲染</b>：mp <code>&lt;text&gt;</code> 不解析字面 \n，分行必须数组绑定——旧稿用 <code>&lt;br&gt;</code>，真机上不成立。</li>
+      <li><b>次级文字的 88rpx 热区</b>（padding 13px 上下，实高 47px）：MP-R2-PAGES-REGISTER-SUCCESS-002 把 <code>@tap</code> 从内层 text 移回按钮/view 本体，消除上下各约 27rpx 的点击死区。</li>
+      <li><b>跳转去向已钉死</b>：主按钮 → <code>SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE</code>（资料填写 12 步）；次级 → <code>switchTab(ROUTES.TAB.HOME)</code>。注册页用 <code>redirectTo</code> 进本页 ⇒ 栈里没有注册页。</li>
+      <li><b><code>--statusbar</code> 由 JS 注入</b>（R11-G2，<code>useMenuButtonRect</code>）：DevTools 下 <code>env(safe-area-inset-top)</code> 恒 0，页面顶距必须走变量，否则真机与模拟器不同高。</li>
+      <li><b>本页没有任何返回件</b>：模板里既无返回箭头也无文字「返回」，配合 <code>redirectTo</code>，用户只能二选一（进向导 / 去首页）。这是实况，画板不补；若要改属产品裁定，登记在此不修。</li>
+    </ul>
+  </div>
+
+  <div class="note">
+    <b>C. 本画板自身的口径说明：</b>
+    <ul>
+      <li>演示手机号 138 8888 8888 → 脱敏 138****8888 与注册页 F02 同源，非新造数据；本页无分数类位（合拍度/匹配度/共同点），故无需留空的真值位。</li>
+      <li>两屏除状态字一处文字差异外逐像素相同，这是源码决定的（<code>rows</code> 只有第一行取 <code>maskedPhone</code>）；不要把它们当两个版式。</li>
+      <li>本页在主包但不是 Tab 页（<code>pages/register/success</code>），<code>navigationStyle:custom</code> 无原生导航栏 ⇒ <b>画 tabbar 或导航栏 = 退稿</b>。</li>
+      <li>按压态（<code>scale .98</code> + 透明度 .92）只在 §02 枚举，不进 §01 帧。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 注册成功页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（375 × 812 @ 2.273×）<br>
+  本页此前无理想效果图；上一版为 2026-09-12 注册页设计包的第 05 屏，本画板按 2026-10-26 源码实况重画并取代之。
+</footer>
+
+</div>
+</body>
+</html>

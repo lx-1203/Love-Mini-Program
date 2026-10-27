@@ -30,7 +30,7 @@ import { IMAGE_PATHS } from "../../../config/images";
 import ActivityCard from "../../../components/village/ActivityCard.vue";
 import { designTokens } from "../../../theme/tokens";
 // R4-00105：标题长度对齐后端校验（帖子模式 5-30 字），不再用 50 导致后端拒绝
-import { POST_TITLE_MAX_LENGTH } from "../../../constants/village";
+import { POST_TITLE_MAX_LENGTH, POST_MAX_LENGTH } from "../../../constants/village";
 
 const { t } = useI18n();
 const circleStore = useCircleStore();
@@ -166,8 +166,9 @@ function toggleFavorite() {
 /** 最大字数
  *  R11-L04-D09（文案 P2）：改前 500，规范 §3.14 对发布类正文的统一口径是 1000，
  *  「发布话题」比同族广场帖少一半额度、会提前截断。后端 CircleController 的
- *  content 上限是 5000（apps/api/.../discover/CircleController.java:248），1000 不越界。 */
-const MAX_LENGTH = 1000;
+ *  content 上限是 5000（apps/api/.../discover/CircleController.java:248），1000 不越界。
+ *  2026-10-26 起取共用常量，与 village 发帖/校园话题同一数。 */
+const MAX_LENGTH = POST_MAX_LENGTH;
 /** 最大图片数 */
 const MAX_IMAGES = 9;
 /** 发布成功 toast 展示后跳转返回的延时（R4-batch4：魔法数字提取） */

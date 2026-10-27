@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 附近页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌；rpx ÷ 2 = px，口径同 pages/nearby/index.vue） ===== */
+
+/* ---- 画框内的页面容器：状态栏 44px 之下起排（.nearby-home 的 paddingTop 口径） ---- */
+.nby { position: absolute; top: 44px; left: 0; right: 0; bottom: 0; padding: 12px 16px 0;
+  overflow: hidden; background: var(--c-bg-page); }
+/* R8-L02-D05：滚动后状态栏下方那块等高固定底板（navBandStyle = statusBar + 40px） */
+.nby--scrolled { padding-top: 40px; }
+
+/* ---- 页头：绿针 + 附近 / 放大镜 + 发动态（MP-R1-PAGES-NEARBY-INDEX-904 回归理想图形态） ---- */
+.nby__hdr { display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
+.nby__tgroup { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.nby__pin { width: 20px; height: 20px; flex: none; color: var(--c-brand); }
+.nby__pin--sm { width: 12px; height: 12px; }
+.nby__title { font-size: 24px; font-weight: 800; color: var(--c-text-primary); letter-spacing: -0.4px; }
+.nby__acts { display: flex; align-items: center; gap: 8px; flex: none; }
+.nby__sbtn { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  color: var(--c-text-primary); }
+.nby__sbtn svg { width: 22px; height: 22px; }
+.nby__pub { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px;
+  border-radius: var(--r-full); background: var(--c-brand-800); }
+.nby__pub span { font-size: var(--fs-sm); font-weight: 700; color: var(--c-text-inverse); }
+
+/* ---- 定位行（R8-L02-D03：整行可点，右侧带动作值） ---- */
+.nby__loc { display: flex; align-items: center; gap: 4px; margin-top: 4px; min-height: 44px; }
+.nby__loc-t { font-size: var(--fs-sm); color: var(--c-text-secondary); }
+.nby__loc-a { font-size: var(--fs-sm); font-weight: 700; color: var(--c-text-secondary); }
+
+/* ---- 五宫格（2026-10-26 对齐理想图：五块独立圆角方底板、无整体横板） ---- */
+.nby__ents { display: flex; justify-content: space-between; gap: 4px; margin: 4px 0 12px; }
+.nby__ent { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.nby__ent-ic { width: 44px; height: 44px; border-radius: var(--r-xl); background: var(--c-bg-surface);
+  display: flex; align-items: center; justify-content: center; }
+.nby__ent-ic svg { width: 22px; height: 22px; }
+.nby__ent--g { color: var(--c-brand); }
+.nby__ent--b { color: var(--c-status-info); }
+.nby__ent--o { color: var(--c-warning); }
+.nby__ent--i { color: var(--c-purple); }
+.nby__ent-lb { font-size: 11px; color: var(--c-text-secondary); white-space: nowrap; }
+
+/* ---- 统一分区件 NearbySection ---- */
+.sblk { margin-top: 16px; }
+.sblk__hd { display: flex; align-items: center; justify-content: space-between; padding: 0 2px 8px; }
+.sblk__t { font-size: 15px; font-weight: 800; color: var(--c-text-primary); }
+.sblk__more { display: flex; align-items: center; gap: 2px; color: var(--c-brand-800); }
+.sblk__more span { font-size: 13px; font-weight: 600; }
+.sblk__more i { font-size: 15px; font-weight: 600; font-style: normal; }
+
+/* ---- 分区①：分段控件 + 人卡横滑（2026-10-26 裁定 C 折中） ---- */
+.seg { display: flex; gap: 6px; }
+.seg__i { display: flex; align-items: center; justify-content: center; height: 44px; padding: 0 16px;
+  border-radius: var(--r-full); background: var(--c-bg-container); border: 1px solid var(--c-border-light); }
+.seg__i span { font-size: var(--fs-sm); font-weight: 700; color: var(--c-text-secondary); }
+.seg__i--on { background: var(--c-brand-800); border-color: var(--c-brand-800); }
+.seg__i--on span { color: var(--c-text-inverse); }
+.seg__i--press { background: var(--c-brand-50); border-color: var(--c-brand-200); }
+.ppl { display: flex; gap: 8px; margin-top: 8px; overflow: hidden; }
+.ppl__c { width: 100px; flex: none; display: flex; flex-direction: column; gap: 4px; padding: 8px;
+  border-radius: 10px; background: var(--c-bg-container); border: 1px solid var(--c-border-light); }
+.ppl__av { width: 84px; height: 84px; border-radius: 8px; overflow: hidden; flex: none;
+  background: var(--c-border-light); }
+.ppl__av i { display: block; width: 100%; height: 100%; }
+.ppl__nm { font-size: var(--fs-sm); font-weight: 700; color: var(--c-text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ppl__mt { font-size: 11px; color: var(--c-text-secondary); white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; }
+.a1 { background: linear-gradient(150deg, var(--c-brand-300), var(--c-brand-700)); }
+.a2 { background: linear-gradient(150deg, var(--c-romance-300), var(--c-romance)); }
+.a3 { background: linear-gradient(150deg, var(--c-status-info), var(--c-purple)); }
+.a4 { background: linear-gradient(150deg, var(--c-gold), var(--c-warning)); }
+.a5 { background: linear-gradient(150deg, var(--c-brand-400), var(--c-brand-800)); }
+
+/* ---- 分区②：热门兴趣圈（150×256rpx 竖版海报卡，gap 24rpx） ---- */
+.crc { display: flex; gap: 12px; overflow: hidden; }
+.crc__c { position: relative; width: 75px; height: 128px; flex: none; border-radius: 14px; overflow: hidden;
+  background: var(--c-border-light); }
+.crc__c > i { position: absolute; inset: 0; display: block; }
+.crc__sc { position: absolute; left: 0; right: 0; bottom: 0; height: 60%;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.72) 100%); }
+.crc__in { position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; flex-direction: column;
+  gap: 2px; z-index: 2; }
+.crc__nm { font-size: 13px; font-weight: 700; color: var(--c-text-inverse); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.crc__ct { font-size: 10px; color: rgba(255,255,255,0.85); white-space: nowrap; }
+.c1 { background: linear-gradient(160deg, var(--c-brand-700), var(--c-text-primary)); }
+.c2 { background: linear-gradient(160deg, var(--c-status-info), var(--c-brand-800)); }
+.c3 { background: linear-gradient(160deg, var(--c-romance), var(--c-purple)); }
+.c4 { background: linear-gradient(160deg, var(--c-warning), var(--c-romance)); }
+.c5 { background: linear-gradient(160deg, var(--c-success), var(--c-brand-800)); }
+.c6 { background: linear-gradient(160deg, var(--c-purple), var(--c-text-primary)); }
+.c7 { background: linear-gradient(160deg, var(--c-gold), var(--c-brand-800)); }
+.c8 { background: linear-gradient(160deg, var(--c-brand-400), var(--c-brand-800)); }
+
+/* ---- 分区③：校园圈 4 联竖版卡（MP-R1-PAGES-NEARBY-INDEX-906；2026-10-26 裁定只留封面/校名/城市/状态胶囊） ---- */
+.cmp { display: flex; gap: 8px; overflow: hidden; }
+.cmp__c { flex: 0 0 124px; min-width: 0; display: flex; flex-direction: column; align-items: stretch;
+  gap: 4px; padding: 6px 6px 8px; border-radius: 10px; background: var(--c-bg-container);
+  border: 1px solid var(--c-border-light); overflow: hidden; }
+.cmp__cv { width: 100%; height: 130px; border-radius: 8px; flex: none; background: var(--c-border-light); }
+.cmp__nm { font-size: 11px; font-weight: 700; color: var(--c-text-primary); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.cmp__ds { font-size: 10px; color: var(--c-text-secondary); min-height: 13px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.cmp__ch { flex: none; align-self: flex-start; padding: 3px 8px; border-radius: var(--r-full);
+  background: var(--c-brand-50); }
+.cmp__ch span { font-size: 10px; font-weight: 600; color: var(--c-brand-800); }
+/* 去认证态：源码走 --c-lavender-50 / --c-lavender-500，base 未登记 ⇒ 以同族已登记令牌近似（见 §04） */
+.cmp__ch--v { background: rgba(162, 155, 254, 0.16); }
+.cmp__ch--v span { color: var(--c-purple); }
+.g1 { background: linear-gradient(155deg, var(--c-brand-300), var(--c-brand-800)); }
+.g2 { background: linear-gradient(155deg, var(--c-status-info), var(--c-brand-700)); }
+.g3 { background: linear-gradient(155deg, var(--c-purple), var(--c-status-info)); }
+.g4 { background: linear-gradient(155deg, var(--c-gold), var(--c-romance-300)); }
+
+/* ---- 分区④：附近活动（三行入口卡） ---- */
+.act { display: flex; align-items: center; gap: 10px; padding: 12px; margin-bottom: 8px;
+  background: var(--c-bg-container); border: 1px solid var(--c-border-light); border-radius: 10px;
+  box-shadow: var(--s-card-soft); }
+.act__w { width: 36px; height: 36px; border-radius: 10px; flex: none; display: flex; align-items: center;
+  justify-content: center; /* 源码 --c-apricot-100，base 未登记 ⇒ 同值近似（见 §04） */
+  background: rgba(249, 115, 22, 0.14); color: var(--c-warning); }
+.act__w svg { width: 20px; height: 20px; }
+.act__b { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.act__t { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.act__d { font-size: 11px; color: var(--c-text-secondary); }
+.act__a { font-size: 15px; color: var(--c-text-placeholder); font-style: normal; }
+
+/* ---- 分区⑤：附近动态（PostCard 实况形态：作者行 / 正文 / 配图 / 标签 / 时间 + 三键互动栏） ---- */
+.post { background: var(--c-bg-container); border-radius: var(--r-lg); padding: 10px 12px;
+  box-shadow: var(--s-card-soft); margin-bottom: 8px; }
+.post__hd { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.post__u { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.post__av { position: relative; width: 44px; height: 44px; border-radius: var(--r-full); flex: none;
+  background: var(--c-bg-surface); overflow: hidden; }
+.post__bd { position: absolute; left: -2px; bottom: -2px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--c-bg-container); border: 1px solid var(--c-brand-200); display: flex; align-items:
+  center; justify-content: center; color: var(--c-brand-700); }
+.post__bd svg { width: 10px; height: 10px; }
+.post__info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.post__nr { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.post__nm { font-size: var(--fs-base); font-weight: 600; color: var(--c-text-primary); flex: none; }
+.post__cb { display: flex; align-items: center; gap: 2px; flex: none; max-width: 110px; padding: 1px 5px;
+  border-radius: var(--r-full); background: var(--c-bg-container); border: 1px solid var(--c-brand-300); }
+.post__cb svg { width: 10px; height: 10px; flex: none; color: var(--c-brand); }
+.post__cb span { font-size: 10px; color: var(--c-brand); overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; }
+.post__mt { font-size: 11px; color: var(--c-text-tertiary); }
+.post__fl { flex: none; padding: 4px 10px; border-radius: var(--r-full); border: 1px solid var(--c-brand-300);
+  background: var(--c-bg-container); }
+.post__fl span { font-size: 11px; font-weight: 500; color: var(--c-brand); }
+.post__tx { margin-top: 8px; font-size: var(--fs-base); line-height: 1.65; color: var(--c-text-primary); }
+.post__mg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 8px; }
+.post__mg i { display: block; aspect-ratio: 1 / 1; border-radius: var(--r-md); }
+.post__tg { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.post__tg span { padding: 3px 8px; border-radius: var(--r-full); font-size: 11px;
+  color: var(--c-brand); background: var(--c-brand-50); }
+.post__ft { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.post__tm { font-size: 11px; color: var(--c-text-tertiary); }
+.post__as { display: flex; align-items: center; gap: 8px; }
+.post__as b { display: flex; align-items: center; gap: 2px; font-weight: 400; }
+.post__as svg { width: 18px; height: 18px; color: var(--c-text-tertiary); }
+.post__as em { font-style: normal; font-size: 11px; color: var(--c-text-tertiary); }
+.m1 { background: linear-gradient(150deg, var(--c-warning), var(--c-romance)); }
+.m2 { background: linear-gradient(150deg, var(--c-brand-400), var(--c-brand-800)); }
+.m3 { background: linear-gradient(150deg, var(--c-status-info), var(--c-purple)); }
+
+/* ---- 分区空态 / 登录门态（.nearby-home__empty 家族） ---- */
+.emp { padding: 20px 0; display: flex; align-items: center; justify-content: center; }
+.emp--g { gap: 10px; }
+.emp__t { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.emp__a { flex: none; padding: 5px 14px; border-radius: var(--r-full); background: var(--c-brand); }
+.emp__a span { font-size: var(--fs-sm); font-weight: 700; color: var(--c-text-inverse); }
+/* 分区⑤未登录引导卡（.nearby-login-guide） */
+.lgc { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 12px;
+  border-radius: 10px; background: var(--c-bg-container); border: 1px solid var(--c-border-light);
+  box-shadow: var(--s-card-soft); }
+.lgc__t { flex: 1; min-width: 0; font-size: var(--fs-sm); color: var(--c-text-secondary); line-height: 1.5; }
+.lgc__b { flex: none; display: flex; align-items: center; justify-content: center; min-height: 44px;
+  padding: 0 16px; border-radius: var(--r-full); background: var(--c-brand-800); }
+.lgc__b span { font-size: var(--fs-sm); font-weight: 700; color: var(--c-text-inverse); }
+/* SkeletonBlock variant="list" */
+.sk { padding: 20px 0; display: flex; align-items: center; justify-content: center; }
+.sk__c { display: flex; align-items: center; gap: 6px; padding: 12px; border-radius: var(--r-lg);
+  background: var(--c-bg-container); box-shadow: var(--s-card-soft); }
+.sk__av { width: 44px; height: 44px; border-radius: 50%; flex: none; background: var(--c-bg-surface); }
+.sk__ls { display: flex; flex-direction: column; gap: 6px; width: 180px; }
+.sk__l { height: 8px; border-radius: 4px; background: var(--c-bg-surface); }
+/* 本页题注外的裁切带：实况 custom-tab-bar 是实色白底，画框内不得透出被裁掉的正文 */
+.nby-tab { background: var(--c-bg-container); }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 描边风格；base 已全局 svg{fill:none;stroke:currentColor}） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 2.2c-4 0-7.2 3.1-7.2 7 0 5.1 6.2 12 7.2 12s7.2-6.9 7.2-12c0-3.9-3.2-7-7.2-7z"/><circle cx="12" cy="9.2" r="2.7"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.6"/><path d="M16 16l4.4 4.4"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M3.4 19.4c.4-3.1 2.8-5 5.6-5s5.2 1.9 5.6 5"/><circle cx="17" cy="9.2" r="2.6"/><path d="M15.6 14.6c2.4.2 4.2 1.9 4.6 4.4"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.8 4.6 5.6v6c0 4.4 3 7.9 7.4 9.6 4.4-1.7 7.4-5.2 7.4-9.6v-6z"/><path d="M8.6 11.9l2.5 2.5 4.4-4.9"/></symbol>
+  <symbol id="i-cap" viewBox="0 0 24 24"><path d="M12 3.6 2.8 7.8 12 12l9.2-4.2z"/><path d="M6.4 9.8v5.1c0 1.8 2.5 3.2 5.6 3.2s5.6-1.4 5.6-3.2V9.8"/><path d="M21.2 7.8v6.1"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24"><path d="M3.6 11.4h16.8v9.2a1.4 1.4 0 0 1-1.4 1.4H5a1.4 1.4 0 0 1-1.4-1.4z"/><path d="M2.6 7.6h18.8v3.8H2.6z"/><path d="M12 7.6v14.4"/><path d="M12 7.6C10.6 4.4 9 3.2 7.4 3.9c-1.6.7-1.4 3 1.2 3.7z"/><path d="M12 7.6c1.4-3.2 3-4.4 4.6-3.7 1.6.7 1.4 3-1.2 3.7z"/></symbol>
+  <symbol id="i-user-plus" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.6"/><path d="M3.8 20c.4-3.4 3-5.6 6.2-5.6 1.1 0 2.1.2 3 .6"/><path d="M18 13.6v6.4M14.8 16.8h6.4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5.4v13.2M5.4 12h13.2"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.6 12 4l8 6.6V20a.9.9 0 0 1-.9.9h-4.3v-6.2H9.2v6.2H4.9A.9.9 0 0 1 4 20z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.2s-7.4-4.6-7.4-9.5A4.1 4.1 0 0 1 12 8.2a4.1 4.1 0 0 1 7.4 2.5c0 4.9-7.4 9.5-7.4 9.5z"/></symbol>
+  <symbol id="i-heart-plus" viewBox="0 0 24 24"><path d="M12 20.2s-7.4-4.6-7.4-9.5A4.1 4.1 0 0 1 12 8.2a4.1 4.1 0 0 1 7.4 2.5c0 4.9-7.4 9.5-7.4 9.5z"/><path d="M18.4 3.2v3.4M16.7 4.9h3.4"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M20.4 12.4c0 3.9-3.8 7-8.4 7-1 0-2-.1-2.9-.4l-4.7 1.6 1.5-3.9a6.5 6.5 0 0 1-1.9-4.3c0-3.9 3.8-7 8.4-7s8 3.1 8 7z"/><path d="M8.6 12h.01M12 12h.01M15.4 12h.01"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.8"/><path d="M4.8 20.4c.6-3.9 3.6-6.2 7.2-6.2s6.6 2.3 7.2 6.2"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20.4 12.4c0 3.9-3.8 7-8.4 7-1 0-2-.1-2.9-.4l-4.7 1.6 1.5-3.9a6.5 6.5 0 0 1-1.9-4.3c0-3.9 3.8-7 8.4-7s8 3.1 8 7z"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6.6 3.6h10.8v17.2L12 16.9l-5.4 3.9z"/></symbol>
+  <symbol id="i-school-sm" viewBox="0 0 24 24"><path d="M12 3.6 2.8 7.8 12 12l9.2-4.2z"/><path d="M6.4 9.8v5.1c0 1.8 2.5 3.2 5.6 3.2s5.6-1.4 5.6-3.2V9.8"/></symbol>
+  <symbol id="i-fire" viewBox="0 0 24 24"><path d="M12 21c3.6 0 6.2-2.4 6.2-5.8 0-4.2-4-5.6-4-9.4-2.6 1-3.4 3-3.4 4.8-1-.6-1.6-1.6-1.6-2.8C7.2 9.2 5.8 11.6 5.8 15.2 5.8 18.6 8.4 21 12 21z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>附近页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">pages/nearby/index</code>。
+     本页此前只有理想效果图 <code style="font-family:var(--mono);font-size:12.5px">附近的首页.png</code>、没有画板基准。
+     2026-10-26 产品裁定选 C 折中并已实施：五宫格下的两张全宽入口卡删除、整屏列表出口移到分区头「全部」、
+     分段标签改「按距离 / 同城」，同时保留「附近的人」与「附近活动」两个理想图里不存在的分区。
+     因此本画板<strong>以裁定后的实况为准</strong>，理想图降为历史参照——它仍是本页的永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>pages/nearby/index</b></span>
+    <span>主包页 <b>有 tabbar（选中「附近」）</b></span>
+    <span>状态 <b>6 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无画板，理想图已降为历史参照</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 6 屏</h2>
+    <p>正常态两屏 / 游客登录门态 / 热门兴趣圈空态 / 附近的人失败态 / 附近的人同城段</p></div>
+  <div class="sec__sub">分区顺序按 2026-10-26 裁定后的实况：定位行 → 五宫格 → 附近的人 → 热门兴趣圈 → 校园圈 → 附近活动 → 附近动态。
+    本页状态机有 4 组分支，逐条来自 <code>pages/nearby/index.vue</code> 模板的 <code>v-if</code> / <code>v-else-if</code> 链：
+    分区① <code>protectedBlocked</code> → <code>peopleLoading &amp;&amp; peoplePreview.length === 0</code> →
+    <code>peoplePreview.length === 0</code>（内含 <code>peopleFailed</code> 三元）→ 人卡横滑；
+    分区② <code>circleStore.loading &amp;&amp; hotCircles.length === 0</code> →
+    <code>hotCircles.length === 0 &amp;&amp; protectedBlocked</code> → <code>hotCircles.length === 0</code> → 圈卡横滑；
+    分区④ <code>activityStore.loading / errorMessage / activities.length === 0 &amp;&amp; protectedBlocked / activitiesEmpty</code>；
+    分区⑤ <code>!sessionStore.isLoggedIn</code> → 登录引导卡。<br>
+    帧即视口：每屏 375 × 812，超出部分裁掉，被裁掉什么只写在画框题注 <code>.d</code> 里，画面内零注记。
+    整页正文高于一个视口，故正常态占两屏（F01 未滚动首屏、F02 下段视口），与实况取景
+    <code>附近首页-1-top</code> / <code>附近首页-2-bottom</code> 同一对位关系。</div>
+
+  <div class="frames">
+
+    <!-- ============ F01 正常态 · 首屏 ============ -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">正常态 · 未滚动首屏</span><span class="d">底缘切在「校园圈」封面卡上缘 · ③④⑤见 F02</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="nby">
+          <!-- 页头 -->
+          <div class="nby__hdr">
+            <div class="nby__tgroup"><svg class="nby__pin ico--fill"><use href="#i-pin"/></svg><span class="nby__title">附近</span></div>
+            <div class="nby__acts">
+              <span class="nby__sbtn"><svg><use href="#i-search"/></svg></span>
+              <span class="nby__pub"><span>发动态</span></span>
+            </div>
+          </div>
+          <!-- 定位行（有值态：· 切换城市 ›） -->
+          <div class="nby__loc">
+            <svg class="nby__pin nby__pin--sm ico--fill"><use href="#i-pin"/></svg>
+            <span class="nby__loc-t">北京大学</span>
+            <span class="nby__loc-a">· 切换城市 ›</span>
+          </div>
+          <!-- 五宫格 -->
+          <div class="nby__ents">
+            <div class="nby__ent nby__ent--g"><span class="nby__ent-ic"><svg><use href="#i-users"/></svg></span><span class="nby__ent-lb">附近的人</span></div>
+            <div class="nby__ent nby__ent--g"><span class="nby__ent-ic"><svg><use href="#i-shield"/></svg></span><span class="nby__ent-lb">兴趣圈</span></div>
+            <div class="nby__ent nby__ent--b"><span class="nby__ent-ic"><svg><use href="#i-cap"/></svg></span><span class="nby__ent-lb">校园圈</span></div>
+            <div class="nby__ent nby__ent--o"><span class="nby__ent-ic"><svg><use href="#i-gift"/></svg></span><span class="nby__ent-lb">活动</span></div>
+            <div class="nby__ent nby__ent--i"><span class="nby__ent-ic"><svg><use href="#i-user-plus"/></svg></span><span class="nby__ent-lb">我的人脉</span></div>
+          </div>
+          <!-- ① 附近的人 -->
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">附近的人</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="seg">
+              <span class="seg__i seg__i--on"><span>按距离</span></span>
+              <span class="seg__i"><span>同城</span></span>
+            </div>
+            <div class="ppl">
+              <div class="ppl__c"><span class="ppl__av"><i class="a1"></i></span><span class="ppl__nm">小满</span><span class="ppl__mt">2.1km</span></div>
+              <div class="ppl__c"><span class="ppl__av"><i class="a3"></i></span><span class="ppl__nm">阿辰</span><span class="ppl__mt">3.5km</span></div>
+              <div class="ppl__c"><span class="ppl__av"><i class="a4"></i></span><span class="ppl__nm">小溪</span><span class="ppl__mt">0.5km</span></div>
+              <div class="ppl__c"><span class="ppl__av"><i class="a2"></i></span><span class="ppl__nm">周岚</span><span class="ppl__mt">2.4km</span></div>
+              <div class="ppl__c"><span class="ppl__av"><i class="a5"></i></span><span class="ppl__nm">星辰</span><span class="ppl__mt">4.2km</span></div>
+            </div>
+          </div>
+          <!-- ② 热门兴趣圈 -->
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">热门兴趣圈</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="crc">
+              <div class="crc__c"><i class="c1"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">摄影</span><span class="crc__ct">1.2w 人加入</span></span></div>
+              <div class="crc__c"><i class="c2"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">旅行</span><span class="crc__ct">8932 人加入</span></span></div>
+              <div class="crc__c"><i class="c3"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">音乐</span><span class="crc__ct">8123 人加入</span></span></div>
+              <div class="crc__c"><i class="c4"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">运动</span><span class="crc__ct">6532 人加入</span></span></div>
+              <div class="crc__c"><i class="c5"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">美食</span><span class="crc__ct">7240 人加入</span></span></div>
+            </div>
+          </div>
+          <!-- ③ 校园圈（本屏被视口裁切） -->
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">校园圈</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="cmp">
+              <div class="cmp__c"><span class="cmp__cv g1"></span><span class="cmp__nm">北京大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>已加入</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g2"></span><span class="cmp__nm">清华大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g3"></span><span class="cmp__nm">中国人民大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g4"></span><span class="cmp__nm">复旦大学</span><span class="cmp__ds">上海</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+            </div>
+          </div>
+        </div>
+        <span class="fab"><svg><use href="#i-plus"/></svg></span>
+        <div class="tabbar nby-tab">
+          <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+          <div class="tabbar__i tabbar__i--on"><svg><use href="#i-pin"/></svg>附近</div>
+          <div class="tabbar__i"><svg><use href="#i-heart-plus"/></svg>匹配</div>
+          <div class="tabbar__i"><svg><use href="#i-msg"/></svg>消息</div>
+          <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- ============ F02 正常态 · 下段视口 ============ -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">正常态 · 下段视口</span><span class="d">顶缘起于「校园圈」分区头 · 底缘切在首条动态正文内</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <!-- 滚动后：页头升入 nav-band 之下，状态栏下方只剩实色底板带（R8-L02-D05） -->
+        <div class="nby nby--scrolled">
+          <!-- ③ 校园圈 -->
+          <div class="sblk" style="margin-top:0">
+            <div class="sblk__hd"><span class="sblk__t">校园圈</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="cmp">
+              <div class="cmp__c"><span class="cmp__cv g1"></span><span class="cmp__nm">北京大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>已加入</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g2"></span><span class="cmp__nm">清华大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g3"></span><span class="cmp__nm">中国人民大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g4"></span><span class="cmp__nm">复旦大学</span><span class="cmp__ds">上海</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+            </div>
+          </div>
+          <!-- ④ 附近活动 -->
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">附近活动</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="act">
+              <span class="act__w"><svg><use href="#i-fire"/></svg></span>
+              <span class="act__b"><span class="act__t">图书馆南门咖啡散步</span><span class="act__d">南门咖啡馆</span></span>
+              <i class="act__a">›</i>
+            </div>
+            <div class="act">
+              <span class="act__w"><svg><use href="#i-fire"/></svg></span>
+              <span class="act__b"><span class="act__t">电影社轻松线下碰面</span><span class="act__d">影像楼 B 厅</span></span>
+              <i class="act__a">›</i>
+            </div>
+            <div class="act">
+              <span class="act__w"><svg><use href="#i-fire"/></svg></span>
+              <span class="act__b"><span class="act__t">周末篮球友谊赛</span><span class="act__d">体育馆</span></span>
+              <i class="act__a">›</i>
+            </div>
+          </div>
+          <!-- ⑤ 附近动态 -->
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">附近动态</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="post">
+              <div class="post__hd">
+                <div class="post__u">
+                  <span class="post__av"><i class="a1" style="display:block;width:100%;height:100%"></i>
+                    <span class="post__bd"><svg><use href="#i-cap"/></svg></span></span>
+                  <span class="post__info">
+                    <span class="post__nr"><span class="post__nm">小满</span>
+                      <span class="post__cb"><svg><use href="#i-school-sm"/></svg><span>北京大学</span></span></span>
+                    <span class="post__mt">21岁 · 北京 · 本科</span>
+                  </span>
+                </div>
+                <span class="post__fl"><span>关注</span></span>
+              </div>
+              <div class="post__tx">今天在图书馆自习到傍晚，窗外的日落把整面墙都染橙了，光影太治愈了～</div>
+              <div class="post__mg"><i class="m1"></i><i class="m2"></i><i class="m3"></i></div>
+              <div class="post__tg"><span>#校园日常</span><span>#摄影</span></div>
+              <div class="post__ft">
+                <span class="post__tm">9 分钟前</span>
+                <span class="post__as">
+                  <b><svg><use href="#i-chat"/></svg><em>24</em></b>
+                  <b><svg><use href="#i-heart"/></svg><em>128</em></b>
+                  <b><svg><use href="#i-bookmark"/></svg></b>
+                </span>
+              </div>
+            </div>
+            <div class="post">
+              <div class="post__hd">
+                <div class="post__u">
+                  <span class="post__av"><i class="a5" style="display:block;width:100%;height:100%"></i></span>
+                  <span class="post__info">
+                    <span class="post__nr"><span class="post__nm">星辰</span>
+                      <span class="post__cb"><svg><use href="#i-school-sm"/></svg><span>中国人民大学</span></span></span>
+                    <span class="post__mt">23岁 · 北京 · 硕士</span>
+                  </span>
+                </div>
+                <span class="post__fl"><span>关注</span></span>
+              </div>
+              <div class="post__tx">四楼的长桌那个位置正好对着电梯，闭馆音乐响起来的时候整层人开始收拾书包，有点舍不得。</div>
+              <div class="post__mg"><i class="m2"></i></div>
+            </div>
+          </div>
+        </div>
+        <span class="fab"><svg><use href="#i-plus"/></svg></span>
+        <div class="tabbar nby-tab">
+          <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+          <div class="tabbar__i tabbar__i--on"><svg><use href="#i-pin"/></svg>附近</div>
+          <div class="tabbar__i"><svg><use href="#i-heart-plus"/></svg>匹配</div>
+          <div class="tabbar__i"><svg><use href="#i-msg"/></svg>消息</div>
+          <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- ============ F03 游客登录门态 ============ -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">游客 · 受保护源被登录门拦下</span><span class="d">①②④换引导态 · 底缘切在「校园圈」卡底</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="nby">
+          <div class="nby__hdr">
+            <div class="nby__tgroup"><svg class="nby__pin ico--fill"><use href="#i-pin"/></svg><span class="nby__title">附近</span></div>
+            <div class="nby__acts">
+              <span class="nby__sbtn"><svg><use href="#i-search"/></svg></span>
+              <span class="nby__pub"><span>发动态</span></span>
+            </div>
+          </div>
+          <!-- 游客无 session.campusName、定位未回填 ⇒ locationIsEmpty 真分支 -->
+          <div class="nby__loc">
+            <svg class="nby__pin nby__pin--sm ico--fill"><use href="#i-pin"/></svg>
+            <span class="nby__loc-t">暂无位置信息</span>
+            <span class="nby__loc-a">· 重试 ›</span>
+          </div>
+          <div class="nby__ents">
+            <div class="nby__ent nby__ent--g"><span class="nby__ent-ic"><svg><use href="#i-users"/></svg></span><span class="nby__ent-lb">附近的人</span></div>
+            <div class="nby__ent nby__ent--g"><span class="nby__ent-ic"><svg><use href="#i-shield"/></svg></span><span class="nby__ent-lb">兴趣圈</span></div>
+            <div class="nby__ent nby__ent--b"><span class="nby__ent-ic"><svg><use href="#i-cap"/></svg></span><span class="nby__ent-lb">校园圈</span></div>
+            <div class="nby__ent nby__ent--o"><span class="nby__ent-ic"><svg><use href="#i-gift"/></svg></span><span class="nby__ent-lb">活动</span></div>
+            <div class="nby__ent nby__ent--i"><span class="nby__ent-ic"><svg><use href="#i-user-plus"/></svg></span><span class="nby__ent-lb">我的人脉</span></div>
+          </div>
+          <!-- ① 附近的人：分段仍在（切段本身不需要登录），内容区换引导行 -->
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">附近的人</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="seg">
+              <span class="seg__i seg__i--on"><span>按距离</span></span>
+              <span class="seg__i"><span>同城</span></span>
+            </div>
+            <div class="emp emp--g"><span class="emp__t">登录后可查看更多内容</span><span class="emp__a"><span>去登录</span></span></div>
+          </div>
+          <!-- ② 热门兴趣圈：同引导行 -->
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">热门兴趣圈</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="emp emp--g"><span class="emp__t">登录后可查看更多内容</span><span class="emp__a"><span>去登录</span></span></div>
+          </div>
+          <!-- ③ 校园圈：公开端点，照常出卡；campusChipKey 未登录恒「公开浏览」 -->
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">校园圈</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="cmp">
+              <div class="cmp__c"><span class="cmp__cv g1"></span><span class="cmp__nm">北京大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g2"></span><span class="cmp__nm">清华大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g3"></span><span class="cmp__nm">中国人民大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g4"></span><span class="cmp__nm">复旦大学</span><span class="cmp__ds">上海</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+            </div>
+          </div>
+          <!-- ④ 附近活动：引导行（本屏被视口裁切，形态同②） -->
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">附近活动</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="emp emp--g"><span class="emp__t">登录后可查看更多内容</span><span class="emp__a"><span>去登录</span></span></div>
+          </div>
+          <!-- ⑤ 附近动态：.nearby-login-guide 卡片（文案 apiErrors.loginRequired） -->
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">附近动态</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="lgc"><span class="lgc__t">请先登录后再使用该功能</span><span class="lgc__b"><span>去登录</span></span></div>
+          </div>
+        </div>
+        <span class="fab"><svg><use href="#i-plus"/></svg></span>
+        <div class="tabbar nby-tab">
+          <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+          <div class="tabbar__i tabbar__i--on"><svg><use href="#i-pin"/></svg>附近</div>
+          <div class="tabbar__i"><svg><use href="#i-heart-plus"/></svg>匹配</div>
+          <div class="tabbar__i"><svg><use href="#i-msg"/></svg>消息</div>
+          <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- ============ F04 热门兴趣圈空态 ============ -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">热门兴趣圈 · 真实取回为空</span><span class="d">已登录（非门态）· 底缘切在「校园圈」卡名行处</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="nby">
+          <div class="nby__hdr">
+            <div class="nby__tgroup"><svg class="nby__pin ico--fill"><use href="#i-pin"/></svg><span class="nby__title">附近</span></div>
+            <div class="nby__acts">
+              <span class="nby__sbtn"><svg><use href="#i-search"/></svg></span>
+              <span class="nby__pub"><span>发动态</span></span>
+            </div>
+          </div>
+          <div class="nby__loc">
+            <svg class="nby__pin nby__pin--sm ico--fill"><use href="#i-pin"/></svg>
+            <span class="nby__loc-t">北京大学</span>
+            <span class="nby__loc-a">· 切换城市 ›</span>
+          </div>
+          <div class="nby__ents">
+            <div class="nby__ent nby__ent--g"><span class="nby__ent-ic"><svg><use href="#i-users"/></svg></span><span class="nby__ent-lb">附近的人</span></div>
+            <div class="nby__ent nby__ent--g"><span class="nby__ent-ic"><svg><use href="#i-shield"/></svg></span><span class="nby__ent-lb">兴趣圈</span></div>
+            <div class="nby__ent nby__ent--b"><span class="nby__ent-ic"><svg><use href="#i-cap"/></svg></span><span class="nby__ent-lb">校园圈</span></div>
+            <div class="nby__ent nby__ent--o"><span class="nby__ent-ic"><svg><use href="#i-gift"/></svg></span><span class="nby__ent-lb">活动</span></div>
+            <div class="nby__ent nby__ent--i"><span class="nby__ent-ic"><svg><use href="#i-user-plus"/></svg></span><span class="nby__ent-lb">我的人脉</span></div>
+          </div>
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">附近的人</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="seg">
+              <span class="seg__i seg__i--on"><span>按距离</span></span>
+              <span class="seg__i"><span>同城</span></span>
+            </div>
+            <div class="ppl">
+              <div class="ppl__c"><span class="ppl__av"><i class="a1"></i></span><span class="ppl__nm">小满</span><span class="ppl__mt">2.1km</span></div>
+              <div class="ppl__c"><span class="ppl__av"><i class="a3"></i></span><span class="ppl__nm">阿辰</span><span class="ppl__mt">3.5km</span></div>
+              <div class="ppl__c"><span class="ppl__av"><i class="a4"></i></span><span class="ppl__nm">小溪</span><span class="ppl__mt">0.5km</span></div>
+              <div class="ppl__c"><span class="ppl__av"><i class="a2"></i></span><span class="ppl__nm">周岚</span><span class="ppl__mt">2.4km</span></div>
+              <div class="ppl__c"><span class="ppl__av"><i class="a5"></i></span><span class="ppl__nm">星辰</span><span class="ppl__mt">4.2km</span></div>
+            </div>
+          </div>
+          <!-- 本屏主角：hotCircles.length === 0 && !protectedBlocked ⇒ 纯文案空态，无动作钮 -->
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">热门兴趣圈</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="emp"><span class="emp__t">暂无热门兴趣圈</span></div>
+          </div>
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">校园圈</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="cmp">
+              <div class="cmp__c"><span class="cmp__cv g1"></span><span class="cmp__nm">北京大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>已加入</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g2"></span><span class="cmp__nm">清华大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g3"></span><span class="cmp__nm">中国人民大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g4"></span><span class="cmp__nm">复旦大学</span><span class="cmp__ds">上海</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+            </div>
+          </div>
+        </div>
+        <span class="fab"><svg><use href="#i-plus"/></svg></span>
+        <div class="tabbar nby-tab">
+          <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+          <div class="tabbar__i tabbar__i--on"><svg><use href="#i-pin"/></svg>附近</div>
+          <div class="tabbar__i"><svg><use href="#i-heart-plus"/></svg>匹配</div>
+          <div class="tabbar__i"><svg><use href="#i-msg"/></svg>消息</div>
+          <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- ============ F05 附近的人 · 取数失败态 ============ -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">附近的人 · 取数失败</span><span class="d">peopleFailed 真分支 · 底缘切在「校园圈」卡名行处</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="nby">
+          <div class="nby__hdr">
+            <div class="nby__tgroup"><svg class="nby__pin ico--fill"><use href="#i-pin"/></svg><span class="nby__title">附近</span></div>
+            <div class="nby__acts">
+              <span class="nby__sbtn"><svg><use href="#i-search"/></svg></span>
+              <span class="nby__pub"><span>发动态</span></span>
+            </div>
+          </div>
+          <div class="nby__loc">
+            <svg class="nby__pin nby__pin--sm ico--fill"><use href="#i-pin"/></svg>
+            <span class="nby__loc-t">北京大学</span>
+            <span class="nby__loc-a">· 切换城市 ›</span>
+          </div>
+          <div class="nby__ents">
+            <div class="nby__ent nby__ent--g"><span class="nby__ent-ic"><svg><use href="#i-users"/></svg></span><span class="nby__ent-lb">附近的人</span></div>
+            <div class="nby__ent nby__ent--g"><span class="nby__ent-ic"><svg><use href="#i-shield"/></svg></span><span class="nby__ent-lb">兴趣圈</span></div>
+            <div class="nby__ent nby__ent--b"><span class="nby__ent-ic"><svg><use href="#i-cap"/></svg></span><span class="nby__ent-lb">校园圈</span></div>
+            <div class="nby__ent nby__ent--o"><span class="nby__ent-ic"><svg><use href="#i-gift"/></svg></span><span class="nby__ent-lb">活动</span></div>
+            <div class="nby__ent nby__ent--i"><span class="nby__ent-ic"><svg><use href="#i-user-plus"/></svg></span><span class="nby__ent-lb">我的人脉</span></div>
+          </div>
+          <!-- 本屏主角：peoplePreview 空 + peopleFailed ⇒ nearby.loadFailed + 重试 -->
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">附近的人</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="seg">
+              <span class="seg__i seg__i--on"><span>按距离</span></span>
+              <span class="seg__i"><span>同城</span></span>
+            </div>
+            <div class="emp emp--g"><span class="emp__t">附近的人加载失败</span><span class="emp__a"><span>重试</span></span></div>
+          </div>
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">热门兴趣圈</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="crc">
+              <div class="crc__c"><i class="c1"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">摄影</span><span class="crc__ct">1.2w 人加入</span></span></div>
+              <div class="crc__c"><i class="c2"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">旅行</span><span class="crc__ct">8932 人加入</span></span></div>
+              <div class="crc__c"><i class="c3"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">音乐</span><span class="crc__ct">8123 人加入</span></span></div>
+              <div class="crc__c"><i class="c4"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">运动</span><span class="crc__ct">6532 人加入</span></span></div>
+              <div class="crc__c"><i class="c5"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">美食</span><span class="crc__ct">7240 人加入</span></span></div>
+            </div>
+          </div>
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">校园圈</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="cmp">
+              <div class="cmp__c"><span class="cmp__cv g1"></span><span class="cmp__nm">北京大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>已加入</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g2"></span><span class="cmp__nm">清华大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g3"></span><span class="cmp__nm">中国人民大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g4"></span><span class="cmp__nm">复旦大学</span><span class="cmp__ds">上海</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+            </div>
+          </div>
+        </div>
+        <span class="fab"><svg><use href="#i-plus"/></svg></span>
+        <div class="tabbar nby-tab">
+          <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+          <div class="tabbar__i tabbar__i--on"><svg><use href="#i-pin"/></svg>附近</div>
+          <div class="tabbar__i"><svg><use href="#i-heart-plus"/></svg>匹配</div>
+          <div class="tabbar__i"><svg><use href="#i-msg"/></svg>消息</div>
+          <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- ============ F06 附近的人 · 同城段 ============ -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">附近的人 · 同城段选中</span><span class="d">人卡次行换后端 campusName · 底缘切在「校园圈」封面卡上缘</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="nby">
+          <div class="nby__hdr">
+            <div class="nby__tgroup"><svg class="nby__pin ico--fill"><use href="#i-pin"/></svg><span class="nby__title">附近</span></div>
+            <div class="nby__acts">
+              <span class="nby__sbtn"><svg><use href="#i-search"/></svg></span>
+              <span class="nby__pub"><span>发动态</span></span>
+            </div>
+          </div>
+          <div class="nby__loc">
+            <svg class="nby__pin nby__pin--sm ico--fill"><use href="#i-pin"/></svg>
+            <span class="nby__loc-t">北京</span>
+            <span class="nby__loc-a">· 切换城市 ›</span>
+          </div>
+          <div class="nby__ents">
+            <div class="nby__ent nby__ent--g"><span class="nby__ent-ic"><svg><use href="#i-users"/></svg></span><span class="nby__ent-lb">附近的人</span></div>
+            <div class="nby__ent nby__ent--g"><span class="nby__ent-ic"><svg><use href="#i-shield"/></svg></span><span class="nby__ent-lb">兴趣圈</span></div>
+            <div class="nby__ent nby__ent--b"><span class="nby__ent-ic"><svg><use href="#i-cap"/></svg></span><span class="nby__ent-lb">校园圈</span></div>
+            <div class="nby__ent nby__ent--o"><span class="nby__ent-ic"><svg><use href="#i-gift"/></svg></span><span class="nby__ent-lb">活动</span></div>
+            <div class="nby__ent nby__ent--i"><span class="nby__ent-ic"><svg><use href="#i-user-plus"/></svg></span><span class="nby__ent-lb">我的人脉</span></div>
+          </div>
+          <!-- 本屏主角：peopleScope==='city' ⇒ personMetaText 优先返回后端 campusName -->
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">附近的人</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="seg">
+              <span class="seg__i"><span>按距离</span></span>
+              <span class="seg__i seg__i--on"><span>同城</span></span>
+            </div>
+            <div class="ppl">
+              <div class="ppl__c"><span class="ppl__av"><i class="a1"></i></span><span class="ppl__nm">小满</span><span class="ppl__mt">浙江大学</span></div>
+              <div class="ppl__c"><span class="ppl__av"><i class="a3"></i></span><span class="ppl__nm">阿辰</span><span class="ppl__mt">复旦大学</span></div>
+              <div class="ppl__c"><span class="ppl__av"><i class="a4"></i></span><span class="ppl__nm">小溪</span><span class="ppl__mt">南京大学</span></div>
+              <div class="ppl__c"><span class="ppl__av"><i class="a2"></i></span><span class="ppl__nm">周岚</span><span class="ppl__mt">上海交通大学</span></div>
+              <div class="ppl__c"><span class="ppl__av"><i class="a5"></i></span><span class="ppl__nm">星辰</span><span class="ppl__mt">武汉大学</span></div>
+            </div>
+          </div>
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">热门兴趣圈</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="crc">
+              <div class="crc__c"><i class="c1"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">摄影</span><span class="crc__ct">1.2w 人加入</span></span></div>
+              <div class="crc__c"><i class="c2"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">旅行</span><span class="crc__ct">8932 人加入</span></span></div>
+              <div class="crc__c"><i class="c3"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">音乐</span><span class="crc__ct">8123 人加入</span></span></div>
+              <div class="crc__c"><i class="c4"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">运动</span><span class="crc__ct">6532 人加入</span></span></div>
+              <div class="crc__c"><i class="c5"></i><span class="crc__sc"></span><span class="crc__in"><span class="crc__nm">美食</span><span class="crc__ct">7240 人加入</span></span></div>
+            </div>
+          </div>
+          <div class="sblk">
+            <div class="sblk__hd"><span class="sblk__t">校园圈</span>
+              <span class="sblk__more"><span>全部</span><i>›</i></span></div>
+            <div class="cmp">
+              <div class="cmp__c"><span class="cmp__cv g1"></span><span class="cmp__nm">北京大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>已加入</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g2"></span><span class="cmp__nm">清华大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g3"></span><span class="cmp__nm">中国人民大学</span><span class="cmp__ds">北京</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+              <div class="cmp__c"><span class="cmp__cv g4"></span><span class="cmp__nm">复旦大学</span><span class="cmp__ds">上海</span><span class="cmp__ch"><span>公开浏览</span></span></div>
+            </div>
+          </div>
+        </div>
+        <span class="fab"><svg><use href="#i-plus"/></svg></span>
+        <div class="tabbar nby-tab">
+          <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+          <div class="tabbar__i tabbar__i--on"><svg><use href="#i-pin"/></svg>附近</div>
+          <div class="tabbar__i"><svg><use href="#i-heart-plus"/></svg>匹配</div>
+          <div class="tabbar__i"><svg><use href="#i-msg"/></svg>消息</div>
+          <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页五类交互件。分段控件与状态胶囊都是 2026-10-26 裁定的落点，
+    状态数与 <code>pages/nearby/index.vue</code> 的三元分支逐条对应，多画一档 = 伪造状态，少画一档 = 基准失效。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>「附近的人」分段 · 三项 × 三态</h3>
+      <p class="hint">标签文案逐字取 <code>nearby.peopleScopeNearby</code>「按距离」/ <code>nearby.peopleScopeCity</code>「同城」
+        （规范 §3.5 口径：分段项只描述范围，不复述分区名）。选中面走 <code>--c-brand-800</code>，白字 6.45:1。
+        源码无 disabled 分支，故不画禁用态。</p>
+      <div class="row">
+        <div class="cell"><div class="seg"><span class="seg__i"><span>按距离</span></span></div><span class="lab">未选中</span></div>
+        <div class="cell"><div class="seg"><span class="seg__i seg__i--on"><span>按距离</span></span></div><span class="lab">选中（默认）</span></div>
+        <div class="cell"><div class="seg"><span class="seg__i seg__i--press"><span>按距离</span></span></div><span class="lab">hover-class 按下</span></div>
+        <div class="cell"><div class="seg"><span class="seg__i"><span>同城</span></span><span class="seg__i seg__i--on"><span>同城</span></span></div><span class="lab">切段后整组</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>人卡 · 两段的次行口径 + 骨架 / 空 / 失败</h3>
+      <p class="hint"><code>personMetaText()</code>：按距离段 = 后端 <code>distanceText</code>（纯数字自动补 km）；
+        同城段优先 = 后端 <code>campusName</code>。后端没给的就留空，不拼假值。</p>
+      <div class="row">
+        <div class="cell"><div class="ppl" style="margin-top:0"><div class="ppl__c"><span class="ppl__av"><i class="a1"></i></span><span class="ppl__nm">小满</span><span class="ppl__mt">2.1km</span></div></div><span class="lab">按距离段</span></div>
+        <div class="cell"><div class="ppl" style="margin-top:0"><div class="ppl__c"><span class="ppl__av"><i class="a1"></i></span><span class="ppl__nm">小满</span><span class="ppl__mt">浙江大学</span></div></div><span class="lab">同城段</span></div>
+        <div class="cell"><div class="sk" style="padding:0"><div class="sk__c"><span class="sk__av"></span><span class="sk__ls"><span class="sk__l" style="width:60px"></span><span class="sk__l" style="width:110px"></span></span></div></div><span class="lab">loading · SkeletonBlock list/1</span></div>
+        <div class="cell"><div class="emp emp--g" style="padding:0"><span class="emp__t">附近暂时没有新的人</span><span class="emp__a"><span>重试</span></span></div><span class="lab">空态（peopleFailed 假）</span></div>
+        <div class="cell"><div class="emp emp--g" style="padding:0"><span class="emp__t">附近的人加载失败</span><span class="emp__a"><span>重试</span></span></div><span class="lab">失败态（peopleFailed 真）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>校园圈状态胶囊 · 三态</h3>
+      <p class="hint">判定唯一走 <code>campusChipKey(schoolName)</code>：未登录 / 非本校 → 公开浏览；
+        本校已认证 → 已加入；本校未认证 → 去认证。同一屏内「去认证」最多一枚，其余必为公开浏览。</p>
+      <div class="row">
+        <div class="cell"><span class="cmp__ch"><span>已加入</span></span><span class="lab">本校 · 已认证（浅绿）</span></div>
+        <div class="cell"><span class="cmp__ch cmp__ch--v"><span>去认证</span></span><span class="lab">本校 · 未认证（浅紫）</span></div>
+        <div class="cell"><span class="cmp__ch"><span>公开浏览</span></span><span class="lab">非本校 / 游客（浅绿）</span></div>
+      </div>
+      <p class="hint" style="margin-top:14px">卡上按 2026-10-26 裁定只有 <b>封面 / 校名 / 城市 / 状态胶囊</b> 四段：
+        同学数无后端列（<code>School</code> 与 <code>CampusView</code> 都只有 id/name/city），好友头像行只有估算值，两者一律不画。
+        校园圈列表页 <code>subpackages/campus/campus/hub</code> 是另一页、另一张画板。</p>
+    </div>
+
+    <div class="panel">
+      <h3>分区空态 · 三型（不可互相冒充）</h3>
+      <p class="hint">MP-R1-PAGES-NEARBY-INDEX-903 的核心裁决：「未拉取」不得伪装成「无内容」。三型各自对应一个条件。</p>
+      <div class="row">
+        <div class="cell"><div class="emp emp--g" style="padding:0"><span class="emp__t">登录后可查看更多内容</span><span class="emp__a"><span>去登录</span></span></div><span class="lab">登录门态 protectedBlocked 真</span></div>
+        <div class="cell"><div class="emp" style="padding:0"><span class="emp__t">暂无热门兴趣圈</span></div><span class="lab">真取回为空 · 无动作钮</span></div>
+        <div class="cell"><div class="emp" style="padding:0"><span class="emp__t">附近暂无活动</span></div><span class="lab">分区④空态 activitiesEmpty</span></div>
+        <div class="cell"><div class="lgc" style="margin:0"><span class="lgc__t">请先登录后再使用该功能</span><span class="lgc__b"><span>去登录</span></span></div><span class="lab">分区⑤引导卡（重形态）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>定位行 · 两态 + 五宫格底板</h3>
+      <p class="hint"><code>locationIsEmpty</code> 决定右半动作值与整行落点：空态「· 重试 ›」重走定位授权，
+        有值「· 切换城市 ›」进「我的位置」页。定位值只显后端真给的 city 或 campusName。</p>
+      <div class="row">
+        <div class="cell"><div class="nby__loc" style="margin:0"><svg class="nby__pin nby__pin--sm ico--fill"><use href="#i-pin"/></svg><span class="nby__loc-t">北京大学</span><span class="nby__loc-a">· 切换城市 ›</span></div><span class="lab">有值态</span></div>
+        <div class="cell"><div class="nby__loc" style="margin:0"><svg class="nby__pin nby__pin--sm ico--fill"><use href="#i-pin"/></svg><span class="nby__loc-t">暂无位置信息</span><span class="nby__loc-a">· 重试 ›</span></div><span class="lab">空态</span></div>
+        <div class="cell"><div class="nby__ent nby__ent--g" style="gap:5px"><span class="nby__ent-ic"><svg><use href="#i-users"/></svg></span></div><span class="lab">五宫格底板 · default</span></div>
+        <div class="cell"><div class="nby__ent nby__ent--g" style="gap:5px"><span class="nby__ent-ic" style="background:var(--c-brand-50)"><svg><use href="#i-users"/></svg></span></div><span class="lab">hover-class 按下</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>发帖双入口 + TabBar</h3>
+      <p class="hint">页头「发动态」药丸与右下角 FAB 同落点 <code>goToPublishPost</code>（缺陷4-6 补的第二个入口）。
+        本页是主包五页之一，TabBar 必画，选中项固定「附近」（<code>useTabBar(1)</code>）。</p>
+      <div class="row">
+        <div class="cell"><span class="nby__pub" style="display:inline-flex"><span>发动态</span></span><span class="lab">页头药丸 · default</span></div>
+        <div class="cell"><span class="fab" style="position:static;display:inline-flex"><svg><use href="#i-plus"/></svg></span><span class="lab">GlobalPublishFab</span></div>
+        <div class="cell" style="width:343px"><div class="tabbar" style="position:static;border-radius:12px;overflow:hidden">
+          <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+          <div class="tabbar__i tabbar__i--on"><svg><use href="#i-pin"/></svg>附近</div>
+          <div class="tabbar__i"><svg><use href="#i-heart-plus"/></svg>匹配</div>
+          <div class="tabbar__i"><svg><use href="#i-msg"/></svg>消息</div>
+          <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+        </div><span class="lab">TabBar · 选中「附近」，其余四枚未选中</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页用到十档，全部来自 base 已登记令牌；
+      唯二例外见下方 note（<code>--c-lavender-*</code> / <code>--c-apricot-100</code> 在 base 缺登记）。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">整页背景 · 固定导航底板</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">发动态药丸 · 分段选中面 · 「全部」入口 · 胶囊字色</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">定位针 · 五宫格绿系字形 · 门态引导钮</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">校园圈状态胶囊底 · 帖子标签底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">表面底<code>--c-bg-surface</code></div><div class="sw__u">五宫格五块底板（统一中性底，色系留给字形）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#4A524E"></span><div><div class="sw__n">次级文字<code>--c-text-secondary</code></div><div class="sw__u">定位值 · 五宫格标签 · 人卡次行 · 校园圈城市</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">主文字<code>--c-text-primary</code></div><div class="sw__u">页头标题 · 分区标题 · 卡名</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#0EA5E9"></span><div><div class="sw__n">信息<code>--c-status-info</code>（近似）</div><div class="sw__u">校园圈字形蓝 · 人卡/封面渐变</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F59E0B"></span><div><div class="sw__n">警告<code>--c-warning</code></div><div class="sw__u">活动字形橙（源码真值 #F97316）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#A29BFE"></span><div><div class="sw__n">紫<code>--c-purple</code></div><div class="sw__u">我的人脉字形 · 「去认证」字色（近似）</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到六档（rpx ÷ 2 = px）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">页头标题 48/800</span><span class="type__p" style="font-size:24px;font-weight:800">附近</span></div>
+        <div class="type__i"><span class="type__m">分区标题 30/800</span><span class="type__p" style="font-size:15px;font-weight:800">热门兴趣圈</span></div>
+        <div class="type__i"><span class="type__m">「全部」26/600</span><span class="type__p" style="font-size:13px;font-weight:600;color:var(--c-brand-800)">全部 ›</span></div>
+        <div class="type__i"><span class="type__m">分段/标签 24/700</span><span class="type__p" style="font-size:12px;font-weight:700">按距离 · 同城</span></div>
+        <div class="type__i"><span class="type__m">五宫格标签 22/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-secondary)">附近的人 · 兴趣圈 · 校园圈</span></div>
+        <div class="type__i"><span class="type__m">卡内计数 20/400</span><span class="type__p" style="font-size:10px;font-weight:400;color:rgba(255,255,255,.85)">8932 人加入</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。分区纵向节奏恒 <code>margin-top:32rpx</code>。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-4 8rpx</b><i style="width:4px"></i></div>
+        <div class="space__i"><b>--sp-5 10rpx</b><i style="width:5px"></i></div>
+        <div class="space__i"><b>--sp-6 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-7 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>页边距 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>分区距 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:8px"></b>16rpx<br>人卡头像</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>20rpx<br>人卡 · 校园圈卡 · 活动卡</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl 24rpx<br>五宫格底板</div>
+        <div class="rad__i"><b style="border-radius:14px"></b>28rpx<br>兴趣圈竖版海报卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>分段 · 药丸 · 状态胶囊</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 · 与理想图/实况的已知差异</h2><p>note 块为本页验收口径</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>封面位 · 令牌渐变占位</b><p>兴趣圈封面真图由 <code>config/circle-covers</code> 的 <code>circleCoverFor(name)</code> 单一真相源给；
+        校园圈封面由 <code>CAMPUS_COVER</code> 映射 <code>IMAGE_PATHS.GENERATED.*</code> 实景素材给。画板不引外部图，一律用令牌渐变占位。</p>
+      <div class="m">兴趣圈 75×128 · 校园圈 112×130</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>头像 / 帖子配图位</b><p>人卡头像走共享件 <code>SafeImage</code>（失败兜底默认头像），
+        帖子配图走 <code>POST_PLACEHOLDER</code> 兜底。设计稿不得放网图，全部为灰底/渐变占位。</p>
+      <div class="m">人卡头像 168rpx · 帖子配图 1:1 方格</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>五宫格五枚字形</b><p>工程侧是 <code>IMAGE_PATHS</code> 的 SVG + 逐枚 CSS filter 烘色
+        （绿 #36C99A / 绿 #36C99A / 蓝 #0EA5E9 / 橙 #F97316 / 靛 #4F6EF7）。画板按同一套语义色用 lucide 描边 symbol 复刻，
+        五块底板统一 <code>--c-bg-surface</code>（V-08 后的实况）。</p>
+      <div class="m">底板 88rpx · 字形 44rpx</div></div></div>
+  </div>
+  <div class="note">
+    <b>与理想效果图《附近的首页.png》的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>本页最高优先一条：</b>理想图无「附近的人」分区与「附近活动」分区；2026-10-26 裁定选 C 折中保留二者，画板按裁定后的实况画，理想图降为历史参照</li>
+      <li>理想图五宫格下方还有两张全宽入口卡（「附近的人 · 按距离找到身边的人」「同城的人 · 同城更多心动可能」），2026-10-26 已整块删除；整屏列表出口移到分区头「全部」（<code>goPeople(peopleScope)</code>）。模板内已搜不到 <code>people-entry</code>。</li>
+      <li>分段标签按规范 §3.5 定为「按距离 / 同城」，不再是「附近的人 / 同城的人」；两枚旧词条（<code>nearby.peopleNearby</code> / <code>nearby.peopleCity</code>）仍在 i18n 里但本页模板零消费。</li>
+      <li>理想图定位行为「北京大学 · 3km」。实况 <code>buildLocationText()</code> 只返回 city 或 campusName，检索半径无后端字段，其注释点名「字段落地前宁缺：只显地名，不显假距离」⇒ 画板按实况画「北京大学 · 切换城市 ›」，<b>不回填 3km</b>。</li>
+      <li>理想图校园圈卡次行是「3.2k 位同学」，状态为 已加入 / 去认证 ×3。实况 <code>School</code> 与 <code>CampusView</code> 都只有 id/name/city 三键、全库无学校维度成员数 ⇒ 次行画真实 <code>city</code>；<code>campusChipKey()</code> 只允许本校出「已加入/去认证」，其余恒「公开浏览」⇒ 画 已加入 + 公开浏览 ×3。理想图此处为演示值，产品裁定真值就绪前不回填，画板按留空/按实况画。</li>
+      <li>理想图兴趣圈计数为 1.2w / 8602 / 1.6w / 1.1w，画板取 <code>mockCircles</code> 前 8 条经 <code>formatMemberCount()</code> 的输出口径（≥1w 折「w」、千位段裸数字不加逗号）。<b>演示计数，非真值。</b></li>
+      <li>理想图帖子互动栏是「♡128 💬24」两键。实况 <code>PostCard</code> 底栏为「时间 + 评论/点赞/收藏三键」（R13-L01-D11 已撤除分享死钮），且画板按 <code>nearbyPosts.slice(0,3)</code> 出两条帖。赞评数取理想图值，<b>演示计数，非真值。</b></li>
+      <li>理想图分区⑤标题右侧只有一枚箭头。实况统一走 <code>NearbySection</code>，五个分区头一律「全部 ›」。</li>
+      <li>理想图校园圈四张卡完整并排。实况 <code>.campus-entry</code> 按 R12-L02-D03 改定宽 <code>flex:0 0 248rpx</code> 且 <code>.campus-cards</code> 不可横滚 ⇒ 可用宽 686rpx 只容 2.6 张，第 3 张起被视口右缘裁切。画板按实况几何画，<b>不为了凑齐四张把卡宽压回 flex:1</b>（那正是该条裁定撤掉的形态）。</li>
+      <li>五宫格五枚字形的工程真值是 CSS filter 烘出的 #36C99A / #36C99A / #0EA5E9 / #F97316 / #4F6EF7。后三档在 base 未登记 ⇒ 画板用同族已登记的 <code>--c-status-info</code> / <code>--c-warning</code> / <code>--c-purple</code> 近似，色相族（蓝/橙/靛）不变。</li>
+      <li>右下角 FAB 为 <code>position:fixed</code>，滚动后仍压在「附近动态」首帖右上一带——这是缺陷4-6 落地后的实况遮挡，非画板笔误。</li>
+      <li><code>board-base.css</code> 缺 <code>--c-lavender-50</code> / <code>--c-lavender-500</code> / <code>--c-apricot-100</code> / <code>--c-apricot-500</code> 四枚（design-variables.scss v4.0.0 已有，本页「去认证」胶囊与活动图标底板正在消费）⇒ 画板以同族已登记令牌 <code>--c-purple</code> / <code>--c-warning</code> 加同值 rgba 底近似，待主控补登后回改。</li>
+      <li>本页是主包五页之一 ⇒ TabBar 必画，选中「附近」。理想图与实况一致，无差异。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 附近页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积对齐 素材/理想效果图 语料的 1.573 Mpx 预算）<br>
+  本页基准来源：pages/nearby/index.vue 裁定后实况（2026-10-26 选 C 折中）；理想图 附近的首页.png 降为历史参照
+</footer>
+
+</div>
+</body>
+</html>

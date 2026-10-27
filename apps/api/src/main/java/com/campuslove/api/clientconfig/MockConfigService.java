@@ -17,11 +17,14 @@ public class MockConfigService implements ConfigService {
 
     @Override
     public List<CampusView> loadCampuses() {
+        // majors 与 RealConfigService.DEFAULT_CAMPUSES 同口径：mock 档没有按校真源，
+        // 给的是代码级通用基线（非某校开课事实），保证 mock 环境下的三级联动
+        // 与真机降级路径看到同一份目录，而不是空 picker。
         return List.of(
-                new CampusView("pku", "北京大学", "北京"),
-                new CampusView("thu", "清华大学", "北京"),
-                new CampusView("fudan", "复旦大学", "上海"),
-                new CampusView("zju", "浙江大学", "杭州")
+                new CampusView("pku", "北京大学", "北京", MajorBaseline.GENERIC),
+                new CampusView("thu", "清华大学", "北京", MajorBaseline.GENERIC),
+                new CampusView("fudan", "复旦大学", "上海", MajorBaseline.GENERIC),
+                new CampusView("zju", "浙江大学", "杭州", MajorBaseline.GENERIC)
         );
     }
 

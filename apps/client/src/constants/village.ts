@@ -12,10 +12,10 @@
 
 /**
  * 帖子内容最大长度（字符）。
- * MP-R1-PUBLISH-012：与 stores/village 的 MAX_CONTENT_LENGTH(500) 对齐——原 1000 使
- * post.vue 放行 501-1000 字后在 store 校验处必败（原始 MP-R1-PUB-016 病灶在 post 版存活）。
+ * MP-R1-PUBLISH-012 曾把本值从 1000 抄成 500 以对齐 store，代价是两处字面量必须手工同步
+ * ——这正是 MP-R1-PUB-016 的病灶。2026-10-26 起直接取 store 常量的引用，只留一个数。
  */
-export const POST_MAX_LENGTH = 500;
+export { MAX_CONTENT_LENGTH as POST_MAX_LENGTH } from "../stores/village/constants";
 
 /** 帖子标题最小长度（字符，P1-01 必填校验） */
 export const POST_TITLE_MIN_LENGTH = 5;

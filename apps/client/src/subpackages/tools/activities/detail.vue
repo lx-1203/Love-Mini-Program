@@ -335,7 +335,37 @@ function handleCopyShare() {
 
 /** 报名：真实链路走 store（POST /api/activities/{id}/enroll）；示例活动本地闭环 */
 const isSignedUp = ref(false);
+
+/**
+ * 报名入口是否已被活动状态收敛（ended / closed）。
+ *
+ * 与 subpackages/discover/activities/index.vue 的同名函数 `isActivityEnrollClosed`
+ * 是**同一口径的两份实现**（按约定不新建共享文件；改一处必须同步另一处）。
+ * 修的是：底部报名槽此前只看 `!isSignedUp`、从不引用 status，于是同屏上方状态胶囊
+ * 写着「已结束」（statusText 已把 ended/closed 读成 home.activityStatusClosed），
+ * 下方却仍渲染可点的「立即报名」⇒ 同一屏对同一动作给出自相矛盾的答复。
+ * 判定只认 ended / closed 两枚后端枚举，其余（open / ongoing / upcoming / status 缺省）
+ * 一律放行、既有行为不变；示例活动（isSample）的 status 是本页写死的 'open' 字面量，
+ * 对本判定恒为 false ⇒ 示例分支（handleSignup 的本地闭环）不被卷入。
+ */
+function isActivityEnrollClosed(item: ActivityItem | null): boolean {
+  return item?.status === "ended" || item?.status === "closed";
+}
+
+/**
+ * 底部主槽是否渲染「已结束」非交互占位：活动已 ended/closed 且当前未报名。
+ * 已报名用户保留既有「退出报名」出口（那不是报名入口，不在本次收敛范围）。
+ */
+const showEnrollClosedSlot = computed(
+  () => !isSignedUp.value && isActivityEnrollClosed(activity.value),
+);
+
+/** 「已结束」占位文案：与上方状态胶囊取同一枚在册键，两处永不打架 */
+const enrollClosedLabel = computed(() => t("home.activityStatusClosed"));
+
 async function handleSignup() {
+  // 逻辑层兜底：报名入口已由状态收敛撤下，此处防止任何调用点绕过判定
+  if (isActivityEnrollClosed(activity.value)) return;
   lightHaptic();
   if (activityStore.enrolling) return;
   const id = activity.value?.id ?? "";
@@ -523,8 +553,22 @@ onShareTimeline(() => ({
       >
         <text class="detail-share-btn__text">{{ t('activities.share') }}</text>
       </view>
+      <!-- 状态收敛槽：活动 ended/closed 且未报名时，主槽渲染非交互「已结束」文本
+           （无 @tap / 无 hover-class / 无 role=button ⇒ 点不动）。
+           选这个呈现的两个理由：
+           ① 本页没有「禁用态」惯例——全文件 0 处 :disabled / 禁用样式，条件呈现一律走 v-if
+              整块撤下（statusText、showEnrollCount、activity.category 三处同构），而本页对
+              「为什么没有 X」的既有做法是就地写明而非静默消失（示例内容也是这样加整页披露行
+              .detail-sample-note 的）；
+           ② 底部栏钉在视口底、状态胶囊在 scroll 内容里会随阅读滚走（见 .detail-action-bar /
+              R10-L08-D11），整块隐藏会让用户只看到一枚「分享」、得不到任何解释。
+           复用同文件既有次级槽类（.detail-quit-btn 系列：面底 + 细描边 + --c-text-tertiary），
+           与绿色主钮天然区分，且不新增样式。已报名者保留「退出报名」出口。 -->
+      <view v-if="showEnrollClosedSlot" class="detail-quit-btn" role="status">
+        <text class="detail-quit-btn__text">{{ enrollClosedLabel }}</text>
+      </view>
       <view
-        v-if="!isSignedUp"
+        v-else-if="!isSignedUp"
         class="detail-signup-btn press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
@@ -718,8 +762,8 @@ onShareTimeline(() => ({
   padding: 4rpx 16rpx;
   border-radius: 999rpx;
   font-size: var(--fs-xs, 20rpx);
-  color: var(--c-primary, #36C99A);
-  background: color-mix(in srgb, var(--c-primary, #36C99A) 12%, transparent);
+  color: var(--c-brand);
+  background: color-mix(in srgb, var(--c-brand) 12%, transparent);
 }
 
 .detail-status {

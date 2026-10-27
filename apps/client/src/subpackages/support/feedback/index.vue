@@ -85,10 +85,17 @@ const isUploading = ref<boolean>(false);
 /** 全局错误信息（用于错误条展示） */
 const errorMessage = ref<string | null>(null);
 
-/** 是否可继续添加图片（未达上限且未在上传中） */
-const canAddImage = computed(
-  () => !isUploading.value && form.attachments.length < IMAGE_MAX_COUNT,
-);
+/**
+ * 「+」格是否渲染：只看**未达上限**这一条。
+ *
+ * R17（UI 状态不可达）：原条件还含 `!isUploading` ⇒ 上传进行中外层 v-if 恒 false，
+ * 整块「+」格连同为上传中准备的 `.image-cell__spinner`（模板 :545 `v-if="isUploading"`）
+ * 与 `.image-cell--uploading` 修饰符一起被摘掉——spinner 格因此永远渲染不出来，
+ * 上传期间画面上什么都不显示，用户读不到「在途」状态。
+ * 现把在途拦截留在行为层（handleAddImage 的 `if (isUploading.value) return;` 已防重复触发），
+ * 渲染层按上限判定 ⇒ 上传中该格显示 spinner，上传结束自动回到相机图标。
+ */
+const canAddImage = computed(() => form.attachments.length < IMAGE_MAX_COUNT);
 
 /** 历史页路径（功能10 入口跳转） */
 const HISTORY_PAGE_URL = "/subpackages/profile-extra/feedback/history";
@@ -531,7 +538,7 @@ function formatSubmissionTime(iso: string): string {
               <image class="image-cell__remove-icon" :src="IMAGE_PATHS.ICONS_COMMON.CLOSE_WHITE_SVG" mode="aspectFit" alt="" />
             </view>
           </view>
-          <!-- 添加图片占位（相机图标） -->
+          <!-- 添加图片占位：未满时是相机图标，上传中同格改为 spinner 态（R17：此前上传中整块不渲染） -->
           <view
             v-if="canAddImage"
             class="image-cell image-cell--add press-feedback"
@@ -539,6 +546,7 @@ function formatSubmissionTime(iso: string): string {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="button"
+            :aria-disabled="isUploading ? 'true' : 'false'"
             :aria-label="t('feedback.imageUpload')"
             @tap="handleAddImage"
           >
@@ -790,6 +798,11 @@ function formatSubmissionTime(iso: string): string {
 
 .image-cell--uploading {
   border-style: solid;
+  /* R17：该格现在上传中也会渲染 ⇒ 在途期间屏蔽按压缩放与重复选图。
+     行为层另有 handleAddImage 的 `if (isUploading.value) return;` 早退兜底，
+     这里只负责让 spinner 格不再表现得「可点」（同口径 daily-question/index.vue:699-703
+     .submit-btn--disabled 的 pointer-events: none）。 */
+  pointer-events: none;
 }
 
 .image-cell__plus-icon {

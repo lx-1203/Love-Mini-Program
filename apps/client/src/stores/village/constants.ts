@@ -8,8 +8,16 @@
  * - 分页大小
  */
 
-/** 内容最大长度 */
-export const MAX_CONTENT_LENGTH = 500;
+/**
+ * 内容最大长度（帖子正文与评论正文共用）。
+ *
+ * 2026-10-26 产品裁定：发布类正文统一口径回到 1000（规范 §3.14 与理想效果图
+ * 「发布帖子页面.png」均为 0/1000）。MP-R1-PUB-016 当年把页面从 1000 降到 500 是
+ * 向下对齐 store，本次按相反方向收口——后端 `CreatePostRequest` 是 @Size(max=5000)、
+ * `CreateCommentRequest` 是 @Size(max=1000)、DB `posts.content` 为 TEXT，均不卡 1000，
+ * 真正的瓶颈只有本行。后台 compose 的 500 是刻意取严，不随本值动。
+ */
+export const MAX_CONTENT_LENGTH = 1000;
 
 /** 图片最大数量 */
 export const MAX_IMAGES_COUNT = 9;

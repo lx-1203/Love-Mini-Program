@@ -1284,7 +1284,7 @@ defineExpose({ goToAuthorProfile });
 
 .circle-bottom__join--joined {
   background: var(--c-bg-container, #FFFFFF);
-  border: 2rpx solid var(--c-line-strong, #DCE5E2);
+  border: 2rpx solid var(--c-border-default);
   box-shadow: none;
 }
 
@@ -1501,7 +1501,7 @@ defineExpose({ goToAuthorProfile });
 
 .circle-hero__join--joined {
   background: var(--c-bg-container, #FFFFFF);
-  border: 2rpx solid var(--c-line-strong, #DCE5E2);
+  border: 2rpx solid var(--c-border-default);
 }
 
 .circle-hero__join-text {

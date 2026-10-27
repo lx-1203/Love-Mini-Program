@@ -4,12 +4,12 @@
  *
  * 功能：
  * - 学校名称输入
- * - 专业输入
+ * - 专业选择（字典 picker，与注册页 setup/campus 同源；字典外的历史值前置进选项保真）
  * - 学生证照片上传（使用uni-app的图片选择API）
  * - 提交审核按钮
  * - 认证状态展示（审核中/已认证/未通过）
  */
-import { ref, onMounted } from "vue";
+import { computed, ref, watch, onMounted } from "vue";
 // MP-R1-CERT-101：从 real-name 页完成实名后 navigateBack 返回本页，页面实例不重建、
 // onMounted 不再执行——需 onShow 重拉实名门槛
 import { onShow } from "@dcloudio/uni-app";
@@ -30,6 +30,10 @@ import { useMock } from "../../../stores/helpers/use-mock";
 import { useStatusBarHeight } from "../../../composables/useStatusBarHeight";
 // Task 0.2.4：调用 chooseImage 前需检查隐私授权
 import { ensurePrivacyAuthorized } from "../../../utils/privacy";
+// 专业字典与注册页 setup/campus/index.vue 同一来源、同一口径（2026-10-28 裁定：两处统一为字典 picker）
+import { loadSchools, getMajorsForSchool, type School } from "../../../config/schools";
+// 与注册页专业 picker 同一触感反馈
+import { lightHaptic } from "../../../utils/haptic";
 
 const campusStore = useCampusStore();
 // 修复（严格模式 noUnusedLocals）：loading 未在模板/脚本中引用，已从解构中移除。
@@ -46,6 +50,48 @@ const statusBarHeightPx = useStatusBarHeight();
 const schoolName = ref("");
 /** 专业 */
 const major = ref("");
+
+/* ========== 专业字典（与注册页 setup/campus 同一数据源） ========== */
+/** 学校列表：后端 /config/campuses 优先、失败回退本地静态（同注册页 loadSchools 一次性拉取） */
+const schools = ref<School[]>([]);
+
+/**
+ * 专业选项：与注册页 setup/campus/index.vue 的 majorOptions 同一口径
+ * （按校目录 getMajorsForSchool(schools.find(s => s.name === 校名))，取不到回退通用 MAJORS，
+ * 永不为空数组——空 picker 会被用户读成「这所学校没有专业」。
+ *
+ * 「不可卡住任何已提交过的用户」的兜底实现＝**把当前值临时前置进 options**：
+ * 认证页此前是自由文本 input，campus_certifications.major 里留过大量不在字典内的历史值。
+ * 只要 major 当前值不在字典里，就把它插到 options[0]，于是
+ * - 旧值原样可见（picker 首项就是它本身，文案一字不改）；
+ * - 旧值原样可提交（major 不被改写，submitCert 仍提交它）；
+ * - currentMajorIndex 命中第 0 项，picker 不会把选中项静默挪成字典里的另一个专业；
+ * - 用户一旦改选别的字典项，前置项随之消失（computed 重新求值），字典回到 67 条原序。
+ * 之所以选这一种而不是「显示『当前填写：X』+ 自定义入口」：后者要新增自由文本路径
+ * （连带 :maxlength="100" 与两语言新文案键）和一个新样式族，与「不自造组件/样式族」冲突，
+ * 且会把刚统一掉的自由文本口径从后门再放回来。
+ * 注意：注册页对历史值走的是「不在选项内就留空」（setup/campus/index.vue:157），
+ * 那是会丢数据的处理，认证表是审核凭证，本页刻意不照抄。
+ */
+const majorOptions = computed<string[]>(() => {
+  const base = getMajorsForSchool(
+    schools.value.find((s) => s.name === schoolName.value.trim()),
+  );
+  const current = major.value.trim();
+  return current && !base.includes(current) ? [current, ...base] : base;
+});
+
+/** picker 高亮定位：按去空格后的当前值取索引；未填时为 -1（与注册页同一「无预选」表现） */
+const currentMajorIndex = computed(() => majorOptions.value.indexOf(major.value.trim()));
+
+/** 专业 picker change（写法照抄注册页 onMajorChange） */
+function onMajorChange(e: { detail: { value: number } }): void {
+  const opt = majorOptions.value[e.detail.value];
+  if (!opt || opt === major.value) return;
+  major.value = opt;
+  lightHaptic();
+}
+
 /** 学生证照片路径 */
 const studentCardUrl = ref("");
 /** 是否正在提交 */
@@ -252,10 +298,30 @@ function statusIcon(status: CertificationStatus): string {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   void loadRealNameGate();
   void campusStore.fetchCertificationStatus();
+  // 专业字典来源（同注册页）：后端优先、失败回退本地静态；await 不会卡住首屏，
+  // 因为 schools 为空数组时 majorOptions 已经走 getMajorsForSchool(undefined) → 通用 MAJORS
+  schools.value = await loadSchools();
 });
+
+/**
+ * 已提交专业的回填（硬要求「不许卡住任何已提交过的用户」的另一半）。
+ * 认证被驳回时表单会重新出现且字段是空的，若不回填，用户只能重打一遍专业；
+ * 更重要的是：自由文本时代留下的、不在字典里的旧值必须仍然可见、仍可原样提交
+ * （由 majorOptions 的前置兜底接住，picker 不会把它换成别的字典项）。
+ * 仅在 major 仍为空时写入，避免覆盖用户正在输入的内容。
+ * 已认证态的只读回显（模板 verifiedLabelMajor 行）不在这里处理：它直接渲染
+ * certificationInfo.major 原始字符串，不经字典、不经 picker，天然保真。
+ */
+watch(
+  () => certificationInfo.value?.major,
+  (val) => {
+    if (val && !major.value) major.value = val;
+  },
+  { immediate: true },
+);
 
 // MP-R1-CERT-101：本页有 navigateTo 跳 real-name 再返回的确定路径（goRealNameCertification），
 // 实名成功返回后门槛横幅自动消失/表单自动解禁（原只在 onMounted 拉一次，
@@ -335,16 +401,22 @@ onShow(() => {
             />
           </view>
 
-          <!-- 专业 -->
+          <!-- 专业（2026-10-28 统一：与注册页同一字典的 selector picker，不再是自由文本 input） -->
           <view class="form-group">
             <text class="form-label">{{ t("campus.certification.labelMajor") }}</text>
-            <input
-  cursor-spacing="20"
-              v-model="major"
-              class="form-input"
-              placeholder-class="cert-form-placeholder"
-              :placeholder="t('campus.certification.placeholderMajor')" :aria-label="t('campus.certification.placeholderMajor')"
-            />
+            <picker
+              mode="selector"
+              :range="majorOptions"
+              :value="currentMajorIndex"
+              @change="onMajorChange"
+            >
+              <!-- 复用本页既有 .form-input 字段外观与 .cert-form-placeholder 占位色，不新增样式族 -->
+              <view class="form-input" :aria-label="t('campus.certification.labelMajor')">
+                <text :class="major ? '' : 'cert-form-placeholder'">
+                  {{ major || t("campus.certification.placeholderMajor") }}
+                </text>
+              </view>
+            </picker>
           </view>
 
           <!-- 学生证照片上传 -->

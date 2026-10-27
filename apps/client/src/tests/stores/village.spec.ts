@@ -10,7 +10,7 @@ vi.mock("../../services/env", () => ({
   isMockMode: () => true,
 }));
 
-import { useVillageStore, formatRelativeTime } from "../../stores/village";
+import { useVillageStore, formatRelativeTime, MAX_CONTENT_LENGTH } from "../../stores/village";
 import { isBuddyPost } from "../../stores/village/utils";
 
 describe("village store", () => {
@@ -161,14 +161,15 @@ describe("village store", () => {
   it("createPost throws when content exceeds max length", async () => {
     const store = useVillageStore();
 
-    const tooLong = "a".repeat(501);
+    // 边界取自常量本身而非字面量：额度按规范 §3.14 从 500 调到 1000 时，本用例不该跟着改数
+    const tooLong = "a".repeat(MAX_CONTENT_LENGTH + 1);
     await expect(
       store.createPost({
         categoryId: "cat-interest",
         title: "",
         content: tooLong,
       })
-    ).rejects.toThrow("帖子内容不能超过500字");
+    ).rejects.toThrow(`帖子内容不能超过${MAX_CONTENT_LENGTH}字`);
   });
 
   // ------------------------------------------------------------------

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 喜欢与访客 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属（色/字阶/圆角/阴影一律取 base 令牌） ===== */
+.pg { position: absolute; inset: 0; background: var(--c-gradient-page); }
+.lvh { padding: 0 0 12px; }
+.lvh__top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.lvh__back { width: 44px; height: 44px; border-radius: var(--r-full); background: var(--c-bg-container);
+  display: flex; align-items: center; justify-content: center; flex: none; box-shadow: var(--s-sm); }
+.lvh__back svg { width: 20px; height: 20px; color: var(--c-text-primary); }
+.lvh__back--press { opacity: 0.55; }
+.lvh__t { font-size: var(--fs-7xl); font-weight: 800; color: var(--c-text-primary); letter-spacing: -0.5px; }
+.lvh__s { display: block; font-size: var(--fs-sm); color: var(--c-text-secondary); }
+
+.ov { display: flex; padding: 10px 6px; background: var(--c-bg-container); border-radius: var(--r-card);
+  box-shadow: var(--s-card-soft); margin-bottom: 4px; }
+.ov__i { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ov__v { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); line-height: 1.2; }
+.ov__l { font-size: var(--fs-base); color: var(--c-text-tertiary); }
+
+.tabs { display: flex; gap: 32px; padding: 8px 0 0; }
+.tabs__i { position: relative; min-height: 44px; display: flex; align-items: center; gap: 4px; }
+.tabs__i > span { font-size: var(--fs-lg); color: var(--c-text-secondary); }
+.tabs__i--active > span { color: var(--c-text-primary); font-weight: 600; }
+.tabs__i--active::after { content: ""; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 24px; height: 2px; border-radius: var(--r-xs); background: var(--c-brand); }
+.badge { min-width: 16px; height: 16px; padding: 0 1px; border-radius: var(--r-full); background: var(--c-error);
+  display: flex; align-items: center; justify-content: center; }
+.badge span { font-size: var(--fs-xs); font-weight: 600; color: var(--c-text-inverse); line-height: 1; }
+
+.list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.item { display: flex; align-items: center; gap: 8px; padding: 8px; background: var(--c-bg-container);
+  border-radius: var(--r-xl); box-shadow: var(--s-card-soft); }
+.item__aw { position: relative; width: 44px; height: 44px; flex: none; }
+.item__av { width: 44px; height: 44px; border-radius: var(--r-full); overflow: hidden; background: var(--c-bg-page); }
+.item__av img { width: 100%; height: 100%; object-fit: cover; }
+.item__av--blur { filter: blur(7px); }
+.item__lock { position: absolute; inset: 0; border-radius: var(--r-full);
+  background: rgba(255, 255, 255, 0.35); display: flex; align-items: center; justify-content: center; }
+.item__lock svg { width: 20px; height: 20px; color: var(--c-text-secondary); }
+.item__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.item__n { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.item__n--hidden { color: var(--c-text-secondary); font-weight: 500; }
+.item__m { font-size: var(--fs-sm); color: var(--c-text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item__tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.item__tag { font-size: var(--fs-xs); font-weight: 500; padding: 1px 6px; border-radius: var(--r-sm);
+  background: var(--c-bg-page); color: var(--c-text-secondary); }
+/* 源码 .list__tag--coin 在本页 <style> 段 0 命中 ⇒ 金币标签与普通标签同形同色，画板如实不加色 */
+.item__time { font-size: var(--fs-xs); color: var(--c-text-tertiary); flex: none; align-self: flex-start; }
+
+.unlock { position: absolute; left: 0; bottom: 0; width: 100%; padding: 10px 16px 20px; box-sizing: border-box;
+  background: var(--c-bg-container); box-shadow: 0 -2px 12px var(--c-black-shadow-xs); z-index: 6; }
+.unlock__btn { display: flex; align-items: center; justify-content: center; height: 44px; border-radius: var(--r-xl);
+  background: var(--c-gradient-brand); box-shadow: var(--s-brand); }
+.unlock__btn span { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-inverse); }
+.unlock__h { display: block; text-align: center; font-size: var(--fs-xs); color: var(--c-text-tertiary); margin-top: 4px; }
+
+.guide { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 12px;
+  background: var(--c-bg-container); border-radius: var(--r-card); box-shadow: var(--s-card-soft); margin-top: 8px; }
+.guide__ic { width: 48px; height: 48px; color: var(--c-text-placeholder); }
+.guide__t { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); text-align: center; }
+.guide__d { font-size: var(--fs-base); color: var(--c-text-secondary); text-align: center; line-height: 1.6; }
+.guide__b { min-height: 44px; padding: 0 16px; border-radius: var(--r-full); background: var(--c-brand-800);
+  display: flex; align-items: center; justify-content: center; }
+.guide__b span { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-inverse); }
+.guide__h { font-size: var(--fs-sm); color: var(--c-text-secondary); text-align: center; line-height: 1.6; }
+
+.st { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 40px 20px; }
+.st__ic { width: 60px; height: 60px; color: var(--c-text-placeholder); }
+.st__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-secondary); text-align: center; }
+.st__s { font-size: var(--fs-base); color: var(--c-text-secondary); text-align: center; }
+.st__b { margin-top: 8px; padding: 8px 20px; border-radius: var(--r-full); background: var(--c-brand-800); }
+.st__b span { font-size: var(--fs-md); font-weight: 600; color: var(--c-text-inverse); }
+
+.sk { display: flex; align-items: center; gap: 8px; padding: 8px; background: var(--c-bg-container);
+  border-radius: var(--r-xl); box-shadow: var(--s-card-soft); }
+.sk__av { width: 44px; height: 44px; border-radius: var(--r-full); background: var(--c-border-light); flex: none; }
+.sk__l { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.sk__b { height: 10px; border-radius: var(--r-sm); background: var(--c-border-light); }
+.w60 { width: 60%; } .w40 { width: 40%; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.4"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 8.2 12 4l8.5 4.2v7.6L12 20l-8.5-4.2z"/><path d="M3.5 8.2 12 12.4l8.5-4.2M12 12.4V20"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.8v4.8"/><path d="M12 16.2h.01"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>喜欢与访客 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/discover-extra/likes-visitors/index</code>。
+     消息页「喜欢与访客」入口的独立二级页，双 Tab（喜欢我的 / 我的访客）+ 单格概览 + 逐条解锁打码。
+     它是已交付 <b>寻觅·喜欢页（discover-extra/likes）</b> 的访客兄弟页——两页共用同一份 likes store、同一套解锁口径，
+     但版式与件集并不相同。本画板 7 屏覆盖列表区五分支 × 两 Tab × 解锁/封存两态，并在 §04 给出<b>与同族页的差异清单</b>。</p>
+  <div class="cover__meta">
+    <span>路由 <b>likes-visitors/index</b></span>
+    <span>分包 <b>discover-extra</b>（无 tabbar）</span>
+    <span>状态 <b>7 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>同族页 <b>discover-likes.html（差异见 §04）</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 7 屏</h2>
+    <p>骨架常驻 + 列表区五分支</p></div>
+  <div class="sec__sub">页头 / 概览 / 双 Tab <b>恒常驻</b>（R8-L06-D04 把游客整页锁屏改成条目级引导的结果），
+    只有列表区走条件链 <code>v-if="!isUnlocked"（游客引导）/ v-else-if="errorMessage &amp;&amp; currentList.length === 0"（ErrorState）
+    / v-else-if="loading"（Skeleton count=3）/ v-else-if="currentList.length === 0"（EmptyState）/ v-else（列表）</code>，共 5 分支；
+    列表分支再按 Tab 画两屏（F01 / F02），并补一屏未解锁 + 解锁条（F03）。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">已登录 · 喜欢我的 · 全已解锁</span><span class="d">无解锁条（hasLockedItems=false）</span></figcaption>
+      <div class="phone">
+        <div class="pg"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div style="position:absolute; top:56px; left:0; width:100%; padding:0 16px; box-sizing:border-box">
+          <div class="lvh">
+            <div class="lvh__top"><span class="lvh__back"><svg><use href="#i-back"/></svg></span><span class="lvh__t">喜欢与访客</span></div>
+            <span class="lvh__s">谁在喜欢你，谁来看过你</span>
+          </div>
+          <div class="ov"><span class="ov__i"><span class="ov__v">3</span><span class="ov__l">今日访客</span></span></div>
+          <div class="tabs">
+            <span class="tabs__i tabs__i--active"><span>喜欢我的</span><span class="badge"><span>6</span></span></span>
+            <span class="tabs__i"><span>我的访客</span><span class="badge"><span>3</span></span></span>
+          </div>
+          <div class="list">
+            <div class="item"><span class="item__aw"><span class="item__av"><img src="assets/demo/person-08.png" alt=""></span></span>
+              <span class="item__info"><span class="item__n">周岚</span><span class="item__m">爱爬山的理工科女生</span></span>
+              <span class="item__time">10/26</span></div>
+            <div class="item"><span class="item__aw"><span class="item__av"><img src="assets/demo/person-05-avatar.png" alt=""></span></span>
+              <span class="item__info"><span class="item__n">Luna</span><span class="item__m">摄影和现场演出</span></span>
+              <span class="item__time">10/26</span></div>
+            <div class="item"><span class="item__aw"><span class="item__av"><img src="assets/demo/person-01-avatar.png" alt=""></span></span>
+              <span class="item__info"><span class="item__n">林晓</span><span class="item__m">熬夜赶图，白天补觉</span></span>
+              <span class="item__time">10/25</span></div>
+            <div class="item"><span class="item__aw"><span class="item__av"><img src="assets/demo/person-06-avatar.png" alt=""></span></span>
+              <span class="item__info"><span class="item__n">草莓</span><span class="item__m">想找一起探店的搭子</span></span>
+              <span class="item__time">10/24</span></div>
+            <div class="item"><span class="item__aw"><span class="item__av"><img src="assets/demo/person-09.png" alt=""></span></span>
+              <span class="item__info"><span class="item__n">林晚</span><span class="item__m">历史系 · 旧书店与胶片</span></span>
+              <span class="item__time">10/23</span></div>
+            <div class="item"><span class="item__aw"><span class="item__av"><img src="assets/demo/person-07-avatar.png" alt=""></span></span>
+              <span class="item__info"><span class="item__n">苏奈</span><span class="item__m">KTV 常驻主唱</span></span>
+              <span class="item__time">10/22</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">已登录 · 我的访客 · 全已解锁</span><span class="d">概览 3 = isNew 计数，与 badge 同源</span></figcaption>
+      <div class="phone">
+        <div class="pg"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div style="position:absolute; top:56px; left:0; width:100%; padding:0 16px; box-sizing:border-box">
+          <div class="lvh">
+            <div class="lvh__top"><span class="lvh__back"><svg><use href="#i-back"/></svg></span><span class="lvh__t">喜欢与访客</span></div>
+            <span class="lvh__s">谁在喜欢你，谁来看过你</span>
+          </div>
+          <div class="ov"><span class="ov__i"><span class="ov__v">3</span><span class="ov__l">今日访客</span></span></div>
+          <div class="tabs">
+            <span class="tabs__i"><span>喜欢我的</span><span class="badge"><span>6</span></span></span>
+            <span class="tabs__i tabs__i--active"><span>我的访客</span><span class="badge"><span>3</span></span></span>
+          </div>
+          <div class="list">
+            <div class="item"><span class="item__aw"><span class="item__av"><img src="assets/demo/xiaoman-avatar.png" alt=""></span></span>
+              <span class="item__info"><span class="item__n">小满</span><span class="item__m">烘焙与长跑</span></span>
+              <span class="item__time">10/26</span></div>
+            <div class="item"><span class="item__aw"><span class="item__av"><img src="assets/demo/person-03-avatar.png" alt=""></span></span>
+              <span class="item__info"><span class="item__n">阿辰</span><span class="item__m">吉他 · 独立电影</span></span>
+              <span class="item__time">10/26</span></div>
+            <div class="item"><span class="item__aw"><span class="item__av"><img src="assets/demo/person-02-avatar.png" alt=""></span></span>
+              <span class="item__info"><span class="item__n">夏言</span><span class="item__m">跑步打卡第 200 天</span></span>
+              <span class="item__time">10/26</span></div>
+            <div class="item"><span class="item__aw"><span class="item__av"><img src="assets/demo/person-07-avatar.png" alt=""></span></span>
+              <span class="item__info"><span class="item__n">苏奈</span><span class="item__m">KTV 常驻主唱</span></span>
+              <span class="item__time">10/25</span></div>
+            <div class="item"><span class="item__aw"><span class="item__av"><img src="assets/demo/person-06-avatar.png" alt=""></span></span>
+              <span class="item__info"><span class="item__n">草莓</span><span class="item__m">想找一起探店的搭子</span></span>
+              <span class="item__time">10/24</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">未解锁项 + 解锁条</span><span class="d">commerce.coin=true 才出现</span></figcaption>
+      <div class="phone">
+        <div class="pg"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div style="position:absolute; top:56px; left:0; width:100%; padding:0 16px; box-sizing:border-box">
+          <div class="lvh">
+            <div class="lvh__top"><span class="lvh__back"><svg><use href="#i-back"/></svg></span><span class="lvh__t">喜欢与访客</span></div>
+            <span class="lvh__s">谁在喜欢你，谁来看过你</span>
+          </div>
+          <div class="ov"><span class="ov__i"><span class="ov__v">3</span><span class="ov__l">今日访客</span></span></div>
+          <div class="tabs">
+            <span class="tabs__i tabs__i--active"><span>喜欢我的</span><span class="badge"><span>6</span></span></span>
+            <span class="tabs__i"><span>我的访客</span><span class="badge"><span>3</span></span></span>
+          </div>
+          <div class="list">
+            <div class="item"><span class="item__aw"><span class="item__av"><img src="assets/demo/person-08.png" alt=""></span></span>
+              <span class="item__info"><span class="item__n">周岚</span><span class="item__m">爱爬山的理工科女生</span></span>
+              <span class="item__time">10/26</span></div>
+            <div class="item"><span class="item__aw"><span class="item__av item__av--blur"><img src="assets/demo/person-05-avatar.png" alt=""></span>
+              <span class="item__lock"><svg><use href="#i-lock"/></svg></span></span>
+              <span class="item__info"><span class="item__n item__n--hidden">匿名用户</span>
+                <span class="item__tags"><span class="item__tag">年龄</span><span class="item__tag">同城</span><span class="item__tag">解锁后查看完整资料</span></span></span></div>
+            <div class="item"><span class="item__aw"><span class="item__av item__av--blur"><img src="assets/demo/person-01-avatar.png" alt=""></span>
+              <span class="item__lock"><svg><use href="#i-lock"/></svg></span></span>
+              <span class="item__info"><span class="item__n item__n--hidden">匿名用户</span>
+                <span class="item__tags"><span class="item__tag">年龄</span><span class="item__tag">同城</span><span class="item__tag">解锁后查看完整资料</span></span></span></div>
+            <div class="item"><span class="item__aw"><span class="item__av item__av--blur"><img src="assets/demo/person-06-avatar.png" alt=""></span>
+              <span class="item__lock"><svg><use href="#i-lock"/></svg></span></span>
+              <span class="item__info"><span class="item__n item__n--hidden">匿名用户</span>
+                <span class="item__tags"><span class="item__tag">年龄</span><span class="item__tag">同城</span><span class="item__tag">解锁后查看完整资料</span></span></span></div>
+            <div class="item"><span class="item__aw"><span class="item__av"><img src="assets/demo/person-09.png" alt=""></span></span>
+              <span class="item__info"><span class="item__n">林晚</span><span class="item__m">历史系 · 旧书店与胶片</span></span>
+              <span class="item__time">10/23</span></div>
+          </div>
+        </div>
+        <div class="unlock">
+          <span class="unlock__btn"><span>消耗 3 交友币解锁全部</span></span>
+          <span class="unlock__h">解锁后查看全部列表</span>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">游客态 · 列表区登录引导</span><span class="d">骨架常驻 · badge 与概览归 0</span></figcaption>
+      <div class="phone">
+        <div class="pg"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div style="position:absolute; top:56px; left:0; width:100%; padding:0 16px; box-sizing:border-box">
+          <div class="lvh">
+            <div class="lvh__top"><span class="lvh__back"><svg><use href="#i-back"/></svg></span><span class="lvh__t">喜欢与访客</span></div>
+            <span class="lvh__s">谁在喜欢你，谁来看过你</span>
+          </div>
+          <div class="ov"><span class="ov__i"><span class="ov__v">0</span><span class="ov__l">今日访客</span></span></div>
+          <div class="tabs">
+            <span class="tabs__i tabs__i--active"><span>喜欢我的</span></span>
+            <span class="tabs__i"><span>我的访客</span></span>
+          </div>
+          <div class="guide">
+            <svg class="guide__ic"><use href="#i-lock"/></svg>
+            <span class="guide__t">登录后解锁完整交友功能</span>
+            <span class="guide__d">完成登录授权与基础资料填写，即可开启匹配、聊天、校园活动等全部功能</span>
+            <span class="guide__b"><span>立即登录并完善</span></span>
+            <span class="guide__h">资料越完善，匹配越精准，曝光机会越多</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">加载中</span><span class="d">Skeleton count=3 · 无数据故无 badge</span></figcaption>
+      <div class="phone">
+        <div class="pg"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div style="position:absolute; top:56px; left:0; width:100%; padding:0 16px; box-sizing:border-box">
+          <div class="lvh">
+            <div class="lvh__top"><span class="lvh__back"><svg><use href="#i-back"/></svg></span><span class="lvh__t">喜欢与访客</span></div>
+            <span class="lvh__s">谁在喜欢你，谁来看过你</span>
+          </div>
+          <div class="ov"><span class="ov__i"><span class="ov__v">0</span><span class="ov__l">今日访客</span></span></div>
+          <div class="tabs">
+            <span class="tabs__i tabs__i--active"><span>喜欢我的</span></span>
+            <span class="tabs__i"><span>我的访客</span></span>
+          </div>
+          <div class="list">
+            <div class="sk"><span class="sk__av"></span><span class="sk__l"><span class="sk__b w60"></span><span class="sk__b w40"></span></span></div>
+            <div class="sk"><span class="sk__av"></span><span class="sk__l"><span class="sk__b w60"></span><span class="sk__b w40"></span></span></div>
+            <div class="sk"><span class="sk__av"></span><span class="sk__l"><span class="sk__b w60"></span><span class="sk__b w40"></span></span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">加载失败</span><span class="d">ErrorState :message + @retry</span></figcaption>
+      <div class="phone">
+        <div class="pg"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div style="position:absolute; top:56px; left:0; width:100%; padding:0 16px; box-sizing:border-box">
+          <div class="lvh">
+            <div class="lvh__top"><span class="lvh__back"><svg><use href="#i-back"/></svg></span><span class="lvh__t">喜欢与访客</span></div>
+            <span class="lvh__s">谁在喜欢你，谁来看过你</span>
+          </div>
+          <div class="ov"><span class="ov__i"><span class="ov__v">0</span><span class="ov__l">今日访客</span></span></div>
+          <div class="tabs">
+            <span class="tabs__i tabs__i--active"><span>喜欢我的</span></span>
+            <span class="tabs__i"><span>我的访客</span></span>
+          </div>
+          <div class="st">
+            <svg class="st__ic"><use href="#i-alert"/></svg>
+            <span class="st__t">加载喜欢列表失败</span>
+            <span class="st__s">请检查网络后重试</span>
+            <span class="st__b"><span>重试</span></span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">空态 · 喜欢我的</span><span class="d">EmptyState 只有标题行</span></figcaption>
+      <div class="phone">
+        <div class="pg"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div style="position:absolute; top:56px; left:0; width:100%; padding:0 16px; box-sizing:border-box">
+          <div class="lvh">
+            <div class="lvh__top"><span class="lvh__back"><svg><use href="#i-back"/></svg></span><span class="lvh__t">喜欢与访客</span></div>
+            <span class="lvh__s">谁在喜欢你，谁来看过你</span>
+          </div>
+          <div class="ov"><span class="ov__i"><span class="ov__v">0</span><span class="ov__l">今日访客</span></span></div>
+          <div class="tabs">
+            <span class="tabs__i tabs__i--active"><span>喜欢我的</span></span>
+            <span class="tabs__i"><span>我的访客</span></span>
+          </div>
+          <div class="st" style="padding-top:56px">
+            <svg class="st__ic"><use href="#i-box"/></svg>
+            <span class="st__t">还没有人喜欢我</span>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每类交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">四类件：Tab（含 badge）/ 列表项（解锁 · 未解锁）/ 解锁条 / 游客引导。
+    其中<b>解锁条与金币标签受商业化双闸</b>（<code>commerce.enabled</code> + <code>commerce.coin</code>，缺省封存），
+    两态都必须画，否则基准会把「付费位」当成不存在。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>Tab · 选中 / 未选 / badge 三态</h3>
+      <p class="hint">badge 仅登录态渲染（R11-L07-D01：游客拿不到任何喜欢记录，原红底「1」是 mock 池假计数）；
+        喜欢我的 = <code>likedBy.length</code>，我的访客 = <code>visitors.filter(isNew).length</code>；&gt;99 显示「99+」。</p>
+      <div class="row" style="margin-bottom:14px">
+        <div class="cell"><span class="tabs__i tabs__i--active"><span>喜欢我的</span></span><span class="lab">active（下划线 24×2）</span></div>
+        <div class="cell"><span class="tabs__i"><span>我的访客</span></span><span class="lab">default</span></div>
+        <div class="cell"><span class="badge"><span>6</span></span><span class="lab">badge（--c-error）</span></div>
+        <div class="cell"><span class="badge"><span>99+</span></span><span class="lab">badge 上限</span></div>
+        <div class="cell"><span style="font-size:12px;color:var(--c-text-placeholder)">—</span><span class="lab">游客态：不渲染</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>列表项 · 已解锁 / 未解锁</h3>
+      <p class="hint">判据是服务端 <code>item.unlocked === true</code>（缺失按未解锁）。未解锁：头像 <code>blur(7px)</code> + 锁叠层、
+        昵称换 <code>likesVisitors.nameHidden</code>「匿名用户」、headline 与时间整位不渲染、改出三枚基础标签。</p>
+      <div class="row">
+        <div class="cell" style="width:190px"><div class="item" style="box-shadow:none;border:1px solid var(--c-border-light)"><span class="item__aw"><span class="item__av"><img src="assets/demo/person-08.png" alt=""></span></span>
+          <span class="item__info"><span class="item__n">周岚</span><span class="item__m">爱爬山的理工科女生</span></span><span class="item__time">10/26</span></div>
+          <span class="lab">已解锁（名 + 签名 + 时间）</span></div>
+        <div class="cell" style="width:190px"><div class="item" style="box-shadow:none;border:1px solid var(--c-border-light)"><span class="item__aw"><span class="item__av item__av--blur"><img src="assets/demo/person-05-avatar.png" alt=""></span><span class="item__lock"><svg><use href="#i-lock"/></svg></span></span>
+          <span class="item__info"><span class="item__n item__n--hidden">匿名用户</span><span class="item__tags"><span class="item__tag">年龄</span><span class="item__tag">同城</span></span></span></div>
+          <span class="lab">未解锁 · 封存态（无金币标签）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>解锁条 · 出现 / 不出现</h3>
+      <p class="hint">条件 <code>hasLockedItems &amp;&amp; commerceCoinOn</code>。单价取 <code>UNLOCK_COST_YUAN</code> 定价镜像表
+        （LIKES=3 / VISITORS=3，实测常量），实际扣费由服务端 <code>/wallet/unlock</code> 幂等处理。</p>
+      <div class="row">
+        <div class="cell" style="width:190px"><span class="unlock__btn" style="width:190px"><span>消耗 3 交友币解锁全部</span></span><span class="lab">commerce 开</span></div>
+        <div class="cell" style="width:190px"><span class="st__b" style="width:190px;background:var(--c-status-disabled)"><span style="color:var(--c-text-secondary)">（整条不渲染）</span></span><span class="lab">commerce 关（缺省封存）</span></div>
+      </div>
+      <p class="hint" style="margin-top:12px">VIP 免费放行分支在 <code>featureFlags.membershipEnabled</code> 之后，当前恒不可达（见 §04）。</p>
+    </div>
+
+    <div class="panel">
+      <h3>状态区 · 列表区五分支</h3>
+      <table class="tbl">
+        <tr><th>分支</th><th>条件</th><th>画面内容</th></tr>
+        <tr><td>游客引导</td><td><code>!isUnlocked</code></td><td>锁图标 + <code>lock.titleLoggedOut</code> + <code>subtitleLoggedOut</code> + 「立即登录并完善」 + <code>lock.footerTip</code></td></tr>
+        <tr><td>错误</td><td><code>errorMessage &amp;&amp; currentList.length === 0</code></td><td>ErrorState（<code>:message</code> + <code>@retry</code>，MP-R1-LSV-001 补的监听）</td></tr>
+        <tr><td>加载</td><td><code>loading</code></td><td>Skeleton variant=list count=3</td></tr>
+        <tr><td>空</td><td><code>currentList.length === 0</code></td><td>EmptyState type="no-data"，标题按 Tab 换档，<b>无描述行</b></td></tr>
+        <tr><td>列表</td><td>其余</td><td>行式列表（F01–F03）</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">页底走 <code>--c-gradient-page</code>（base 已登记）。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:linear-gradient(180deg,#DFF3EA,#EEF7F2)"></span><div><div class="sw__n">页底渐变<code>--c-gradient-page</code></div><div class="sw__u">整页背景</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器<code>--c-bg-container</code></div><div class="sw__u">概览 · 行卡 · 返回白圆 · 解锁条底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">Tab 下划线</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:linear-gradient(135deg,#36C99A,#55D5A7)"></span><div><div class="sw__n">品牌渐变<code>--c-gradient-brand</code></div><div class="sw__u">解锁按钮底（配 <code>--s-brand</code>）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">游客引导主按钮</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">Tab badge 底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页底<code>--c-bg-page</code></div><div class="sw__u">标签底 · 头像底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#9AA39F"></span><div><div class="sw__n">占位文本<code>--c-text-placeholder</code></div><div class="sw__u">游客锁图标 · 空态图标</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">页头标题源码即用 <code>--fs-7xl</code>（R11-L07-D03 从 --fs-4xl 收到同域 AppShell 档）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/800</span><span class="type__p" style="font-size:28px;font-weight:800">喜欢与访客</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">3</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">登录后解锁完整交友功能</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">周岚 · 消耗 3 交友币解锁全部</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-secondary)">谁在喜欢你，谁来看过你</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/600</span><span class="type__p" style="font-size:10px;font-weight:600">6 · 99+ · 年龄 · 同城</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 阴影</h3><p class="hint">rpx ÷ 2 = px。源码全部走令牌（--sp-* / --r-*），是四页里令牌化最彻底的一页。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-1 2rpx</b><i style="width:1px"></i></div>
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-4 8rpx</b><i style="width:4px"></i></div>
+        <div class="space__i"><b>--sp-6 12px</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:4px"></b>--r-sm<br>标签</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>行卡 · 解锁按钮</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>概览 · 游客引导</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>badge · 头像 · 按钮</div>
+      </div>
+      <p class="hint" style="margin-top:14px">阴影：卡片 <code>--s-card-soft</code>，解锁按钮 <code>--s-brand</code>。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 同族差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与同族页（寻觅·喜欢）的差异清单</h2><p>头像走盘上真素材；差异逐条定性</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/person-05-avatar.png" alt="" style="object-fit:contain">
+      <div class="asset__b"><b>assets/demo/*-avatar.png · person-08/09.png</b>
+        <p>行头像 44px 圆，昵称按 <code>config/people-role.ts</code> 登记对取用。
+        未解锁行的底图<b>仍然引用真素材</b>再套 <code>blur(7px)</code> + 锁叠层——
+        用灰块就判不了「模糊后是否仍能感到有人像」这一层，而它正是解锁动机的视觉核心。</p>
+        <div class="m">44px · blur 14rpx · 叠层 rgba(255,255,255,.35)</div></div></div>
+    <div class="asset"><img src="assets/demo/post-placeholder.jpg" alt="">
+      <div class="asset__b"><b>EmptyState / ErrorState 预设件</b>
+        <p>空态走组件预设 <code>type="no-data"</code>（<code>common/box.svg</code> 空箱 + <code>.empty-icon--preset</code> 归色），
+        错误态走 <code>ErrorState</code>（本页传 <code>:message</code> 而非 <code>type</code>）。两件的图标尺寸 120rpx=60px 是组件内固定值。</p>
+        <div class="m">非素材缺口，无需 NEED_ASSET</div></div></div>
+  </div>
+
+  <div class="panel" style="margin-top:22px">
+    <h3>与同族页 <code>discover-extra/likes/index.vue</code>（画板 discover-likes）的差异清单</h3>
+    <p class="hint">判据：两页源码逐件对照（本页 907 行 / 同族页 1764 行，均只读 template 段）。
+      定性只有两档——<b>有意</b>（源码注释或 IA 差异能解释）与 <b>漂移</b>（同一缺陷/同一角色件在两页形态不同，且无注释解释）。</p>
+    <table class="tbl">
+      <tr><th>件 / 位</th><th>likes（同族页）</th><th>likes-visitors（本页）</th><th>定性</th></tr>
+      <tr><td>返回件</td><td>文本「‹」（R10-L06-D26 把位图 BACK 换掉：#A4B1C2 压白圆 2.18:1 不达非文本 3:1）</td>
+        <td>仍是 <code>IMAGE_PATHS.ICONS_COMMON.BACK</code> 位图</td>
+        <td><b>漂移</b>——同一分包、同一枚不达标位图，只修了一页</td></tr>
+      <tr><td>新访客标记</td><td>访客卡有 <code>.likes-card__new-dot</code>（读 <code>item.isNew</code>）</td>
+        <td>不渲染任何 new 位，但 <code>isNew</code> 同时驱动 Tab badge 与「今日访客」</td>
+        <td><b>漂移</b>——同一字段一处可见一处不可见，用户只看到计数看不到是谁</td></tr>
+      <tr><td>行内右侧</td><td><code>›</code> 箭头件（<code>.likes-card__arrow</code>，批量模式隐藏）</td>
+        <td>无箭头，右侧只有时间</td><td><b>漂移</b>——两页都是整行可点，可点性提示不一致</td></tr>
+      <tr><td>认证徽标</td><td>行内 <code>VerificationBadge</code>（school/email/idcard）</td>
+        <td>无该件</td><td><b>漂移</b>——同一批人两页信息量不同，本页少了可信度位</td></tr>
+      <tr><td>头像兜底</td><td><code>v-if="item.avatar"</code> 否则首字母占位圆（<code>charAt(0)</code>）</td>
+        <td>SafeImage + <code>DEFAULT_AVATAR</code>，无首字母位</td><td><b>漂移</b>——缺图态两页长成两种样子</td></tr>
+      <tr><td>空态</td><td><code>:image</code> 传心形/访客图标 + title + <b>description</b></td>
+        <td><code>type="no-data"</code> + title，<b>无 description</b></td><td><b>漂移</b>——同族页有副文案，本页没有</td></tr>
+      <tr><td>游客态出口</td><td><code>NotLoggedWaiting</code> 组件（含手机号登录第二出口，MP-R1-LIKES-102 补监听）</td>
+        <td>页内 <code>.guest-guide</code>（<code>lock.*LoggedOut</code> 三档 + 单一登录按钮）</td>
+        <td><b>部分有意</b>——R8-L06-D04 与 R8-L06-D23 修同一病（整页被登录墙顶替），一页改回组件、一页自绘引导，两套文案与出口</td></tr>
+      <tr><td>Tab 件</td><td><code>BaseTabs variant="pill"</code> 三等分（likedBy / myLikes / visitors）</td>
+        <td>页内自绘下划线 Tab + badge（likedMe / visitors）</td><td><b>有意</b>——本页是访客兄弟页，只有两分区且要挂新访客数</td></tr>
+      <tr><td>概览栏</td><td>无</td><td>单格「今日访客」（R12-L07-D01 把「总浏览量 / 今日浏览量」两格整格撤除）</td>
+        <td><b>有意</b>——撤除项后端无真值源，符合登记表通用规则第 0 条</td></tr>
+      <tr><td>搜索 / 批量管理 / 心动信号</td><td>三件齐全</td><td>三件全无</td><td><b>有意</b>——本页定位是轻量二级页</td></tr>
+      <tr><td>提升曝光条</td><td>无</td><td>有，但 <code>v-if="featureFlags.membershipEnabled"</code></td>
+        <td><b>恒 false 死分支</b>——见下方注记</td></tr>
+      <tr><td>解锁条条件</td><td><code>hasLockedItems &amp;&amp; !batchMode &amp;&amp; commerceCoinOn</code></td>
+        <td><code>hasLockedItems &amp;&amp; commerceCoinOn</code></td><td><b>有意</b>——本页无批量模式</td></tr>
+      <tr><td>状态栏注入</td><td><code>useMenuButtonRect()</code> 注 styleVars（含 --capsule-right）</td>
+        <td>只用 <code>useStatusBarHeight()</code> 拼 paddingTop，不注胶囊右界</td>
+        <td><b>漂移</b>——同分包两套 statusbar 口径，本页右侧胶囊避让缺位</td></tr>
+      <tr><td>骨架条数</td><td><code>Skeleton :count="4"</code></td><td><code>Skeleton :count="3"</code></td><td>轻微漂移，无功能影响</td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    <b>与实况的已知差异 / 源码缺陷登记（画板不修，按源码画）：</b>
+    <ul>
+      <li><b>恒 false 死分支（本页唯一一处）</b>：<code>featureFlags.membershipEnabled</code> 在
+        <code>config/feature-flags.ts:40</code> 硬编码 <code>false</code>（Phase Feedback6「会员先不上线」），
+        于是 <code>.exposure-bar</code>「提升曝光」条<b>永不渲染</b>，连带 <code>handleUnlock()</code> 的 VIP 免费放行分支、
+        <code>goToExposure()</code> 的跳转分支全部不可达（只剩「会员功能暂未开放」toast 那条路，而入口本身看不见）。
+        故 F01–F07 一律<b>不画</b>该条，也不为它留空骨架。</li>
+      <li><b>配置缺省恒 false（不是代码死分支）</b>：<code>commerceCoinOn = isCommerceOn("coin")</code> 要求
+        <code>commerce.enabled === true</code> 且子闸为 true，而 <code>switches</code> 初值是空对象（缺省即封存，与全站其它开关「缺失默认开放」相反）。
+        ⇒ 解锁条与金币标签在后端未下发开关时同样不渲染。本页两态都画：F03 = 开关开，其余屏 = 缺省封存。</li>
+      <li><b>金币解锁标签既无独立样式、参数也空转</b>：模板写 <code>class="list__tag list__tag--coin"</code>，
+        但 <code>.list__tag--coin</code> 在本页 <code>&lt;style&gt;</code> 段 <b>0 命中</b> ⇒ 它与「年龄 / 同城」两枚同色同形，付费提示毫无区分；
+        且 <code>likesVisitors.tagUnlockHint</code> 的真值是「解锁后查看完整资料」，<b>不含 <code>{coins}</code> 占位符</b>，
+        模板却传了 <code>{ coins: unlockCost }</code>——单价永远上不了标签。画板按实况画成三枚同形标签。</li>
+      <li><b>令牌缺登记（BASE_PROBLEM）</b>：<code>.list__lock</code> 的叠层底取 <code>--c-overlay-white-bg-strong-mid</code>（rgba(255,255,255,.35)），
+        该令牌在 <code>design-variables.scss:918</code> 有值但 <code>board-base.css</code> 未登记；源码自带同值 inline fallback，
+        画板按 fallback 值画，需主控把该档补进 base 后改为引用令牌。</li>
+      <li><b>概览栏只有一格</b>是 R12-L07-D01 的撤承诺结果（<code>ProfileStatsView</code> 无 <code>visitorsCount</code>、
+        原「今日浏览量」是把喜欢数夹进浏览量的假读数）。画板按撤除后形态画<b>单格</b>，不画三格、也不给撤掉的两位留骨架。</li>
+      <li><b>演示计数口径</b>：F01–F03 的「今日访客 3」= <code>visitors.filter(v =&gt; v.isNew).length</code>，
+        与「我的访客」badge 同源同值（3）；「喜欢我的」badge 6 = <code>likedBy.length</code> = F01 帧内行数。
+        帧内行数与计数逐条对齐，不出现只有数字没有对应行的情况。</li>
+      <li><b>打码头像的圆形轮廓会被模糊糊掉</b>：源码把 <code>border-radius: --r-full</code> 与 <code>filter: blur(14rpx)</code>
+        写在同一个 <code>.list__avatar--blur</code> 节点上（圆角先裁、模糊后作），于是圆边被糊成软方角、内容溢出到圆外一圈。
+        画板按同一写法复现（F03 三个打码位），不改法——真要收口得把 blur 挪到内层图、外层只裁圆，属源码侧改动。</li>
+      <li><b>行内正文</b>（headline）是用户自填字段的演示读数；时间 <code>M/D</code> 由 <code>formatTime()</code> 从 <code>likedAt / visitedAt</code> 派生
+        （iOS 解析坑已在 R4-00019 修，两页同源）。</li>
+      <li>本页在 discover-extra 分包，<b>无 tabbar</b>、无原生导航栏（<code>navigationStyle: custom</code>，返回件由页面自绘）。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 喜欢与访客高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（deviceScaleFactor 2.273，面积对齐语料 1.573 Mpx）
+</footer>
+
+</div>
+</body>
+</html>

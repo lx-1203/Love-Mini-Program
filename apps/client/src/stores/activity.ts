@@ -375,7 +375,7 @@ export const useActivityStore = defineStore("activity", {
           description: string;
           enrollmentCount: number;
           participantAvatars: string[];
-          status: string;
+          status?: ActivityItem["status"];
           activityDate: string;
           isEnrolled: boolean;
         }>({
@@ -394,6 +394,7 @@ export const useActivityStore = defineStore("activity", {
           enrollmentCount: data.enrollmentCount,
           participantAvatars: data.participantAvatars,
           isEnrolled: data.isEnrolled,
+          status: data.status,
         };
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.activity.loadDetailFailed");

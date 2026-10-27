@@ -237,7 +237,7 @@ function copyEmail(): void {
 
 .help-faq__answer {
   padding-top: 8rpx;
-  border-top: 1rpx solid var(--c-border, #eef0f4);
+  border-top: 1rpx solid var(--c-border-light);
 }
 
 .help-faq__answer-text {

@@ -41,7 +41,6 @@ import { lightHaptic, mediumHaptic, successHaptic } from "../../utils/haptic";
 import { openAppPath, openUserProfile } from "../../utils/navigation";
 import { IMAGE_PATHS } from "../../config/images";
 import { isDev } from "../../config/env";
-import { MATCH_SCORE_BASE, MATCH_SCORE_STEP, MATCH_SCORE_MAX } from "../../constants/match";
 // Task 32：使用 compat 层统一触摸事件类型，替代浏览器原生 TouchEvent
 import type { UniTouchEvent } from "../../compat";
 
@@ -284,14 +283,13 @@ const ageText = computed(() => {
   return m ? m[1] : "--";
 });
 
-/** 匹配度分数（2026-08-31 待办：与卡片 CardSwiper 同口径，避免「卡片 80% vs 详情 100%」） */
-const matchScore = computed(() => {
-  const count = props.card?.commonCircleCount ?? 1;
-  return Math.min(MATCH_SCORE_MAX, MATCH_SCORE_BASE + count * MATCH_SCORE_STEP);
-});
-
-/** 匹配度文案 */
-const matchScoreText = computed(() => t("cardDetail.matchScoreLabel", { n: matchScore.value }));
+/* 2026-10-26 审计 §4.3（reports/audit/2026-10-25-mini-program-review.md）：原 matchScore =
+   min(98, 80 + commonCircleCount×5)（constants/match.ts 的 MATCH_SCORE_BASE/STEP/MAX）是
+   写死的常量式而非兼容度真值——共同圈缺失归一为 0 时读数仍恒等于底数 80（真实游客实帧
+   real-guest-after-login.png 即「匹配度 80%」）。CardSwiper（R11-L08-D18/D29）与
+   MatchSuccess（R11-L06-D05）已同批撤除假百分比，本详情层同步撤除：
+   后端没有匹配度真分列前不显示任何百分比；真分列就绪后再按原位重建。
+   共同圈数本身（commonCircleCount）仍在数据里，但不拿它换算成百分比。 */
 
 /** 兴趣圈数量文案 */
 const circlesCountText = computed(() => t("cardDetail.circlesCount", { n: interestCircles.value.length }));
@@ -992,14 +990,12 @@ function onSwipeDownEnd(e: UniTouchEvent) {
                   <text class="detail-hero__grade-text">{{ gradeText }}</text>
                 </view>
 
-                <view class="detail-hero__meta-row">
-                  <view v-if="card?.onlineStatus === 'online'" class="detail-hero__online">
+                <!-- §4.3：原第二枚「♥ 匹配度 N%」胶囊随常量匹配度撤除（见 script 同号注释），
+                     本行只剩在线状态；离线时整行收起，不渲染空 meta 行 -->
+                <view v-if="card?.onlineStatus === 'online'" class="detail-hero__meta-row">
+                  <view class="detail-hero__online">
                     <view class="detail-hero__online-dot" />
                     <text>{{ t('cardDetail.onlineLabel') }}</text>
-                  </view>
-                  <view class="detail-hero__match">
-                    <image class="detail-hero__match-icon" :src="icons.heart" mode="aspectFit" alt="" />
-                    <text>{{ matchScoreText }}</text>
                   </view>
                 </view>
 
@@ -1349,7 +1345,7 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   height: 6rpx;
   border-radius: var(--r-full);
   /* 2026-08-11：透明渐变背景上原深色 bar 不可见，改半透明白 */
-  background: var(--c-overlay-white-bg-mid, rgba(255, 255, 255, 0.5));
+  background: var(--c-overlay-bg-strong);
 }
 
 .detail-top-bar__actions {
@@ -1717,22 +1713,8 @@ function onSwipeDownEnd(e: UniTouchEvent) {
   50% { opacity: 0.5; transform: scale(1.3); }
 }
 
-.detail-hero__match {
-  display: flex;
-  align-items: center;
-  gap: 4rpx;
-  padding: 4rpx 12rpx;
-  border-radius: var(--r-full);
-  background: var(--c-overlay-bg-light);
-  font-size: var(--fs-sm);
-  color: var(--c-text-inverse);
-  font-weight: 600;
-}
-
-.detail-hero__match-icon {
-  width: 22rpx;
-  height: 22rpx;
-}
+/* §4.3：原 .detail-hero__match / __match-icon 假匹配度胶囊样式随读数整块撤除（同
+   CardSwiper R11-L08-D18/D29 的「样式一并删除」口径）；真分列就绪后再按原位重建。 */
 
 /* Phase Feedback1 · 详情 hero 额外信息行（ID/距离/活跃/认证） */
 .detail-hero__extra-row {

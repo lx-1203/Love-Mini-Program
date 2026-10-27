@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 登录页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，rpx÷2=px） ===== */
+.lp { position: absolute; inset: 0; background: var(--c-bg-page); display: flex; flex-direction: column; overflow: hidden; }
+
+/* 顶部导航带：navigationStyle=custom，返回箭头 + 微信胶囊为系统件（§1 系统件几何例外） */
+.lp__nav { height: 44px; margin-top: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex: none; }
+.lp__back { width: 22px; height: 22px; color: var(--c-text-primary); }
+.capsule { width: 62px; height: 28px; border-radius: var(--r-full); border: 0.5px solid var(--c-border-default);
+  background: rgba(255,255,255,.6); display: flex; align-items: center; justify-content: space-evenly; color: var(--c-text-primary); }
+.capsule .dots { display: flex; gap: 3px; }
+.capsule .dots i { width: 3px; height: 3px; border-radius: 50%; background: currentColor; }
+.capsule .div { width: 0.5px; height: 16px; background: var(--c-border-default); }
+.capsule .ring { width: 13px; height: 13px; border-radius: 50%; border: 1.4px solid currentColor; position: relative; }
+.capsule .ring::after { content: ""; position: absolute; inset: 3.5px; border-radius: 50%; background: currentColor; }
+
+/* 品牌区 */
+.lp__brand { padding: 4px var(--sp-8) 0; flex: none; }
+.hero-title-row { display: flex; align-items: center; gap: 6px; }
+.logo-title { font-size: 28px; font-weight: 800; color: var(--c-text-primary); letter-spacing: 2px; line-height: 1.2; }
+.sprout { width: 22px; height: 22px; color: var(--c-brand); margin-top: -3px; flex: none; }
+.logo-subtitle { display: block; margin-top: 3px; font-size: 14px; font-weight: 500; color: var(--c-text-tertiary); letter-spacing: 1px; line-height: 1.6; }
+
+/* 中部插画区：容器 300px（600rpx）overflow 裁切，上下缘渐隐到页底色 */
+.lp__hero { position: relative; width: 100%; height: 258px; overflow: hidden; flex: none;
+  background: linear-gradient(160deg, var(--c-brand-100) 0%, var(--c-brand-300) 55%, var(--c-brand-500) 100%); }
+.hero-image { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.lp__hero::before, .lp__hero::after { content: ""; position: absolute; left: 0; right: 0; z-index: 1; pointer-events: none; }
+.lp__hero::before { top: 0; height: 50px; background: linear-gradient(180deg, var(--c-bg-page) 0%, transparent 100%); }
+.lp__hero::after { bottom: 0; height: 24px; background: linear-gradient(180deg, transparent 0%, var(--c-bg-page) 100%); }
+
+/* 图下 slogan 区 */
+.lp__tagline { display: flex; flex-direction: column; align-items: center; padding: 12px var(--sp-8) 0; flex: none; }
+.hero-desc { font-size: 20px; font-weight: 800; color: var(--c-text-primary); text-align: center; line-height: 1.5; letter-spacing: 1px; }
+.hero-desc--sub { margin-top: 5px; font-size: 15px; font-weight: 700; color: var(--c-brand-800); }
+.hero-desc-discover { display: block; margin-top: 6px; font-size: var(--fs-sm); font-weight: 400; color: var(--c-text-primary); opacity: .55; text-align: center; letter-spacing: .5px; }
+
+/* 底部按钮区 */
+.lp__bottom { flex: 1 1 auto; display: flex; flex-direction: column; padding: 12px var(--sp-8) 0; }
+.login-quick { display: flex; flex-direction: column; gap: 8px; }
+
+/* B6 关闭横幅 */
+.login-closed-banner { display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 10px; margin-bottom: 10px; border-radius: var(--r-lg);
+  background: var(--c-warning-bg-tint); border: 1px solid var(--c-warning-border-tint); text-align: center; }
+.login-closed-banner__title { font-size: var(--fs-lg); font-weight: 600; color: var(--c-warning); }
+.login-closed-banner__desc { font-size: var(--fs-sm); line-height: 1.6; color: var(--c-text-secondary); }
+.login-blocked { opacity: .55; }
+
+/* 主按钮：深绿实心 + 微信图标（白） */
+.btn-primary { width: 100%; height: var(--btn-height-md); border-radius: var(--r-full); background: var(--c-brand-800);
+  display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: var(--s-float-btn); }
+.btn-icon-wrap { width: 22px; height: 22px; background: rgba(255,255,255,.25); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.btn-icon-wrap svg { width: 15px; height: 15px; color: #fff; }
+.btn-primary-text { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-inverse); letter-spacing: 1px; }
+.btn--loading { opacity: .65; }
+
+/* 手机号快捷登录：白底描边次按钮 */
+.btn-phone-quick { width: 100%; height: var(--btn-height-md); border-radius: var(--r-full); background: var(--c-bg-container);
+  border: 1px solid var(--c-border-default); box-shadow: var(--card-shadow); display: flex; align-items: center; justify-content: center; }
+.btn-phone-quick-text { font-size: var(--fs-lg); font-weight: 500; color: var(--c-text-primary); letter-spacing: 1px; }
+
+/* 稍后再看：浅灰填充，弱于主/次 */
+.btn-guest { width: 100%; height: var(--btn-height-md); border-radius: var(--r-full); background: var(--c-bg-surface);
+  display: flex; align-items: center; justify-content: center; }
+.btn-guest-text { font-size: var(--fs-lg); font-weight: 500; color: var(--c-text-tertiary); letter-spacing: 1px; }
+
+/* 文字钮：去注册 / 返回微信登录 */
+.btn-text { width: 100%; height: 44px; display: flex; align-items: center; justify-content: center; }
+.btn-text-link { font-size: var(--fs-md); color: var(--c-brand-800); }
+
+/* 手机号表单态 */
+.input-group { background: var(--c-neutral-50); border-radius: var(--r-md); padding: 0 var(--sp-6); margin-bottom: 12px; border: 1px solid var(--c-neutral-100); }
+.input-item { display: flex; align-items: center; height: 50px; gap: 8px; }
+.input-icon { width: 20px; height: 20px; color: var(--c-text-tertiary); flex: none; }
+.input-field { flex: 1; font-size: var(--fs-lg); color: var(--c-text-primary); }
+.input-field--ph { color: var(--c-text-placeholder); }
+.input-divider { height: 0.5px; background: var(--c-border-light); }
+.form-btns { display: flex; flex-direction: column; gap: 8px; }
+
+/* 协议行 */
+.terms-wrap { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 12px; min-height: 44px; width: 100%; }
+.checkbox { width: 17px; height: 17px; border-radius: 50%; border: 1px solid var(--c-neutral-300); display: flex; align-items: center; justify-content: center; flex: none; }
+.checkbox--checked { background: var(--c-brand); border-color: var(--c-brand); }
+.checkbox svg { width: 12px; height: 12px; color: #fff; }
+.terms-text-wrap { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; }
+.terms-text { font-size: var(--fs-xs); color: var(--c-text-secondary); line-height: 1.7; }
+.terms-link { font-size: var(--fs-xs); color: var(--c-brand-800); line-height: 1.7; }
+
+/* 展示/dev 入口（仅 showcase / dev 构建，画板 §04 说明，不在正式屏出现） */
+.fade { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; z-index: 5; background: linear-gradient(transparent, var(--c-bg-page)); }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M12 22V11"/><path d="M12 12C12 8.5 9 6 5 6c0 3.6 3 6 7 6z"/><path d="M12 11c.2-3.3 2.9-5.5 6.5-5.5C18.3 9 15.5 11 12 11z"/></symbol>
+  <symbol id="i-wechat" viewBox="0 0 24 24"><path d="M9 4C5.1 4 2 6.6 2 9.8c0 1.8 1 3.4 2.6 4.5L4 16.5l2.3-1.2c.8.2 1.6.4 2.4.4h.6a5 5 0 0 1-.2-1.4C9.1 10.9 12 8.4 15.6 8.4c.3 0 .6 0 .9.1C16 6 12.8 4 9 4z"/><path d="M15.5 9.5c-3 0-5.5 2.1-5.5 4.7s2.5 4.7 5.5 4.7c.7 0 1.3-.1 1.9-.3l1.9 1-.4-1.7c1.3-.9 2.1-2.2 2.1-3.7 0-2.6-2.5-4.7-5.5-4.7z" /><circle cx="7" cy="8.3" r=".7" class="ico--fill"/><circle cx="11" cy="8.3" r=".7" class="ico--fill"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-mobile" viewBox="0 0 24 24"><rect x="6.5" y="3" width="11" height="18" rx="2.4"/><path d="M10.5 18h3"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><path d="M11 11l8 8M16 16l2-2M18.5 18.5l1.5-1.5"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>登录页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">pages/login/index</code>。
+     登录页是全站入口，主包页但无 tabbar、navigationStyle=custom（返回箭头与微信胶囊为系统件）。
+     页面自上而下为：品牌区（寻觅+嫩芽+slogan）→ 中部实景插画 → 图下三行 slogan → 底部登录按钮组 → 协议行。
+     本页核心状态由三个条件位决定，画板取四个代表性屏作为永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>pages/login/index</b></span>
+    <span>主包 <b>无 tabbar</b></span>
+    <span>导航 <b>custom（系统胶囊）</b></span>
+    <span>状态 <b>4 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>理想图《登录页面.png》</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 4 屏</h2>
+    <p>快捷登录（未勾选 / 已勾选）/ 手机号表单 / 登录功能关闭</p></div>
+  <div class="sec__sub">本页状态机由三个条件位决定：<code>showPhoneLogin</code>（false=快捷登录 / true=手机号表单）、
+    <code>agreed</code>（协议勾选与否）、<code>isLoginOpen</code>（后台开关，false 时出关闭横幅并置灰卡片）。
+    快捷分支在微信端渲染 <code>btn-primary</code>（微信一键登录）+ <code>btn-phone-quick</code>（手机号快捷登录，getPhoneNumber）
+    + <code>btn-guest</code>（稍后再看）+ <code>isRegisterOpen</code> 控制的「没有账号？去注册」文字入口。
+    帧即视口：超出 812px 的部分裁切，被裁掉什么写在题注 <code>.d</code> 里，不写进画面。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">快捷登录 · 默认（协议未勾选）</span><span class="d">主验收屏 · 全内容入画</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lp">
+          <div class="lp__nav"><svg class="lp__back"><use href="#i-back"/></svg>
+            <span class="capsule"><span class="dots"><i></i><i></i><i></i></span><span class="div"></span><span class="ring"></span></span>
+          </div>
+          <div class="lp__brand">
+            <div class="hero-title-row"><span class="logo-title">寻觅</span><svg class="sprout"><use href="#i-sprout"/></svg></div>
+            <span class="logo-subtitle">遇见同频的人</span>
+          </div>
+          <div class="lp__hero"><img class="hero-image" src="assets/demo/login-illustration.jpg" alt=""></div>
+          <div class="lp__tagline">
+            <span class="hero-desc">遇见同频的人</span>
+            <span class="hero-desc hero-desc--sub">慢慢成为特别的人</span>
+            <span class="hero-desc-discover">校园里的每一次相遇都有美好记录</span>
+          </div>
+          <div class="lp__bottom">
+            <div class="login-quick">
+              <div class="btn-primary"><span class="btn-icon-wrap"><svg class="ico--fill"><use href="#i-wechat"/></svg></span><span class="btn-primary-text">微信一键登录</span></div>
+              <div class="btn-phone-quick"><span class="btn-phone-quick-text">手机号快捷登录</span></div>
+              <div class="btn-guest"><span class="btn-guest-text">稍后再看</span></div>
+              <div class="btn-text"><span class="btn-text-link">没有账号？去注册</span></div>
+            </div>
+            <div class="terms-wrap"><span class="checkbox"></span>
+              <span class="terms-text-wrap"><span class="terms-text">登录即同意</span><span class="terms-link">《用户协议》</span><span class="terms-text">和</span><span class="terms-link">《隐私政策》</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">快捷登录 · 协议已勾选</span><span class="d">圆点勾选态 · 全内容入画</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lp">
+          <div class="lp__nav"><svg class="lp__back"><use href="#i-back"/></svg>
+            <span class="capsule"><span class="dots"><i></i><i></i><i></i></span><span class="div"></span><span class="ring"></span></span>
+          </div>
+          <div class="lp__brand">
+            <div class="hero-title-row"><span class="logo-title">寻觅</span><svg class="sprout"><use href="#i-sprout"/></svg></div>
+            <span class="logo-subtitle">遇见同频的人</span>
+          </div>
+          <div class="lp__hero"><img class="hero-image" src="assets/demo/login-illustration.jpg" alt=""></div>
+          <div class="lp__tagline">
+            <span class="hero-desc">遇见同频的人</span>
+            <span class="hero-desc hero-desc--sub">慢慢成为特别的人</span>
+            <span class="hero-desc-discover">校园里的每一次相遇都有美好记录</span>
+          </div>
+          <div class="lp__bottom">
+            <div class="login-quick">
+              <div class="btn-primary"><span class="btn-icon-wrap"><svg class="ico--fill"><use href="#i-wechat"/></svg></span><span class="btn-primary-text">微信一键登录</span></div>
+              <div class="btn-phone-quick"><span class="btn-phone-quick-text">手机号快捷登录</span></div>
+              <div class="btn-guest"><span class="btn-guest-text">稍后再看</span></div>
+              <div class="btn-text"><span class="btn-text-link">没有账号？去注册</span></div>
+            </div>
+            <div class="terms-wrap"><span class="checkbox checkbox--checked"><svg class="ico--fill"><use href="#i-check"/></svg></span>
+              <span class="terms-text-wrap"><span class="terms-text">登录即同意</span><span class="terms-link">《用户协议》</span><span class="terms-text">和</span><span class="terms-link">《隐私政策》</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">手机号表单态 · showPhoneLogin=true</span><span class="d">表单内容超视口 · 协议行裁切于下沿</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lp">
+          <div class="lp__nav"><svg class="lp__back"><use href="#i-back"/></svg>
+            <span class="capsule"><span class="dots"><i></i><i></i><i></i></span><span class="div"></span><span class="ring"></span></span>
+          </div>
+          <div class="lp__brand">
+            <div class="hero-title-row"><span class="logo-title">寻觅</span><svg class="sprout"><use href="#i-sprout"/></svg></div>
+            <span class="logo-subtitle">遇见同频的人</span>
+          </div>
+          <div class="lp__hero"><img class="hero-image" src="assets/demo/login-illustration.jpg" alt=""></div>
+          <div class="lp__tagline">
+            <span class="hero-desc">遇见同频的人</span>
+            <span class="hero-desc hero-desc--sub">慢慢成为特别的人</span>
+            <span class="hero-desc-discover">校园里的每一次相遇都有美好记录</span>
+          </div>
+          <div class="lp__bottom">
+            <div class="input-group">
+              <div class="input-item"><svg class="input-icon"><use href="#i-mobile"/></svg><span class="input-field input-field--ph">请输入手机号</span></div>
+              <div class="input-divider"></div>
+              <div class="input-item"><svg class="input-icon"><use href="#i-key"/></svg><span class="input-field input-field--ph">请输入密码（6-64 位）</span></div>
+            </div>
+            <div class="form-btns">
+              <div class="btn-primary"><span class="btn-primary-text">登 录</span></div>
+              <div class="btn-text"><span class="btn-text-link">没有账号？去注册</span></div>
+              <div class="btn-text"><span class="btn-text-link">返回微信登录</span></div>
+            </div>
+            <div class="terms-wrap"><span class="checkbox checkbox--checked"><svg class="ico--fill"><use href="#i-check"/></svg></span>
+              <span class="terms-text-wrap"><span class="terms-text">登录即同意</span><span class="terms-link">《用户协议》</span><span class="terms-text">和</span><span class="terms-link">《隐私政策》</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">登录功能关闭 · isLoginOpen=false</span><span class="d">关闭横幅 + 卡片置灰 · 协议行裁切于下沿</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lp">
+          <div class="lp__nav"><svg class="lp__back"><use href="#i-back"/></svg>
+            <span class="capsule"><span class="dots"><i></i><i></i><i></i></span><span class="div"></span><span class="ring"></span></span>
+          </div>
+          <div class="lp__brand">
+            <div class="hero-title-row"><span class="logo-title">寻觅</span><svg class="sprout"><use href="#i-sprout"/></svg></div>
+            <span class="logo-subtitle">遇见同频的人</span>
+          </div>
+          <div class="lp__hero"><img class="hero-image" src="assets/demo/login-illustration.jpg" alt=""></div>
+          <div class="lp__tagline">
+            <span class="hero-desc">遇见同频的人</span>
+            <span class="hero-desc hero-desc--sub">慢慢成为特别的人</span>
+            <span class="hero-desc-discover">校园里的每一次相遇都有美好记录</span>
+          </div>
+          <div class="lp__bottom">
+            <div class="login-closed-banner">
+              <span class="login-closed-banner__title">登录功能暂未开放</span>
+              <span class="login-closed-banner__desc">登录通道正在维护升级，请稍后再试。</span>
+            </div>
+            <div class="login-quick login-blocked">
+              <div class="btn-primary"><span class="btn-icon-wrap"><svg class="ico--fill"><use href="#i-wechat"/></svg></span><span class="btn-primary-text">微信一键登录</span></div>
+              <div class="btn-phone-quick"><span class="btn-phone-quick-text">手机号快捷登录</span></div>
+              <div class="btn-guest"><span class="btn-guest-text">稍后再看</span></div>
+              <div class="btn-text"><span class="btn-text-link">没有账号？去注册</span></div>
+            </div>
+            <div class="terms-wrap"><span class="checkbox"></span>
+              <span class="terms-text-wrap"><span class="terms-text">登录即同意</span><span class="terms-link">《用户协议》</span><span class="terms-text">和</span><span class="terms-link">《隐私政策》</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页交互件按「登录能不能走通」分四类：主/次/游客按钮、文字入口、协议勾选、表单输入。
+    按钮 loading 由 <code>loginFlowActive</code> 统一控制（opacity .65），两成因（微信 / 手机号）共用同一视觉。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>按钮族 · 三级权级</h3>
+      <p class="hint">主按钮底取 <code>--c-brand-800</code>（白字 6.45:1，非 <code>--c-brand</code> 的 2.10:1）；次按钮白底描边；游客浅灰无描边。</p>
+      <div class="row">
+        <div class="cell"><div class="btn-primary" style="width:186px"><span class="btn-icon-wrap"><svg class="ico--fill"><use href="#i-wechat"/></svg></span><span class="btn-primary-text">微信一键登录</span></div><span class="lab">主（深绿实心）</span></div>
+        <div class="cell"><div class="btn-primary btn--loading" style="width:186px"><span class="btn-icon-wrap"><svg class="ico--fill"><use href="#i-wechat"/></svg></span><span class="btn-primary-text">微信一键登录</span></div><span class="lab">loading（loginFlowActive）</span></div>
+        <div class="cell"><div class="btn-phone-quick" style="width:186px"><span class="btn-phone-quick-text">手机号快捷登录</span></div><span class="lab">次（白底描边·getPhoneNumber）</span></div>
+        <div class="cell"><div class="btn-guest" style="width:186px"><span class="btn-guest-text">稍后再看</span></div><span class="lab">游客（浅灰填充）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>文字入口 · 去注册 / 返回微信登录</h3>
+      <p class="hint"><code>.btn-text</code> 高 88rpx（44px）最小可点件口径，字色 <code>--c-brand-800</code>。「去注册」由 <code>isRegisterOpen</code> 控制，快捷态与表单态各出现一次。</p>
+      <div class="row">
+        <div class="cell"><div class="btn-text" style="width:186px;background:var(--c-bg-surface)"><span class="btn-text-link">没有账号？去注册</span></div><span class="lab">去注册（isRegisterOpen）</span></div>
+        <div class="cell"><div class="btn-text" style="width:186px;background:var(--c-bg-surface)"><span class="btn-text-link">返回微信登录</span></div><span class="lab">返回微信登录（仅表单态）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>协议勾选 · 圆点两态</h3>
+      <p class="hint">未勾选为 <code>--c-neutral-300</code> 描边空心圆（34rpx）；勾选填 <code>--c-brand</code> + 白色对勾。整行为热区（min-height 88rpx），圆点承载 checkbox 语义。</p>
+      <div class="row">
+        <div class="cell"><div style="display:flex;align-items:center;gap:6px;width:186px;justify-content:center"><span class="checkbox"></span><span class="terms-text">登录即同意《用户协议》</span></div><span class="lab">未勾选（agreed=false，默认）</span></div>
+        <div class="cell"><div style="display:flex;align-items:center;gap:6px;width:186px;justify-content:center"><span class="checkbox checkbox--checked"><svg class="ico--fill"><use href="#i-check"/></svg></span><span class="terms-text">登录即同意《用户协议》</span></div><span class="lab">已勾选（agreed=true）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>表单输入 · placeholder / 已填</h3>
+      <p class="hint">手机号 <code>maxlength=11</code>、密码 <code>password</code>；两输入以 <code>.input-divider</code> 分隔，包在 <code>--c-neutral-50</code> 圆角组内。</p>
+      <div class="row">
+        <div class="cell"><div class="input-group" style="width:186px;margin:0"><div class="input-item"><svg class="input-icon"><use href="#i-mobile"/></svg><span class="input-field input-field--ph">请输入手机号</span></div></div><span class="lab">手机号 · placeholder</span></div>
+        <div class="cell"><div class="input-group" style="width:186px;margin:0"><div class="input-item"><svg class="input-icon"><use href="#i-key"/></svg><span class="input-field">••••••••</span></div></div><span class="lab">密码 · 已填（掩码）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位，未引入页内私有色值</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用以下档位。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主按钮 / 强调绿<code>--c-brand-800</code></div><div class="sw__u">微信主按钮底 · 副句 · 链接 · 去注册</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">嫩芽图标 · 勾选圆点填充</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">整页背景 · 插画上下缘渐隐目标</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器<code>--c-bg-container</code></div><div class="sw__u">手机号快捷登录（次按钮）底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">表面<code>--c-bg-surface</code></div><div class="sw__u">稍后再看（游客）底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F59E0B"></span><div><div class="sw__n">警告<code>--c-warning</code></div><div class="sw__u">登录功能关闭横幅</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到六档（rpx÷2=px）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">28px / 800</span><span class="type__p" style="font-size:28px;font-weight:800">寻觅</span></div>
+        <div class="type__i"><span class="type__m">20px / 800</span><span class="type__p" style="font-size:20px;font-weight:800">遇见同频的人</span></div>
+        <div class="type__i"><span class="type__m">15px / 700 · brand-800</span><span class="type__p" style="font-size:15px;font-weight:700;color:var(--c-brand-800)">慢慢成为特别的人</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14 / 600</span><span class="type__p" style="font-size:14px;font-weight:600">微信一键登录 · 手机号快捷登录</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13 / 400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-brand-800)">没有账号？去注册</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10 / 400</span><span class="type__p" style="font-size:10px;font-weight:400;color:var(--c-text-secondary)">登录即同意《用户协议》和《隐私政策》</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 高</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-4 8rpx</b><i style="width:4px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-8 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>12rpx · 输入组</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>胶囊 · 三按钮</div>
+      </div>
+      <div class="space" style="margin-top:16px">
+        <div class="space__i"><b>--btn-height-md</b><i style="width:48px;height:14px"></i> 48px · 主/次/游客按钮</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与实况的已知差异</h2><p>主插画为真素材缺口，交主控复制</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/login-illustration.jpg" alt="" style="height:190px;object-fit:cover;background:linear-gradient(160deg,var(--c-brand-100),var(--c-brand-500))">
+      <div class="asset__b"><b>IMAGE_PATHS.POSTERS.LOGIN_ILLUSTRATION</b>
+        <p>源码 <code>pages/login/index.vue:592</code> 引用 <code>IMAGE_PATHS.POSTERS.LOGIN_ILLUSTRATION</code>，
+        解析为 <code>/static/assets/images/posters/login-illustration.jpg</code>（images.ts:436，2026-08-20 改为校园插画）。
+        该位是理想图《登录页面.png》中部的实景插画（两人坐草坪），属照片位，须用真素材，不许灰块。</p>
+        <div class="m">NEED_ASSET: apps/client/src/static/assets/images/posters/login-illustration.jpg → assets/demo/</div></div></div>
+    <div class="asset"><img src="assets/demo/login-illustration.jpg" alt="" style="height:190px;object-fit:contain;background:var(--c-bg-page)">
+      <div class="asset__b"><b>嫩芽 / 微信标 / 对勾 · 内联 SVG</b>
+        <p>源码用 <code>ICONS_V2.SPROUT</code>（mascot/sprout.png）、<code>ICONS_V2.WECHAT_GREEN_SVG</code>（icons/login/wechat-green.svg，就地反白为白形）、
+        <code>ICONS_COMMON.CHECK_WHITE_SVG</code>（icons/common/check-white.svg）。三枚均为小尺寸品牌/功能图标（非照片位），
+        本画板以 lucide 风格内联 SVG 复刻其形态与配色，不占素材缺口。</p>
+        <div class="m">22px 嫩芽 · 15px 微信标 · 12px 对勾</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异 / 已裁定偏离（画板按实况画，登记在此）：</b>
+    <ul>
+      <li><b>「去注册」入口</b>：理想图《登录页面.png》底部只有三按钮 + 协议行，<b>无</b>注册入口。实况默认态（快捷分支）在 <code>isRegisterOpen</code> 为真时多一行「没有账号？去注册」文字钮（源码 :702-712，MP-R7-GUEST-LANDING-REGENTRY-001）。登记表第 1 行点名此为功能差异、<b>已裁定保留</b>，故 F01/F02/F04 按实况画出。</li>
+      <li><b>协议为圆点勾选</b>：理想图底部协议行是绿色实心圆带白勾（示意已勾选）。实况是 34rpx 圆点 checkbox，未勾选为空心描边、勾选才填 <code>--c-brand</code> + 白勾（源码 :793-805，R7-L01-D03 整行为热区）。登记表点名此为系统差异、<b>已裁定保留</b>。默认落地 <code>agreed=false</code>，故主验收屏 F01 画成未勾选空心圆，已勾选态见 F02。</li>
+      <li><b>次按钮文案</b>：理想图第二按钮写「手机号登录」；实况微信端快捷分支该按钮为 <code>login.phoneQuickLogin</code>=「手机号快捷登录」（getPhoneNumber），「手机号登录」是 <code>login.phoneLogin</code> 用于表单入口。按 i18n 真值与源码画为「手机号快捷登录」。</li>
+      <li><b>顶部导航</b>：本页 <code>navigationStyle=custom</code>（pages.json globalStyle），源码模板内不自绘返回箭头；理想图顶部的「&lt;」与右上「···」为微信系统件（状态栏 + 胶囊）。画板按系统件画出（§1 系统件几何例外），非页面内容。</li>
+      <li><b>无 tabbar</b>：登录页虽是主包页，但非主包五 tab 页，<b>无 tabbar</b>——画板若出现 tabbar 即为错。</li>
+      <li><b>展示/dev 入口</b>：<code>isShowcaseMode</code>（showcase 构建）与 <code>showDevUserEntry</code>（dev/mock 构建）的展示版/演示模式入口（源码 :817-846）仅非正式构建出现，正式版（real 档）不渲染，故四屏均不画。</li>
+      <li><b>主插画</b>：见 §04 素材块，<code>login-illustration.jpg</code> 尚未在 <code>assets/demo/</code>，本画板暂以品牌渐层占位，待主控复制真素材后自动替换。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 登录页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846
+</footer>
+
+</div>
+</body>
+</html>

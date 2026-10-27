@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 免打扰设置页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌；px 均为源码 rpx ÷ 2 的实测换算） ===== */
+/* 吸顶页头：safe-top 44 + nav-bar 88rpx=44（dnd.vue:559 / :567）。
+   注意本页 .nav-bar 横向内衬是 24rpx=12px，而 .section 是 --page-padding=16px ⇒ 返回键比卡群外突 4px（见 §04） */
+.psh { position: absolute; top: 0; left: 0; width: 100%; height: 88px; z-index: 6;
+  background: var(--c-bg-container); box-shadow: var(--s-sm); }
+.psn { position: absolute; top: 44px; left: 0; width: 100%; height: 44px; display: flex;
+  align-items: center; justify-content: space-between; padding: 0 12px; box-sizing: border-box;
+  z-index: 7; }   /* 必须高于 .psh(6)，否则返回键与标题被不透明吸顶底吞掉 */
+.psn__back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-7xl); color: var(--c-text-primary); font-weight: 300; line-height: 1; }
+.psn__t { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); }
+.psn__ph { width: 32px; height: 32px; flex: none; }
+
+/* 内容区（自然流，帧即视口） */
+.wrapd { position: absolute; top: 88px; left: 0; width: 100%; height: 900px; z-index: 2; }
+.wrapd--up { top: auto; bottom: 0; height: auto; }
+.stg { margin: 12px 16px 0; }
+.stg__h { font-size: var(--fs-base); color: var(--c-text-secondary); font-weight: 500;
+  padding: 0 6px 6px; }
+.cardd { background: var(--c-bg-container); border-radius: var(--r-card);
+  box-shadow: var(--s-card-soft); overflow: hidden; }
+
+/* 总开关行 + 紧急穿透行 */
+.swr { display: flex; align-items: center; justify-content: space-between; padding: 14px;
+  border-bottom: 0.5px solid var(--c-border-light); }
+.swr:last-child { border-bottom: none; }
+.swr__l { display: flex; flex-direction: column; gap: 4px; flex: 1; padding-right: 8px; }
+.swr__lab { font-size: var(--fs-lg); color: var(--c-text-primary); font-weight: 500; }
+.swr__desc { font-size: var(--fs-base); color: var(--c-text-tertiary); line-height: 1.5; }
+/* R9-L11-D04：原生 switch 底下垫一层 --c-neutral-500 槽（padding 6rpx=3px） */
+.well { flex: none; display: flex; align-items: center; justify-content: center;
+  padding: 3px; border-radius: var(--r-full); background: var(--c-neutral-500); }
+.tg { position: relative; width: 52px; height: 32px; border-radius: var(--r-full); flex: none;
+  background: var(--c-neutral-0); border: 1px solid var(--c-border-default); box-sizing: border-box; }
+.tg::after { content: ""; position: absolute; top: 2px; left: 2px; width: 26px; height: 26px;
+  border-radius: var(--r-circle); background: var(--c-neutral-0); box-shadow: var(--s-md); }
+.tg--on { background: var(--c-brand); border-color: var(--c-brand); }
+.tg--on::after { left: 22px; }
+
+/* 当前状态行 */
+.sta { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px;
+  border-top: 0.5px solid var(--c-border-light); }
+.sta__l { font-size: var(--fs-md); color: var(--c-text-secondary); }
+.sta__v { font-size: var(--fs-lg); color: var(--c-text-tertiary); font-weight: 600; }
+.sta__v--on { color: var(--c-brand); }
+
+/* 时段行（整行即 picker 热区：R14-L11-D01） */
+.tim { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px;
+  min-height: 44px; border-bottom: 0.5px solid var(--c-border-light); box-sizing: border-box; }
+.tim:last-child { border-bottom: none; }
+.tim__l { font-size: var(--fs-lg); color: var(--c-text-primary); font-weight: 500; }
+.tim__p { display: flex; align-items: center; gap: 4px; }
+.tim__v { font-size: var(--fs-lg); color: var(--c-brand-800); font-weight: 600;
+  font-variant-numeric: tabular-nums; }
+.tim__a { font-size: var(--fs-2xl); color: var(--c-border-strong); font-weight: 300; line-height: 1; }
+
+/* 重复方式单选 */
+/* 重复方式单选行（类名避开 base 的 .rad 圆角样板） */
+.orow { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px;
+  border-bottom: 0.5px solid var(--c-border-light); }
+.orow:last-child { border-bottom: none; }
+.orow.orow--keep:last-child { border-bottom: 0.5px solid var(--c-border-light); }  /* CUSTOM 时末行保留边线 */
+.orow__l { font-size: var(--fs-lg); color: var(--c-text-primary); font-weight: 500; }
+.dot { width: 18px; height: 18px; border-radius: var(--r-circle); flex: none; position: relative;
+  border: 1px solid var(--c-border-strong); box-sizing: border-box; }
+.dot--on { background: var(--c-brand); border-color: var(--c-brand); }
+.dot--on::after { content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 8px; height: 8px; border-radius: var(--r-circle); background: var(--c-text-inverse); }
+
+/* 自定义星期芯片 */
+.wk { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px; }
+.wkd { width: calc((100% - 24px) / 4); min-height: 44px; padding: 10px 0; box-sizing: border-box;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--c-bg-surface); border: 1px solid var(--c-border-strong);
+  border-radius: var(--r-lg); }
+.wkd--on { background: var(--c-brand-100); border-color: var(--c-brand-800); }
+.wkd__t { font-size: var(--fs-md); color: var(--c-text-primary); font-weight: 500; }
+
+/* 保存按钮（sticky 吸底，源码 :948） */
+.save { margin: 20px 16px 0; padding: 14px; background: var(--c-brand-800);
+  border-radius: var(--r-xl); text-align: center; box-shadow: var(--s-md); }
+.save__t { color: var(--c-text-inverse); font-size: var(--fs-xl); font-weight: 600; }
+.save--dis { opacity: 0.6; }
+
+/* loading / error */
+.statew { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 60px 16px; }
+.spinr { width: 32px; height: 32px; border: 2px solid var(--c-border-light);
+  border-top-color: var(--c-brand); border-radius: var(--r-circle); }
+.statet { font-size: var(--fs-lg); color: var(--c-text-secondary); }
+.retry { padding: 8px 24px; background: var(--c-brand); border-radius: var(--r-full); }
+.retry__t { color: var(--c-text-inverse); font-size: var(--fs-lg); font-weight: 600; }
+
+/* uni.showToast（icon:none）：微信文字 toast 垂直居中于视口 */
+.toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 30;
+  max-width: 260px; padding: 12px 18px; border-radius: var(--r-xl);
+  background: var(--c-neutral-900); box-shadow: var(--s-lg); }
+.toast__t { color: var(--c-text-inverse); font-size: var(--fs-lg); line-height: 1.5; text-align: center; }
+
+/* §04 素材条：控件件墙（本页无照片位、无图标） */
+.athumb2 { height: 190px; background: var(--c-bg-surface); display: flex; flex-wrap: wrap;
+  align-content: center; justify-content: center; gap: 18px; padding: 22px; }
+.athumb2 .wkd { width: 72px; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>免打扰设置页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/profile-extra/settings/dnd</code>。
+     从设置页「通知设置 → 免打扰」进入的第二级页。本页把三件事绑在一起：
+     总开关决定「当前状态」行的字色与文案，<code>&lt;picker mode="time"&gt;</code> 决定两个时段值，
+     重复方式决定自定义星期块是否出现。画板把 loading / error / 关闭 / 开启 / 自定义 / 保存中 / 校验拦截
+     七个可停帧的状态画全，并钉住一条实况：总开关关掉时，下面三块<strong>并不置灰</strong>。</p>
+  <div class="cover__meta">
+    <span>路由 <b>profile-extra/settings/dnd</b></span>
+    <span>分包 <b>profile-extra</b>（无 tabbar）</span>
+    <span>状态 <b>7 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1845</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 7 屏</h2>
+    <p>三态页级 + 四态内容级</p></div>
+  <div class="sec__sub">本页状态机有 <b>7 屏</b>，逐条来自源码条件表达式：
+    页级 <code>pageState === 'loading'</code>（:346）/ <code>pageState === 'error'</code>（:352）/
+    <code>v-else</code> 内容区（:365）；内容级 <code>form.enabled</code>（:387，联动
+    <code>statusText = form.value.enabled ? t("dnd.statusOn") : t("dnd.statusOff")</code> :306 与其
+    <code>status-row__value--on</code> 字色类 :397）、<code>form.repeatMode === 'CUSTOM'</code>（:479，
+    决定自定义星期整块 <code>v-if</code>，并连带改变末条单选的 <code>radio-row--no-border</code> :460）、
+    <code>isSaving</code>（:523 按钮降透明 + :529 文案切「处理中...」）、
+    <code>validateForm()</code> 返回非空（:245 → :220/:224 toast）。
+    页头三态常驻（在 <code>v-if</code> 之外），帧即视口，超 812px 由画框裁掉。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">加载中</span><span class="d">pageState==='loading' · 页头在 v-if 之外，必须仍在</span></figcaption>
+      <div class="phone">
+        <div class="psh"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="psn"><span class="psn__back">‹</span><span class="psn__t">免打扰</span><span class="psn__ph"></span></div>
+        <div class="wrapd" style="top:200px">
+          <div class="statew"><span class="spinr"></span><span class="statet">加载中...</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">加载失败 · 可重试</span><span class="d">pageState==='error' · 正文是运行时 error.message，兜底档「网络错误」</span></figcaption>
+      <div class="phone">
+        <div class="psh"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="psn"><span class="psn__back">‹</span><span class="psn__t">免打扰</span><span class="psn__ph"></span></div>
+        <div class="wrapd" style="top:200px">
+          <div class="statew"><span class="statet">网络错误</span><span class="retry"><span class="retry__t">重试</span></span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">内容 · 总开关关闭</span><span class="d">form.enabled=false · 状态「已关闭」灰 · 时段/重复/紧急三块不置灰</span></figcaption>
+      <div class="phone">
+        <div class="psh"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="psn"><span class="psn__back">‹</span><span class="psn__t">免打扰</span><span class="psn__ph"></span></div>
+        <div class="wrapd">
+          <div class="stg"><div class="cardd">
+            <div class="swr"><div class="swr__l"><span class="swr__lab">开启免打扰</span><span class="swr__desc">开启后，在指定时间段内将不会收到消息推送</span></div><span class="well"><span class="tg"></span></span></div>
+            <div class="sta"><span class="sta__l">当前状态</span><span class="sta__v">已关闭</span></div>
+          </div></div>
+          <div class="stg"><div class="stg__h">免打扰时段</div>
+            <div class="cardd">
+              <div class="tim"><span class="tim__l">开始时间</span><span class="tim__p"><span class="tim__v">22:00</span><span class="tim__a">›</span></span></div>
+              <div class="tim"><span class="tim__l">结束时间</span><span class="tim__p"><span class="tim__v">08:00</span><span class="tim__a">›</span></span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">重复方式</div>
+            <div class="cardd">
+              <div class="orow"><span class="orow__l">每天</span><span class="dot dot--on"></span></div>
+              <div class="orow"><span class="orow__l">工作日</span><span class="dot"></span></div>
+              <div class="orow"><span class="orow__l">周末</span><span class="dot"></span></div>
+              <div class="orow"><span class="orow__l">自定义</span><span class="dot"></span></div>
+            </div></div>
+          <div class="stg"><div class="cardd">
+            <div class="swr"><div class="swr__l"><span class="swr__lab">紧急消息仍会通知，避免错过重要信息</span></div><span class="well"><span class="tg tg--on"></span></span></div>
+          </div></div>
+          <div class="save"><span class="save__t">保存</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">内容 · 总开关开启</span><span class="d">form.enabled=true · 状态「已开启」转 --c-brand · 其余块无变化</span></figcaption>
+      <div class="phone">
+        <div class="psh"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="psn"><span class="psn__back">‹</span><span class="psn__t">免打扰</span><span class="psn__ph"></span></div>
+        <div class="wrapd">
+          <div class="stg"><div class="cardd">
+            <div class="swr"><div class="swr__l"><span class="swr__lab">开启免打扰</span><span class="swr__desc">开启后，在指定时间段内将不会收到消息推送</span></div><span class="well"><span class="tg tg--on"></span></span></div>
+            <div class="sta"><span class="sta__l">当前状态</span><span class="sta__v sta__v--on">已开启</span></div>
+          </div></div>
+          <div class="stg"><div class="stg__h">免打扰时段</div>
+            <div class="cardd">
+              <div class="tim"><span class="tim__l">开始时间</span><span class="tim__p"><span class="tim__v">22:00</span><span class="tim__a">›</span></span></div>
+              <div class="tim"><span class="tim__l">结束时间</span><span class="tim__p"><span class="tim__v">08:00</span><span class="tim__a">›</span></span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">重复方式</div>
+            <div class="cardd">
+              <div class="orow"><span class="orow__l">每天</span><span class="dot dot--on"></span></div>
+              <div class="orow"><span class="orow__l">工作日</span><span class="dot"></span></div>
+              <div class="orow"><span class="orow__l">周末</span><span class="dot"></span></div>
+              <div class="orow"><span class="orow__l">自定义</span><span class="dot"></span></div>
+            </div></div>
+          <div class="stg"><div class="cardd">
+            <div class="swr"><div class="swr__l"><span class="swr__lab">紧急消息仍会通知，避免错过重要信息</span></div><span class="well"><span class="tg tg--on"></span></span></div>
+          </div></div>
+          <div class="save"><span class="save__t">保存</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">内容 · 重复方式=自定义</span><span class="d">form.repeatMode==='CUSTOM' · 星期块 v-if 出现 · 第 4 行单选恢复下边线 · ↑顶缘总开关行半裁</span></figcaption>
+      <div class="phone">
+        <div class="psh"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="psn"><span class="psn__back">‹</span><span class="psn__t">免打扰</span><span class="psn__ph"></span></div>
+        <div class="wrapd wrapd--up">
+          <div class="stg"><div class="cardd">
+            <div class="swr"><div class="swr__l"><span class="swr__lab">开启免打扰</span><span class="swr__desc">开启后，在指定时间段内将不会收到消息推送</span></div><span class="well"><span class="tg tg--on"></span></span></div>
+            <div class="sta"><span class="sta__l">当前状态</span><span class="sta__v sta__v--on">已开启</span></div>
+          </div></div>
+          <div class="stg"><div class="stg__h">免打扰时段</div>
+            <div class="cardd">
+              <div class="tim"><span class="tim__l">开始时间</span><span class="tim__p"><span class="tim__v">22:00</span><span class="tim__a">›</span></span></div>
+              <div class="tim"><span class="tim__l">结束时间</span><span class="tim__p"><span class="tim__v">08:00</span><span class="tim__a">›</span></span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">重复方式</div>
+            <div class="cardd">
+              <div class="orow"><span class="orow__l">每天</span><span class="dot"></span></div>
+              <div class="orow"><span class="orow__l">工作日</span><span class="dot"></span></div>
+              <div class="orow"><span class="orow__l">周末</span><span class="dot"></span></div>
+              <div class="orow orow--keep"><span class="orow__l">自定义</span><span class="dot dot--on"></span></div>
+            </div></div>
+          <div class="stg"><div class="cardd"><div class="wk">
+            <span class="wkd wkd--on"><span class="wkd__t">周一</span></span>
+            <span class="wkd"><span class="wkd__t">周二</span></span>
+            <span class="wkd wkd--on"><span class="wkd__t">周三</span></span>
+            <span class="wkd"><span class="wkd__t">周四</span></span>
+            <span class="wkd"><span class="wkd__t">周五</span></span>
+            <span class="wkd wkd--on"><span class="wkd__t">周六</span></span>
+            <span class="wkd"><span class="wkd__t">周日</span></span>
+          </div></div></div>
+          <div class="stg"><div class="cardd">
+            <div class="swr"><div class="swr__l"><span class="swr__lab">紧急消息仍会通知，避免错过重要信息</span></div><span class="well"><span class="tg tg--on"></span></span></div>
+          </div></div>
+          <div class="save"><span class="save__t">保存</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">内容 · 保存中</span><span class="d">isSaving=true · 文案切「处理中...」+ 整键降透明 0.6 · 再点被 :244 吞掉</span></figcaption>
+      <div class="phone">
+        <div class="psh"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="psn"><span class="psn__back">‹</span><span class="psn__t">免打扰</span><span class="psn__ph"></span></div>
+        <div class="wrapd">
+          <div class="stg"><div class="cardd">
+            <div class="swr"><div class="swr__l"><span class="swr__lab">开启免打扰</span><span class="swr__desc">开启后，在指定时间段内将不会收到消息推送</span></div><span class="well"><span class="tg tg--on"></span></span></div>
+            <div class="sta"><span class="sta__l">当前状态</span><span class="sta__v sta__v--on">已开启</span></div>
+          </div></div>
+          <div class="stg"><div class="stg__h">免打扰时段</div>
+            <div class="cardd">
+              <div class="tim"><span class="tim__l">开始时间</span><span class="tim__p"><span class="tim__v">22:00</span><span class="tim__a">›</span></span></div>
+              <div class="tim"><span class="tim__l">结束时间</span><span class="tim__p"><span class="tim__v">08:00</span><span class="tim__a">›</span></span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">重复方式</div>
+            <div class="cardd">
+              <div class="orow"><span class="orow__l">每天</span><span class="dot dot--on"></span></div>
+              <div class="orow"><span class="orow__l">工作日</span><span class="dot"></span></div>
+              <div class="orow"><span class="orow__l">周末</span><span class="dot"></span></div>
+              <div class="orow"><span class="orow__l">自定义</span><span class="dot"></span></div>
+            </div></div>
+          <div class="stg"><div class="cardd">
+            <div class="swr"><div class="swr__l"><span class="swr__lab">紧急消息仍会通知，避免错过重要信息</span></div><span class="well"><span class="tg tg--on"></span></span></div>
+          </div></div>
+          <div class="save save--dis"><span class="save__t">处理中...</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">内容 · 校验拦截（自定义未选星期）</span><span class="d">validateForm() 返回 dnd.customWeekdaysRequired · toast 垂直居中 · ↑顶缘总开关行半裁</span></figcaption>
+      <div class="phone">
+        <div class="psh"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="psn"><span class="psn__back">‹</span><span class="psn__t">免打扰</span><span class="psn__ph"></span></div>
+        <div class="wrapd wrapd--up">
+          <div class="stg"><div class="cardd">
+            <div class="swr"><div class="swr__l"><span class="swr__lab">开启免打扰</span><span class="swr__desc">开启后，在指定时间段内将不会收到消息推送</span></div><span class="well"><span class="tg tg--on"></span></span></div>
+            <div class="sta"><span class="sta__l">当前状态</span><span class="sta__v sta__v--on">已开启</span></div>
+          </div></div>
+          <div class="stg"><div class="stg__h">免打扰时段</div>
+            <div class="cardd">
+              <div class="tim"><span class="tim__l">开始时间</span><span class="tim__p"><span class="tim__v">22:00</span><span class="tim__a">›</span></span></div>
+              <div class="tim"><span class="tim__l">结束时间</span><span class="tim__p"><span class="tim__v">08:00</span><span class="tim__a">›</span></span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">重复方式</div>
+            <div class="cardd">
+              <div class="orow"><span class="orow__l">每天</span><span class="dot"></span></div>
+              <div class="orow"><span class="orow__l">工作日</span><span class="dot"></span></div>
+              <div class="orow"><span class="orow__l">周末</span><span class="dot"></span></div>
+              <div class="orow orow--keep"><span class="orow__l">自定义</span><span class="dot dot--on"></span></div>
+            </div></div>
+          <div class="stg"><div class="cardd"><div class="wk">
+            <span class="wkd"><span class="wkd__t">周一</span></span>
+            <span class="wkd"><span class="wkd__t">周二</span></span>
+            <span class="wkd"><span class="wkd__t">周三</span></span>
+            <span class="wkd"><span class="wkd__t">周四</span></span>
+            <span class="wkd"><span class="wkd__t">周五</span></span>
+            <span class="wkd"><span class="wkd__t">周六</span></span>
+            <span class="wkd"><span class="wkd__t">周日</span></span>
+          </div></div></div>
+          <div class="stg"><div class="cardd">
+            <div class="swr"><div class="swr__l"><span class="swr__lab">紧急消息仍会通知，避免错过重要信息</span></div><span class="well"><span class="tg tg--on"></span></span></div>
+          </div></div>
+          <div class="save"><span class="save__t">保存</span></div>
+        </div>
+        <div class="toast"><span class="toast__t">请至少选择一个星期</span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每类交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页四类控件互相联动：总开关 → 状态行文案与字色；重复方式 → 星期块是否出现 + 单选末行是否去边线；
+    两个时段值 → 保存时的合法性。联动的每一环都必须在帧上看得见。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>总开关 · 两档（含可达性槽底）</h3>
+      <p class="hint">原生 <code>&lt;switch&gt;</code> 不得换成自绘件（<code>tests/native-switch-naming.spec.ts:59</code> 钉死全仓 9 枚的数量与类名），
+        故 OFF 态白轨坐白卡仍只有发丝边——本页的处置是在外面垫一层 <code>.switch-row__well</code>
+        深灰槽 <code>--c-neutral-500</code>（对白轨 4.76:1，过非文本 3:1）。设置页的两枚开关<strong>没有</strong>这层槽。</p>
+      <div class="row">
+        <div class="cell"><span class="well"><span class="tg"></span></span><span class="lab">OFF · enabled=false</span></div>
+        <div class="cell"><span class="well"><span class="tg tg--on"></span></span><span class="lab">ON · 轨色 = SWITCH_ACTIVE_COLOR<br>= designTokens.color.brand[500]</span></div>
+      </div>
+      <table class="tbl" style="margin-top:16px">
+        <tr><th>联动对象</th><th>enabled=false</th><th>enabled=true</th></tr>
+        <tr><td>当前状态行文案</td><td><code>dnd.statusOff</code> 已关闭</td><td><code>dnd.statusOn</code> 已开启</td></tr>
+        <tr><td>当前状态行字色</td><td><code>--c-text-tertiary</code></td><td><code>--c-brand</code>（<code>status-row__value--on</code>）</td></tr>
+        <tr><td>时段 / 重复 / 紧急三块</td><td colspan="2" style="color:var(--c-error)"><strong>源码无 v-if、无 disabled ⇒ 两态完全一致，关闭时照样可点可改</strong>（实况，见 §04）</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>时段行 · picker mode="time"</h3>
+      <p class="hint">picker 已提到 <code>.time-row</code> 外层（R14-L11-D01）⇒ 整行都是热区：
+        686rpx×88rpx = 343×44px ≈ 15092px²，改前只有右侧值块 34×19px ≈ 646px²（约 23 倍）。
+        点开后是<strong>微信系统时间滚轮</strong>，不由本页绘制 ⇒ 不占独立屏。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="cardd"><div class="tim"><span class="tim__l">开始时间</span><span class="tim__p"><span class="tim__v">22:00</span><span class="tim__a">›</span></span></div></div><span class="lab">值态（源码默认 22:00 / 08:00）</span></div>
+        <div class="cell" style="width:186px"><div class="cardd"><div class="tim" style="background:var(--c-bg-surface)"><span class="tim__l">开始时间</span><span class="tim__p"><span class="tim__v">22:00</span><span class="tim__a">›</span></span></div></div><span class="lab">按下（picker 无自定义 hover 档）</span></div>
+        <div class="cell" style="width:186px"><div class="cardd"><div class="tim"><span class="tim__l">开始时间</span><span class="tim__p"><span class="tim__v">08:00</span><span class="tim__a">›</span></span></div><div class="tim"><span class="tim__l">结束时间</span><span class="tim__p"><span class="tim__v">08:00</span><span class="tim__a">›</span></span></div></div><span class="lab">非法态：两值相等 ⇒ 保存被 validateForm 拦</span></div>
+      </div>
+      <p class="hint" style="margin-top:12px">值字色 <code>--c-brand-800</code>（不是主绿）：为把 08:00 / 20:00 这类近字形压到 AA 6.45:1；
+        另加 <code>font-variant-numeric: tabular-nums</code> 防数字跳宽。</p>
+    </div>
+
+    <div class="panel">
+      <h3>重复方式单选 · 三态</h3>
+      <p class="hint">指示器 36rpx=18px 圆；选中时底与边同转 <code>--c-brand</code> 并嵌 16rpx=8px 白点。
+        末行去边线条件是 <code>index === length-1 &amp;&amp; form.repeatMode !== 'CUSTOM'</code>——
+        即 CUSTOM 时第 4 行<strong>保留</strong>边线（下面还接星期块）。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="cardd"><div class="orow"><span class="orow__l">每天</span><span class="dot"></span></div></div><span class="lab">未选</span></div>
+        <div class="cell" style="width:186px"><div class="cardd"><div class="orow" style="background:var(--c-bg-surface)"><span class="orow__l">每天</span><span class="dot dot--on"></span></div></div><span class="lab">选中 + hover 底</span></div>
+        <div class="cell" style="width:186px"><div class="cardd"><div class="orow"><span class="orow__l">工作日</span><span class="dot"></span></div><div class="orow"><span class="orow__l">周末</span><span class="dot"></span></div><div class="orow orow--keep"><span class="orow__l">自定义</span><span class="dot dot--on"></span></div></div><span class="lab">CUSTOM 选中 ⇒ 末行仍带下边线</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>星期芯片 · 两态（仅 CUSTOM 出现）</h3>
+      <p class="hint">一行 4 枚、<code>width: calc((100% - 48rpx)/4)</code>、<code>min-height:88rpx</code>（44px 热区地板）。
+        两档轻重方向被 R9-L11-D05 扳正过：<strong>选中比未选中更重</strong>。</p>
+      <div class="row">
+        <div class="cell" style="width:120px"><div class="cardd"><div class="wk" style="padding:12px 8px"><span class="wkd" style="width:100%"><span class="wkd__t">周一</span></span></div></div><span class="lab">未选<br>--c-bg-surface + --c-border-strong</span></div>
+        <div class="cell" style="width:120px"><div class="cardd"><div class="wk" style="padding:12px 8px"><span class="wkd wkd--on" style="width:100%"><span class="wkd__t">周一</span></span></div></div><span class="lab">选中<br>--c-brand-100 + --c-brand-800</span></div>
+      </div>
+      <table class="tbl" style="margin-top:16px">
+        <tr><th>瞬态 / 提示</th><th>触发条件</th><th>文案（逐字）</th></tr>
+        <tr><td>toast 成功</td><td>保存返回 200</td><td><code>dnd.saveSuccess</code> 设置已保存</td></tr>
+        <tr><td>toast 失败</td><td>catch 分支（:235）</td><td><code>dnd.saveFailed</code> 保存失败，请重试（或 error.message）</td></tr>
+        <tr><td>toast 校验</td><td><code>startTime === endTime</code>（:223）</td><td><code>dnd.invalidTimeRange</code> 结束时间必须大于开始时间</td></tr>
+        <tr><td>toast 校验</td><td>CUSTOM 且零选中（:220）</td><td><code>dnd.customWeekdaysRequired</code> 请至少选择一个星期</td></tr>
+        <tr><td>页级 loading / error</td><td><code>pageState</code>（:346/:352）</td><td><code>common.loading</code> 加载中... / <code>common.retry</code> 重试</td></tr>
+        <tr><td>按钮在途</td><td><code>isSaving</code>（:529）</td><td><code>common.processing</code> 处理中... ⇄ <code>common.save</code> 保存</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>保存按钮 · 两态</h3>
+      <p class="hint"><code>position:sticky; bottom:calc(env(safe-area-inset-bottom)+48rpx)</code> ⇒ 内容超一屏时吸底、
+        不满一屏时回流内落位（F06 即流内落位，键下方留页面底空档属实况）。底色是
+        <code>--c-brand-800</code> 深绿而非主绿，为让 95% 白字到 6.01:1。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="save" style="margin:0"><span class="save__t">保存</span></div><span class="lab">default</span></div>
+        <div class="cell" style="width:186px"><div class="save save--dis" style="margin:0"><span class="save__t">处理中...</span></div><span class="lab">saving（opacity .6 · 点击被 :244 吞）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用九档，无页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">整页单色底（:541 收口，不引蓝色氛围档）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器<code>--c-bg-container</code></div><div class="sw__u">吸顶页头 · 四张卡</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">switch ON 轨 · 单选指示器 · 「已开启」字色 · 重试键</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">保存按钮底 · 时段值字色 · 选中芯片描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#D1F5E7"></span><div><div class="sw__n">主色 100<code>--c-brand-100</code></div><div class="sw__u">星期芯片选中底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">中性 500<code>--c-neutral-500</code></div><div class="sw__u">switch 槽底（可达性垫层）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#C2CAC6"></span><div><div class="sw__n">描边强档<code>--c-border-strong</code></div><div class="sw__u">未选指示器圈 · 时间行箭头 · 未选芯片描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">表面<code>--c-bg-surface</code></div><div class="sw__u">未选芯片底 · 单选 hover 底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1A1E1C"></span><div><div class="sw__n">中性 900<code>--c-neutral-900</code></div><div class="sw__u">toast 底（系统件同档）</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到六档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/300</span><span class="type__p" style="font-size:28px;font-weight:300;line-height:1">‹</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">免打扰</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600</span><span class="type__p" style="font-size:15px;font-weight:600">保存 · 处理中...</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/500·600</span><span class="type__p" style="font-size:14px;font-weight:500">开启免打扰 · 开始时间 · <span style="font-weight:600;color:var(--c-brand-800)">22:00</span> · <span style="font-weight:600;color:var(--c-brand)">已开启</span></span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/500</span><span class="type__p" style="font-size:13px;font-weight:500">周一 · 当前状态</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500;color:var(--c-text-tertiary)">开启后，在指定时间段内将不会收到消息推送</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。本页卡片圆角走 <code>--card-radius 40rpx</code> 档，比设置页分组卡的 <code>--r-xl</code> 大一档。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i><span style="margin-left:8px">分组上外边距 · 节标题下衬</span></div>
+        <div class="space__i"><b>28rpx → 14px</b><i style="width:14px"></i><span style="margin-left:8px">行内衬（开关行 / 时段行 / 单选行）</span></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i><span style="margin-left:8px">分组横向 --page-padding</span></div>
+        <div class="space__i"><b>88rpx → 44px</b><i style="width:44px"></i><span style="margin-left:8px">导航高 · 时段行/芯片热区地板</span></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>40rpx · 卡片</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 保存按钮 · toast</div>
+        <div class="rad__i"><b style="border-radius:8px"></b>--r-lg<br>16rpx · 星期芯片</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>9999rpx · 槽底 · 重试键</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>本页零图片素材：全部控件由几何 + 令牌构成</p></div>
+  <div class="assets">
+    <div class="asset"><div class="athumb2">
+        <span class="well"><span class="tg"></span></span><span class="well"><span class="tg tg--on"></span></span>
+        <span class="dot"></span><span class="dot dot--on"></span>
+        <span class="wkd"><span class="wkd__t">周一</span></span><span class="wkd wkd--on"><span class="wkd__t">周一</span></span>
+      </div>
+      <div class="asset__b"><b>控件件 0 素材 / 图标 0 枚</b><p>本页模板里没有一处 <code>&lt;image&gt;</code>：开关是原生 <code>&lt;switch&gt;</code>、
+        单选指示器与星期芯片是纯 CSS 圆与方块、行末「›」是文字字形（<code>.time-row__arrow</code> :839），
+        返回键「‹」同样是文字（<code>.nav-bar__back-icon</code> :593）。⇒ 素材池 59 件引用 0 件，无 NEED_ASSET。</p>
+        <div class="m">演示值仅 22:00 / 08:00（源码 form 初值 :54-55）与周一/三/六的选中组合，无编造数值</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><strong>总开关不做门控。</strong>模板中「免打扰时段 / 重复方式 / 紧急消息穿透」三块
+        都没有 <code>v-if="form.enabled"</code> 或 <code>disabled</code>，关闭态下照样可改可点；
+        唯一的联动是「当前状态」行的文案与字色（:393-399 + :306）。画板按实况画，不替产品补门控。</li>
+      <li>本页 <code>.nav-bar</code> 横向内衬是裸 <code>24rpx</code>=12px，而 <code>.section</code> 已收 <code>--page-padding</code>=16px
+        （:567 / :679）⇒ 返回键比下方卡群左缘外突 4px。同域 settings/index.vue:737 已把这条收口，本页未跟改。</li>
+      <li>两处分组标题被删（R8-L11-D06 / R9-L11-D05）：总开关组与紧急穿透组不再重复出现同名
+        <code>section__title</code>，自定义星期组也无标题 ⇒ 帧上「开启免打扰」「紧急消息仍会通知…」各只出现一次。
+        若回归成重复两遍，即为退稿。</li>
+      <li>错误态正文是运行时 <code>error.message</code>（:113），无固定串；画板取兜底档
+        <code>common.networkError</code>「网络错误」，并在题注标明，不当作文案真值。</li>
+      <li>时段行展开后是微信系统时间滚轮，不由本页绘制 ⇒ 不画、不占屏。</li>
+      <li>本页在 profile-extra 分包，<strong>无 tabbar</strong>——画板若出现 tabbar 即为错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 免打扰设置页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1845（deviceScaleFactor 2.273，对齐语料 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

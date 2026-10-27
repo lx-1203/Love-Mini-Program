@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 我的页（已登录态）高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值取自 board-base 令牌；rpx÷2=px 的几何换算除外） ===== */
+.pf { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; }
+.pf--cont { padding-top: 44px; }
+
+/* ---- 1/6 头部（MyHeader.vue） ---- */
+.mh { position: relative; margin: 0; padding: 76px 16px 28px;
+  background: linear-gradient(160deg, var(--c-brand-50) 0%, var(--c-bg-container) 100%);
+  border-radius: 0 0 20px 20px; }
+.mh__icons { position: absolute; top: 52px; right: 16px; display: flex; gap: 8px; z-index: 2; }
+.mh__ic { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.55);
+  display: flex; align-items: center; justify-content: center; color: var(--c-text-primary); }
+.mh__ic svg { width: 17px; height: 17px; }
+.mh__row { display: flex; align-items: flex-start; gap: 12px; }
+.mh__av { position: relative; flex: none; width: 90px; height: 90px; border-radius: 50%;
+  border: 3px solid var(--c-bg-container); box-shadow: 0 5px 12px rgba(15,23,42,0.15);
+  background: var(--c-brand-50); display: flex; align-items: center; justify-content: center; }
+.mh__av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.mh__dot { position: absolute; right: 1px; bottom: 1px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--c-brand); border: 2px solid var(--c-bg-container);
+  display: flex; align-items: center; justify-content: center; color: #fff; }
+.mh__dot svg { width: 13px; height: 13px; }
+.mh__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 8px; }
+.mh__nrow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.mh__name { font-size: 26px; font-weight: 800; color: var(--c-text-primary); line-height: 1.1; }
+.mh__gender { width: 15px; height: 15px; color: var(--c-romance); }
+.mh__on { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: var(--r-full);
+  background: var(--c-brand-800); font-size: var(--fs-xs); font-weight: 600; color: #fff; line-height: 1.6; }
+.mh__meta { font-size: var(--fs-md); color: var(--c-text-secondary); font-weight: 500; }
+.mh__cert { align-self: flex-start; padding: 3px 9px; border-radius: var(--r-full);
+  background: var(--c-bg-container); border: 0.5px solid var(--c-brand-200); }
+.mh__cert span { font-size: var(--fs-xs); font-weight: 600; color: var(--c-brand); }
+.mh__bio { font-size: var(--fs-base); color: var(--c-text-secondary); line-height: 1.5; }
+.mh__right { flex: none; padding-top: 6px; }
+.mh__edit { padding: 5px 12px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: 0.5px solid rgba(15,23,42,0.08); box-shadow: 0 2px 6px rgba(15,23,42,0.06);
+  font-size: var(--fs-lg); font-weight: 500; color: var(--c-text-primary); }
+
+/* ---- 2/6 资料完整度（MyCompletion.vue，挂在头部 #bottom 槽内） ---- */
+.mc { margin-top: 16px; padding: 14px 16px; border-radius: 16px;
+  background: rgba(255,255,255,0.92); box-shadow: 0 4px 16px rgba(15,23,42,0.08); }
+.mc__head { display: flex; align-items: center; justify-content: space-between; }
+.mc__t { font-size: 15px; font-weight: 800; color: var(--c-text-primary); }
+.mc__p { font-size: 15px; font-weight: 800; color: var(--c-brand); }
+.mc__bar { height: 5px; margin-top: 10px; border-radius: var(--r-full); background: var(--c-brand-50); overflow: hidden; }
+.mc__bar i { display: block; height: 100%; width: 85%; border-radius: var(--r-full); background: var(--c-brand); }
+.mc__foot { display: flex; align-items: center; justify-content: space-between; margin-top: 9px; }
+.mc__tip { flex: 1; font-size: var(--fs-xs); color: var(--c-text-placeholder); padding-right: 8px; }
+.mc__btn { flex: none; padding: 6px 13px; border-radius: var(--r-full); background: var(--c-brand);
+  font-size: 11px; font-weight: 700; color: #fff; }
+
+/* ---- 3/6 四格统计（MyStats.vue） ---- */
+.ms { margin: 16px; padding: 16px 4px; border-radius: 16px; background: var(--c-bg-container);
+  box-shadow: 0 4px 16px rgba(15,23,42,0.08); display: flex; }
+.ms__col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; }
+.ms__col + .ms__col::before { content: ""; position: absolute; left: 0; top: 20%; bottom: 20%;
+  width: 0.5px; background: var(--c-border-light); }
+.ms__ic { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.ms__ic svg { width: 18px; height: 18px; }
+.ms__v { font-size: 17px; font-weight: 800; color: var(--c-text-primary); }
+.ms__l { font-size: 11px; color: var(--c-text-placeholder); }
+.tint-p { background: rgba(162,155,254,0.13); color: var(--c-purple); }
+.tint-r { background: rgba(255,107,129,0.13); color: var(--c-romance); }
+.tint-o { background: rgba(245,158,11,0.13); color: var(--c-warning); }
+.tint-b { background: rgba(77,141,255,0.13); color: var(--c-status-info); }
+.tint-g { background: rgba(54,201,154,0.13); color: var(--c-brand); }
+
+/* ---- 4/6 我的故事（MyStory.vue） ---- */
+.msec { margin: 10px 16px 0; }
+.msec__t { display: block; font-size: var(--fs-2xl); font-weight: 800; color: var(--c-text-primary); margin-bottom: 8px; }
+.strow { display: flex; gap: 6px; }
+.stcard { position: relative; flex: 1 1 0; min-width: 0; height: 120px; border-radius: var(--r-lg);
+  overflow: hidden; background: var(--c-bg-container); border: var(--c-border-card); }
+.stcard img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.stcard__mask { position: absolute; left: 0; right: 0; bottom: 0; height: 48px;
+  background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 100%); }
+.stcard__lb { position: absolute; left: 8px; right: 8px; bottom: 7px; display: flex; flex-direction: column; gap: 2px; }
+.stcard__title { font-size: var(--fs-sm); font-weight: 700; color: #fff; }
+.stcard__count { font-size: var(--fs-xs); color: rgba(255,255,255,0.85); }
+.stadd { flex: 1 1 0; min-width: 0; height: 120px; border-radius: var(--r-lg);
+  border: 1px dashed var(--c-border-strong); background: var(--c-bg-container);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+.stadd svg { width: 24px; height: 24px; color: var(--c-brand); }
+.stadd span { font-size: var(--fs-sm); font-weight: 600; color: var(--c-brand); }
+.sthint { display: block; margin-top: 4px; font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+.alb { margin-top: 10px; }
+.alb__h { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.alb__h b { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); }
+.alb__h span { font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+.alb__row { display: flex; gap: 6px; }
+.alb__t { position: relative; width: calc((100% - 12px) / 3); padding-top: calc((100% - 12px) / 3);
+  border-radius: var(--r-lg); overflow: hidden; background: var(--c-bg-container); border: var(--c-border-card); }
+.alb__t img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pst-b { margin-top: 10px; }
+.pst { padding: 8px; border-radius: var(--r-xl); background: var(--c-bg-container);
+  border: var(--c-border-card); box-shadow: var(--s-card-soft); }
+.pst + .pst { margin-top: 6px; }
+.pst__c { font-size: var(--fs-base); line-height: 1.55; color: var(--c-text-secondary); }
+.pst__imgs { display: flex; gap: 6px; margin-top: 6px; }
+.pst__imgs i { position: relative; display: block; width: calc((100% - 12px) / 3); height: 88px;
+  border-radius: var(--r-md); overflow: hidden; }
+.pst__imgs img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pst__f { display: flex; gap: 10px; margin-top: 6px; }
+.pst__st { display: flex; align-items: center; gap: 2px; color: var(--c-text-tertiary); }
+.pst__st svg { width: 11px; height: 11px; }
+.pst__st span { font-size: var(--fs-xs); }
+
+/* ---- 5/6 我的互动（MyInteraction.vue） ---- */
+.mit { margin: 16px 16px 0; }
+.mit__t { display: block; font-size: 15px; font-weight: 800; color: var(--c-text-primary); margin-bottom: 8px; }
+.mit__box { border-radius: 16px; background: var(--c-bg-container); box-shadow: 0 4px 16px rgba(15,23,42,0.08); overflow: hidden; }
+.mit__row { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 0.5px solid var(--c-border-light); }
+.mit__row:last-child { border-bottom: 0; }
+.mit__ic { width: 32px; height: 32px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; }
+.mit__ic svg { width: 16px; height: 16px; }
+.mit__l { flex: 1; font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); }
+.mit__v { font-size: var(--fs-md); color: var(--c-text-placeholder); }
+.mit__a { font-size: var(--fs-xl); color: var(--c-border-strong); }
+
+/* ---- 6/6 更多功能（MyMore.vue） ---- */
+.mmo { margin: 16px 16px 0; }
+.mmo__t { display: block; font-size: 15px; font-weight: 800; color: var(--c-text-primary); margin-bottom: 8px; }
+.mmo__grid { display: flex; border-radius: 16px; background: var(--c-bg-container);
+  box-shadow: 0 4px 16px rgba(15,23,42,0.08); padding: 6px 0; }
+.mmo__cell { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 12px 0; }
+.mmo__ic { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.mmo__ic svg { width: 20px; height: 20px; }
+.mmo__l { font-size: 11px; font-weight: 500; color: var(--c-text-secondary); }
+
+/* ---- 悬浮发帖 FAB（GlobalPublishFab，fixed 件） ---- */
+.pfab { position: absolute; right: 16px; bottom: 76px; width: 48px; height: 48px; border-radius: 50%;
+  background: var(--c-brand); color: #fff; display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--s-brand); z-index: 9; }
+.pfab svg { width: 22px; height: 22px; }
+
+/* ---- §02 小样 ---- */
+.mini { border-radius: var(--r-lg); background: var(--c-bg-page); padding: 10px; }
+.tbl td .mini { display: inline-block; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.6M12 18.6v2.6M4.6 7.8l2.2 1.3M17.2 14.9l2.2 1.3M4.6 16.2l2.2-1.3M17.2 9.1l2.2-1.3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.8l4.4 4.4L19 7.6"/></symbol>
+  <symbol id="i-venus" viewBox="0 0 24 24"><circle cx="12" cy="8.6" r="4.6"/><path d="M12 13.2V21M8.8 18.2h6.4"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.2C7.2 16.6 3.6 13.5 3.6 9.7a4.4 4.4 0 0 1 8.4-1.8 4.4 4.4 0 0 1 8.4 1.8c0 3.8-3.6 6.9-8.4 10.5z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M3.6 19.4c.6-3 2.7-4.6 5.4-4.6s4.8 1.6 5.4 4.6"/><path d="M15.4 5.2a3.4 3.4 0 0 1 0 5.8M17.6 14.9c1.8.6 2.9 2.1 3.2 4.5"/></symbol>
+  <symbol id="i-thumb" viewBox="0 0 24 24"><path d="M7 10.4v9.2H4.6a1 1 0 0 1-1-1v-7.2a1 1 0 0 1 1-1zM7 10.4l3.4-6.2a1.8 1.8 0 0 1 3.3 1.2l-.8 3.6h4.9a1.8 1.8 0 0 1 1.7 2.3l-1.5 6.2a2 2 0 0 1-1.9 1.5H7"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3.6l1.8 4.6 4.6 1.8-4.6 1.8L12 16.4l-1.8-4.6-4.6-1.8 4.6-1.8z"/><path d="M18.6 15.4l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.8l2.6 5.2 5.8.9-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.9z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.4" y="5" width="17.2" height="14" rx="2.4"/><circle cx="9" cy="10" r="1.8"/><path d="M20.6 15.4l-4.4-4.4-8.6 8"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3.2l7 2.8v5.2c0 4.4-3 7.6-7 9.6-4-2-7-5.2-7-9.6V6z"/><path d="M9.2 12l2 2 3.6-4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 12.4c0 3.9-3.6 7-8 7-1 0-2-.2-2.9-.5L4.4 20l1.2-3.6A6.6 6.6 0 0 1 4 12.4c0-3.9 3.6-7 8-7s8 3.1 8 7z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4.6 10.4 12 4.4l7.4 6v8.6a.9.9 0 0 1-.9.9h-4.2v-5.2H9.7v5.2H5.5a.9.9 0 0 1-.9-.9z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21.2s6.6-6 6.6-11a6.6 6.6 0 1 0-13.2 0c0 5 6.6 11 6.6 11z"/><circle cx="12" cy="10.2" r="2.4"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.8"/><path d="M5 20c.8-3.6 3.4-5.4 7-5.4s6.2 1.8 7 5.4"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8.6h3.1L8.6 6h6.8l1.5 2.6H20a1.6 1.6 0 0 1 1.6 1.6v8A1.6 1.6 0 0 1 20 19.8H4a1.6 1.6 0 0 1-1.6-1.6v-8A1.6 1.6 0 0 1 4 8.6z"/><circle cx="12" cy="14" r="3.3"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>我的页 · 已登录态 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">pages/profile/index</code>（主包 Tab 页，有 tabbar，选中「我的」）。
+     2026-10-26 裁定 A 已实施：个人页<b>严格六段</b>——头部 / 资料完整度 / 四格统计 / 我的故事 / 我的互动 / 更多功能
+     （MyProfile.vue 挂载六个子组件）。「语音介绍」「编辑背景图」「推荐给好友」三段已从源码整块删除，<b>画板上不得出现</b>；
+     VIP 开通卡受商业开关门控、当前关，亦不画。本画板为该页永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>pages/profile/index</b></span>
+    <span>主包 <b>有 tabbar</b></span>
+    <span>状态 <b>2 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>登记表第 8 行 · 已经填完资料的个人主页.png</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 2 屏</h2>
+    <p>整页自上而下按视口切分 · 首屏对齐理想图顶部</p></div>
+  <div class="sec__sub">本页状态机有两大支：<code>v-if="!isUnlocked"</code>（未登录 → NotLoggedProfile，见 profile-guest.html）/
+    <code>v-else</code>；已登录支内再分 <code>isOwnProfile</code>（本画板 = 本人态 ProfileShell mode="mine"）与他人态（登记表第 10 行，另页）。
+    本人态附加功能区只剩 VIP 卡，门控 <code>appConfig.isCommerceOn('vip') &amp;&amp; !isVip</code>——当前关，不画。
+    理想图为「已填完资料」态，整页内容高约 1300px 超 812 视口，按滚动位切成 F01/F02；帧即视口、超出裁切，
+    被裁内容记在题注 <code>.d</code> 里、不写进画面。状态栏与 tabbar 为固定件，每屏恒在。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">已登录 · 首屏：头部 / 完整度 / 四格 / 故事卡 / 相册</span><span class="d">↓裁切于「我的相册」缩略图中</span></figcaption>
+      <div class="phone">
+        <div class="pf">
+          <!-- 1/6 头部 + 2/6 资料完整度（#bottom 槽） -->
+          <div class="mh">
+            <div class="mh__icons">
+              <span class="mh__ic"><svg><use href="#i-grid"/></svg></span>
+              <span class="mh__ic"><svg><use href="#i-gear"/></svg></span>
+            </div>
+            <div class="mh__row">
+              <span class="mh__av"><img src="assets/demo/xiaoman-avatar.png" alt=""><span class="mh__dot"><svg style="stroke-width:2.4"><use href="#i-check"/></svg></span></span>
+              <div class="mh__info">
+                <div class="mh__nrow"><span class="mh__name">小满</span><svg class="mh__gender"><use href="#i-venus"/></svg><span class="mh__on">在线</span></div>
+                <span class="mh__meta">21岁 · 北京大学 · 北京</span>
+                <span class="mh__cert"><span>学生认证</span></span>
+                <span class="mh__bio">热爱生活，喜欢探索世界 ✨</span>
+              </div>
+              <div class="mh__right"><span class="mh__edit">编辑资料</span></div>
+            </div>
+            <div class="mc">
+              <div class="mc__head"><span class="mc__t">资料完整度</span><span class="mc__p">85%</span></div>
+              <div class="mc__bar"><i></i></div>
+              <div class="mc__foot"><span class="mc__tip">完善资料可以获得更多曝光和匹配机会</span><span class="mc__btn">去完善</span></div>
+            </div>
+          </div>
+          <!-- 3/6 四格统计 -->
+          <div class="ms">
+            <div class="ms__col"><span class="ms__ic tint-p"><svg class="ico--fill"><use href="#i-heart"/></svg></span><span class="ms__v">28</span><span class="ms__l">我喜欢</span></div>
+            <div class="ms__col"><span class="ms__ic tint-r"><svg><use href="#i-users"/></svg></span><span class="ms__v">16</span><span class="ms__l">喜欢我的</span></div>
+            <div class="ms__col"><span class="ms__ic tint-o"><svg><use href="#i-thumb"/></svg></span><span class="ms__v">104</span><span class="ms__l">我赞</span></div>
+            <div class="ms__col"><span class="ms__ic tint-b"><svg><use href="#i-eye"/></svg></span><span class="ms__v">32</span><span class="ms__l">访客</span></div>
+          </div>
+          <!-- 4/6 我的故事 -->
+          <div class="msec">
+            <span class="msec__t">我的故事</span>
+            <div class="strow">
+              <span class="stcard"><img src="assets/demo/xiaoman-photo-1.png" alt=""><span class="stcard__mask"></span><span class="stcard__lb"><span class="stcard__title">生活日常</span><span class="stcard__count">12 篇</span></span></span>
+              <span class="stcard"><img src="assets/demo/xiaoman-photo-2.png" alt=""><span class="stcard__mask"></span><span class="stcard__lb"><span class="stcard__title">旅行足迹</span><span class="stcard__count">8 个地方</span></span></span>
+              <span class="stcard"><img src="assets/demo/xiaoman-photo-3.png" alt=""><span class="stcard__mask"></span><span class="stcard__lb"><span class="stcard__title">我的心愿</span><span class="stcard__count">24 篇</span></span></span>
+              <span class="stadd"><svg><use href="#i-plus"/></svg><span>添加故事</span></span>
+            </div>
+            <span class="sthint">这些内容仅互相喜欢或你关注的人可见</span>
+            <div class="alb">
+              <div class="alb__h"><b>我的相册</b><span>4 张</span></div>
+              <div class="alb__row">
+                <span class="alb__t"><img src="assets/demo/xiaoman-photo-2.png" alt=""></span>
+                <span class="alb__t"><img src="assets/demo/xiaoman-photo-3.png" alt=""></span>
+                <span class="alb__t"><img src="assets/demo/xiaoman-photo-4.png" alt=""></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="tabbar">
+          <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+          <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+          <div class="tabbar__i"><svg><use href="#i-heart"/></svg>匹配</div>
+          <div class="tabbar__i"><svg><use href="#i-chat"/></svg>消息</div>
+          <div class="tabbar__i tabbar__i--on"><svg class="ico--fill"><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">已登录 · 第二屏：我的帖子 / 我的互动 / 更多功能</span><span class="d">上滑续页 · 计数为演示值 · FAB 压卡角为 fixed 实况</span></figcaption>
+      <div class="phone">
+        <div class="pf pf--cont">
+          <div class="msec" style="margin-top:0">
+            <div class="pst-b" style="margin-top:0">
+              <div class="alb__h"><b>我的帖子</b><span>2 篇</span></div>
+              <div class="pst">
+                <div class="pst__c">周末在颐和园拍到了超美的晚霞，光影太治愈了～</div>
+                <div class="pst__imgs"><i><img src="assets/demo/xiaoman-photo-1.png" alt=""></i><i><img src="assets/demo/xiaoman-photo-2.png" alt=""></i><i><img src="assets/demo/xiaoman-photo-4.png" alt=""></i></div>
+                <div class="pst__f"><span class="pst__st"><svg class="ico--fill"><use href="#i-heart"/></svg><span>12</span></span><span class="pst__st"><svg><use href="#i-chat"/></svg><span>3</span></span></div>
+              </div>
+              <div class="pst">
+                <div class="pst__c">新发现一家超好吃的日料店，食材新鲜！有人一起吗～</div>
+                <div class="pst__f"><span class="pst__st"><svg class="ico--fill"><use href="#i-heart"/></svg><span>5</span></span><span class="pst__st"><svg><use href="#i-chat"/></svg><span>1</span></span></div>
+              </div>
+            </div>
+          </div>
+          <!-- 5/6 我的互动 -->
+          <div class="mit">
+            <span class="mit__t">我的互动</span>
+            <div class="mit__box">
+              <div class="mit__row"><span class="mit__ic tint-r"><svg class="ico--fill"><use href="#i-heart"/></svg></span><span class="mit__l">喜欢我的人</span><span class="mit__v">16</span><span class="mit__a">›</span></div>
+              <div class="mit__row"><span class="mit__ic tint-o"><svg><use href="#i-users"/></svg></span><span class="mit__l">我的匹配</span><span class="mit__v">28</span><span class="mit__a">›</span></div>
+              <div class="mit__row"><span class="mit__ic tint-p"><svg><use href="#i-sparkles"/></svg></span><span class="mit__l">我喜欢的人</span><span class="mit__v">16</span><span class="mit__a">›</span></div>
+              <div class="mit__row"><span class="mit__ic tint-b"><svg><use href="#i-eye"/></svg></span><span class="mit__l">最近访客</span><span class="mit__v">32</span><span class="mit__a">›</span></div>
+            </div>
+          </div>
+          <!-- 6/6 更多功能 -->
+          <div class="mmo">
+            <span class="mmo__t">更多功能</span>
+            <div class="mmo__grid">
+              <div class="mmo__cell"><span class="mmo__ic tint-o"><svg><use href="#i-star"/></svg></span><span class="mmo__l">我的收藏</span></div>
+              <div class="mmo__cell"><span class="mmo__ic tint-b"><svg><use href="#i-eye"/></svg></span><span class="mmo__l">谁看过我</span></div>
+              <div class="mmo__cell"><span class="mmo__ic tint-r"><svg><use href="#i-image"/></svg></span><span class="mmo__l">恋爱相册</span></div>
+              <div class="mmo__cell"><span class="mmo__ic tint-p"><svg><use href="#i-shield"/></svg></span><span class="mmo__l">隐私设置</span></div>
+            </div>
+          </div>
+        </div>
+        <span class="pfab"><svg><use href="#i-plus"/></svg></span>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="tabbar">
+          <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+          <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+          <div class="tabbar__i"><svg><use href="#i-heart"/></svg>匹配</div>
+          <div class="tabbar__i"><svg><use href="#i-chat"/></svg>消息</div>
+          <div class="tabbar__i tabbar__i--on"><svg class="ico--fill"><use href="#i-user"/></svg>我的</div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每类交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">六段子组件的条件分支全部来自源码 <code>v-if</code>（MyHeader / MyCompletion / MyStats / MyStory / MyInteraction / MyMore），
+    枚举如下——验收时对照实况检查是否有分支掉画。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>我的故事 · 故事卡 · 三支</h3>
+      <p class="hint">分支来自 <code>MyStory.vue</code>：<code>v-if="props.stories.length &gt; 0"</code>（真实「日常」）/ <code>v-else</code>（三分类占位）；「添加故事」虚线卡两态常驻。</p>
+      <div class="row">
+        <div class="cell" style="width:104px"><span class="stcard"><img src="assets/demo/xiaoman-photo-1.png" alt=""><span class="stcard__mask"></span><span class="stcard__lb"><span class="stcard__title">生活日常</span><span class="stcard__count">12 篇</span></span></span><span class="lab">有日常（封面+标题+计数行）</span></div>
+        <div class="cell" style="width:104px"><span class="stcard" style="background:var(--c-bg-container);border:1px solid var(--c-border-default);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><svg style="width:20px;height:20px;color:var(--c-text-tertiary)"><use href="#i-plus"/></svg><span style="font-size:var(--fs-sm);font-weight:700;color:var(--c-text-secondary)">生活日常</span><span style="font-size:var(--fs-xs);color:var(--c-text-tertiary)">0篇</span></span><span class="lab">无日常（分类位·实线浅边）</span></div>
+        <div class="cell" style="width:104px"><span class="stadd"><svg><use href="#i-plus"/></svg><span>添加故事</span></span><span class="lab">添加故事（虚线·常驻）</span></div>
+      </div>
+      <table class="tbl" style="margin-top:14px">
+        <tr><th>分支</th><th>卡面</th><th>计数行真值</th></tr>
+        <tr><td>有日常</td><td>封面 + 摘要标题(≤12字)</td><td><code>dateText</code>：日期 <code>M/D</code> 或 <code>审核中</code></td></tr>
+        <tr><td>无日常</td><td>三分类位等分四枚（0篇/0个地方/0个愿望）</td><td>空态真值 0</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>我的相册 / 我的帖子 · 各两支</h3>
+      <p class="hint">源码在「我的故事」段内无条件渲染这两个子块（<code>albumThumbs.length &gt; 0</code> / <code>posts.length &gt; 0</code> 决定内容形态）。理想图拍早于该口径，画板按源码补全（见 §04）。</p>
+      <table class="tbl">
+        <tr><th>子块</th><th>有数据</th><th>空态</th></tr>
+        <tr><td>我的相册</td><td>横排最多 3 张缩略图 + 「N 张」计数</td><td>「还没有相册照片，去相册上传一张吧～」</td></tr>
+        <tr><td>我的帖子</td><td>卡列表：正文(3行截断)+九宫格≤3图+赞/评计数</td><td>「还没有发布帖子，去村口分享你的第一篇吧～」</td></tr>
+      </table>
+      <div class="row" style="margin-top:12px">
+        <div class="cell" style="width:186px"><div class="pst" style="margin:0"><div class="pst__c">周末在颐和园拍到了超美的晚霞，光影太治愈了～</div><div class="pst__f"><span class="pst__st"><svg class="ico--fill"><use href="#i-heart"/></svg><span>12</span></span><span class="pst__st"><svg><use href="#i-chat"/></svg><span>3</span></span></div></div><span class="lab">帖子卡 · 纯文字支</span></div>
+        <div class="cell" style="width:186px"><div class="pst" style="margin:0"><div class="pst__c">正文 + 配图 ≤3 张时走三列九宫格</div><div class="pst__imgs"><i><img src="assets/demo/xiaoman-photo-4.png" alt=""></i><i><img src="assets/demo/xiaoman-photo-2.png" alt=""></i><i><img src="assets/demo/xiaoman-photo-3.png" alt=""></i></div></div><span class="lab">帖子卡 · 带图支</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>头部 · 认证两支 + 编辑入口</h3>
+      <p class="hint"><code>profile.identity.verified</code> 决定头像右下绿勾角标与「学生认证」chip（student=true 出「学生认证」，否则「已认证」）；未认证两支皆无。</p>
+      <div class="row">
+        <div class="cell"><span class="mh__av" style="width:56px;height:56px"><img src="assets/demo/xiaoman-avatar.png" alt=""><span class="mh__dot"><svg style="stroke-width:2.4"><use href="#i-check"/></svg></span></span><span class="lab">已认证（绿勾角标 + chip）</span></div>
+        <div class="cell"><span class="mh__av" style="width:56px;height:56px"><img src="assets/demo/xiaoman-avatar.png" alt=""></span><span class="lab">未认证（无角标无 chip）</span></div>
+        <div class="cell"><span class="mh__edit">编辑资料</span><span class="lab">编辑入口（恒在）</span></div>
+        <div class="cell"><span class="mh__on">在线</span><span class="lab">在线胶囊（--c-brand-800 实底）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>四格统计 / 互动行 · 计数渲染条件</h3>
+      <p class="hint">四格 = <code>我喜欢 / 喜欢我的 / 我赞 / 访客</code>（MyStats 固定四列，值取 profileStats/likesStore）。互动行数值是 <code>v-if="item.value"</code>——为 0 时<strong>整段数字不渲染</strong>（只剩标签+箭头），这是与游客态（恒显「0人」）的口径差。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="mit__box" style="margin:0"><div class="mit__row" style="padding:10px 12px"><span class="mit__ic tint-r"><svg class="ico--fill"><use href="#i-heart"/></svg></span><span class="mit__l" style="font-size:var(--fs-md)">喜欢我的人</span><span class="mit__v">16</span><span class="mit__a">›</span></div></div><span class="lab">value &gt; 0 · 出数字</span></div>
+        <div class="cell" style="width:186px"><div class="mit__box" style="margin:0"><div class="mit__row" style="padding:10px 12px"><span class="mit__ic tint-r" style="opacity:.55"><svg class="ico--fill"><use href="#i-heart"/></svg></span><span class="mit__l" style="font-size:var(--fs-md)">喜欢我的人</span><span class="mit__a">›</span></div></div><span class="lab">value = 0 · 数字整段消失</span></div>
+      </div>
+      <table class="tbl" style="margin-top:12px">
+        <tr><th>列</th><th>key</th><th>图标色档</th><th>数据源</th></tr>
+        <tr><td>我喜欢</td><td><code>iLike</code></td><td><code>--c-purple</code> 实心爱心</td><td><code>likesStore.likes.length</code></td></tr>
+        <tr><td>喜欢我的</td><td><code>likedMe</code></td><td><code>--c-romance</code> 双人</td><td><code>likesStore.likedBy.length</code> 回退 profileStats</td></tr>
+        <tr><td>我赞</td><td><code>praised</code></td><td>橙档 拇指（源码 #FF9F43，无登记令牌→就近 <code>--c-warning</code>）</td><td><code>profileStats.likesCount</code></td></tr>
+        <tr><td>访客</td><td><code>visitor</code></td><td><code>--c-status-info</code> 眼睛</td><td><code>likesStore.visitors.length</code> 回退 profileStats</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>被撤三段与 VIP 卡 · 不得画回</h3>
+      <p class="hint">裁定 A（2026-10-26）落地后，本人主页附加功能区只剩 VIP 卡；三段整块删除，恢复即回归。</p>
+      <table class="tbl">
+        <tr><th>块</th><th>当前源码状态</th><th>画板处置</th></tr>
+        <tr><td>语音介绍</td><td>已整块删除（index.vue 注释点名「不在此渲染」）</td><td>不画 · 出现即退稿</td></tr>
+        <tr><td>编辑背景图</td><td>已整块删除（store/后端字段保留，无 UI 入口）</td><td>不画 · 出现即退稿</td></tr>
+        <tr><td>推荐给好友</td><td>已整块删除（邀请弹窗只剩 ?invite=1 桥接唤起）</td><td>不画 · 出现即退稿</td></tr>
+        <tr><td>VIP 开通卡</td><td>在盘但门控 <code>isCommerceOn('vip')</code>，当前关</td><td>不画 · 开关开启后另立画板</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">图标圆底 13% 色染为源码 <code>${color}22</code> 的 rgba 等值换算，色相全部取登记令牌。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">完整度进度条 · 去完善 · 添加故事 · FAB · 认证勾</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3;border:1px solid #DDE3E0"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">头部渐变起段 · 进度条轨道</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">「在线」胶囊实底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫<code>--c-romance</code></div><div class="sw__u">性别符 · 喜欢我的 · 恋爱相册</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#A29BFE"></span><div><div class="sw__n">紫<code>--c-purple</code></div><div class="sw__u">我喜欢 · 我喜欢的人 · 隐私设置</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#4D8DFF"></span><div><div class="sw__n">信息<code>--c-status-info</code></div><div class="sw__u">访客 · 最近访客 · 谁看过我</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F59E0B"></span><div><div class="sw__n">警告<code>--c-warning</code></div><div class="sw__u">我赞 · 我的匹配 · 我的收藏（源码橙档就近替身，见 §04）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">整页背景（MyProfile #EEF7F2 即此档）</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">姓名 26px = 源码 52rpx÷2（无登记档，按换算落地）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">26/800（52rpx）</span><span class="type__p" style="font-size:26px;font-weight:800">小满</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/800</span><span class="type__p" style="font-size:16px;font-weight:800">我的故事</span></div>
+        <div class="type__i"><span class="type__m">15/800（30rpx）</span><span class="type__p" style="font-size:15px;font-weight:800">资料完整度 · 我的互动 · 更多功能</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/600</span><span class="type__p" style="font-size:14px;font-weight:600">喜欢我的人</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/700</span><span class="type__p" style="font-size:11px;font-weight:700">生活日常 · 添加故事</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/400</span><span class="type__p" style="font-size:10px;color:var(--c-text-tertiary)">这些内容仅互相喜欢或你关注的人可见</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 故事卡/相册</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 帖子卡</div>
+        <div class="rad__i"><b style="border-radius:16px"></b>32rpx<br>六段白卡（源码字面档）</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与实况的已知差异</h2><p>素材全部取自共享载体 assets/demo/</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/xiaoman-avatar.png" alt="" style="height:190px;object-fit:cover;object-position:top">
+      <div class="asset__b"><b>xiaoman-avatar.png</b><p>头部头像（180rpx=90px，白描边+认证绿勾角标）。§8 纪律：头像位必须真素材。</p><div class="m">源：static/assets/images/demo/</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-photo-1.png" alt="">
+      <div class="asset__b"><b>xiaoman-photo-1..4.png</b><p>故事卡封面 ×3、相册缩略图 ×3、帖子配图 ×3（复用）。裁切口径 aspectFill 与源码 <code>mode="aspectFill"</code> 一致。</p><div class="m">源：static/assets/images/demo/</div></div></div>
+  </div>
+  <div class="note">
+    <b>与理想图 / 实况帧的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>严格六段（裁定 A）</b>：「语音介绍」「编辑背景图」「推荐给好友」已从源码整块删除，画板不画；实况帧 <code>个人主页-已登录-2-bottom.png</code> 仍拍着这三段——<b>该帧过期</b>（拍在改动前），需重拍。</li>
+      <li><b>VIP 卡</b>：门控 <code>appConfig.isCommerceOn('vip')</code> 当前关，不画。</li>
+      <li><b>喜欢我的人行的好友头像预览行</b>：理想图此处为 3 枚头像 +「16人」，产品裁定真值就绪前不回填（通用规则 2），且源码 MyInteraction 模板本无头像节点——画板不画。</li>
+      <li><b>tabbar 消息角标</b>：理想图此处为「5」，属未读/待回复计数，真值就绪前不回填——画板不画。</li>
+      <li><b>演示计数</b>：四格 28/16/104/32、互动行 16/28/16/32、故事卡 12篇/8个地方/24篇、帖子赞评 12/3、相册「4 张」均为演示计数，非真值（通用规则 3）。</li>
+      <li><b>85% 完整度</b>：非伪造——源码 completionPercent 对满资料的回退值就是 85（<code>profileCompletion===100 ? 85</code>，index.vue:432）。</li>
+      <li><b>我的相册 / 我的帖子子块</b>：理想图无此两块（拍早于 R16 口径），源码 MyStory 无条件渲染——按 §10 以源码为准画在第四段内。</li>
+      <li><b>故事卡卡面</b>：源码有日常时卡面 = 摘要标题 + dateText（M/D 或「审核中」），理想图 = 分类名 + 计数；画板版式照图取分类名，计数为演示值。空态三支见 §02。</li>
+      <li><b>互动行数值单位</b>：理想图行尾「16人」，源码只渲染裸数字（无「人」量词）——按源码画。游客态（NotLoggedProfile）自带「人」字，两态口径不同已各自登记。</li>
+      <li><b>互动行/更多功能图标</b>：理想图为旧「全爱心/裸线性图标」口径，源码 2026-09-06 起按行区分（心/双人/星光/眼）且带 13% 色染圆底——按源码画。</li>
+      <li><b>悬浮发帖 FAB</b>：理想图无（拍早于 FAB 上线），源码本人态渲染 <code>GlobalPublishFab</code>（门控后台 isPostPublishOpen，实况帧在盘）——按源码画，固定件两屏恒在。</li>
+      <li><b>令牌缺口</b>：源码 MyStats「我赞」#FF9F43、MyMore「我的收藏」#FFB020、MyHeader 渐变 #E8F5E9→#F0FFF0 未登记进 board-base.css，画板就近取 --c-warning / --c-brand-50→--c-bg-container（已回报 BASE_PROBLEM）。</li>
+      <li><b>头部信息行</b>：理想图第二行「2.3km · 在线」在源码 MyHeader 无对应节点（「在线」是姓名行胶囊，无距离行），源码认证支另有「学生认证」chip——按源码画。</li>
+      <li><b>本页为主包 Tab 页</b>：有 tabbar、选中「我的」；理想图/实况一致，无争议。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 我的页（已登录态）高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1,572,792 px，对齐语料 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

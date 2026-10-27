@@ -22,16 +22,24 @@ const { styleVars: menuStyleVars } = useMenuButtonRect();
 const selected = ref<Partial<Record<ProfileTagGroupKey, string[]>>>({ interest: [] });
 const saving = ref(false);
 
-/**
- * R11-L12-D20（颜色token P2）：帧上 0 个标签已选时主按钮仍取满亮品牌渐变（#46CC9E），
- * 用颜色承诺「现在就能完成」，实际点下去被 :39 的 <3 守卫弹 toast 拒绝——同流程另两步
- * 未完成时是 #DCE5E2 灰档（campus/schedule 帧实测），色档口径与本页相反。
- * 现按选中数派生可保存态，交给 BottomActionBar 的 --c-status-disabled 灰档
- * （#DCE5E2 底 + --c-text-secondary 字 = 6.15:1，组件 :123-127 已定档），与另两步同轨。
- * 页面副标题「至少 3 个」与 TagSelector 的「已选 N/5」同时在屏，灰态不是无提示的死路。
- */
+/** 已选兴趣数（「至少 3 个」约束的唯一计数口） */
 const interestCount = computed(() => selected.value.interest?.length ?? 0);
+/**
+ * 是否满足「至少 3 个」。**只用于行内提示的显隐，不再挂到主按钮的 :disabled 上**：
+ * R11-L12-D20 曾按选中数把 CTA 压成 BottomActionBar 的 --c-status-disabled 灰档，
+ * 而组件 :64 的 `@tap="!disabled && emit('primary')"` 会连同点击一起吞掉
+ * ⇒ handleSave 开头那条 `interestSelect.minThree` 守卫在 <3 时永不可达，
+ * 用户点灰钮零反馈、也读不到这条约束的成句提示（同域 campus 已在 R11-L12-D09
+ * 按同一裁定去掉 :disabled，schedule 已在 R15-L12-D10 撤回 canSave 禁用档）。
+ * 现与另两页同口径：CTA 常亮可点，缺项由点击给出「toast + 行内提示」双通道。
+ */
 const canSave = computed(() => interestCount.value >= 3);
+/**
+ * 行内提示（复用 setup/profile 的 errors.<field> 口径：点过主按钮才出现，
+ * 选够 3 个由 `!canSave` 自动消隐；文案取本页既有的 interestSelect.minThree，
+ * 不新增 locale 条目）。
+ */
+const minThreeHint = ref(false);
 
 onLoad(async () => {
   try {
@@ -50,9 +58,12 @@ async function handleSave() {
     if (saving.value) return;
   const interests = selected.value.interest ?? [];
   if (interests.length < 3) {
+    // 「至少 3 个」约束的两条反馈通道：行内常驻（模板 v-if）+ 即时 toast
+    minThreeHint.value = true;
     uni.showToast({ title: t("interestSelect.minThree"), icon: "none" });
     return;
   }
+  minThreeHint.value = false;
   saving.value = true;
   try {
     // MP-R1-SETUPINTEREST-002：saveBasicProfile 为全量 PUT 语义（mock 全量替换、
@@ -132,17 +143,28 @@ function goBack() {
          interest 一组，原全量渲染 4 组使其余 3 组可见可选、保存即静默丢弃 -->
     <TagSelector v-model="selected" :groups="['interest']" />
 
+    <!-- 「至少 3 个」的就地提示（点过主按钮后常驻，选够 3 个自动消隐）。
+         样式复用本页既有 .interest-header__sub 档（24rpx / --c-text-secondary），
+         不新增 <style> 规则、不新增文案（key = interestSelect.minThree）。 -->
+    <text v-if="!canSave && minThreeHint" class="interest-header__sub">{{ t('interestSelect.minThree') }}</text>
+
     <!-- R11-L12-D22（位置 P2）：原自建按钮盒只在文档流里 margin-top:32rpx，帧上按钮占
          y=399..443（视口 54%），其下 371px=46% 视口是纯 #EEF7F2 空底 ⇒ 拇指自然位点不到
          本页唯一主操作。换成同域 schedule/campus 的 BottomActionBar（fixed 吸底 +
          safe-area 内边距），正文尾部用 .cta-spacer 让位。
          R11-L12-D19（可达性 P1）：自建按钮原走 --c-gradient-brand，帧实测底 #46CC9E、
          白字 #FDFEFE = 2.00:1；BottomActionBar 主键已按 R9 定档 --c-brand-800 #156B51
-         （纯白 6.45:1，组件 :104-110），本页不再自抄渐变。 -->
+         （纯白 6.45:1，组件 :104-110），本页不再自抄渐变。
+         本轮（注册链缺陷 5）：① 去掉 :disabled="!canSave || saving"——组件 :64 的
+         `!disabled && emit('primary')` 会连点击一起吞掉，使「至少 3 个」的提示永不可达；
+         防重复提交仍由 handleSave 开头的 saving 守卫承担，与 campus/schedule 同口径。
+         ② 保存进行中的文案原误用 common.loading（zh-CN.ts:15「加载中...」，是拉取语义），
+         换成同域 campus 既有的 setup.campus.saveSaving（zh-CN.ts:3204「保存中...」/
+         en-US.ts:3314 "Saving..."）——schedule:220 已有跨页复用 setup.campus.saveLabel 的先例，
+         不新增 locale 条目。 -->
     <view class="cta-spacer" />
     <BottomActionBar
-      :primary-label="saving ? t('common.loading') : t('interestSelect.save')"
-      :disabled="!canSave || saving"
+      :primary-label="saving ? t('setup.campus.saveSaving') : t('interestSelect.save')"
       fixed
       @primary="handleSave"
     />

@@ -94,8 +94,9 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
           class="interest-card"
           @tap="$emit('select', item.id)"
         >
-          <!-- 封面图（顶部，固定高度，不加黑色浮层）
-               R20（2026-09-08）：icon 为 emoji 时回退本地封面映射（修复「兴趣推荐无图空缺」） -->
+          <!-- 封面图（顶部，固定高度）
+               R20（2026-09-08）：icon 为 emoji 时回退本地封面映射（修复「兴趣推荐无图空缺」）
+               2026-10-26 对齐理想图（首页.png 兴趣卡）：圈名/人数为白字叠加在照片底部暗化渐变上 -->
           <view class="interest-card__cover-wrap">
             <image
               class="interest-card__cover"
@@ -103,11 +104,10 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
               mode="aspectFill"
               alt=""
             />
-          </view>
-          <!-- 文案区：名称/人数在图下方（参考图：不上图覆盖） -->
-          <view class="interest-card__body">
-            <text class="interest-card__name">{{ circleLabel(item.name) }}</text>
-            <text class="interest-card__count">{{ formatMemberCount(item.memberCount) }} 人加入</text>
+            <view class="interest-card__overlay">
+              <text class="interest-card__name">{{ circleLabel(item.name) }}</text>
+              <text class="interest-card__count">{{ formatMemberCount(item.memberCount) }} 人加入</text>
+            </view>
           </view>
           <view
             class="interest-card__join"
@@ -185,6 +185,20 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
   background: #EAF6F1;
 }
 
+/* 2026-10-26 对齐理想图：底部暗化渐变 + 白字叠加（圈名/人数锚定在照片上） */
+.interest-card__overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 28rpx 16rpx 10rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+}
+
 .interest-card__cover {
   /* 2026-09-04 问题3修复：mp-weixin <image> 对 position:absolute + 四边约束 +
      width/height:100% 多重约束的尺寸计算异常（部分场景 fallback 原始尺寸 → 错位）。
@@ -198,17 +212,11 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
   image-rendering: auto;
 }
 
-.interest-card__body {
-  padding: 14rpx 16rpx 6rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-}
-
+/* 2026-10-26：名称/人数改为照片上的白色叠加字（锚定渐变上），字号微收敛 */
 .interest-card__name {
   font-size: 26rpx;
   font-weight: 700;
-  color: #1E1E1E;
+  color: #ffffff;
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -217,7 +225,7 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
 
 .interest-card__count {
   font-size: 20rpx;
-  color: #9AA39F;
+  color: rgba(255, 255, 255, 0.85);
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -239,6 +247,6 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
 .interest-card__join--joined {
   background: var(--c-bg-brand, #E8FBF2);
   color: var(--c-brand, #36C99A);
-  border-color: var(--c-brand-light, #D1F5E7);
+  border-color: var(--c-brand-100);
 }
 </style>

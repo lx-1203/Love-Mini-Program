@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 活动列表页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，不写私有色值） ===== */
+.ascreen { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
+.ashdr { flex: none; padding: 54px 16px 12px; background: var(--c-bg-page); }
+.ashdr__main { display: flex; flex-direction: column; }
+.ashdr__back { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px;
+  padding: 10px 12px; min-height: 44px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: 0.5px solid var(--c-border-light); color: var(--c-brand-800); font-size: var(--fs-base); font-weight: 500; }
+.ashdr__back svg { width: 16px; height: 16px; }
+.ashdr__title { font-size: var(--fs-7xl); font-weight: 700; color: var(--c-text-primary); margin-top: 14px; }
+.ashdr__sub { font-size: var(--fs-base); color: var(--c-text-secondary); line-height: 1.5; margin-top: 4px; max-width: 330px; }
+.abody { flex: 1; min-height: 0; padding: 4px 0 16px; display: flex; flex-direction: column; overflow: hidden; }
+
+/* 视图切换 */
+.vt-bar { display: flex; justify-content: flex-end; padding: 0 16px 10px; }
+.vt { display: flex; background: var(--c-bg-surface); border-radius: var(--r-full); padding: 2px; gap: 2px; }
+.vt__btn { min-height: 40px; display: flex; align-items: center; justify-content: center; padding: 5px 16px;
+  border-radius: var(--r-full); }
+.vt__btn--on { background: var(--c-brand-800); }
+.vt__t { font-size: var(--fs-base); color: var(--c-text-secondary); font-weight: 500; }
+.vt__btn--on .vt__t { color: #fff; font-weight: 600; }
+
+/* 快捷筛选 */
+.qf { display: flex; gap: 6px; padding: 0 16px 12px; }
+.qf__chip { min-height: 40px; display: flex; align-items: center; justify-content: center; padding: 6px 16px;
+  border-radius: var(--r-full); background: var(--c-bg-container); border: 1px solid var(--c-line); }
+.qf__chip--on { border-color: var(--c-brand-500); background: var(--c-brand-50); }
+.qf__t { font-size: var(--fs-base); font-weight: 700; color: var(--c-text-secondary); }
+.qf__chip--on .qf__t { color: var(--c-brand-600); }
+
+/* 活动卡 */
+.list { display: flex; flex-direction: column; gap: 8px; padding: 0 16px; }
+.arow { display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: var(--r-card);
+  background: var(--c-bg-container); box-shadow: var(--s-sm); }
+.arow__hd { display: flex; align-items: center; justify-content: space-between; }
+.arow__tw { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.arow__title { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); }
+.cat { flex-shrink: 0; padding: 2px 7px; border-radius: var(--r-full); font-size: var(--fs-md); line-height: 1.4;
+  color: var(--c-brand); background: var(--c-brand-50); }
+.enr { display: flex; align-items: baseline; gap: 2px; margin-left: 8px; flex-shrink: 0; }
+.enr__n { font-size: var(--fs-lg); font-weight: 700; color: var(--c-brand-700); }
+.enr__l { font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+.arow__desc { font-size: var(--fs-base); color: var(--c-text-secondary); line-height: 1.5; }
+.arow__detail { display: flex; flex-direction: column; gap: 2px; }
+.di { display: flex; align-items: center; gap: 4px; }
+.di svg { width: 14px; height: 14px; color: var(--c-text-tertiary); flex-shrink: 0; }
+.di__t { font-size: var(--fs-base); color: var(--c-text-secondary); }
+.ebtn { width: 100%; min-height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--c-border-default); border-radius: var(--r-md); background: transparent;
+  font-size: var(--fs-base); font-weight: 600; color: var(--c-text-primary); margin-top: 2px; }
+.ebtn--on { border-color: var(--c-brand-700); background: var(--c-bg-brand); color: var(--c-brand-700); }
+
+/* 状态盒 */
+.sbox { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 64px 28px; }
+.sbox__t { font-size: var(--fs-base); color: var(--c-text-secondary); }
+.sbox__t--err { color: var(--c-error); }
+.rbtn { padding: 8px 20px; border: 1px solid var(--c-border-light); border-radius: var(--r-md);
+  background: var(--c-bg-container); font-size: var(--fs-md); color: var(--c-brand-700); }
+.empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 40px 10px; }
+.empty__ic { width: 56px; height: 56px; border-radius: 50%; background: var(--c-bg-surface);
+  display: flex; align-items: center; justify-content: center; color: var(--c-text-placeholder); }
+.empty__ic svg { width: 28px; height: 28px; }
+.empty__msg { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-secondary); }
+.empty__sub { font-size: var(--fs-base); color: var(--c-text-tertiary); }
+.lmore { display: flex; align-items: center; justify-content: center; padding: 14px 0 18px; }
+.lmore__t { font-size: var(--fs-sm); color: var(--c-text-secondary); }
+.fempty { padding: 22px 16px; display: flex; align-items: center; justify-content: center; }
+.fempty__t { font-size: var(--fs-base); color: var(--c-text-tertiary); text-align: center; }
+
+/* 下一步 SectionCard */
+.scard { background: var(--c-bg-container); border-radius: var(--r-card); padding: 16px; box-shadow: var(--s-card-soft);
+  border: var(--c-border-card); margin: 8px 16px 0; }
+.scard__title { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.scard__sub { font-size: var(--fs-base); color: var(--c-text-tertiary); margin-top: 4px; line-height: 1.5; }
+.bar { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.bar__secondary { flex: 1; height: 44px; border-radius: var(--r-xl); background: var(--c-bg-surface);
+  color: var(--c-text-primary); font-size: var(--fs-lg); font-weight: 600; display: flex; align-items: center; justify-content: center; }
+.bar__primary { flex: 1; height: 44px; border-radius: var(--r-xl); background: var(--c-brand); color: #fff;
+  font-size: var(--fs-lg); font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: var(--s-brand); }
+
+/* 日历 */
+.cal-hd { padding: 0 16px 12px; }
+.mnav { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.mnav__btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--c-bg-surface); color: var(--c-text-secondary); font-size: var(--fs-3xl); font-weight: 300; }
+.mnav__title { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); min-width: 110px; text-align: center; }
+.wk { display: flex; padding: 0 16px 8px; border-bottom: 0.5px solid var(--c-border-light); margin: 0 16px 6px; }
+.wk__i { width: calc(100% / 7); text-align: center; font-size: var(--fs-base); font-weight: 600; color: var(--c-text-tertiary); padding: 6px 0; }
+.grid { display: flex; flex-wrap: wrap; padding: 0 16px; }
+.cell { width: calc(100% / 7); box-sizing: border-box; display: flex; flex-direction: column; align-items: center;
+  padding: 5px 2px 7px; min-height: 60px; border-radius: var(--r-md); position: relative; }
+.cell__dw { position: relative; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; }
+.cell__day { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-primary); line-height: 1; }
+.cell__dot { position: absolute; bottom: 1px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--c-brand-700); }
+.cell__title { font-size: 8px; color: var(--c-brand-700); text-align: center; margin-top: 2px; line-height: 1.3; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cell__count { margin-top: 1px; }
+.cell__count-t { font-size: 7px; color: var(--c-text-tertiary); font-weight: 500; }
+.cell--other { opacity: 0.25; }
+.cell--other .cell__day { color: var(--c-text-tertiary); font-weight: 400; }
+.cell--today { background: var(--c-bg-brand); }
+.cell--today .cell__day { color: var(--c-brand-700); font-weight: 800; }
+.cell--sel { background: var(--c-brand-100); border: 1px solid var(--c-brand-700); }
+
+/* 选中日面板 */
+.panel { margin: 10px 16px; display: flex; flex-direction: column; gap: 8px; }
+.panel__hd { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+.panel__lr { display: flex; align-items: center; gap: 5px; }
+.panel__lr svg { width: 15px; height: 15px; color: var(--c-brand-500); }
+.panel__label { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.panel__count { font-size: var(--fs-base); color: var(--c-brand-700); background: var(--c-bg-brand); padding: 3px 8px; border-radius: var(--r-full); font-weight: 500; }
+.panel .arow { box-shadow: var(--s-sm); }
+.panel__empty { padding: 22px 14px; border-radius: var(--r-lg); background: var(--c-bg-surface); display: flex; align-items: center; justify-content: center; }
+.panel__empty-t { font-size: var(--fs-base); color: var(--c-text-tertiary); }
+.fade { position: absolute; left: 0; right: 0; bottom: 0; height: 46px; z-index: 5; background: linear-gradient(transparent, var(--c-bg-page)); }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.4V12l3.4 2"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="15" rx="2.4"/><path d="M4 9.5h16M8 3.5v4M16 3.5v4"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 8.5 12 4l8.5 4.5v7L12 20l-8.5-4.5z"/><path d="M3.5 8.5 12 13l8.5-4.5M12 13v7"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>活动列表页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/discover/activities</code>。
+     本页有<strong>列表 / 日历</strong>双视图，外加整页四态（加载 / 失败 / 空 / 有内容）与列表内的快捷筛选空态、日历的选中日空态。
+     报名人数取后端 <code>enrollmentCount</code>——<strong>有真值源</strong>，画板如实显示。本画板覆盖 7 屏，作为该页永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>discover/activities</b></span>
+    <span>分包 <b>discover</b>（无 tabbar）</span>
+    <span>状态 <b>7 屏</b></span>
+    <span>视图 <b>列表 + 日历</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 7 屏</h2>
+    <p>列表四态 + 筛选空 + 日历两态</p></div>
+  <div class="sec__sub">页头为 AppShell is-fixed 轻吸顶（背景 <code>--c-bg-page</code>，白胶囊「‹ 返回」）。
+    整页状态机来自模板 <code>loading&&!activities.length / !length&&error / !length / else</code>；
+    else 内 <code>viewMode</code> 分列表/日历，列表再分 <code>quickFilter</code> 与 <code>filtered-empty</code>，日历分选中日有/无活动。
+    帧即视口，超出 812px 裁掉，被裁内容写在题注 <code>.d</code>。分包页不画 tabbar。</div>
+
+  <div class="frames">
+
+    <!-- F01 列表·有内容 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">列表视图 · 已加载</span><span class="d">3 卡 · ↓裁切至「下一步」卡前</span></figcaption>
+      <div class="phone">
+        <div class="ascreen">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="ashdr"><div class="ashdr__main">
+            <span class="ashdr__back"><svg><use href="#i-chev"/></svg>返回</span>
+            <span class="ashdr__title">线下活动</span>
+            <span class="ashdr__sub">从时间清晰、地点明确的小活动开始，把线下见面的压力降下来。</span>
+          </div></div>
+          <div class="abody">
+            <div class="vt-bar"><div class="vt"><div class="vt__btn vt__btn--on"><span class="vt__t">列表</span></div><div class="vt__btn"><span class="vt__t">日历</span></div></div></div>
+            <div class="qf"><div class="qf__chip qf__chip--on"><span class="qf__t">全部</span></div><div class="qf__chip"><span class="qf__t">今天</span></div><div class="qf__chip"><span class="qf__t">周末</span></div></div>
+            <div class="list">
+              <div class="arow">
+                <div class="arow__hd"><div class="arow__tw"><span class="arow__title">图书馆南门咖啡散步</span><span class="cat">学习</span></div><div class="enr"><span class="enr__n">12</span><span class="enr__l">人已报名</span></div></div>
+                <div class="arow__desc">在安静的咖啡馆里，和志同道合的朋友一起聊天放松</div>
+                <div class="arow__detail"><div class="di"><svg><use href="#i-pin"/></svg><span class="di__t">南门咖啡馆</span></div><div class="di"><svg><use href="#i-clock"/></svg><span class="di__t">周四 19:00-20:00</span></div></div>
+                <button class="ebtn">感兴趣</button>
+              </div>
+              <div class="arow">
+                <div class="arow__hd"><div class="arow__tw"><span class="arow__title">周末篮球友谊赛</span><span class="cat">运动</span></div><div class="enr"><span class="enr__n">20</span><span class="enr__l">人已报名</span></div></div>
+                <div class="arow__desc">篮球爱好者集合，友谊第一比赛第二</div>
+                <div class="arow__detail"><div class="di"><svg><use href="#i-pin"/></svg><span class="di__t">体育馆</span></div><div class="di"><svg><use href="#i-clock"/></svg><span class="di__t">周日 10:00-12:00</span></div></div>
+                <button class="ebtn ebtn--on">已感兴趣</button>
+              </div>
+              <div class="arow">
+                <div class="arow__hd"><div class="arow__tw"><span class="arow__title">校园音乐节</span><span class="cat">音乐</span></div><div class="enr"><span class="enr__n">56</span><span class="enr__l">人已报名</span></div></div>
+                <div class="arow__desc">校园歌手大赛决赛，精彩不容错过</div>
+                <div class="arow__detail"><div class="di"><svg><use href="#i-pin"/></svg><span class="di__t">大礼堂</span></div><div class="di"><svg><use href="#i-clock"/></svg><span class="di__t">下周五 19:00-21:00</span></div></div>
+                <button class="ebtn">感兴趣</button>
+              </div>
+            </div>
+            <div class="lmore"><span class="lmore__t">没有更多活动了</span></div>
+          </div>
+          <div class="fade"></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 列表·加载中 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">列表视图 · 加载中</span><span class="d">无缓存时整页状态盒</span></figcaption>
+      <div class="phone">
+        <div class="ascreen">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="ashdr"><div class="ashdr__main">
+            <span class="ashdr__back"><svg><use href="#i-chev"/></svg>返回</span>
+            <span class="ashdr__title">线下活动</span>
+            <span class="ashdr__sub">从时间清晰、地点明确的小活动开始，把线下见面的压力降下来。</span>
+          </div></div>
+          <div class="abody">
+            <div class="sbox"><span class="sbox__t">正在加载活动内容...</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 列表·加载失败 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">列表视图 · 加载失败</span><span class="d">无缓存 + errorMessage</span></figcaption>
+      <div class="phone">
+        <div class="ascreen">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="ashdr"><div class="ashdr__main">
+            <span class="ashdr__back"><svg><use href="#i-chev"/></svg>返回</span>
+            <span class="ashdr__title">线下活动</span>
+            <span class="ashdr__sub">从时间清晰、地点明确的小活动开始，把线下见面的压力降下来。</span>
+          </div></div>
+          <div class="abody">
+            <div class="sbox"><span class="sbox__t sbox__t--err">网络异常，请稍后重试</span><button class="rbtn">重试</button></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 列表·空态 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">列表视图 · 空态</span><span class="d">EmptyState no-data</span></figcaption>
+      <div class="phone">
+        <div class="ascreen">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="ashdr"><div class="ashdr__main">
+            <span class="ashdr__back"><svg><use href="#i-chev"/></svg>返回</span>
+            <span class="ashdr__title">线下活动</span>
+            <span class="ashdr__sub">从时间清晰、地点明确的小活动开始，把线下见面的压力降下来。</span>
+          </div></div>
+          <div class="abody">
+            <div class="empty">
+              <span class="empty__ic"><svg><use href="#i-box"/></svg></span>
+              <span class="empty__msg">暂无数据</span>
+              <span class="empty__sub">这里空空如也</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 列表·筛选后为空 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">列表视图 · 筛选后为空</span><span class="d">quickFilter=今天 · filtered-empty</span></figcaption>
+      <div class="phone">
+        <div class="ascreen">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="ashdr"><div class="ashdr__main">
+            <span class="ashdr__back"><svg><use href="#i-chev"/></svg>返回</span>
+            <span class="ashdr__title">线下活动</span>
+            <span class="ashdr__sub">从时间清晰、地点明确的小活动开始，把线下见面的压力降下来。</span>
+          </div></div>
+          <div class="abody">
+            <div class="vt-bar"><div class="vt"><div class="vt__btn vt__btn--on"><span class="vt__t">列表</span></div><div class="vt__btn"><span class="vt__t">日历</span></div></div></div>
+            <div class="qf"><div class="qf__chip"><span class="qf__t">全部</span></div><div class="qf__chip qf__chip--on"><span class="qf__t">今天</span></div><div class="qf__chip"><span class="qf__t">周末</span></div></div>
+            <div class="fempty"><span class="fempty__t">当前筛选下暂无活动，换个时间看看吧</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 日历·选中日有活动 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">日历视图 · 选中日有活动</span><span class="d">7 号选中 · ↓裁切至「下一步」卡前</span></figcaption>
+      <div class="phone">
+        <div class="ascreen">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="ashdr"><div class="ashdr__main">
+            <span class="ashdr__back"><svg><use href="#i-chev"/></svg>返回</span>
+            <span class="ashdr__title">线下活动</span>
+            <span class="ashdr__sub">从时间清晰、地点明确的小活动开始，把线下见面的压力降下来。</span>
+          </div></div>
+          <div class="abody">
+            <div class="vt-bar"><div class="vt"><div class="vt__btn"><span class="vt__t">列表</span></div><div class="vt__btn vt__btn--on"><span class="vt__t">日历</span></div></div></div>
+            <div class="cal-hd"><div class="mnav"><div class="mnav__btn">‹</div><span class="mnav__title">2026年11月</span><div class="mnav__btn">›</div></div></div>
+            <div class="wk"><span class="wk__i">一</span><span class="wk__i">二</span><span class="wk__i">三</span><span class="wk__i">四</span><span class="wk__i">五</span><span class="wk__i">六</span><span class="wk__i">日</span></div>
+            <div class="grid">
+              <div class="cell cell--other"><div class="cell__dw"><span class="cell__day">26</span></div></div>
+              <div class="cell cell--other"><div class="cell__dw"><span class="cell__day">27</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">1</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">2</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">3</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">4</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">5</span></div></div>
+              <div class="cell cell--today"><div class="cell__dw"><span class="cell__day">6</span><span class="cell__dot"></span></div><span class="cell__title">篮球赛</span><div class="cell__count"><span class="cell__count-t">20人</span></div></div>
+              <div class="cell cell--sel"><div class="cell__dw"><span class="cell__day">7</span><span class="cell__dot"></span></div><span class="cell__title">咖啡散步</span><div class="cell__count"><span class="cell__count-t">12人</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">8</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">9</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">10</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">11</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">12</span><span class="cell__dot"></span></div><span class="cell__title">音乐节</span><div class="cell__count"><span class="cell__count-t">56人</span></div></div>
+            </div>
+            <div class="panel">
+              <div class="panel__hd"><div class="panel__lr"><svg><use href="#i-cal"/></svg><span class="panel__label">11月7日</span></div><span class="panel__count">1个活动</span></div>
+              <div class="arow">
+                <div class="arow__hd"><div class="arow__tw"><span class="arow__title">图书馆南门咖啡散步</span><span class="cat">学习</span></div><div class="enr"><span class="enr__n">12</span><span class="enr__l">人已报名</span></div></div>
+                <div class="arow__detail"><div class="di"><svg><use href="#i-pin"/></svg><span class="di__t">南门咖啡馆</span></div><div class="di"><svg><use href="#i-clock"/></svg><span class="di__t">周四 19:00-20:00</span></div></div>
+                <button class="ebtn">感兴趣</button>
+              </div>
+            </div>
+          </div>
+          <div class="fade"></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F07 日历·选中日无活动 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">日历视图 · 选中日无活动</span><span class="d">selected-date-empty「当日暂无活动」</span></figcaption>
+      <div class="phone">
+        <div class="ascreen">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="ashdr"><div class="ashdr__main">
+            <span class="ashdr__back"><svg><use href="#i-chev"/></svg>返回</span>
+            <span class="ashdr__title">线下活动</span>
+            <span class="ashdr__sub">从时间清晰、地点明确的小活动开始，把线下见面的压力降下来。</span>
+          </div></div>
+          <div class="abody">
+            <div class="vt-bar"><div class="vt"><div class="vt__btn"><span class="vt__t">列表</span></div><div class="vt__btn vt__btn--on"><span class="vt__t">日历</span></div></div></div>
+            <div class="cal-hd"><div class="mnav"><div class="mnav__btn">‹</div><span class="mnav__title">2026年11月</span><div class="mnav__btn">›</div></div></div>
+            <div class="wk"><span class="wk__i">一</span><span class="wk__i">二</span><span class="wk__i">三</span><span class="wk__i">四</span><span class="wk__i">五</span><span class="wk__i">六</span><span class="wk__i">日</span></div>
+            <div class="grid">
+              <div class="cell cell--other"><div class="cell__dw"><span class="cell__day">26</span></div></div>
+              <div class="cell cell--other"><div class="cell__dw"><span class="cell__day">27</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">1</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">2</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">3</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">4</span></div></div>
+              <div class="cell cell--sel"><div class="cell__dw"><span class="cell__day">5</span></div></div>
+              <div class="cell cell--today"><div class="cell__dw"><span class="cell__day">6</span><span class="cell__dot"></span></div><span class="cell__title">篮球赛</span><div class="cell__count"><span class="cell__count-t">20人</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">7</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">8</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">9</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">10</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">11</span></div></div>
+              <div class="cell"><div class="cell__dw"><span class="cell__day">12</span><span class="cell__dot"></span></div><span class="cell__title">音乐节</span><div class="cell__count"><span class="cell__count-t">56人</span></div></div>
+            </div>
+            <div class="panel">
+              <div class="panel__hd"><div class="panel__lr"><svg><use href="#i-cal"/></svg><span class="panel__label">11月5日</span></div><span class="panel__count">0个活动</span></div>
+              <div class="panel__empty"><span class="panel__empty-t">当日暂无活动</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页交互件密集：视图切换、快捷筛选、报名按钮、日历格状态、整页四态。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>报名按钮 · enroll-btn 四态</h3>
+      <p class="hint">禁用条件 <code>activityStore.enrolling || submittingId===item.id</code>；文案随 <code>isEnrolled</code> 切换。<strong>不随 status 收敛（见 §04）</strong>。</p>
+      <div class="row">
+        <div class="cell" style="width:150px"><button class="ebtn">感兴趣</button><span class="lab">default</span></div>
+        <div class="cell" style="width:150px"><button class="ebtn ebtn--on">已感兴趣</button><span class="lab">active（isEnrolled）</span></div>
+        <div class="cell" style="width:150px"><button class="ebtn" style="color:var(--c-text-tertiary);letter-spacing:2px">...</button><span class="lab">loading（submittingId）</span></div>
+        <div class="cell" style="width:150px"><button class="ebtn" style="opacity:.55">感兴趣</button><span class="lab">disabled（enrolling）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>报名人数 · 计数口径</h3>
+      <p class="hint">值取 <code>enrollmentCount ?? enrollCount ?? 0</code>，<strong>有真值源</strong>（后端 GET /activities 的 enrollmentCount，报名接口回写）。列表行恒渲染含 0 占位；日历格与选中面板行仅在 &gt;0 时出现（本页内部不一致，见 §04）。</p>
+      <div class="row">
+        <div class="cell"><div class="enr"><span class="enr__n">12</span><span class="enr__l">人已报名</span></div><span class="lab">有真值</span></div>
+        <div class="cell"><div class="enr"><span class="enr__n">0</span><span class="enr__l">人已报名</span></div><span class="lab">列表行 0 占位（恒在）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>视图切换 · 快捷筛选</h3>
+      <p class="hint">view-toggle 二选一（列表/日历），选中底 <code>--c-brand-800</code>；quick-filter 三选一（全部/今天/周末）。</p>
+      <div class="row">
+        <div class="cell"><div class="vt"><div class="vt__btn vt__btn--on"><span class="vt__t">列表</span></div><div class="vt__btn"><span class="vt__t">日历</span></div></div><span class="lab">view-toggle</span></div>
+        <div class="cell"><div class="qf" style="padding:0"><div class="qf__chip qf__chip--on"><span class="qf__t">今天</span></div><div class="qf__chip"><span class="qf__t">周末</span></div></div><span class="lab">quick-filter</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>日历格 · 五态</h3>
+      <p class="hint">来自 <code>calendar-cell--other-month / --today / --active / --selected / --disabled</code>。</p>
+      <table class="tbl">
+        <tr><th>态</th><th>视觉</th></tr>
+        <tr><td>other-month</td><td>opacity .25 · 灰日 · 标题隐藏</td></tr>
+        <tr><td>today</td><td>底 <code>--c-bg-brand</code> · 日字 brand-700 800</td></tr>
+        <tr><td>active（有活动）</td><td>品牌圆点 + 截断标题 + N人</td></tr>
+        <tr><td>selected</td><td>底 <code>--c-brand-100</code> + brand-700 描边</td></tr>
+        <tr><td>disabled</td><td>非当月或无活动 · opacity .4</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页未引入页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">AppShell 轻页头 · 画框底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">视图切换选中块 · 返回文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#1F8D6A"></span><div><div class="sw__n">主色 700<code>--c-brand-700</code></div><div class="sw__u">报名人数 · 日历圆点 · 已报名按钮</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3;border:1px solid #DDE3E0"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">分类标签底 · 筛选选中底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">加载失败文案</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到六档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/700</span><span class="type__p" style="font-size:28px;font-weight:700">线下活动</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/700</span><span class="type__p" style="font-size:14px;font-weight:700">图书馆南门咖啡散步</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/700</span><span class="type__p" style="font-size:14px;font-weight:700;color:var(--c-brand-700)">12</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-brand)">学习</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px;font-weight:400;color:var(--c-text-secondary)">在安静的咖啡馆里，和朋友聊天放松</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-4 8rpx</b><i style="width:4px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--card-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>报名按钮 · 日历格</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--r-card<br>活动卡（单一来源）</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>chip · 切换钮</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与实况的已知差异</h2><p>本页行内无照片位</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/circle-cover-sports.jpg" alt="" style="height:190px;object-fit:cover">
+      <div class="asset__b"><b>本页列表/日历行内无头像 / 封面位</b><p>活动行仅「标题 + 分类标签 + 报名人数 + 描述 + 地点/时间小图标 + 报名按钮」，地点/时间是 emoji 图标（<code>emojiIcons.location/schedule</code>）非照片；日历格无图。上图为对照素材池样例，非本页引用。活动详情/官方卡片才用封面图。本页无 NEED_ASSET。</p><div class="m">若列表改版引入封面缩略图需补真素材</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>报名人数计数口径——有真值源：</b>本页 <code>enrollmentCount/enrollCount</code> 在 real 模式来自 <code>GET /activities</code> 的 <code>enrollmentCount</code>（列表映射 <code>raw.enrollmentCount ?? 0</code>），报名/取消接口 <code>POST/DELETE /activities/{id}/enroll</code> 回写 <code>result.enrollmentCount</code>；mock 模式为固定样例值。故画板如实显示数字，非伪造位。</li>
+      <li><b>状态未收敛（本页独立查证，非沿用详情页结论）：</b>列表模板<strong>从不引用 <code>item.status</code></strong>（ActivityItem 有 status∈open/ongoing/upcoming/ended/closed），既不渲染状态徽标，<code>enroll-btn</code> 也不因 status 收敛——一条 <code>status:"ended"/"closed"</code> 的活动在本页仍显示可点的「感兴趣」按钮，与活动详情页「已结束仍出立即报名」同源。建议后续：行头加状态徽标 + ended/closed 时禁用/隐藏报名按钮。</li>
+      <li><b>0 计数占位两视图不一致：</b>列表行（源码 :438）经 R13-L13-D07 已改「恒渲染 0 人已报名」占位；日历选中日面板行（源码 :594）仍是 <code>v-if &gt; 0</code>，0 时整块消失。同一页对「0」处理不同轨。</li>
+      <li>本页在 discover 分包，AppShell 显式 <code>:show-tab-bar="false"</code>，无 tabbar——画 tabbar 即错。</li>
+      <li>日历为示意布局（周一开头、当月 1 号落周三、今天=6、选中日有/无活动各一屏），日期序列自洽；真值以接口 <code>activityDate</code> 为准。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 活动列表页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积对齐理想效果图语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

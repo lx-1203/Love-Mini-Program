@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · VIP 账单页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 未登记令牌：按 design-variables.scss 真值 1:1 落地（base 缺档，已回报 BASE_PROBLEM） ===== */
+:root{
+  --c-accent-400: #F97316;                       /* scss :33/:292 · hero 渐变终点 */
+  --c-gold-true: #FFD700;                        /* scss :814 与 styles/tokens.scss:347 逐字同值；base 现登记 #C9A36A ⇒ BASE_PROBLEM */
+  --c-gold-bg-tint: rgba(255, 215, 0, 0.18);     /* scss :867 · 选中筛选片底 */
+  --c-overlay-text-secondary: rgba(255, 255, 255, 0.85); /* scss :750 */
+  --c-overlay-border-mid: rgba(255, 255, 255, 0.25);     /* scss :735 · hero 圆盘底 */
+  --c-red-bg-tint: rgba(239, 68, 68, 0.1);               /* scss :859 */
+  --c-romance-bg-tint: rgba(255, 104, 145, 0.1);         /* scss :863 · 类型徽标默认底 */
+  --c-info-bg-tint: rgba(59, 130, 246, 0.1);             /* scss :865 · 续费底 */
+  --c-secondary-blue-500: #4C6EF5;                       /* scss :811 · 续费字 */
+}
+
+/* ===== 本页专属组件 ===== */
+.bpage { position: absolute; inset: 0; overflow: hidden; background: var(--c-bg-page); padding-bottom: 40px; }
+.bnav { position: absolute; top: 44px; left: 0; width: 100%; height: 44px; z-index: 4;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 12px; }
+.bnav__back { width: 32px; height: 32px; border-radius: var(--r-full); display: flex; align-items: center;
+  justify-content: center; color: var(--c-text-primary); font-size: var(--fs-7xl); font-weight: 300; line-height: 1; }
+.bnav__title { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); }
+.bnav__ph { width: 32px; height: 32px; flex: none; }
+
+.bhero { display: flex; flex-direction: column; align-items: center; padding: 16px 16px 12px;
+  background: linear-gradient(135deg, var(--c-gold-true) 0%, var(--c-accent-400) 100%); }
+.bhero__ic { width: 48px; height: 48px; border-radius: var(--r-full); background: var(--c-overlay-border-mid);
+  display: flex; align-items: center; justify-content: center; color: var(--c-brand-500); margin-bottom: 6px; }
+.bhero__ic svg { width: 24px; height: 24px; }
+.bhero__t { font-size: var(--fs-2xl); font-weight: 800; color: var(--c-text-inverse); margin-bottom: 2px; }
+.bhero__s { font-size: var(--fs-sm); color: var(--c-overlay-text-secondary); }
+
+.fbar { background: var(--c-bg-container); padding: 8px 0; border-bottom: 1px solid var(--c-border-light); white-space: nowrap; }
+.fbar__in { display: inline-flex; gap: 6px; padding: 0 12px; }
+.fchip { display: inline-flex; padding: 6px 16px; background: var(--c-bg-secondary); border-radius: var(--r-full);
+  border: 1px solid transparent; }
+.fchip__t { font-size: var(--fs-base); color: var(--c-text-secondary); font-weight: 600; }
+.fchip--on { background: var(--c-gold-bg-tint); border-color: var(--c-gold-true); }
+.fchip--on .fchip__t { color: var(--c-gold-true); }
+
+.blist { padding: 8px 12px; display: flex; flex-direction: column; gap: 8px; }
+.bcard { background: var(--c-bg-container); border-radius: var(--r-lg); padding: 12px;
+  box-shadow: var(--s-sm); border: 1px solid var(--c-border-light); }
+.bcard__hd { display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px;
+  border-bottom: 1px dashed var(--c-border-light); margin-bottom: 8px; }
+.tag { padding: 2px 8px; border-radius: var(--r-sm); font-size: var(--fs-sm); font-weight: 600; }
+.tag--type-sub { background: var(--c-success-bg-tint); color: var(--c-success); }
+.tag--type-renew { background: var(--c-info-bg-tint); color: var(--c-secondary-blue-500); }
+.tag--type-refund { background: var(--c-red-bg-tint); color: var(--c-error); }
+.tag--type-def { background: var(--c-romance-bg-tint); color: var(--c-romance-500); }
+.tag--st-success { background: var(--c-success-bg-tint); color: var(--c-success); }
+.tag--st-failed { background: var(--c-red-bg-tint); color: var(--c-error); }
+.tag--st-refunded { background: var(--c-warning-bg-tint); color: var(--c-warning); }
+.bcard__body { display: flex; flex-direction: column; gap: 4px; }
+.brow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.brow__l { font-size: var(--fs-base); color: var(--c-text-tertiary); flex: none; }
+.brow__v { font-size: var(--fs-md); color: var(--c-text-primary); text-align: right; word-break: break-all; }
+.brow__v--amount { font-weight: 700; color: var(--c-romance-500); font-size: var(--fs-2xl); }
+.brow__v--strike { text-decoration: line-through; color: var(--c-text-tertiary); font-size: var(--fs-base); }
+.brow__v--mono { font-family: var(--mono); font-size: var(--fs-base); }
+
+/* 加载中 / 空态 */
+.bload { padding: 40px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.bload__t { font-size: var(--fs-md); color: var(--c-text-tertiary); }
+.es { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 40px 20px; }
+.es__ic { width: 60px; height: 60px; color: var(--c-text-placeholder); opacity: 0.85; }
+.es__ic svg { width: 60px; height: 60px; }
+.es__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-secondary); }
+.es__d { font-size: var(--fs-base); color: var(--c-text-secondary); text-align: center; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="16" rx="2.4"/><path d="M9 4.5V3.4A1.4 1.4 0 0 1 10.4 2h3.2A1.4 1.4 0 0 1 15 3.4v1.1z"/><path d="M8.6 10.5h6.8M8.6 14h6.8M8.6 17.2h4"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.5 8.2 12 4l8.5 4.2v7.6L12 20l-8.5-4.2z"/><path d="M3.5 8.2 12 12.4l8.5-4.2"/><path d="M12 12.4V20"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>VIP 账单页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/vip/bills</code>（订阅 / 续费 / 退款历史，支持下拉刷新与按类型筛选）。
+     本页状态机 4 屏取自模板 <code>v-if="isLoading &amp;&amp; isEmpty"</code> →
+     <code>v-else-if="isEmpty"</code> → <code>v-for="bill in filteredBills"</code>（<code>:209-269</code>），
+     外加筛选 chip 的第四支（<code>filterType</code> 非 ALL 时列表被本地过滤）。
+     卡内 8 个字段行里 6 个是条件节点，逐条枚举在 §02。逐屏画全作为该页永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>vip/bills</b></span>
+    <span>分包 <b>vip</b>（无 tabbar）</span>
+    <span>状态 <b>4 屏</b></span>
+    <span>闸门 <b>featureFlags.membershipEnabled</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 4 屏</h2>
+    <p>列表（全部）/ 筛选=退款 / 首拉加载中 / 空态</p></div>
+  <div class="sec__sub">页头自绘 <code>‹</code> 文字箭头（深字档，与 promo-code 的白字档不同），hero 是金→橙 135° 渐变带，
+    其下白色筛选条 + 账单卡列表；无原生栏、无 tabbar。<strong>本页当前不可停留</strong>：
+    <code>onLoad</code>（<code>:36-45</code>）读 <code>featureFlags.membershipEnabled=false</code> 即弹 toast 并
+    <code>navigateBack</code>／无栈时 <code>switchTab('/pages/profile/index')</code>，且模板无封存分支 ⇒
+    F01–F04 全部画的是 <code>membershipEnabled=true</code> 的形态。三张卡合计 1028px &gt; 812px，F01 按视口裁切。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">开关开启 · 列表（筛选=全部，mock 三笔）</span><span class="d">↓ 裁切至第二张卡末行，第三笔在视口外</span></figcaption>
+      <div class="phone">
+        <div class="bpage">
+          <div class="bnav"><span class="bnav__back">‹</span><span class="bnav__title">账单记录</span><span class="bnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="bhero">
+              <span class="bhero__ic"><svg><use href="#i-clipboard"/></svg></span>
+              <span class="bhero__t">VIP 账单</span>
+              <span class="bhero__s">查看订阅、续费、退款记录</span>
+            </div>
+            <div class="fbar"><div class="fbar__in">
+              <span class="fchip fchip--on"><span class="fchip__t">全部</span></span>
+              <span class="fchip"><span class="fchip__t">订阅</span></span>
+              <span class="fchip"><span class="fchip__t">续费</span></span>
+              <span class="fchip"><span class="fchip__t">退款</span></span>
+            </div></div>
+            <div class="blist">
+              <div class="bcard">
+                <div class="bcard__hd"><span class="tag tag--type-sub">订阅</span><span class="tag tag--st-success">成功</span></div>
+                <div class="bcard__body">
+                  <div class="brow"><span class="brow__l">套餐</span><span class="brow__v">季度会员</span></div>
+                  <div class="brow"><span class="brow__l">金额</span><span class="brow__v brow__v--amount">¥48.00</span></div>
+                  <div class="brow"><span class="brow__l">原价</span><span class="brow__v brow__v--strike">¥84.00</span></div>
+                  <div class="brow"><span class="brow__l">有效期</span><span class="brow__v">2026-10-26 09:41 ~ 2027-01-26 09:41</span></div>
+                  <div class="brow"><span class="brow__l">支付方式</span><span class="brow__v">微信支付</span></div>
+                  <div class="brow"><span class="brow__l">交易号</span><span class="brow__v brow__v--mono">wx_mock_1001</span></div>
+                  <div class="brow"><span class="brow__l">备注</span><span class="brow__v">首次开通</span></div>
+                  <div class="brow"><span class="brow__l">创建时间</span><span class="brow__v">2026-10-26 09:41</span></div>
+                </div>
+              </div>
+              <div class="bcard">
+                <div class="bcard__hd"><span class="tag tag--type-renew">续费</span><span class="tag tag--st-success">成功</span></div>
+                <div class="bcard__body">
+                  <div class="brow"><span class="brow__l">套餐</span><span class="brow__v">月度会员</span></div>
+                  <div class="brow"><span class="brow__l">金额</span><span class="brow__v brow__v--amount">¥18.00</span></div>
+                  <div class="brow"><span class="brow__l">原价</span><span class="brow__v brow__v--strike">¥28.00</span></div>
+                  <div class="brow"><span class="brow__l">有效期</span><span class="brow__v">2026-09-26 09:41 ~ 2026-10-27 09:41</span></div>
+                  <div class="brow"><span class="brow__l">支付方式</span><span class="brow__v">微信支付</span></div>
+                  <div class="brow"><span class="brow__l">交易号</span><span class="brow__v brow__v--mono">wx_mock_1002</span></div>
+                  <div class="brow"><span class="brow__l">备注</span><span class="brow__v">自动续费</span></div>
+                  <div class="brow"><span class="brow__l">创建时间</span><span class="brow__v">2026-09-26 09:41</span></div>
+                </div>
+              </div>
+              <div class="bcard">
+                <div class="bcard__hd"><span class="tag tag--type-refund">退款</span><span class="tag tag--st-refunded">已退款</span></div>
+                <div class="bcard__body">
+                  <div class="brow"><span class="brow__l">套餐</span><span class="brow__v">月度会员</span></div>
+                  <div class="brow"><span class="brow__l">金额</span><span class="brow__v brow__v--amount">¥18.00</span></div>
+                  <div class="brow"><span class="brow__l">原价</span><span class="brow__v brow__v--strike">¥18.00</span></div>
+                  <div class="brow"><span class="brow__l">支付方式</span><span class="brow__v">微信支付</span></div>
+                  <div class="brow"><span class="brow__l">交易号</span><span class="brow__v brow__v--mono">wx_mock_1003</span></div>
+                  <div class="brow"><span class="brow__l">备注</span><span class="brow__v">用户申请退款</span></div>
+                  <div class="brow"><span class="brow__l">创建时间</span><span class="brow__v">2026-08-27 09:41</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">开关开启 · 筛选=退款（本地过滤一支）</span><span class="d">整页 528px 内含于视口 · 无裁切</span></figcaption>
+      <div class="phone">
+        <div class="bpage">
+          <div class="bnav"><span class="bnav__back">‹</span><span class="bnav__title">账单记录</span><span class="bnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="bhero">
+              <span class="bhero__ic"><svg><use href="#i-clipboard"/></svg></span>
+              <span class="bhero__t">VIP 账单</span>
+              <span class="bhero__s">查看订阅、续费、退款记录</span>
+            </div>
+            <div class="fbar"><div class="fbar__in">
+              <span class="fchip"><span class="fchip__t">全部</span></span>
+              <span class="fchip"><span class="fchip__t">订阅</span></span>
+              <span class="fchip"><span class="fchip__t">续费</span></span>
+              <span class="fchip fchip--on"><span class="fchip__t">退款</span></span>
+            </div></div>
+            <div class="blist">
+              <div class="bcard">
+                <div class="bcard__hd"><span class="tag tag--type-refund">退款</span><span class="tag tag--st-refunded">已退款</span></div>
+                <div class="bcard__body">
+                  <div class="brow"><span class="brow__l">套餐</span><span class="brow__v">月度会员</span></div>
+                  <div class="brow"><span class="brow__l">金额</span><span class="brow__v brow__v--amount">¥18.00</span></div>
+                  <div class="brow"><span class="brow__l">原价</span><span class="brow__v brow__v--strike">¥18.00</span></div>
+                  <div class="brow"><span class="brow__l">支付方式</span><span class="brow__v">微信支付</span></div>
+                  <div class="brow"><span class="brow__l">交易号</span><span class="brow__v brow__v--mono">wx_mock_1003</span></div>
+                  <div class="brow"><span class="brow__l">备注</span><span class="brow__v">用户申请退款</span></div>
+                  <div class="brow"><span class="brow__l">创建时间</span><span class="brow__v">2026-08-27 09:41</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">开关开启 · 首拉加载中</span><span class="d">isLoading &amp;&amp; isEmpty · 仅一行文字</span></figcaption>
+      <div class="phone">
+        <div class="bpage">
+          <div class="bnav"><span class="bnav__back">‹</span><span class="bnav__title">账单记录</span><span class="bnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="bhero">
+              <span class="bhero__ic"><svg><use href="#i-clipboard"/></svg></span>
+              <span class="bhero__t">VIP 账单</span>
+              <span class="bhero__s">查看订阅、续费、退款记录</span>
+            </div>
+            <div class="fbar"><div class="fbar__in">
+              <span class="fchip fchip--on"><span class="fchip__t">全部</span></span>
+              <span class="fchip"><span class="fchip__t">订阅</span></span>
+              <span class="fchip"><span class="fchip__t">续费</span></span>
+              <span class="fchip"><span class="fchip__t">退款</span></span>
+            </div></div>
+            <div class="blist"><div class="bload"><span class="bload__t">加载中...</span></div></div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">开关开启 · 空态</span><span class="d">EmptyState no-data · 非「加载中」文案</span></figcaption>
+      <div class="phone">
+        <div class="bpage">
+          <div class="bnav"><span class="bnav__back">‹</span><span class="bnav__title">账单记录</span><span class="bnav__ph"></span></div>
+          <div style="position:absolute;top:88px;left:0;width:100%">
+            <div class="bhero">
+              <span class="bhero__ic"><svg><use href="#i-clipboard"/></svg></span>
+              <span class="bhero__t">VIP 账单</span>
+              <span class="bhero__s">查看订阅、续费、退款记录</span>
+            </div>
+            <div class="fbar"><div class="fbar__in">
+              <span class="fchip fchip--on"><span class="fchip__t">全部</span></span>
+              <span class="fchip"><span class="fchip__t">订阅</span></span>
+              <span class="fchip"><span class="fchip__t">续费</span></span>
+              <span class="fchip"><span class="fchip__t">退款</span></span>
+            </div></div>
+            <div class="blist">
+              <div class="es">
+                <span class="es__ic"><svg><use href="#i-box"/></svg></span>
+                <span class="es__t">暂无账单记录</span>
+                <span class="es__d">这里空空如也</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">三类件：筛选 chip（四枚，选中态唯一）、账单卡（类型 × 状态 徽标矩阵 + 8 个字段行的条件枚举）、
+    列表容器（加载中 / 空 / 有账 三互斥）。<strong>本页没有分页控件、没有下拉刷新可视件</strong>（刷新走
+    <code>onPullDownRefresh</code>，系统手势）。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>筛选 chip · 两态 × 四枚</h3>
+      <p class="hint">选中底 <code>--c-gold-bg-tint</code>（rgba(255,215,0,.18)）+ 1px <code>--c-gold</code> 描边 + 金字（12px/600 压在近白淡金上 ≈ 1.5:1，
+        在册可达性问题）；未选底 <code>--c-bg-secondary</code> #D1F5E7（浅绿）压白条。</p>
+      <div class="row">
+        <div class="cell"><span class="fchip fchip--on"><span class="fchip__t">全部</span></span><span class="lab">active（默认 <code>filterType="ALL"</code>）</span></div>
+        <div class="cell"><span class="fchip"><span class="fchip__t">订阅</span></span><span class="lab">default</span></div>
+        <div class="cell"><span class="fchip" style="transform:scale(.96)"><span class="fchip__t">续费</span></span><span class="lab">pressed（hover 0.96）</span></div>
+        <div class="cell"><span class="fchip"><span class="fchip__t">退款</span></span><span class="lab">default</span></div>
+      </div>
+      <p class="hint" style="margin-top:10px">筛选是<strong>纯本地过滤</strong>（<code>:59-64</code> <code>store.bills.filter(b=&gt;b.type===…)</code>），
+        不重新请求；因此「订阅」=1 笔、「续费」=1 笔、「退款」=1 笔（mock 三笔各一），全部=3 笔。</p>
+    </div>
+
+    <div class="panel">
+      <h3>账单卡徽标矩阵 · 类型 3 档 × 状态 3 档</h3>
+      <p class="hint">两枚徽标各自独立取色（<code>typeColor/statusColor :124-137</code>）；
+        类型未匹配时落 <code>--c-romance-bg-tint</code> + 浪漫字（默认底），状态未匹配时无底色无字色。</p>
+      <div class="row">
+        <div class="cell"><span class="tag tag--type-sub">订阅</span><span class="lab">SUBSCRIBE · 绿</span></div>
+        <div class="cell"><span class="tag tag--type-renew">续费</span><span class="lab">RENEW · 蓝（--c-secondary-blue-500）</span></div>
+        <div class="cell"><span class="tag tag--type-refund">退款</span><span class="lab">REFUND · 红</span></div>
+        <div class="cell"><span class="tag tag--type-def">其它</span><span class="lab">未匹配兜底 · 浪漫（画板无此数据，仅登记）</span></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="cell"><span class="tag tag--st-success">成功</span><span class="lab">SUCCESS · 绿</span></div>
+        <div class="cell"><span class="tag tag--st-failed">失败</span><span class="lab">FAILED · 红（mock 无此笔，仅登记）</span></div>
+        <div class="cell"><span class="tag tag--st-refunded">已退款</span><span class="lab">REFUNDED · 警告黄</span></div>
+      </div>
+      <p class="hint" style="margin-top:10px">类型/状态文案各自过 i18n（<code>vip.billsType*</code> / <code>vip.billsStatus*</code>），
+        未匹配时<strong>直接回显后端原值</strong>（<code>:144/:152</code> <code>return type</code>）。</p>
+    </div>
+
+    <div class="panel">
+      <h3>账单卡字段行 · 8 支（6 支条件）</h3>
+      <p class="hint">顺序即模板顺序（<code>:234-267</code>）；条件行为假时整行消失、不留空位。</p>
+      <table class="tbl">
+        <tr><th>行</th><th>条件</th><th>取值口径</th></tr>
+        <tr><td>套餐</td><td>恒显</td><td><code>planName || planId || '-'</code>（mock 给中文名「季度会员」，与 vip/index 的「季卡」不同源）</td></tr>
+        <tr><td>金额</td><td>恒显</td><td><code>amount/100</code> 两位，16px/700 <code>--c-romance-500</code></td></tr>
+        <tr><td>原价</td><td><code>v-if bill.originalAmount</code></td><td>划线 12px 三级文；<strong>退款笔 originalAmount==amount</strong> ⇒ 出现「¥18.00 划 ¥18.00」</td></tr>
+        <tr><td>有效期</td><td><code>periodStart &amp;&amp; periodEnd</code></td><td><code>YYYY-MM-DD HH:mm ~ 同</code>；退款笔两字段皆缺 ⇒ 整行消失</td></tr>
+        <tr><td>支付方式</td><td><code>v-if paymentMethod</code></td><td><code>'WECHAT'</code> → 「微信支付」，否则<strong>回显原值</strong></td></tr>
+        <tr><td>交易号</td><td><code>v-if transactionId</code></td><td><code>monospace</code> 12px</td></tr>
+        <tr><td>备注</td><td><code>v-if remark</code></td><td>后端原文，无 i18n</td></tr>
+        <tr><td>创建时间</td><td>恒显</td><td><code>formatDate(createdAt)</code></td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>列表容器 · 三互斥</h3>
+      <p class="hint">判据 <code>isLoading &amp;&amp; isEmpty</code> → <code>isEmpty</code> → <code>v-for</code>；
+        <code>isEmpty</code> 取的是<strong>过滤后</strong>的 <code>filteredBills</code>，
+        所以「有账但当前筛选无命中」也会出 F04 空态（文案仍是「暂无账单记录」，易误读，在册）。</p>
+      <table class="tbl">
+        <tr><th>状态</th><th>画面</th><th>备注</th></tr>
+        <tr><td>加载中</td><td>仅一行「加载中...」（<code>common.loading</code>，13px 三级文）</td><td><strong>无骨架屏</strong>（与 wallet 页不同档）</td></tr>
+        <tr><td>空</td><td>EmptyState <code>type="no-data"</code>：BOX 图标 60px + 标题「暂无账单记录」+ 预设副题「这里空空如也」</td><td>标题由页面显式传入，副题走组件预设</td></tr>
+        <tr><td>有账</td><td>卡片列表，卡间 <code>gap:16rpx</code>=8px</td><td>无分页、无「加载更多」；一次拉 <code>page=0,size=20</code></td></tr>
+      </table>
+      <p class="hint" style="margin-top:10px">失败路径不出状态位：<code>loadBills()</code> catch 后只弹 toast
+        （<code>error.message</code> 或「账单加载失败」），界面停在空态 ⇒ 与「真没账」不可区分，属在册缺陷。</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">页身 <code>--c-bg-page</code>，只有 hero 一条金橙带；徽标底色全部走 tint 档。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#FFD700"></span><div><div class="sw__n">金<code>--c-gold</code>（真值）</div><div class="sw__u">hero 渐变起点 · 选中片描边与字 —— base 现登记 #C9A36A ⇒ BASE_PROBLEM</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F97316"></span><div><div class="sw__n">强调 400<code>--c-accent-400</code></div><div class="sw__u">hero 渐变终点（base 未登记）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#D1F5E7;border:1px solid #DDE3E0"></span><div><div class="sw__n">次级底<code>--c-bg-secondary</code></div><div class="sw__u">未选筛选片底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#10B981"></span><div><div class="sw__n">成功<code>--c-success</code></div><div class="sw__u">订阅类型字 · 成功状态</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#4C6EF5"></span><div><div class="sw__n">次级蓝 500<code>--c-secondary-blue-500</code></div><div class="sw__u">续费类型字（base 只登记 400 档）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">退款类型字 · 失败状态</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F59E0B"></span><div><div class="sw__n">警告<code>--c-warning</code></div><div class="sw__u">已退款状态字（底 --c-warning-bg-tint）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫 500<code>--c-romance-500</code></div><div class="sw__u">金额数字 · 未匹配类型兜底字</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-2xl 16/800·700</span><span class="type__p" style="font-size:16px;font-weight:800">VIP 账单 · 账单记录 · ¥48.00</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600</span><span class="type__p" style="font-size:15px;font-weight:600;color:var(--c-text-secondary)">暂无账单记录</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400">季度会员 · 微信支付 · 首次开通</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400·600</span><span class="type__p" style="font-size:12px;font-weight:600">全部 · 订阅 · 套餐 · 金额 · wx_mock_1001</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400·600</span><span class="type__p" style="font-size:11px;font-weight:600;color:var(--c-text-secondary)">订阅 · 成功（两枚徽标）· 查看订阅、续费、退款记录</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>12rpx（hero 图标下距）</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>16rpx（列表内衬/卡间）</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>24rpx（卡内衬/列表横向）</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>32rpx（hero 左右）</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:4px"></b>--r-sm<br>8rpx · 两枚徽标</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 账单卡</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>筛选片 / hero 圆盘</div>
+      </div>
+      <p class="hint" style="margin-top:14px">导航栏 44px、hero 圆盘 48px（内图 24px）、筛选片内衬 6/16px、
+        卡头下划虚线 1px dashed、页面 <code>padding-bottom:80rpx</code>=40px、
+        空态图标 120rpx=60px（组件固定布局尺寸，无 sp 档）。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>本页无照片位；两枚图标为 SVG 素材，画板用描边替身</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:120px;object-fit:contain">
+      <div class="asset__b"><b>ICONS_EMOJI.CLIPBOARD → #i-clipboard</b>
+        <p>hero 主视觉（<code>:32</code> <code>heroIcon = IMAGE_PATHS.ICONS_EMOJI.CLIPBOARD</code>），
+           真源 <code>static/assets/icons/common/clipboard.svg</code>，压在 0.25 白圆盘上、色档 <code>--c-brand-500</code>。
+           同一枚图标也是 vip/index「账单记录」入口的图标。</p>
+        <div class="m">24px · --c-brand-500 · 非素材缺口</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:120px;object-fit:contain">
+      <div class="asset__b"><b>EmptyState BOX_SVG → #i-box</b>
+        <p>空态预设图标（<code>type="no-data"</code> → <code>ICONS_COMMON.BOX_SVG</code>），
+           组件内 <code>120rpx=60px</code> + <code>--fs-xl/600</code> 标题 + <code>--fs-base</code> 预设副题「这里空空如也」。</p>
+        <div class="m">60px · 非素材缺口</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异 + 数值口径（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>当前默认态是「重定向」，本画板四屏全部画开关开启态。</b>判据 <code>vip/bills.vue:36-45</code>
+        <code>onLoad → if (!featureFlags.membershipEnabled)</code>（<code>config/feature-flags.ts:40</code> 硬编码 <code>false</code>）
+        → toast <code>vip.membershipDisabled</code> → 有栈 <code>navigateBack()</code>、无栈 <code>switchTab('/pages/profile/index')</code>；
+        同写法见 <code>vip/index.vue:60-69</code>、<code>vip/promo-code.vue:33-42</code>。
+        另 <code>onShow</code>（<code>:97-99</code>）也带同一 flag 守卫，flag=false 时连请求都不发。
+        这三页的闸是<strong>前端常量</strong>，与 market 三页的后端 <code>commerce.*</code> 开关（<code>appConfig.isCommerceOn</code>）互不相干——
+        巡检报告把两者一并记作「封存态转发到 profile」，读基准时要分清。</li>
+      <li><b>三笔账单的全部数字 = mock 种子</b>：<code>stores/vip-billing.ts:69-125</code>
+        （4800/8400 分、1800/2800 分、1800/1800 分，交易号 <code>wx_mock_1001..1003</code>，备注「首次开通 / 自动续费 / 用户申请退款」）。
+        real 模式走 <code>GET /vip/bills?page=0&amp;size=20</code>，金额与交易号以后端订单真值为准 ⇒
+        <strong>画板上的 ¥48.00 / ¥18.00 等不是后端真值，只是演示种子</strong>。</li>
+      <li><b>日期是「渲染时刻 ± 相对天数」派生值，不是固定真值：</b>种子用 <code>toLocalIso(offsetDays)</code>
+        （<code>:72-76</code>，infra R2-00063）按 <code>Date.now()</code> 生成 ⇒ 画板取基准日 2026-10-26 09:41 换算：
+        订阅笔 <code>createdAt=今日</code>、有效期 <code>今日 ~ +92 天 = 2027-01-26</code>；
+        续费笔 <code>−30 天 = 2026-09-26</code>、有效期止 <code>−1 天 = 2026-10-27</code>；
+        退款笔 <code>−60 天 = 2026-08-27</code> 且<strong>无 periodStart/End ⇒ 有效期整行消失</strong>。
+        重跑画板若换日期，这三组日期必须随之重算（口径：相对当天，不是绝对日期）。</li>
+      <li><b>在册不一致（照实况画，不修）：</b>
+        ① 页头返回件 <code>‹</code> 在本页是 <code>--c-text-primary</code> 深字，而 vip/promo-code 同位置是 <code>--c-text-inverse</code> 白字压金底；
+        ② 选中筛选片金字 <code>--c-gold</code> 压 <code>--c-gold-bg-tint</code> ≈ 1.5:1（全站最低一档的选中态）；
+        ③ 退款笔 <code>originalAmount</code> 与 <code>amount</code> 同为 1800 分 ⇒ 卡上出现「¥18.00 / 划 ¥18.00」；
+        ④ 账单套餐名「季度会员 / 月度会员」与 vip/index 的「季卡 / 月卡」是两套中文，未共用 i18n key；
+        ⑤ 加载失败无状态位（只 toast），与「空账」同屏。</li>
+      <li><b>BASE_PROBLEM（base 缺档 / 错档，本页按 scss 真值 1:1 落字面量）：</b>
+        <code>--c-gold</code> 错档（base #C9A36A vs scss:814 / tokens.scss:347 = #FFD700，<strong>hero 与选中片都依赖它</strong>）；
+        缺档 <code>--c-accent-400</code>(#F97316)、<code>--c-gold-bg-tint</code>(rgba(255,215,0,.18))、
+        <code>--c-overlay-border-mid</code>(.25)、<code>--c-overlay-text-secondary</code>(.85)、
+        <code>--c-red-bg-tint</code>(rgba(239,68,68,.1))、<code>--c-romance-bg-tint</code>(rgba(255,104,145,.1))、
+        <code>--c-info-bg-tint</code>(rgba(59,130,246,.1))、<code>--c-secondary-blue-500</code>(#4C6EF5，base 只有 400 档)。</li>
+      <li>本页在 vip 分包、<code>navigationStyle: custom</code>：<strong>无原生导航栏、无 tabbar</strong>。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · VIP 账单页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

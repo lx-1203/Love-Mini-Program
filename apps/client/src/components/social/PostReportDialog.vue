@@ -356,7 +356,7 @@ defineExpose({ onContentTap, selectReason, submit });
   width: 36rpx;
   height: 36rpx;
   border-radius: var(--r-circle, 50%);
-  border: 2rpx solid var(--c-border, #d1d5db);
+  border: 2rpx solid var(--c-border-default);
   display: flex;
   align-items: center;
   justify-content: center;

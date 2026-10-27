@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 校园认证步（注册第 2 步）高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 已登记令牌，rpx ÷ 2 = px；源文件零私有色值） ===== */
+
+/* AppShell（variant=standard，fixed 默认 true）：白胶囊返回 + 标题 + 副标题，无渐变带 */
+.shell { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden;
+  padding: 0 var(--page-padding); background: var(--c-bg-page); }
+.apphdr { padding: 52px 0 10px; margin-bottom: 14px; flex: none; }  /* 52 = 状态栏 44 + 头部 padding 20rpx */
+.apphdr__main { display: flex; flex-direction: column; }
+.backpill { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start;
+  min-height: 44px; min-width: 44px; padding: 10px 12px 10px 8px; margin-bottom: 8px;
+  border-radius: var(--r-full); background: var(--c-bg-container); border: 0.5px solid var(--c-border-light);
+  color: var(--c-brand-800); }
+.backpill svg { width: 20px; height: 20px; }
+.backpill span { font-size: var(--fs-base); font-weight: 500; }
+.apphdr__title { display: block; font-size: var(--fs-7xl); font-weight: 700; line-height: 1.3; color: var(--c-text-primary); }
+.apphdr__sub { display: block; margin-top: 4px; font-size: var(--fs-base); line-height: 1.5; color: var(--c-text-secondary); }
+.bodycol { display: flex; flex-direction: column; gap: var(--sp-6); }   /* shell__body gap 24rpx */
+.cta-spacer { height: 76px; flex: none; }                               /* calc(152rpx + 安全区 34px) */
+
+/* SectionCard（compact） */
+.seccard { display: flex; flex-direction: column; gap: var(--sp-4); padding: var(--sp-7); flex: none;
+  border-radius: var(--r-card); background: var(--c-bg-container);
+  border: var(--c-border-card); box-shadow: var(--card-shadow); }
+/* 卡内标题行：学校资料 + 隐私「?」（外层 44px 热区 / 内层 20px 圆底，R6-B65/D14） */
+.chead { display: flex; align-items: center; gap: var(--sp-1); }
+.chead__t { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); }
+.chead__help { width: 44px; height: 44px; margin-left: -12px; box-sizing: border-box; flex: none;
+  display: flex; align-items: center; justify-content: center; }
+.chead__circle { width: 20px; height: 20px; border-radius: var(--r-full); background: var(--c-bg-page);
+  border: 1px solid var(--c-border-default); display: flex; align-items: center; justify-content: center; }
+.chead__q { font-size: var(--fs-md); font-weight: 700; color: var(--c-text-tertiary); line-height: 1; }
+
+/* 表单行（标签 + 点选字段） */
+.frow { display: flex; flex-direction: column; gap: var(--sp-1); }
+.frow__l { font-size: var(--fs-sm); color: var(--c-text-secondary); font-weight: 500; }
+.field { width: 100%; min-height: 44px; box-sizing: border-box; padding: 0 var(--sp-4);
+  border-radius: var(--r-lg); background: var(--c-bg-surface); border: var(--c-border-card);
+  display: flex; align-items: center; justify-content: space-between; }
+.field__t { font-size: var(--fs-lg); color: var(--c-text-primary); }
+.field__t--ph { color: var(--c-text-placeholder); }
+.field__ar { width: 16px; height: 16px; flex: none; opacity: 0.6; color: var(--c-text-secondary); }
+
+/* 价值提示卡（浅绿底 + 深绿字，R15-L12-D06） */
+.valuecard { background: var(--c-bg-brand); border: 0.5px solid var(--c-brand-200); }
+.valuecard__t { font-size: var(--fs-base); line-height: 1.7; color: var(--c-brand-800); }
+
+/* 跳过入口（44px 热区 · 下划线深绿字 + 箭头） */
+.skipbar { min-height: 44px; box-sizing: border-box; display: flex; align-items: center;
+  justify-content: center; gap: var(--sp-1); padding: var(--sp-4) 0 var(--sp-1); flex: none; }
+.skipbar__t { font-size: var(--fs-md); color: var(--c-brand-800); font-weight: 600; text-decoration: underline; }
+.skipbar__ar { width: 14px; height: 14px; flex: none; opacity: 0.6; color: var(--c-text-secondary); }
+
+/* SetupProgress（variant=student，LEGACY_STEP_MAP 把 2 映射回真实链第 2 位） */
+.prog { display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-4) var(--sp-5); flex: none;
+  background: var(--c-bg-container); border-radius: var(--r-lg); box-shadow: var(--s-sm); }
+.prog__hd { display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); }
+.prog__cur { font-size: var(--fs-base); color: var(--c-text-tertiary); font-weight: 500; }
+.prog__lab { font-size: var(--fs-md); color: var(--c-text-primary); font-weight: 700; }
+.prog__bar { display: flex; align-items: center; justify-content: space-between; padding: 0 var(--sp-2); }
+.prog__wrap { display: flex; align-items: center; flex: 1; min-width: 0; }
+.prog__wrap--last { flex: 0 0 auto; }
+.dot { width: 28px; height: 28px; border-radius: var(--r-full); flex: none; display: flex;
+  align-items: center; justify-content: center; border: 1px solid var(--c-border-default);
+  background: var(--c-bg-surface); font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-secondary); }
+.dot--done { background: var(--c-brand); border-color: var(--c-brand); box-shadow: var(--s-sm); color: var(--c-text-inverse); }
+.dot--done svg { width: 12px; height: 12px; }
+.dot--cur { background: var(--c-brand-50); border-color: var(--c-brand);
+  box-shadow: 0 0 0 3px var(--c-brand-100); color: var(--c-brand-700); }
+.pline { flex: 1; min-width: 12px; height: 2px; margin: 0 var(--sp-1); border-radius: var(--sp-1); background: var(--c-border-default); }
+.pline--done { background: var(--c-brand); }
+.prog__labs { display: flex; align-items: center; padding: 0 var(--sp-1); }
+.plab { flex: 1; min-width: 0; font-size: var(--fs-base); font-weight: 500; color: var(--c-text-tertiary); }
+.plab--last { flex: 0 0 auto; text-align: right; }
+.plab--done { color: var(--c-brand-700); font-weight: 600; }
+.plab--cur { color: var(--c-text-primary); font-weight: 700; }
+
+/* BottomActionBar（fixed）：本页 CTA 常亮（R11-L12-D09 撤掉 :disabled，缺项交给 save() 的 toast） */
+.bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 90; display: flex;
+  padding: var(--sp-4) var(--page-padding) 42px; background: var(--c-bg-page); }
+.cta { flex: 1; height: 44px; border-radius: var(--r-xl); background: var(--c-brand-800); color: var(--c-text-inverse);
+  font-size: var(--fs-lg); font-weight: 700; display: flex; align-items: center; justify-content: center;
+  gap: 8px; box-shadow: var(--s-brand); }
+.cta--press { transform: scale(0.97); }
+.cta .spin { width: 16px; height: 16px; border-radius: var(--r-full); border: 2px solid var(--c-overlay-bg-light);
+  border-top-color: var(--c-text-inverse); flex: none; }
+
+/* 系统层 */
+.sb { z-index: 130; }
+.toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 120;
+  max-width: 64%; padding: 12px var(--sp-7); border-radius: var(--r-lg); background: var(--c-text-primary);
+  color: var(--c-bg-container); font-size: var(--fs-lg); line-height: 1.4; text-align: center; }
+.toast--ic { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 116px; padding: 20px 18px 16px; }
+.toast--ic svg { width: 30px; height: 30px; color: var(--c-text-inverse); }
+.mask { position: absolute; inset: 0; background: var(--c-bg-overlay); z-index: 110;
+  display: flex; align-items: center; justify-content: center; }
+.dlg { width: 300px; background: var(--c-bg-container); border-radius: var(--r-xxl); box-shadow: var(--s-modal); overflow: hidden; }
+.dlg__h { font-size: var(--fs-2xl); font-weight: 600; color: var(--c-text-primary); text-align: center; padding: 20px 18px 8px; }
+.dlg__c { font-size: var(--fs-lg); color: var(--c-text-secondary); line-height: 1.65; text-align: center; padding: 0 20px 20px; }
+.dlg__r { display: flex; border-top: 0.5px solid var(--c-border-light); }
+.dlg__b { flex: 1; height: 48px; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-xl); color: var(--c-brand); font-weight: 600; }
+.homebar { z-index: 95; }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5.5 8 12l7 6.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9.5 5.5 16 12l-6.5 6.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.6l4.4 4.4L19 7"/></symbol>
+  <symbol id="i-signal" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>校园认证步 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/setup/campus/index</code>，注册链<b>第 2/5 步</b>。
+     本页不是「传学生证照片」的认证页（那是 <code style="font-family:var(--mono);font-size:12.5px">campus/certification</code>），
+     而是注册向导里填<b>城市 → 学校 → 专业</b>三级联动的那一步：三个 <code style="font-family:var(--mono);font-size:12.5px">&lt;picker&gt;</code>，禁止手输。
+     同一份页面还兼作「我的 → 校园认证」的补认证入口（<code style="font-family:var(--mono);font-size:12.5px">isReauthScenario()</code> 分流，去向不同、画面相同）。
+     本页状态机有 <b>6</b> 个可见态，逐屏画全作为该页验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>setup/campus</b></span>
+    <span>分包 <b>setup</b>（无 tabbar）</span>
+    <span>链位 <b>第 2/5 步 · 学生分支</b></span>
+    <span>状态 <b>6 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无验收基准图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 6 屏</h2>
+    <p>空表单 / 三项已选 / 隐私弹窗 / 缺项校验 / 保存中 / 保存成功</p></div>
+  <div class="sec__sub">本页状态机有 <b>6</b> 态，来自这些实际分支：
+    ① 三枚字段的 <code>:class="['field__text', !form.city &amp;&amp; 'field__text--placeholder']"</code>（以及 campusName / department 两处同型三元）⇒ 空/已填两档；
+    ② <code>showPrivacyInfo()</code> → <code>uni.showModal</code>（<code>showCancel:false</code> ⇒ 只有一个按钮）；
+    ③ <code>save()</code> 首守卫 <code>if (!isComplete.value)</code> → toast <code>setup.campus.errIncomplete</code>；
+    ④ <code>saving</code> 驱动 CTA 文案 <code>saving ? saveSaving : saveLabel</code>；
+    ⑤ 成功 <code>uni.showToast({icon:"success"})</code> 后 <code>replaceAppPath(SCHEDULE)</code>；
+    ⑥ 进度条 <code>&lt;SetupProgress :current-step="2" variant="student" /&gt;</code> 的档位（第 1 枚已完成、第 2 枚当前）。
+    页头是 AppShell 自绘的白胶囊返回 + 标题 + 副标题（非渐变带）；帧即视口 375×812，
+    整页高约 807px（含吸底留位），被压住的区间写在题注 <code>.d</code> 里，不写进画面。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">空表单 · 首次进入</span><span class="d">三项均占位档 · 跳过入口被吸底条压住（见 §04）</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="shell">
+          <div class="apphdr"><div class="apphdr__main">
+            <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="apphdr__title">校园认证</span>
+            <span class="apphdr__sub">认证后解锁同校专属匹配与校友圈子</span>
+          </div></div>
+          <div class="bodycol">
+            <div class="prog">
+              <div class="prog__hd"><span class="prog__cur">第 2/5 步</span><span class="prog__lab">校园认证</span></div>
+              <div class="prog__bar">
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--cur">2</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">3</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">4</span><span class="pline"></span></span>
+                <span class="prog__wrap prog__wrap--last"><span class="dot">5</span></span>
+              </div>
+              <div class="prog__labs">
+                <span class="plab plab--done">基本信息</span><span class="plab plab--cur">校园认证</span>
+                <span class="plab">时间安排</span><span class="plab">推荐偏好</span><span class="plab plab--last">完成</span>
+              </div>
+            </div>
+            <div class="seccard">
+              <div class="chead"><span class="chead__t">学校资料</span>
+                <span class="chead__help"><span class="chead__circle"><span class="chead__q">?</span></span></span>
+              </div>
+              <div class="frow"><span class="frow__l">城市</span>
+                <div class="field"><span class="field__t field__t--ph">请选择城市</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+              <div class="frow"><span class="frow__l">学校</span>
+                <div class="field"><span class="field__t field__t--ph">请选择学校</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+              <div class="frow"><span class="frow__l">专业</span>
+                <div class="field"><span class="field__t field__t--ph">请选择专业</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+            </div>
+            <div class="seccard valuecard"><span class="valuecard__t">完成校园认证，解锁同校专属匹配、校友圈子权限。认证信息仅用于匹配推荐，严格保密。</span></div>
+            <div class="skipbar"><span class="skipbar__t">非学生？跳过此步，稍后认证</span><svg class="skipbar__ar"><use href="#i-chev"/></svg></div>
+            <div class="cta-spacer"></div>
+          </div>
+        </div>
+        <div class="bar"><span class="cta">保存并继续</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">三项已选 · 联动完成</span><span class="d">北京 / 北京大学 / 计算机科学与技术</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="shell">
+          <div class="apphdr"><div class="apphdr__main">
+            <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="apphdr__title">校园认证</span>
+            <span class="apphdr__sub">认证后解锁同校专属匹配与校友圈子</span>
+          </div></div>
+          <div class="bodycol">
+            <div class="prog">
+              <div class="prog__hd"><span class="prog__cur">第 2/5 步</span><span class="prog__lab">校园认证</span></div>
+              <div class="prog__bar">
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--cur">2</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">3</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">4</span><span class="pline"></span></span>
+                <span class="prog__wrap prog__wrap--last"><span class="dot">5</span></span>
+              </div>
+              <div class="prog__labs">
+                <span class="plab plab--done">基本信息</span><span class="plab plab--cur">校园认证</span>
+                <span class="plab">时间安排</span><span class="plab">推荐偏好</span><span class="plab plab--last">完成</span>
+              </div>
+            </div>
+            <div class="seccard">
+              <div class="chead"><span class="chead__t">学校资料</span>
+                <span class="chead__help"><span class="chead__circle"><span class="chead__q">?</span></span></span>
+              </div>
+              <div class="frow"><span class="frow__l">城市</span>
+                <div class="field"><span class="field__t">北京</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+              <div class="frow"><span class="frow__l">学校</span>
+                <div class="field"><span class="field__t">北京大学</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+              <div class="frow"><span class="frow__l">专业</span>
+                <div class="field"><span class="field__t">计算机科学与技术</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+            </div>
+            <div class="seccard valuecard"><span class="valuecard__t">完成校园认证，解锁同校专属匹配、校友圈子权限。认证信息仅用于匹配推荐，严格保密。</span></div>
+            <div class="skipbar"><span class="skipbar__t">非学生？跳过此步，稍后认证</span><svg class="skipbar__ar"><use href="#i-chev"/></svg></div>
+            <div class="cta-spacer"></div>
+          </div>
+        </div>
+        <div class="bar"><span class="cta">保存并继续</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">隐私说明弹窗 · showCancel:false</span><span class="d">只有一个「我知道了」按钮</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="shell">
+          <div class="apphdr"><div class="apphdr__main">
+            <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="apphdr__title">校园认证</span>
+            <span class="apphdr__sub">认证后解锁同校专属匹配与校友圈子</span>
+          </div></div>
+          <div class="bodycol">
+            <div class="prog">
+              <div class="prog__hd"><span class="prog__cur">第 2/5 步</span><span class="prog__lab">校园认证</span></div>
+              <div class="prog__bar">
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--cur">2</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">3</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">4</span><span class="pline"></span></span>
+                <span class="prog__wrap prog__wrap--last"><span class="dot">5</span></span>
+              </div>
+              <div class="prog__labs">
+                <span class="plab plab--done">基本信息</span><span class="plab plab--cur">校园认证</span>
+                <span class="plab">时间安排</span><span class="plab">推荐偏好</span><span class="plab plab--last">完成</span>
+              </div>
+            </div>
+            <div class="seccard">
+              <div class="chead"><span class="chead__t">学校资料</span>
+                <span class="chead__help"><span class="chead__circle"><span class="chead__q">?</span></span></span>
+              </div>
+              <div class="frow"><span class="frow__l">城市</span>
+                <div class="field"><span class="field__t field__t--ph">请选择城市</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+              <div class="frow"><span class="frow__l">学校</span>
+                <div class="field"><span class="field__t field__t--ph">请选择学校</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+              <div class="frow"><span class="frow__l">专业</span>
+                <div class="field"><span class="field__t field__t--ph">请选择专业</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+            </div>
+            <div class="cta-spacer"></div>
+          </div>
+        </div>
+        <div class="bar"><span class="cta">保存并继续</span></div>
+        <span class="homebar"></span>
+        <div class="mask"><div class="dlg">
+          <div class="dlg__h">认证信息说明</div>
+          <div class="dlg__c">你填写的学校与专业信息仅用于同校匹配与圈子推荐，不会在个人主页公开展示，也不会泄露给任何第三方。</div>
+          <div class="dlg__r"><span class="dlg__b">我知道了</span></div>
+        </div></div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">缺项校验 · 点「保存并继续」</span><span class="d">选了城市与学校、专业未选 → toast</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="shell">
+          <div class="apphdr"><div class="apphdr__main">
+            <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="apphdr__title">校园认证</span>
+            <span class="apphdr__sub">认证后解锁同校专属匹配与校友圈子</span>
+          </div></div>
+          <div class="bodycol">
+            <div class="prog">
+              <div class="prog__hd"><span class="prog__cur">第 2/5 步</span><span class="prog__lab">校园认证</span></div>
+              <div class="prog__bar">
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--cur">2</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">3</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">4</span><span class="pline"></span></span>
+                <span class="prog__wrap prog__wrap--last"><span class="dot">5</span></span>
+              </div>
+              <div class="prog__labs">
+                <span class="plab plab--done">基本信息</span><span class="plab plab--cur">校园认证</span>
+                <span class="plab">时间安排</span><span class="plab">推荐偏好</span><span class="plab plab--last">完成</span>
+              </div>
+            </div>
+            <div class="seccard">
+              <div class="chead"><span class="chead__t">学校资料</span>
+                <span class="chead__help"><span class="chead__circle"><span class="chead__q">?</span></span></span>
+              </div>
+              <div class="frow"><span class="frow__l">城市</span>
+                <div class="field"><span class="field__t">北京</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+              <div class="frow"><span class="frow__l">学校</span>
+                <div class="field"><span class="field__t">北京大学</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+              <div class="frow"><span class="frow__l">专业</span>
+                <div class="field"><span class="field__t field__t--ph">请选择专业</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+            </div>
+            <div class="seccard valuecard"><span class="valuecard__t">完成校园认证，解锁同校专属匹配、校友圈子权限。认证信息仅用于匹配推荐，严格保密。</span></div>
+            <div class="skipbar"><span class="skipbar__t">非学生？跳过此步，稍后认证</span><svg class="skipbar__ar"><use href="#i-chev"/></svg></div>
+            <div class="cta-spacer"></div>
+          </div>
+        </div>
+        <div class="bar"><span class="cta cta--press">保存并继续</span></div>
+        <span class="homebar"></span>
+        <div class="toast">请完整选择城市、学校与专业</div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">保存中 · saving=true</span><span class="d">CTA 换「保存中...」+ spinner · 防重入</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="shell">
+          <div class="apphdr"><div class="apphdr__main">
+            <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="apphdr__title">校园认证</span>
+            <span class="apphdr__sub">认证后解锁同校专属匹配与校友圈子</span>
+          </div></div>
+          <div class="bodycol">
+            <div class="prog">
+              <div class="prog__hd"><span class="prog__cur">第 2/5 步</span><span class="prog__lab">校园认证</span></div>
+              <div class="prog__bar">
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--cur">2</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">3</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">4</span><span class="pline"></span></span>
+                <span class="prog__wrap prog__wrap--last"><span class="dot">5</span></span>
+              </div>
+              <div class="prog__labs">
+                <span class="plab plab--done">基本信息</span><span class="plab plab--cur">校园认证</span>
+                <span class="plab">时间安排</span><span class="plab">推荐偏好</span><span class="plab plab--last">完成</span>
+              </div>
+            </div>
+            <div class="seccard">
+              <div class="chead"><span class="chead__t">学校资料</span>
+                <span class="chead__help"><span class="chead__circle"><span class="chead__q">?</span></span></span>
+              </div>
+              <div class="frow"><span class="frow__l">城市</span>
+                <div class="field"><span class="field__t">北京</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+              <div class="frow"><span class="frow__l">学校</span>
+                <div class="field"><span class="field__t">北京大学</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+              <div class="frow"><span class="frow__l">专业</span>
+                <div class="field"><span class="field__t">计算机科学与技术</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+            </div>
+            <div class="seccard valuecard"><span class="valuecard__t">完成校园认证，解锁同校专属匹配、校友圈子权限。认证信息仅用于匹配推荐，严格保密。</span></div>
+            <div class="skipbar"><span class="skipbar__t">非学生？跳过此步，稍后认证</span><svg class="skipbar__ar"><use href="#i-chev"/></svg></div>
+            <div class="cta-spacer"></div>
+          </div>
+        </div>
+        <div class="bar"><span class="cta"><span class="spin"></span>保存中...</span></div>
+        <span class="homebar"></span>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">保存成功 · toast 后整页被替换</span><span class="d">icon:success → replaceAppPath(时间安排)</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill"><use href="#i-signal"/></svg><svg class="ico--fill"><use href="#i-wifi"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="shell">
+          <div class="apphdr"><div class="apphdr__main">
+            <span class="backpill"><svg><use href="#i-back"/></svg><span>返回</span></span>
+            <span class="apphdr__title">校园认证</span>
+            <span class="apphdr__sub">认证后解锁同校专属匹配与校友圈子</span>
+          </div></div>
+          <div class="bodycol">
+            <div class="prog">
+              <div class="prog__hd"><span class="prog__cur">第 2/5 步</span><span class="prog__lab">校园认证</span></div>
+              <div class="prog__bar">
+                <span class="prog__wrap"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="pline pline--done"></span></span>
+                <span class="prog__wrap"><span class="dot dot--cur">2</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">3</span><span class="pline"></span></span>
+                <span class="prog__wrap"><span class="dot">4</span><span class="pline"></span></span>
+                <span class="prog__wrap prog__wrap--last"><span class="dot">5</span></span>
+              </div>
+              <div class="prog__labs">
+                <span class="plab plab--done">基本信息</span><span class="plab plab--cur">校园认证</span>
+                <span class="plab">时间安排</span><span class="plab">推荐偏好</span><span class="plab plab--last">完成</span>
+              </div>
+            </div>
+            <div class="seccard">
+              <div class="chead"><span class="chead__t">学校资料</span>
+                <span class="chead__help"><span class="chead__circle"><span class="chead__q">?</span></span></span>
+              </div>
+              <div class="frow"><span class="frow__l">城市</span>
+                <div class="field"><span class="field__t">北京</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+              <div class="frow"><span class="frow__l">学校</span>
+                <div class="field"><span class="field__t">北京大学</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+              <div class="frow"><span class="frow__l">专业</span>
+                <div class="field"><span class="field__t">计算机科学与技术</span><svg class="field__ar"><use href="#i-chev"/></svg></div></div>
+            </div>
+            <div class="seccard valuecard"><span class="valuecard__t">完成校园认证，解锁同校专属匹配、校友圈子权限。认证信息仅用于匹配推荐，严格保密。</span></div>
+            <div class="skipbar"><span class="skipbar__t">非学生？跳过此步，稍后认证</span><svg class="skipbar__ar"><use href="#i-chev"/></svg></div>
+            <div class="cta-spacer"></div>
+          </div>
+        </div>
+        <div class="bar"><span class="cta"><span class="spin"></span>保存中...</span></div>
+        <span class="homebar"></span>
+        <div class="toast toast--ic"><svg><use href="#i-check"/></svg>保存成功</div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页可交互件五类：三枚联动 picker 字段 / 隐私「?」帮助件 / 跳过入口 / 吸底主 CTA / 注册链进度条。
+    文案一律取 <code>setup.campus.*</code> 与 <code>setupProgress.*</code> 现值；字段回显值取 <code>config/schools.ts</code> 的真校名与真专业目录。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>三级联动字段 · 两档 × 三行</h3>
+      <p class="hint">回显是三元 <code>form.city || t('setup.campus.placeholderCity')</code>（学校、专业同型）；
+        <b>禁止手输</b>——三个值只能由 <code>&lt;picker&gt;</code> 点选写入，所以画面上不存在光标态/输入中态。
+        箭头是包内素材 <code>REGISTER_ICONS.CHEVRON_RIGHT</code>（32rpx=16px，opacity .6，R11-L12-D10 前为字符「›」）。</p>
+      <div class="row">
+        <div class="cell" style="width:240px"><span class="frow__l">城市</span><div class="field"><span class="field__t field__t--ph">请选择城市</span><svg class="field__ar"><use href="#i-chev"/></svg></div><span class="lab">空档（占位取 placeholderCity）</span></div>
+        <div class="cell" style="width:240px"><span class="frow__l">城市</span><div class="field"><span class="field__t">北京</span><svg class="field__ar"><use href="#i-chev"/></svg></div><span class="lab">已选档</span></div>
+        <div class="cell" style="width:240px"><span class="frow__l">学校</span><div class="field"><span class="field__t field__t--ph">请选择学校</span><svg class="field__ar"><use href="#i-chev"/></svg></div><span class="lab">空档（placeholderSchool）</span></div>
+        <div class="cell" style="width:240px"><span class="frow__l">学校</span><div class="field"><span class="field__t">北京大学</span><svg class="field__ar"><use href="#i-chev"/></svg></div><span class="lab">已选档</span></div>
+        <div class="cell" style="width:240px"><span class="frow__l">专业</span><div class="field"><span class="field__t field__t--ph">请选择专业</span><svg class="field__ar"><use href="#i-chev"/></svg></div><span class="lab">空档（placeholderMajor）</span></div>
+        <div class="cell" style="width:240px"><span class="frow__l">专业</span><div class="field"><span class="field__t">计算机科学与技术</span><svg class="field__ar"><use href="#i-chev"/></svg></div><span class="lab">已选档</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>动作</th><th>联动结果（源码 onCityChange / onSchoolChange）</th></tr>
+        <tr><td>改城市</td><td><code>form.campusName = ""</code> 且 <code>form.department = ""</code> ⇒ 学校、专业两行同时退回占位档</td></tr>
+        <tr><td>改学校</td><td><code>form.department = ""</code> ⇒ 专业退回占位档；专业选项换 <code>getMajorsForSchool(学校)</code></td></tr>
+        <tr><td>改专业</td><td>无下游，仅 <code>isComplete</code> 变真</td></tr>
+        <tr><td>同值再选</td><td><code>if (!opt || opt === form.city) return</code> ⇒ 不触发联动、不震动</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>隐私「?」帮助件 · 三档</h3>
+      <p class="hint">外层 44px 热区（透明底）+ 内层 20px 圆底，<code>margin-left:-12px</code> 让圆底左缘仍落在标题旁（R6-B65/D14）。
+        点击走 <code>uni.showModal</code> 且 <code>showCancel:false</code> ⇒ 弹窗只有一个按钮。</p>
+      <div class="row">
+        <div class="cell"><span class="chead__help"><span class="chead__circle"><span class="chead__q">?</span></span></span><span class="lab">default</span></div>
+        <div class="cell"><span class="chead__help" style="opacity:.7"><span class="chead__circle"><span class="chead__q">?</span></span></span><span class="lab">按压</span></div>
+        <div class="cell" style="width:240px"><div class="dlg" style="width:220px"><div class="dlg__h">认证信息说明</div><div class="dlg__c" style="font-size:12px">你填写的学校与专业信息仅用于同校匹配与圈子推荐，不会在个人主页公开展示，也不会泄露给任何第三方。</div><div class="dlg__r"><span class="dlg__b">我知道了</span></div></div><span class="lab">弹窗态（F03 全屏档）</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>字段</th><th>i18n key</th><th>现值</th></tr>
+        <tr><td>标题</td><td><code>setup.campus.privacyTitle</code></td><td>认证信息说明</td></tr>
+        <tr><td>正文</td><td><code>setup.campus.privacyContent</code></td><td>你填写的学校与专业信息仅用于同校匹配与圈子推荐，不会在个人主页公开展示，也不会泄露给任何第三方。</td></tr>
+        <tr><td>按钮</td><td><code>setup.campus.privacyConfirm</code></td><td>我知道了（唯一按钮，无取消）</td></tr>
+        <tr><td>无障碍名</td><td><code>setup.campus.privacyAria</code></td><td>查看认证信息隐私说明</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>跳过入口 · 两档 + 两种去向</h3>
+      <p class="hint">文字下划线 + 箭头的整行热区（44px，R10-L12-D04 补的 min-height）；
+        它是非学生用户在本页的唯一出口，故与主 CTA 同色档 <code>--c-brand-800</code>（R15-L12-D05 从 3.79:1 提到 5.91:1）。</p>
+      <div class="row">
+        <div class="cell" style="width:240px"><div class="skipbar" style="border:1px dashed var(--c-border-default)"><span class="skipbar__t">非学生？跳过此步，稍后认证</span><svg class="skipbar__ar"><use href="#i-chev"/></svg></div><span class="lab">default（画板加虚线只为标热区，真机无框）</span></div>
+        <div class="cell" style="width:240px"><div class="skipbar" style="opacity:.7"><span class="skipbar__t">非学生？跳过此步，稍后认证</span><svg class="skipbar__ar"><use href="#i-chev"/></svg></div><span class="lab">按压</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>场景</th><th>判据</th><th>skip() 去向</th></tr>
+        <tr><td>注册流程</td><td><code>!profileStore.campusProfile?.campusName</code></td><td><code>replaceAppPath(SETUP_PROGRESS.SCHEDULE)</code>（时间安排，第 3/5 步）</td></tr>
+        <tr><td>补认证</td><td><code>isReauthScenario()</code> 为真</td><td><code>replaceAppPath("/pages/profile/index")</code>（回「我的」）</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>吸底主 CTA · 四态枚举</h3>
+      <p class="hint">label 三元 <code>saving ? setup.campus.saveSaving : setup.campus.saveLabel</code>。
+        <b>禁用档已撤回</b>（R11-L12-D09：原 <code>:disabled="!isComplete || saving"</code> 把 save() 里的 errIncomplete 提示锁成不可达死代码），
+        三项未选全时按钮仍常亮可点，缺项由 toast 给反馈。</p>
+      <div class="row">
+        <div class="cell" style="width:240px"><div class="cta">保存并继续</div><span class="lab">default · 常亮（含空表单）</span></div>
+        <div class="cell" style="width:240px"><div class="cta cta--press">保存并继续</div><span class="lab">:active scale(0.97)</span></div>
+        <div class="cell" style="width:240px"><div class="cta"><span class="spin"></span>保存中...</div><span class="lab">saving=true</span></div>
+        <div class="cell" style="width:240px"><div class="cta" style="background:var(--c-status-disabled);color:var(--c-text-secondary);box-shadow:none">保存并继续</div><span class="lab">历史禁用档 · 本页现已不存在</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>注册进度条 · 圆点三态 + 本页档位</h3>
+      <p class="hint">本页传 <code>:current-step="2" variant="student"</code>，组件内 <code>LEGACY_STEP_MAP.student</code> 恰好把 2 映射回真实链第 2 位 ⇒ 实得「第 2/5 步 · 校园认证」。
+        五枚标签与真实链一致（见 §04 链序），本页不出现「课表导入」字样（那是 locale 里 <code>stepSchedule</code> 的旧现值，被 schedule 页的 <code>labelKey</code> 覆盖成「时间安排」）。</p>
+      <div class="row">
+        <div class="cell"><span class="dot dot--done"><svg><use href="#i-check"/></svg></span><span class="lab">completed</span></div>
+        <div class="cell"><span class="dot dot--cur">2</span><span class="lab">current（脉冲光环）</span></div>
+        <div class="cell"><span class="dot">3</span><span class="lab">upcoming</span></div>
+        <div class="cell" style="width:240px"><div class="prog" style="box-shadow:none;border:0.5px solid var(--c-border-light)"><div class="prog__hd"><span class="prog__cur">第 2/5 步</span><span class="prog__lab">校园认证</span></div></div><span class="lab">顶部两行文案档</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>步骤</th><th>标签（渲染真值）</th><th>状态</th><th>连线</th></tr>
+        <tr><td>1</td><td>基本信息 <code>setupProgress.stepBasicInfo</code></td><td>completed</td><td><code>--c-brand</code></td></tr>
+        <tr><td>2</td><td>校园认证 <code>setupProgress.stepCampus</code></td><td>current</td><td><code>--c-border-default</code></td></tr>
+        <tr><td>3</td><td>时间安排（<code>labelKey</code> 覆盖 = <code>setup.schedule.pageTitle</code>）</td><td>upcoming</td><td><code>--c-border-default</code></td></tr>
+        <tr><td>4</td><td>推荐偏好 <code>setupProgress.stepRecommend</code></td><td>upcoming</td><td><code>--c-border-default</code></td></tr>
+        <tr><td>5</td><td>完成 <code>setupProgress.stepComplete</code></td><td>upcoming</td><td>—（末步无连线）</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Toast · 四档（三条守卫 + 成功）</h3>
+      <p class="hint">本页没有内联字段错误，缺项与失败全走 <code>uni.showToast</code>；成功档用 <code>icon:"success"</code>（方盒上勾下字），其余是 <code>icon:"none"</code>。</p>
+      <table class="tbl">
+        <tr><th>触发条件</th><th>i18n key</th><th>文案现值</th></tr>
+        <tr><td><code>!isComplete.value</code>（三项未选全）</td><td><code>setup.campus.errIncomplete</code></td><td>请完整选择城市、学校与专业</td></tr>
+        <tr><td><code>saveCampusProfile</code> resolve</td><td><code>setup.campus.saveSuccess</code></td><td>保存成功</td></tr>
+        <tr><td><code>catch</code> 且 error 非 Error</td><td><code>setup.campus.saveFailed</code></td><td>保存失败，请稍后重试</td></tr>
+        <tr><td><code>catch</code> 且 error 是 Error</td><td><code>error.message</code></td><td>后端原文（画板不预设）</td></tr>
+      </table>
+      <div class="row" style="margin-top:14px">
+        <div class="cell" style="width:240px"><div class="toast" style="position:static;transform:none">请完整选择城市、学校与专业</div><span class="lab">none 型几何：居中浮层 · 无图标</span></div>
+        <div class="cell" style="width:240px"><div class="toast toast--ic" style="position:static;transform:none"><svg><use href="#i-check"/></svg>保存成功</div><span class="lab">success 型（F06 全屏档）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位，与 design-variables.scss 一一对应</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">页内零私有色值；源文件 <code>var(--x, 十六进制)</code> 的兜底值不进画板。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-page)"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">AppShell 底 · 帮助圆底 · 吸底条底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-container);border:1px solid var(--c-border-default)"></span><div><div class="sw__n">容器白<code>--c-bg-container</code></div><div class="sw__u">SectionCard · 进度条卡 · 返回胶囊</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-surface)"></span><div><div class="sw__n">输入底<code>--c-bg-surface</code></div><div class="sw__u">三枚 picker 字段（R11-L12-D08 从 --c-bg-page 归口）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-bg-brand)"></span><div><div class="sw__n">主色浅底<code>--c-bg-brand</code></div><div class="sw__u">价值提示卡底 · 当前步圆点底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand)"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">已完成圆点 · 已完成连线 · 弹窗按钮字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-100)"></span><div><div class="sw__n">主色 100<code>--c-brand-100</code></div><div class="sw__u">当前步光环（真值 rgba(61,201,154,.18) 的实心替身）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-200)"></span><div><div class="sw__n">主色 200<code>--c-brand-200</code></div><div class="sw__u">价值提示卡描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-700)"></span><div><div class="sw__n">主色 700<code>--c-brand-700</code></div><div class="sw__u">已完成步名 · 当前步序号字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-brand-800)"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">主 CTA 底 · 跳过入口字 · 价值卡字 · 返回文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-status-disabled)"></span><div><div class="sw__n">禁用档<code>--c-status-disabled</code></div><div class="sw__u">仅 §02 存档：本页禁用档已撤回</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-text-placeholder)"></span><div><div class="sw__n">占位字<code>--c-text-placeholder</code></div><div class="sw__u">未选字段的占位回显</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:var(--c-text-primary)"></span><div><div class="sw__n">正文最深<code>--c-text-primary</code></div><div class="sw__u">页头标题 · 字段值 · toast 浮层底（就近）</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到七档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/700</span><span class="type__p" style="font-size:28px;font-weight:700">校园认证</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">学校资料</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/400</span><span class="type__p" style="font-size:14px;font-weight:400">计算机科学与技术 · 请选择城市</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/700</span><span class="type__p" style="font-size:13px;font-weight:700">校园认证（当前步名）</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/600</span><span class="type__p" style="font-size:13px;font-weight:600;text-decoration:underline;color:var(--c-brand-800)">非学生？跳过此步，稍后认证</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500;color:var(--c-text-tertiary)">第 2/5 步 · 基本信息 · 返回</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/500</span><span class="type__p" style="font-size:11px;font-weight:500;color:var(--c-text-secondary)">城市 · 学校 · 专业（行标签）</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-1 2rpx</b><i style="width:1px"></i></div>
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--page-padding 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:5px"></b>--r-lg<br>20rpx · picker 字段</div>
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-xl<br>24rpx · 主 CTA</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-card<br>40rpx · SectionCard</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>圆点 · 帮助圆底 · 返回胶囊</div>
+      </div>
+      <p class="hint" style="margin-top:14px">热区口径：字段 <code>min-height:88rpx</code>（44px）、帮助件与跳过入口同 88rpx、圆点 56rpx=28px、连接线 4rpx=2px。
+        进度条当前步的脉冲光环（<code>6rpx→12rpx</code> 呼吸）是动效项，静态画板只画 <code>6rpx</code> 那一档。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 链位 + 差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 · 本步在注册链中的位置 · 与实况的已知差异</h2>
+    <p>本页无照片位；链序按源码实测，缺陷只登记不修</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>REGISTER_ICONS.CHEVRON_RIGHT</b>
+        <p>三枚字段右侧箭头与跳过入口箭头同一枚素材（<code>assets/icons/register/chevron-right.svg</code>），字段档 32rpx=16px、跳过档 28rpx=14px，均 <code>opacity:.6</code>。
+           R11-L12-D10 前是字符「›」按 <code>--fs-2xl</code> 渲染。画板用同几何 lucide 描边替身。</p>
+        <div class="m">16px / 14px · 压 --c-bg-surface 与 --c-bg-page</div></div></div>
+    <div class="asset"><img src="assets/placeholder-student-card.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>ICONS_COMMON.BACK / CHECK_WHITE_SVG</b>
+        <p>页头返回箭头（40rpx=20px，与文字「返回」同在一枚白胶囊里）与进度条已完成步的白勾（24rpx=12px）。
+           本页<b>没有任何照片/头像位</b>（三个值全靠 picker 点选），故 §8 的真素材要求在本页不产生 NEED_ASSET。</p>
+        <div class="m">20px / 12px · 替身同几何</div></div></div>
+  </div>
+  <div class="note">
+    <b>本步在注册链中的位置（源码实测，非注释推断）：</b>
+    <ul>
+      <li><b>链序：</b>① <code>setup/profile</code>「基本信息」→ ② <b>本页 <code>setup/campus</code>「校园认证」</b> → ③ <code>setup/schedule</code>「时间安排」→ ④ <code>setup/recommend-pref</code>「推荐偏好」→ ⑤「完成」= <code>/pages/discover/index</code>（落点，不是独立页面）。</li>
+      <li><b>上一步：</b><code>setup/profile/index.vue:605</code> 保存后 <code>uni.redirectTo(getNextSetupPath())</code>；<code>getNextSetupPath()</code>（:176-181）按身份分流——学生 → <b>本页</b>，非学生 → <code>setup/schedule</code>（跳过本页）。</li>
+      <li><b>下一步：</b>本页 <code>save()</code> 成功后 <code>replaceAppPath(SUBPACKAGE_ROUTES.SETUP_PROGRESS.SCHEDULE)</code>（campus/index.vue:192）；
+        <code>skip()</code> 同去 SCHEDULE（:214）。两条路都<b>替换</b>本页，故注册流里返回键回不到校园认证。</li>
+      <li><b>同一页面的第二身份：</b><code>isReauthScenario()</code>（:172-174，判据 <code>profileStore.campusProfile?.campusName</code> 有值）为真时，
+        从「我的 → 校园认证」进来，save/skip 都改去 <code>/pages/profile/index</code>——<b>画面与注册流完全相同</b>，只有去向不同，故不另立屏。</li>
+      <li><b>进度条分母核对：对得上。</b>本页 <code>variant="student"</code> 的 5 步表 = 真实链 4 个表单页 + 1 个「完成」落点 = 5；
+        非学生分支的 4 步表 = 3 个表单页 + 完成 = 4。两档分母都与链上实际步数一致，<b>不存在「写 5 实际 4」的虚分母</b>。
+        之所以对得上，全靠 <code>SetupProgress.vue:143-146</code> 的 <code>LEGACY_STEP_MAP</code> 把三个消费页传来的旧序号映射到新表——见下一条。</li>
+      <li><b>缺陷（登记不圆场）· 传参口径三页三样：</b>profile 传 <code>student|non-student + 1</code>、本页传 <code>student + 2</code>、schedule 传 <code>full + 3</code>、recommend-pref 传 <code>student + 3</code>。
+        本页的 2 是<b>恰好</b>被 <code>{1:1, 2:2, 3:4, 4:5}</code> 映射回原位；该表<b>没有键 3</b>，谁按真实链序号给 student 分支传 3，就会被 clamp 成 5「完成」。
+        同页注释（campus/index.vue:220「学生分支当前步骤 = 2」）与组件文档（SetupProgress.vue:45「student=学生 4 步 / non-student=3 步」）都还停在旧 4/3 步口径，与同文件 :91-108 的 5/4 步表自相矛盾。</li>
+      <li><b>缺陷 · 非学生用户在本页的唯一出口落在吸底条之下：</b>按源码几何累加（页头 186 + 进度条 111 + 学校资料卡 267 + 价值卡 73 + 各 24rpx 间距），
+        跳过入口行落在 y≈698–742，而 BottomActionBar（<code>--sp-4</code> 8 + 按钮 44 + 安全区 34）上沿在 y≈718，整行文字被压住；
+        加上 <code>.cta-spacer</code> 的 76px 后全文档高约 818px，<b>只剩约 6px 可滚</b> ⇒ 首屏看不到、也基本滚不出来。
+        R10-L12-D04（补 88rpx 热区）与 R11-L12-D11（补吸底留位）两次修都没解决这一层遮挡。画板如实照画，不把它挪到可见位置。</li>
+      <li><b>缺陷 · 后端校名会丢掉专业目录：</b><code>loadSchools()</code> 优先取 <code>GET /api/v1/config/campuses</code>，但其 map 只保留 <code>id/name/city</code>（config/schools.ts:126-130），
+        <code>majors</code> 字段被丢弃 ⇒ 只要后端返回非空，<code>getMajorsForSchool()</code> 就恒回退通用 <code>MAJORS</code> 目录，「该校专属专业」这条链在后端数据下失效。画板按回退后的通用目录取值（计算机科学与技术 ∈ MAJORS）。</li>
+      <li><b>缺陷 · 学校静态兜底表只有 11 所：</b>本地表含北京/上海/杭州/南京/武汉/广州/深圳 7 城 11 校（config/schools.ts:32-43，源码注释自陈「仅 4 所名校，覆盖面不足且与 pages/home/index.vue 内联学校数组重复」）；
+        城市选项由学校反推（<code>getCities</code>），所以「请选择城市」的原生滚轮里就只有这 7 个城市。画板取真值「北京 / 北京大学 / 计算机科学与技术」。</li>
+      <li><b>picker 弹层不入画板：</b>三枚字段的选项面板是 <code>&lt;picker mode="selector"&gt;</code> 的原生滚轮（系统 UI，非页面 DOM），画板不画；
+        隐私说明同理走 <code>uni.showModal</code> 系统层（F03 画的是该层的几何替身）。</li>
+      <li>系统弹窗与 toast 的颜色口径：微信原生弹窗确认钮是系统蓝，base 未登记该档 ⇒ 画板按站内主操作档 <code>--c-brand</code> 画（见回报 BASE_PROBLEM）；
+        toast 浮层底取 <code>--c-text-primary</code>（base 无黑色浮层档，就近取最深墨色，与 setup-schedule.html 同口径）。</li>
+      <li>本页在 setup 分包，<b>无 tabbar</b>、无原生导航栏（AppShell 传 <code>:show-tab-bar="false"</code>），页头是 AppShell 自绘的白胶囊返回；画板若出现 tabbar 即为错。</li>
+      <li><code>page { background: --c-bg-page }</code>（R10-L12-D03 从 R16 纯白回退）与 AppShell <code>.shell</code> 同值 ⇒ 页面底、吸底条连成一片 #EEF7F2，无横向断层。</li>
+      <li>不入静态画板的动效/环境项：当前步圆点脉冲、<code>press-feedback</code> 缩放、picker 滚轮动效、吸底条 safe-area（画板按 34px 机型几何留位）。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 校园认证步（注册第 2 步）高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1,572,192 px，对齐 素材/理想效果图 语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

@@ -238,7 +238,8 @@ public class Post {
      * <p>物理列 {@code owner_circle_path varchar(256)} 早已存在，但此前没有实体映射：
      * 写侧（后台建帖）落不进值，读侧只能靠原生 SQL 前缀匹配。取值形如
      * {@code C1/R1/S1}，与 {@code circle_layer.circle_path} 前缀对齐，
-     * 可见性判定即 {@code WHERE owner_circle_path LIKE '<viewerPath>%'}。</p>
+     * 可见性判定即 {@code WHERE owner_circle_path = '<viewerPath>'}
+     * OR owner_circle_path LIKE '<viewerPath>/%'}（按路径段，禁裸前缀）。</p>
      */
     @Column(name = "owner_circle_path", length = 256)
     private String ownerCirclePath;

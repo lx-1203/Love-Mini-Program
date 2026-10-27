@@ -519,7 +519,7 @@ function browsePublic() {
   width: 88rpx;
   height: 88rpx;
   border-radius: var(--r-circle);
-  background: var(--c-overlay-white-bg-mid, rgba(255, 255, 255, 0.6));
+  background: var(--c-overlay-bg-strong);
   border: none;
   display: flex;
   align-items: center;
@@ -926,7 +926,7 @@ function browsePublic() {
   display: flex;
   justify-content: center;
   padding: var(--sp-4) var(--sp-8)
-    calc(var(--safe-bottom, env(safe-area-inset-bottom)) + 72rpx);
+    calc(var(--safe-bottom, env(safe-area-inset-bottom)) + 72rpx); // token-audit:ignore 宿主注入契约（R8-L02-D21），无宿主注入时按 env() 取值
 }
 
 /* Tab 页宿主：底部为固定 TabBar 预留空间，避免提示被遮挡 */

@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 村口（圈子）信息流页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（类名沿用源文件 BEM，色值/字号一律取 base 已登记令牌；源私有值映射见 §04 note） ===== */
+
+/* ---------- 页面骨架：源 .village-page 是 flex 列 + 定高，feed 走内部 scroll-view ---------- */
+.village-page { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column;
+  width: 100%; height: 100%; background: var(--c-bg-container); overflow: hidden; }
+.village-hydrating { flex: 1; min-height: 0; padding: 16px; overflow: hidden;
+  display: flex; flex-direction: column; gap: 8px; }
+
+.village-header { background: var(--c-bg-container); padding: 72px 0 0; position: relative; z-index: 4;
+  box-shadow: var(--s-sm); flex: none; }
+.village-header__top { display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px 10px; /* 右侧 119px = 微信胶囊避让带（源 calc(var(--capsule-right) + 112px)，系统件不画） */
+  padding-right: 119px; }
+.village-header__title-wrap { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; }
+.village-header__title { font-size: var(--fs-5xl); font-weight: 800; color: var(--c-text-primary); letter-spacing: 1px; }
+.village-header__subtitle { font-size: var(--fs-sm); color: var(--c-text-tertiary); white-space: nowrap; }
+.village-search { display: flex; align-items: center; gap: 4px; flex: 1; max-width: 160px; margin-left: 8px;
+  height: 32px; background: var(--c-bg-surface); border-radius: var(--r-full); padding: 0 10px; }
+.village-search__icon { width: 15px; height: 15px; flex: none; color: var(--c-text-tertiary); }
+.village-search__placeholder { font-size: var(--fs-sm); color: var(--c-text-tertiary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- 频道 Tab（ChannelTabs：横向可滑，选中态品牌渐变下划线） ---------- */
+.channel-tabs { display: flex; padding: 0 6px; background: var(--c-bg-container); overflow: hidden; white-space: nowrap; }
+.channel-tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; min-width: 74px; padding: 9px 10px 8px; flex: none; }
+.channel-tab__icon-wrap { position: relative; width: 22px; height: 22px; }
+.channel-tab__icon { width: 22px; height: 22px; color: var(--c-text-tertiary); opacity: 0.55; }
+.channel-tab--active .channel-tab__icon { opacity: 1; color: var(--c-brand-500); }
+.channel-tab__lock { position: absolute; top: -4px; right: -5px; width: 13px; height: 13px; color: var(--c-error); }
+.channel-tab__label { font-size: var(--fs-sm); color: var(--c-text-tertiary); font-weight: 500; }
+.channel-tab--active .channel-tab__label { color: var(--c-text-primary); font-weight: 700; }
+.channel-tab__indicator { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 0; height: 3px; border-radius: var(--r-full); background: linear-gradient(90deg, var(--c-brand), var(--c-brand-400)); }
+.channel-tab--active .channel-tab__indicator { width: 32px; }
+
+/* ---------- 频道内容区（scroll-view：帧即视口，超出即裁） ---------- */
+.channel-feed { flex: 1; min-height: 0; overflow: hidden; position: relative; background: var(--c-bg-container); }
+
+/* ---------- 分区标题 ---------- */
+.channel-section { margin: 12px 12px 0; }
+.channel-section__header { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+.channel-section__title { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); }
+.channel-section__sub { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+
+/* ---------- 置顶折叠条（PinnedPostsBar） ---------- */
+.pinned-bar { margin: 0 8px 8px; border-radius: var(--r-lg); background: var(--c-bg-container);
+  border: 1px solid var(--c-brand-100); overflow: hidden; }
+.pinned-bar__summary { display: flex; align-items: center; gap: 5px; padding: 6px 8px; }
+.pinned-bar__pin { width: 16px; height: 16px; flex: none; color: var(--c-brand-700); }
+.pinned-bar__text { flex: 1; font-size: var(--fs-base); font-weight: 600; color: var(--c-text-primary); }
+.pinned-bar__arrow { font-size: var(--fs-lg); color: var(--c-text-tertiary); }
+.pinned-bar__list { border-top: 1px solid var(--c-border-light); }
+.pinned-item { display: flex; align-items: flex-start; gap: 6px; padding: 6px 8px; }
+.pinned-item__badge { flex-shrink: 0; margin-top: 2px; padding: 1px 6px; border-radius: var(--r-full);
+  font-size: var(--fs-xs); color: var(--c-brand-500); background: var(--c-brand-50); border: 1px solid var(--c-brand-100); }
+.pinned-item__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pinned-item__title { font-size: var(--fs-base); font-weight: 600; color: var(--c-text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pinned-item__summary { font-size: var(--fs-sm); color: var(--c-text-tertiary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pinned-item__arrow { flex-shrink: 0; margin-top: 2px; font-size: var(--fs-lg); color: var(--c-text-tertiary); }
+
+/* ---------- 帖子卡（PostCard） ---------- */
+.post-feed__list { padding: 12px 12px 0; display: flex; flex-direction: column; gap: 10px; }
+.post-card { background: var(--c-bg-container); border-radius: var(--r-lg); padding: 10px 12px;
+  box-shadow: var(--s-card-soft); border: var(--c-border-card); }
+.post-card__header { display: flex; align-items: center; justify-content: space-between; }
+.post-card__user { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.user-avatar { position: relative; width: 44px; height: 44px; border-radius: var(--r-full);
+  background: var(--c-brand-50); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.user-avatar__char { font-size: 18px; font-weight: 600; color: var(--c-brand-500); }
+.user-avatar__badge { position: absolute; top: -3px; left: -3px; width: 16px; height: 16px; border-radius: var(--r-full);
+  background: var(--c-bg-container); border: 1px solid var(--c-brand-200); display: flex; align-items: center; justify-content: center; }
+.user-avatar__badge svg { width: 11px; height: 11px; color: var(--c-brand-600); }
+.user-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.user-info__name-row { display: flex; align-items: center; gap: 4px; }
+.user-info__name { font-size: var(--fs-base); font-weight: 600; color: var(--c-text-primary); }
+.user-info__campus-badge { display: flex; align-items: center; gap: 2px; flex-shrink: 0; max-width: 110px;
+  padding: 1px 5px; border-radius: var(--r-full); background: var(--c-bg-container); }
+.user-info__campus-badge--mine { border: 1px solid var(--c-brand-300); }
+.user-info__campus-badge--mine .user-info__campus-badge-icon,
+.user-info__campus-badge--mine .user-info__campus-badge-text { color: var(--c-brand-500); }
+.user-info__campus-badge--other { border: 1px solid var(--c-border-light); }
+.user-info__campus-badge--other .user-info__campus-badge-icon,
+.user-info__campus-badge--other .user-info__campus-badge-text { color: var(--c-text-secondary); }
+.user-info__campus-badge-icon { width: 10px; height: 10px; flex-shrink: 0; }
+.user-info__campus-badge-text { min-width: 0; font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-info__meta, .user-info__headline { font-size: var(--fs-sm); color: var(--c-text-tertiary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.follow-chip { flex-shrink: 0; padding: 4px 10px; border-radius: var(--r-full);
+  border: 1px solid var(--c-brand-300); background: var(--c-bg-container); }
+.follow-chip__text { font-size: var(--fs-sm); font-weight: 500; color: var(--c-brand-500); }
+.follow-chip--active { border-color: var(--c-border-light); background: var(--c-bg-surface); }
+.follow-chip--active .follow-chip__text { color: var(--c-text-tertiary); }
+.post-card__body { margin-top: 8px; }
+.post-card__content { font-size: var(--fs-base); line-height: 1.65; color: var(--c-text-primary); }
+.post-media-grid { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.post-media-grid__cell { position: relative; aspect-ratio: 1; border-radius: var(--r-lg);
+  background: var(--c-border-light); overflow: hidden; }
+.post-media-grid--1 .post-media-grid__cell, .post-media-grid--2 .post-media-grid__cell,
+.post-media-grid--4 .post-media-grid__cell { width: calc((100% - 4px) / 2); }
+.post-media-grid--3 .post-media-grid__cell, .post-media-grid--6 .post-media-grid__cell { width: calc((100% - 8px) / 3); }
+.post-media-grid__glyph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: var(--c-text-placeholder); }
+.post-media-grid__glyph svg { width: 22px; height: 22px; }
+.post-media-grid__more { position: absolute; right: 0; bottom: 0; padding: 2px 6px;
+  border-radius: var(--r-full) 0 0 0; background: var(--c-text-primary); }
+.post-media-grid__more-text { font-size: var(--fs-xs); color: var(--c-text-inverse); }
+.post-card__images--placeholder { margin-top: 8px; height: 90px; border-radius: var(--r-md);
+  background: var(--c-bg-surface); display: flex; align-items: center; justify-content: center; }
+.post-card__images--placeholder svg { width: 26px; height: 26px; color: var(--c-text-placeholder); }
+.post-card__activity { margin-top: 8px; }
+.post-card__tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.post-card__tag { padding: 3px 8px; border-radius: var(--r-full); font-size: var(--fs-sm);
+  color: var(--c-brand-500); background: var(--c-brand-50); }
+.post-card__comments { margin-top: 8px; border-radius: var(--r-md); background: var(--c-bg-surface);
+  padding: 4px 6px; display: flex; flex-direction: column; gap: 4px; }
+.comment-preview { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.comment-preview__char { width: 18px; height: 18px; border-radius: var(--r-full); flex-shrink: 0;
+  background: var(--c-brand-50); display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-xs); color: var(--c-brand-500); }
+.comment-preview__name { flex-shrink: 0; font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.comment-preview__content { flex: 1; min-width: 0; font-size: var(--fs-sm); color: var(--c-text-secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.post-card__footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.post-card__time { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.post-card__audit { font-size: var(--fs-xs); padding: 1px 6px; border-radius: var(--r-full); flex-shrink: 0; }
+.post-card__actions { display: flex; align-items: center; gap: 8px; }
+.action-btn { display: flex; align-items: center; gap: 2px; color: var(--c-text-tertiary); }
+.action-btn svg { width: 18px; height: 18px; }
+.action-btn__count { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.action-btn--liked, .action-btn--liked .action-btn__count { color: var(--c-romance); }
+.action-btn--liked .action-btn__count { font-weight: 600; }
+.action-btn--collected { color: var(--c-brand-600); }
+
+/* ---------- 学校圈认证门（SchoolCircleGate） ---------- */
+.school-gate { padding: 12px 8px; }
+.school-gate__card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 12px;
+  border-radius: var(--r-xl); background: var(--c-gradient-brand-soft);
+  border: 1px solid var(--c-brand-100); }
+.school-gate__icon-wrap { position: relative; width: 64px; height: 64px; border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-brand), var(--c-brand-400));
+  display: flex; align-items: center; justify-content: center; }
+.school-gate__icon-wrap svg { width: 36px; height: 36px; color: var(--c-text-inverse); }
+.school-gate__lock-wrap { position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px;
+  border-radius: var(--r-full); background: var(--c-bg-container); border: 1px solid var(--c-brand-100);
+  display: flex; align-items: center; justify-content: center; }
+.school-gate__lock-wrap svg { width: 13px; height: 13px; color: var(--c-text-secondary); }
+.school-gate__title { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.school-gate__desc { font-size: var(--fs-base); color: var(--c-text-secondary); text-align: center; line-height: 1.6; }
+.school-gate__points { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.school-gate__point { display: flex; align-items: center; gap: 4px; }
+.school-gate__point svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--c-brand-600); }
+.school-gate__point-text { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.school-gate__btn { width: 100%; margin-top: 6px; padding: 8px 0; border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-brand), var(--c-brand-400)); box-shadow: var(--s-brand);
+  display: flex; align-items: center; justify-content: center; font-size: var(--fs-base); font-weight: 600;
+  color: var(--c-text-inverse); }
+.school-gate__simulate { margin-top: 4px; padding: 6px 12px; border-radius: var(--r-full);
+  border: 1px dashed var(--c-romance-300); display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-sm); font-weight: 500; color: var(--c-romance); }
+
+/* ---------- 每日一问 / 附近的人 banner（学校圈已认证） ---------- */
+.village-daily-entry { display: flex; align-items: center; gap: 8px; margin: 12px 16px 10px; padding: 8px 10px;
+  background: var(--c-bg-container); border-radius: var(--r-xl); border: 1px solid var(--c-border-light);
+  box-shadow: var(--s-card-soft); }
+.village-daily-entry__icon { width: 22px; height: 22px; flex-shrink: 0; color: var(--c-brand-500); }
+.village-daily-entry__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.village-daily-entry__title-row { display: flex; align-items: center; gap: 4px; }
+.village-daily-entry__title { font-size: var(--fs-base); font-weight: 700; color: var(--c-text-primary); }
+.village-daily-entry__answered { font-size: var(--fs-xs); color: var(--c-brand-500); font-weight: 600;
+  padding: 1px 6px; border-radius: var(--r-full); background: var(--c-brand-50); }
+.village-daily-entry__desc { font-size: var(--fs-sm); color: var(--c-text-tertiary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.village-daily-entry__arrow { font-size: var(--fs-3xl); color: var(--c-text-tertiary); font-weight: 300; flex-shrink: 0; }
+
+.discover-banner { margin: 0 16px 12px; border-radius: var(--r-xl); overflow: hidden;
+  background: linear-gradient(135deg, var(--c-brand-400) 0%, var(--c-romance-300) 100%); box-shadow: var(--s-brand); }
+.discover-banner__content { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; }
+.discover-banner__left { display: flex; align-items: center; gap: 8px; }
+.discover-banner__icon { width: 28px; height: 28px; flex-shrink: 0; color: var(--c-text-inverse); }
+.discover-banner__text-wrap { display: flex; flex-direction: column; gap: 1px; }
+.discover-banner__title { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-inverse); }
+.discover-banner__subtitle { font-size: var(--fs-sm); color: var(--c-text-inverse); }
+.discover-banner__arrow { font-size: var(--fs-4xl); color: var(--c-text-inverse); font-weight: 300; }
+
+/* ---------- 活动卡（ActivityCard：full 列表 / compact 帖内嵌） ---------- */
+.activity-list { display: flex; flex-direction: column; gap: 6px; }
+.activity-card { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: var(--r-lg);
+  background: var(--c-brand-50); border: 1px solid var(--c-brand-100); }
+.activity-card__cover { width: 80px; height: 60px; border-radius: var(--r-md); flex-shrink: 0;
+  background: var(--c-bg-surface); display: flex; align-items: center; justify-content: center; color: var(--c-text-placeholder); }
+.activity-card__cover svg { width: 20px; height: 20px; }
+.activity-card__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.activity-card__title-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.activity-card__title-wrap { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.activity-card__title-wrap svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--c-brand-700); }
+.activity-card__title { font-size: var(--fs-base); font-weight: 600; color: var(--c-text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.activity-card__status { flex-shrink: 0; padding: 2px 6px; border-radius: var(--r-full); font-size: var(--fs-xs);
+  color: var(--c-brand-500); background: var(--c-bg-container); border: 1px solid var(--c-brand-100); }
+.activity-card__meta { display: flex; flex-wrap: wrap; gap: 0 8px; }
+.activity-card__meta-item { display: flex; align-items: center; gap: 2px; }
+.activity-card__meta-item svg { width: 12px; height: 12px; color: var(--c-text-tertiary); }
+.activity-card__meta-text { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.activity-card__desc { font-size: var(--fs-sm); color: var(--c-text-secondary); line-height: 1.5; }
+.activity-card__enroll { flex-shrink: 0; padding: 5px 11px; border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-brand), var(--c-brand-400)); display: flex; align-items: center; justify-content: center; }
+.activity-card__enroll-text { font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-inverse); }
+.activity-card__enroll--done { background: var(--c-border-light); }
+.activity-card__enroll--done .activity-card__enroll-text { color: var(--c-text-tertiary); }
+
+/* ---------- 兴趣圈：分类宫格 + 精选话题 ---------- */
+.interest-grid { display: flex; flex-wrap: wrap; padding: 16px 10px; gap: 8px; }
+.interest-grid__item { width: calc((100% - 24px) / 4); display: flex; flex-direction: column; align-items: center;
+  gap: 6px; padding: 12px 0; background: var(--c-bg-container); border-radius: var(--r-lg);
+  box-shadow: var(--s-card-soft); border: var(--c-border-card); }
+.interest-grid__icon-wrap { width: 36px; height: 36px; border-radius: var(--r-full); background: var(--c-brand-50);
+  display: flex; align-items: center; justify-content: center; }
+.interest-grid__icon { width: 20px; height: 20px; color: var(--c-brand-600); }
+.interest-grid__name { font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-secondary); }
+
+.hot-topics { margin: 0 16px 8px; }
+.hot-topics__title { display: block; font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); margin-bottom: 6px; }
+.hot-topics__grid { display: flex; gap: 6px; }
+.hot-topics__main { flex: 1.2; border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--s-card-soft); }
+.hot-topics__main-cover { position: relative; width: 100%; height: 100%; min-height: 120px;
+  display: flex; align-items: flex-end;
+  background: linear-gradient(135deg, var(--c-brand-500) 0%, var(--c-brand-300) 100%); }
+.hot-topics__main-overlay { width: 100%; padding: 6px 8px; display: flex; flex-direction: column; gap: 2px;
+  background: linear-gradient(to top, var(--c-text-primary), transparent); }
+.hot-topics__main-title { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-inverse); }
+.hot-topics__main-views { font-size: var(--fs-xs); color: var(--c-text-inverse); }
+.hot-topics__side { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; }
+.hot-topics__small { width: calc((100% - 6px) / 2); box-sizing: border-box; border-radius: var(--r-md); overflow: hidden;
+  background: var(--c-bg-container); box-shadow: var(--s-card-soft); display: flex; flex-direction: column; }
+.hot-topics__small-cover { width: 100%; height: 36px; flex-shrink: 0; }
+.hot-topics__small-info { padding: 4px 6px; display: flex; flex-direction: column; gap: 1px; flex: 1; justify-content: center; }
+.hot-topics__small-name { font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hot-topics__small-views { font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+
+.topic-list { display: flex; flex-direction: column; gap: 6px; }
+.topic-item { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; background: var(--c-bg-container);
+  border-radius: var(--r-lg); box-shadow: var(--s-card-soft); border: var(--c-border-card); }
+.topic-item__title { font-size: var(--fs-base); font-weight: 600; color: var(--c-text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topic-item__summary { font-size: var(--fs-sm); color: var(--c-text-secondary); line-height: 1.5; }
+.topic-item__meta { display: flex; align-items: center; justify-content: space-between; margin-top: 1px; }
+.topic-item__author { display: flex; align-items: center; gap: 4px; }
+.topic-item__avatar { width: 20px; height: 20px; border-radius: var(--r-full); background: var(--c-brand-50);
+  display: flex; align-items: center; justify-content: center; font-size: var(--fs-xs); color: var(--c-brand-500); }
+.topic-item__author-name { font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+.topic-item__stats { display: flex; align-items: center; gap: 2px; color: var(--c-text-tertiary); }
+.topic-item__stats svg { width: 14px; height: 14px; }
+.topic-item__stats-count { font-size: var(--fs-xs); color: var(--c-text-tertiary); }
+.featured-error { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 12px 12px 0; padding: 10px; background: var(--c-romance-50); border: 1px solid var(--c-romance-300);
+  border-radius: var(--r-lg); }
+.featured-error__text { flex: 1; min-width: 0; font-size: var(--fs-sm); color: var(--c-text-secondary); }
+.featured-error__retry { flex-shrink: 0; padding: 4px 12px; border-radius: var(--r-full); background: var(--c-brand-400);
+  font-size: var(--fs-sm); font-weight: 600; color: var(--c-text-inverse); }
+
+/* ---------- 列表态：骨架 / 错误 / 空态 / 加载更多 ---------- */
+.village-state { display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 20px 16px; }
+.village-empty { display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 36px 16px; }
+.empty-icon { width: 60px; height: 60px; color: var(--c-text-placeholder); }
+.empty-msg { font-size: var(--fs-lg); font-weight: 600; color: var(--c-text-secondary); }
+.empty-sub { font-size: var(--fs-base); color: var(--c-text-tertiary); margin-top: 4px; }
+.village-empty__action { margin-top: 4px; padding: 8px 36px; border-radius: var(--r-full);
+  background: linear-gradient(135deg, var(--c-brand), var(--c-brand-400)); box-shadow: var(--s-brand);
+  font-size: var(--fs-lg); color: var(--c-text-inverse); font-weight: 600; }
+.error-btn { margin-top: 16px; padding: 8px 36px; border-radius: var(--r-full); background: var(--c-brand-400);
+  font-size: var(--fs-md); font-weight: 600; color: var(--c-text-inverse); }
+.skeleton-list { display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--c-bg-container);
+  border-radius: var(--r-xl); border: var(--c-border-card); }
+.shimmer { background: linear-gradient(90deg, var(--c-border-light) 25%, var(--c-border-default) 50%, var(--c-border-light) 75%); }
+.skeleton-avatar { width: 44px; height: 44px; border-radius: var(--r-full); flex-shrink: 0; }
+.skeleton-lines { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.skeleton-line { height: 12px; border-radius: var(--r-full); }
+.skeleton-line--w60 { width: 60%; } .skeleton-line--w40 { width: 40%; }
+.load-more { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 16px 0; }
+.load-more__text { font-size: var(--fs-base); color: var(--c-text-tertiary); }
+.loading-spinner { width: 22px; height: 22px; border-radius: var(--r-full);
+  border: 2px solid var(--c-border-default); border-top-color: var(--c-brand-400); }
+
+/* ---------- 底部发帖输入条（ChannelComposerBar） / 回到顶部 ---------- */
+.composer-bar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; display: flex; align-items: center;
+  gap: 6px; padding: 6px 8px 18px; background: var(--c-bg-container); border-top: 1px solid var(--c-border-light);
+  box-shadow: var(--s-sm); }
+.composer-bar__input { flex: 1; display: flex; align-items: center; gap: 5px; height: 36px; padding: 0 8px;
+  border-radius: var(--r-full); background: var(--c-bg-surface); border: 1px solid var(--c-border-light); min-width: 0; }
+.composer-bar__lock { width: 15px; height: 15px; flex-shrink: 0; color: var(--c-text-tertiary); }
+.composer-bar__placeholder { flex: 1; min-width: 0; font-size: var(--fs-sm); color: var(--c-text-tertiary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.composer-bar__publish { flex-shrink: 0; display: flex; align-items: center; gap: 3px; height: 36px; padding: 0 12px;
+  border-radius: var(--r-full); background: linear-gradient(135deg, var(--c-brand), var(--c-brand-400)); box-shadow: var(--s-brand);
+  color: var(--c-text-inverse); }
+.composer-bar__publish svg { width: 16px; height: 16px; }
+.composer-bar__publish-text { font-size: var(--fs-base); font-weight: 600; color: var(--c-text-inverse); }
+.back-to-top { position: absolute; right: 16px; bottom: 82px; width: 44px; height: 44px; border-radius: var(--r-full);
+  background: var(--c-bg-container); display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--s-card-soft); border: var(--c-border-card); z-index: 6; }
+.back-to-top svg { width: 20px; height: 20px; color: var(--c-text-secondary); }
+.feed-bottom-spacer { height: 110px; }
+
+/* ---------- 登录门（LockScreen，未登录分支） ---------- */
+.lock-screen { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--c-bg-page); }
+.lock-screen__atmosphere { position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 20% 20%, var(--c-brand-100) 0%, transparent 46%),
+    radial-gradient(circle at 80% 30%, var(--c-romance-50) 0%, transparent 44%),
+    radial-gradient(circle at 50% 80%, var(--c-brand-100) 0%, transparent 48%); }
+.lock-screen__close { position: absolute; top: 56px; left: 10px; z-index: 4; width: 44px; height: 44px;
+  border-radius: var(--r-full); background: var(--c-bg-container); box-shadow: var(--s-card-soft);
+  display: flex; align-items: center; justify-content: center; color: var(--c-text-secondary); }
+.lock-screen__close svg { width: 20px; height: 20px; }
+.lock-screen__body { position: relative; z-index: 1; flex: 1; min-height: 0; display: flex; flex-direction: column;
+  align-items: center; padding: 56px 16px 24px; }
+.lock-screen__illustration { position: relative; width: 220px; height: 155px; margin-bottom: 16px; }
+.illustration__ring { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 140px; height: 140px;
+  border-radius: var(--r-full); background: linear-gradient(135deg, var(--c-brand), var(--c-brand-400));
+  box-shadow: var(--s-brand); display: flex; align-items: center; justify-content: center; }
+.illustration__ring svg { width: 60px; height: 60px; color: var(--c-text-inverse); }
+.illustration__heart { position: absolute; color: var(--c-romance); }
+.illustration__heart svg { width: 100%; height: 100%; }
+.illustration__heart--1 { top: 0; left: 30px; width: 26px; height: 26px; }
+.illustration__heart--2 { top: 30px; right: 18px; width: 20px; height: 20px; }
+.lock-screen__content { width: 100%; max-width: 280px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.lock-screen__title { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); text-align: center; line-height: 1.4; }
+.lock-screen__subtitle { font-size: var(--fs-lg); color: var(--c-text-secondary); text-align: center; line-height: 1.5; max-width: 275px; }
+.lock-screen__benefits { width: 100%; display: flex; flex-direction: column; gap: 6px; margin-top: 12px; margin-bottom: 24px; }
+.benefit { display: flex; align-items: center; gap: 6px; }
+.benefit svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--c-brand-700); }
+.benefit__text { font-size: var(--fs-xl); line-height: 1.5; color: var(--c-text-secondary); }
+.lock-screen__action { width: 100%; max-width: 280px; margin-top: auto; display: flex; flex-direction: column;
+  align-items: center; gap: 8px; }
+.lock-screen__btn { width: 100%; height: 48px; border-radius: var(--r-full); background: var(--c-brand-800);
+  display: flex; align-items: center; justify-content: center; box-shadow: var(--s-brand);
+  font-size: var(--fs-2xl); font-weight: 600; color: var(--c-text-inverse); }
+.lock-screen__btn-link { align-self: stretch; min-height: 44px; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-md); color: var(--c-brand-800); text-decoration: underline; }
+.lock-screen__footer { position: relative; z-index: 1; display: flex; justify-content: center; padding: 8px 16px 36px; }
+.lock-screen__footer-text { font-size: var(--fs-base); color: var(--c-text-secondary); text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 描边风格，对齐工程 SVG 体系；本页补 24 枚，未改 base） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.4"/><path d="M16.2 16.2 20.5 20.5"/></symbol>
+  <symbol id="i-school" viewBox="0 0 24 24"><path d="M12 3.2 3 7.4l9 4.2 9-4.2z"/><path d="M6.6 9.6v5.1c0 1.9 2.4 3.4 5.4 3.4s5.4-1.5 5.4-3.4V9.6"/><path d="M21 7.4v6.2"/></symbol>
+  <symbol id="i-cap" viewBox="0 0 24 24"><path d="M12 4 2.8 8.2 12 12.4l9.2-4.2z"/><path d="M6.4 10.4v4.2c0 1.6 2.5 2.9 5.6 2.9s5.6-1.3 5.6-2.9v-4.2"/><path d="M21.2 8.2v6"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.6" y="10.4" width="14.8" height="10.2" rx="2.4"/><path d="M8.2 10.4V7.4a3.8 3.8 0 0 1 7.6 0v3"/></symbol>
+  <symbol id="i-group" viewBox="0 0 24 24"><circle cx="9" cy="8.4" r="3.2"/><path d="M3.4 19.4c.5-3 2.9-4.8 5.6-4.8s5.1 1.8 5.6 4.8"/><circle cx="17" cy="9.4" r="2.4"/><path d="M15.6 14.9c2.6-.4 4.6 1.2 5 3.7"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3.6l1.6 4.4 4.4 1.6-4.4 1.6L12 15.6l-1.6-4.4L6 9.6l4.4-1.6z"/><path d="M18.6 16.4l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.2l-1.3-1.2C5.4 14 2.4 11.2 2.4 7.8 2.4 5 4.6 2.8 7.4 2.8c1.6 0 3.2.8 4.6 2.2 1.4-1.4 3-2.2 4.6-2.2 2.8 0 5 2.2 5 5 0 3.4-3 6.2-8.3 11.2z"/></symbol>
+  <symbol id="i-heart-fill" viewBox="0 0 24 24"><path d="M12 20.2l-1.3-1.2C5.4 14 2.4 11.2 2.4 7.8 2.4 5 4.6 2.8 7.4 2.8c1.6 0 3.2.8 4.6 2.2 1.4-1.4 3-2.2 4.6-2.2 2.8 0 5 2.2 5 5 0 3.4-3 6.2-8.3 11.2z"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.4" y="5.6" width="17.2" height="15" rx="2.4"/><path d="M3.4 10h17.2M8 3.4v4M16 3.4v4"/></symbol>
+  <symbol id="i-fire" viewBox="0 0 24 24"><path d="M12 3.4c3.4 3.6 5.6 6.2 5.6 9.4a5.6 5.6 0 1 1-11.2 0c0-1.6.6-3 1.6-4.2.4 1.2 1.2 2 2.2 2.2-.4-2.4.2-4.6 1.8-7.4z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 3.6h6l-1 5.2 3.4 3.2H6.6L10 8.8z"/><path d="M12 12v8.4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.4 2"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.8 20.2c.6-3.6 3.6-5.8 7.2-5.8s6.6 2.2 7.2 5.8"/></symbol>
+  <symbol id="i-location" viewBox="0 0 24 24"><path d="M12 21c0-5.2 4.6-8 4.6-12A4.6 4.6 0 0 0 7.4 9c0 4 4.6 6.8 4.6 12z"/><circle cx="12" cy="9" r="1.8"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20.6 12.4c0 3.8-3.8 6.8-8.6 6.8-1 0-2-.1-2.9-.4L4 20.6l1.5-3.7A6.6 6.6 0 0 1 3.4 12.4C3.4 8.6 7.2 5.6 12 5.6s8.6 3 8.6 6.8z"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6.6 3.8h10.8v16.4L12 15.9l-5.4 4.3z"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M15.4 4.2l4.4 4.4L8.4 20H4v-4.4z"/><path d="M13.4 6.2l4.4 4.4"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.6 7.6 12 3.6l8.4 4v8.8L12 20.4l-8.4-4z"/><path d="M3.6 7.6 12 11.6l8.4-4M12 11.6v8.8"/><path d="M7.8 5.6 16.2 9.6"/></symbol>
+  <symbol id="i-alert-triangle" viewBox="0 0 24 24"><path d="M12 3.6 21 19.4H3z"/><path d="M12 9.4v4.4M12 16.6h.01"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M8.4 12.4l2.6 2.6 4.6-5.2"/></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 20V4.8M5.6 11.2 12 4.8l6.4 6.4"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.4" y="5.4" width="17.2" height="13.2" rx="2.4"/><circle cx="9" cy="10.2" r="1.6"/><path d="M4.4 17.4l4.8-4.6 3.6 3.2 3-2.6 4 3.8"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4.4 4.6h6.2a2.4 2.4 0 0 1 2.4 2.4v12a2 2 0 0 0-2-2H4.4z"/><path d="M19.6 4.6h-6.2a2.4 2.4 0 0 0-2.4 2.4v12a2 2 0 0 1 2-2h6.6z"/></symbol>
+  <symbol id="i-dumbbell" viewBox="0 0 24 24"><path d="M3.4 10.4v3.2M6.2 8v8M17.8 8v8M20.6 10.4v3.2M6.2 12h11.6"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9.4 17.4V5.4l10.2-2v12"/><circle cx="7.2" cy="17.4" r="2.2"/><circle cx="17.4" cy="15.4" r="2.2"/></symbol>
+  <symbol id="i-clapper" viewBox="0 0 24 24"><rect x="3.4" y="8.6" width="17.2" height="11.4" rx="2"/><path d="M3.4 8.6 5 4.6l14.4 1.4-1.2 2.6"/><path d="M8 5l1.4 3.2M13 5.6l1.4 3"/></symbol>
+  <symbol id="i-plane" viewBox="0 0 24 24"><path d="M20.6 3.4 3.4 10.8l5.4 2.2 2.2 5.4z"/><path d="M20.6 3.4 8.8 13"/></symbol>
+  <symbol id="i-gamepad" viewBox="0 0 24 24"><rect x="2.6" y="7.6" width="18.8" height="9.4" rx="4.4"/><path d="M7 11v3M5.6 12.4h2.8M15.4 11.6h.01M17.6 13.6h.01"/></symbol>
+  <symbol id="i-food" viewBox="0 0 24 24"><path d="M7 3.4v7.2a2 2 0 0 0 4 0V3.4M9 10.6v10"/><path d="M17.4 3.4c-1.6 1.4-2.2 3.4-2.2 5.6 0 1.6.8 2.4 2.2 2.4v6.8"/></symbol>
+  <symbol id="i-book-open" viewBox="0 0 24 24"><path d="M12 6.6C10.4 5 8.2 4.4 4.4 4.6v13.2c3.8-.2 6 .4 7.6 2 1.6-1.6 3.8-2.2 7.6-2V4.6c-3.8-.2-6 .4-7.6 2z"/><path d="M12 6.6v13.2"/></symbol>
+  <symbol id="i-heart-signal" viewBox="0 0 24 24"><path d="M12 20.2l-1.3-1.2C5.4 14 2.4 11.2 2.4 7.8 2.4 5 4.6 2.8 7.4 2.8c1.6 0 3.2.8 4.6 2.2 1.4-1.4 3-2.2 4.6-2.2 2.8 0 5 2.2 5 5 0 3.4-3 6.2-8.3 11.2z"/><path d="M9 11.4h1.4l1-2 1.4 4 1-2H15"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>村口 · 圈子信息流页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/village/village/index</code>。
+     「村口」是全站被引用第二多的一页：顶部横向频道 Tab（关注 / 今日广场 / 兴趣圈 / 学校圈 / 活动 / 热度榜）
+     下挂四套不同内容体（帖子流、兴趣宫格+话题、认证门、活动列表），并受 session 水合、资料完善度、
+     校园认证、后台发帖开关四道门槛约束。本画板把数出来的状态逐屏画全，作为该页的验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>village/village/index</b></span>
+    <span>分包 <b>village</b>（无 tabbar）</span>
+    <span>状态 <b>10 屏</b></span>
+    <span>频道 Tab <b>6 档</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1845</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 10 屏</h2>
+    <p>水合骨架 / 登录门 / 频道流四态 / 四个频道内容体</p></div>
+  <div class="sec__sub">本页状态机来自三层条件：<code>sessionHydrating</code>（<code>sessionStore.loading &amp;&amp; !userSession</code>）
+    → <code>!isUnlocked</code>（<code>!sessionStore.isProfileComplete</code>）→ 已解锁后按 <code>currentChannelId</code>
+    分派 <code>isInterestChannel</code> / <code>isSchoolChannel</code> / <code>isActivityChannel</code> 与帖子流
+    （<code>loading</code> / <code>errorMessage</code> / 空态 / 列表）。
+    帖子频道三档（关注 · 今日广场 · 热度榜）版式完全相同，只在 <code>dataSource</code>、<code>postCategory</code>
+    与 <code>defaultSort</code> 上不同（<code>config/channels.ts</code>），故 §01 只画今日广场一档，其余两档在 §02 枚举。
+    页头由页面自绘（状态栏避让 44 + 20 + 8），右侧 119px 为微信胶囊避让带；频道 Tab 横向可滑，
+    首屏只露出 4.5 档——「活动」「热度榜」需右滑才可见，属真实形态。帧即视口，超出 812px 一律裁掉，裁切内容写在题注 <code>.d</code>，不写进画面。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">今日广场 · 帖子流（置顶折叠 + 评论预览）</span><span class="d">↓裁切至第 2 卡配图格</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="village-page">
+          <div class="village-header">
+            <div class="village-header__top">
+              <div class="village-header__title-wrap"><span class="village-header__title">圈子</span><span class="village-header__subtitle">校园恋爱社区</span></div>
+              <div class="village-search"><svg class="village-search__icon"><use href="#i-search"/></svg><span class="village-search__placeholder">搜索感兴趣的人、标签和学校</span></div>
+            </div>
+            <div class="channel-tabs">
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-group"/></svg></span><span class="channel-tab__label">关注</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab channel-tab--active"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-sparkles"/></svg></span><span class="channel-tab__label">今日广场</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-heart"/></svg></span><span class="channel-tab__label">兴趣圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-cap"/></svg><svg class="channel-tab__lock"><use href="#i-lock"/></svg></span><span class="channel-tab__label">学校圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-calendar"/></svg></span><span class="channel-tab__label">活动</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-fire"/></svg></span><span class="channel-tab__label">热度榜</span><span class="channel-tab__indicator"></span></div>
+            </div>
+          </div>
+          <div class="channel-feed">
+            <div class="pinned-bar">
+              <div class="pinned-bar__summary"><svg class="pinned-bar__pin"><use href="#i-pin"/></svg><span class="pinned-bar__text">置顶 2 条</span><span class="pinned-bar__arrow">›</span></div>
+            </div>
+            <div class="post-feed__list">
+              <div class="post-card">
+                <div class="post-card__header">
+                  <div class="post-card__user">
+                    <div class="user-avatar"><span class="user-avatar__char">小</span><span class="user-avatar__badge"><svg><use href="#i-cap"/></svg></span></div>
+                    <div class="user-info">
+                      <div class="user-info__name-row"><span class="user-info__name">小满</span><span class="user-info__campus-badge user-info__campus-badge--mine"><svg class="user-info__campus-badge-icon"><use href="#i-school"/></svg><span class="user-info__campus-badge-text">北京大学</span></span></div>
+                      <span class="user-info__meta">21岁 · 北京 · 本科</span>
+                      <span class="user-info__headline">中文系大三，爱写信</span>
+                    </div>
+                  </div>
+                  <span class="follow-chip"><span class="follow-chip__text">+ 关注</span></span>
+                </div>
+                <div class="post-card__body"><span class="post-card__content">图书馆四楼新开的自习区终于排上了，每个位子都有插座和台灯，学到闭馆。对面那位一直埋头写题的同学，明天要是还在，我大概会鼓起勇气打个招呼吧。</span></div>
+                <div class="post-card__tags"><span class="post-card__tag">#校园日常</span><span class="post-card__tag">#图书馆</span></div>
+                <div class="post-card__comments">
+                  <div class="comment-preview"><span class="comment-preview__char">阿</span><span class="comment-preview__name">阿辰</span><span class="comment-preview__content">明天我还占靠窗那排，你要坐可以早点来</span></div>
+                  <div class="comment-preview"><span class="comment-preview__char">小</span><span class="comment-preview__name">小溪</span><span class="comment-preview__content">四楼要不要刷卡进呀？</span></div>
+                </div>
+                <div class="post-card__footer">
+                  <span class="post-card__time">5 分钟前</span>
+                  <div class="post-card__actions">
+                    <span class="action-btn"><svg><use href="#i-chat"/></svg><span class="action-btn__count">6</span></span>
+                    <span class="action-btn action-btn--liked"><svg><use href="#i-heart-fill" class="ico--fill"/></svg><span class="action-btn__count">18</span></span>
+                    <span class="action-btn"><svg><use href="#i-bookmark"/></svg><span class="action-btn__count">2</span></span>
+                  </div>
+                </div>
+              </div>
+              <div class="post-card">
+                <div class="post-card__header">
+                  <div class="post-card__user">
+                    <div class="user-avatar"><span class="user-avatar__char">周</span></div>
+                    <div class="user-info">
+                      <div class="user-info__name-row"><span class="user-info__name">周岚</span><span class="user-info__campus-badge user-info__campus-badge--other"><svg class="user-info__campus-badge-icon"><use href="#i-school"/></svg><span class="user-info__campus-badge-text">复旦大学</span></span></div>
+                      <span class="user-info__meta">22岁 · 上海 · 本科</span>
+                      <span class="user-info__headline">刚刚活跃</span>
+                    </div>
+                  </div>
+                  <span class="follow-chip follow-chip--active"><span class="follow-chip__text">已关注</span></span>
+                </div>
+                <div class="post-card__body"><span class="post-card__content">周末想约人去源远楼旁打羽毛球，我水平很菜但捡球速度快。已经说好一个，再差两个，不用会打，会笑就行。</span></div>
+                <div class="post-media-grid post-media-grid--2">
+                  <div class="post-media-grid__cell"><span class="post-media-grid__glyph"><svg><use href="#i-image"/></svg></span></div>
+                  <div class="post-media-grid__cell"><span class="post-media-grid__glyph"><svg><use href="#i-image"/></svg></span></div>
+                </div>
+                <div class="post-card__tags"><span class="post-card__tag">#找搭子</span><span class="post-card__tag">#运动</span></div>
+                <div class="post-card__footer">
+                  <span class="post-card__time">1 小时前</span>
+                  <div class="post-card__actions">
+                    <span class="action-btn"><svg><use href="#i-chat"/></svg><span class="action-btn__count">3</span></span>
+                    <span class="action-btn"><svg><use href="#i-heart"/></svg><span class="action-btn__count">9</span></span>
+                    <span class="action-btn action-btn--collected"><svg><use href="#i-bookmark"/></svg><span class="action-btn__count">4</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="composer-bar">
+            <div class="composer-bar__input"><span class="composer-bar__placeholder">在今日广场发帖...</span></div>
+            <div class="composer-bar__publish"><svg><use href="#i-pencil"/></svg><span class="composer-bar__publish-text">发帖</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">今日广场 · 帖子流加载骨架</span><span class="d">loading &amp;&amp; displayPosts.length===0 · 页头仍在</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="village-page">
+          <div class="village-header">
+            <div class="village-header__top">
+              <div class="village-header__title-wrap"><span class="village-header__title">圈子</span><span class="village-header__subtitle">校园恋爱社区</span></div>
+              <div class="village-search"><svg class="village-search__icon"><use href="#i-search"/></svg><span class="village-search__placeholder">搜索感兴趣的人、标签和学校</span></div>
+            </div>
+            <div class="channel-tabs">
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-group"/></svg></span><span class="channel-tab__label">关注</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab channel-tab--active"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-sparkles"/></svg></span><span class="channel-tab__label">今日广场</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-heart"/></svg></span><span class="channel-tab__label">兴趣圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-cap"/></svg><svg class="channel-tab__lock"><use href="#i-lock"/></svg></span><span class="channel-tab__label">学校圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-calendar"/></svg></span><span class="channel-tab__label">活动</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-fire"/></svg></span><span class="channel-tab__label">热度榜</span><span class="channel-tab__indicator"></span></div>
+            </div>
+          </div>
+          <div class="channel-feed">
+            <div class="village-state">
+              <div class="skeleton-list"><span class="skeleton-avatar shimmer"></span><span class="skeleton-lines"><i class="skeleton-line skeleton-line--w60 shimmer"></i><i class="skeleton-line skeleton-line--w40 shimmer"></i></span></div>
+              <div class="skeleton-list"><span class="skeleton-avatar shimmer"></span><span class="skeleton-lines"><i class="skeleton-line skeleton-line--w60 shimmer"></i><i class="skeleton-line skeleton-line--w40 shimmer"></i></span></div>
+              <div class="skeleton-list"><span class="skeleton-avatar shimmer"></span><span class="skeleton-lines"><i class="skeleton-line skeleton-line--w60 shimmer"></i><i class="skeleton-line skeleton-line--w40 shimmer"></i></span></div>
+              <div class="skeleton-list"><span class="skeleton-avatar shimmer"></span><span class="skeleton-lines"><i class="skeleton-line skeleton-line--w60 shimmer"></i><i class="skeleton-line skeleton-line--w40 shimmer"></i></span></div>
+            </div>
+          </div>
+          <div class="composer-bar">
+            <div class="composer-bar__input"><span class="composer-bar__placeholder">在今日广场发帖...</span></div>
+            <div class="composer-bar__publish"><svg><use href="#i-pencil"/></svg><span class="composer-bar__publish-text">发帖</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">冷启动水合骨架（sessionHydrating）</span><span class="d">无页头 · 无频道 Tab · 无发帖条</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="village-page">
+          <div class="village-hydrating">
+            <div class="skeleton-list"><span class="skeleton-avatar shimmer"></span><span class="skeleton-lines"><i class="skeleton-line skeleton-line--w60 shimmer"></i><i class="skeleton-line skeleton-line--w40 shimmer"></i></span></div>
+            <div class="skeleton-list"><span class="skeleton-avatar shimmer"></span><span class="skeleton-lines"><i class="skeleton-line skeleton-line--w60 shimmer"></i><i class="skeleton-line skeleton-line--w40 shimmer"></i></span></div>
+            <div class="skeleton-list"><span class="skeleton-avatar shimmer"></span><span class="skeleton-lines"><i class="skeleton-line skeleton-line--w60 shimmer"></i><i class="skeleton-line skeleton-line--w40 shimmer"></i></span></div>
+            <div class="skeleton-list"><span class="skeleton-avatar shimmer"></span><span class="skeleton-lines"><i class="skeleton-line skeleton-line--w60 shimmer"></i><i class="skeleton-line skeleton-line--w40 shimmer"></i></span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">今日广场 · 错误重试（ErrorState network）</span><span class="d">errorMessage &amp;&amp; 零帖 · 重试走 onRefresh 穿透 TTL</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="village-page">
+          <div class="village-header">
+            <div class="village-header__top">
+              <div class="village-header__title-wrap"><span class="village-header__title">圈子</span><span class="village-header__subtitle">校园恋爱社区</span></div>
+              <div class="village-search"><svg class="village-search__icon"><use href="#i-search"/></svg><span class="village-search__placeholder">搜索感兴趣的人、标签和学校</span></div>
+            </div>
+            <div class="channel-tabs">
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-group"/></svg></span><span class="channel-tab__label">关注</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab channel-tab--active"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-sparkles"/></svg></span><span class="channel-tab__label">今日广场</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-heart"/></svg></span><span class="channel-tab__label">兴趣圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-cap"/></svg><svg class="channel-tab__lock"><use href="#i-lock"/></svg></span><span class="channel-tab__label">学校圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-calendar"/></svg></span><span class="channel-tab__label">活动</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-fire"/></svg></span><span class="channel-tab__label">热度榜</span><span class="channel-tab__indicator"></span></div>
+            </div>
+          </div>
+          <div class="channel-feed">
+            <div class="village-state">
+              <svg class="empty-icon"><use href="#i-search"/></svg>
+              <span class="empty-msg">网络连接失败</span>
+              <span class="empty-sub">请检查网络后重试</span>
+              <span class="error-btn">重试</span>
+            </div>
+          </div>
+          <div class="composer-bar">
+            <div class="composer-bar__input"><span class="composer-bar__placeholder">在今日广场发帖...</span></div>
+            <div class="composer-bar__publish"><svg><use href="#i-pencil"/></svg><span class="composer-bar__publish-text">发帖</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">今日广场 · 空态（可发帖）</span><span class="d">!loading &amp;&amp; 零帖 · 骨架期间不得同屏出现</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="village-page">
+          <div class="village-header">
+            <div class="village-header__top">
+              <div class="village-header__title-wrap"><span class="village-header__title">圈子</span><span class="village-header__subtitle">校园恋爱社区</span></div>
+              <div class="village-search"><svg class="village-search__icon"><use href="#i-search"/></svg><span class="village-search__placeholder">搜索感兴趣的人、标签和学校</span></div>
+            </div>
+            <div class="channel-tabs">
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-group"/></svg></span><span class="channel-tab__label">关注</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab channel-tab--active"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-sparkles"/></svg></span><span class="channel-tab__label">今日广场</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-heart"/></svg></span><span class="channel-tab__label">兴趣圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-cap"/></svg><svg class="channel-tab__lock"><use href="#i-lock"/></svg></span><span class="channel-tab__label">学校圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-calendar"/></svg></span><span class="channel-tab__label">活动</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-fire"/></svg></span><span class="channel-tab__label">热度榜</span><span class="channel-tab__indicator"></span></div>
+            </div>
+          </div>
+          <div class="channel-feed">
+            <div class="village-empty">
+              <svg class="empty-icon"><use href="#i-box"/></svg>
+              <span class="empty-msg">暂无帖子</span>
+              <span class="empty-sub">这里空空如也</span>
+              <span class="village-empty__action">发帖</span>
+            </div>
+          </div>
+          <div class="composer-bar">
+            <div class="composer-bar__input"><span class="composer-bar__placeholder">在今日广场发帖...</span></div>
+            <div class="composer-bar__publish"><svg><use href="#i-pencil"/></svg><span class="composer-bar__publish-text">发帖</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">兴趣圈 · 宫格 + 热门话题 + 精选话题</span><span class="d">dataSource=interest-hub，不渲染帖流</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="village-page">
+          <div class="village-header">
+            <div class="village-header__top">
+              <div class="village-header__title-wrap"><span class="village-header__title">圈子</span><span class="village-header__subtitle">校园恋爱社区</span></div>
+              <div class="village-search"><svg class="village-search__icon"><use href="#i-search"/></svg><span class="village-search__placeholder">搜索感兴趣的人、标签和学校</span></div>
+            </div>
+            <div class="channel-tabs">
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-group"/></svg></span><span class="channel-tab__label">关注</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-sparkles"/></svg></span><span class="channel-tab__label">今日广场</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab channel-tab--active"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-heart"/></svg></span><span class="channel-tab__label">兴趣圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-cap"/></svg><svg class="channel-tab__lock"><use href="#i-lock"/></svg></span><span class="channel-tab__label">学校圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-calendar"/></svg></span><span class="channel-tab__label">活动</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-fire"/></svg></span><span class="channel-tab__label">热度榜</span><span class="channel-tab__indicator"></span></div>
+            </div>
+          </div>
+          <div class="channel-feed">
+            <div class="interest-grid">
+              <div class="interest-grid__item"><span class="interest-grid__icon-wrap"><svg class="interest-grid__icon"><use href="#i-book"/></svg></span><span class="interest-grid__name">学习</span></div>
+              <div class="interest-grid__item"><span class="interest-grid__icon-wrap"><svg class="interest-grid__icon"><use href="#i-dumbbell"/></svg></span><span class="interest-grid__name">运动</span></div>
+              <div class="interest-grid__item"><span class="interest-grid__icon-wrap"><svg class="interest-grid__icon"><use href="#i-music"/></svg></span><span class="interest-grid__name">音乐</span></div>
+              <div class="interest-grid__item"><span class="interest-grid__icon-wrap"><svg class="interest-grid__icon"><use href="#i-clapper"/></svg></span><span class="interest-grid__name">电影</span></div>
+              <div class="interest-grid__item"><span class="interest-grid__icon-wrap"><svg class="interest-grid__icon"><use href="#i-plane"/></svg></span><span class="interest-grid__name">旅行</span></div>
+              <div class="interest-grid__item"><span class="interest-grid__icon-wrap"><svg class="interest-grid__icon"><use href="#i-gamepad"/></svg></span><span class="interest-grid__name">游戏</span></div>
+              <div class="interest-grid__item"><span class="interest-grid__icon-wrap"><svg class="interest-grid__icon"><use href="#i-food"/></svg></span><span class="interest-grid__name">美食</span></div>
+              <div class="interest-grid__item"><span class="interest-grid__icon-wrap"><svg class="interest-grid__icon"><use href="#i-book-open"/></svg></span><span class="interest-grid__name">阅读</span></div>
+            </div>
+            <div class="hot-topics">
+              <span class="hot-topics__title">热门话题</span>
+              <div class="hot-topics__grid">
+                <div class="hot-topics__main">
+                  <div class="hot-topics__main-cover">
+                    <div class="hot-topics__main-overlay"><span class="hot-topics__main-title">#女生请回答</span><span class="hot-topics__main-views">1.3万 浏览</span></div>
+                  </div>
+                </div>
+                <div class="hot-topics__side">
+                  <div class="hot-topics__small"><span class="hot-topics__small-cover" style="background:linear-gradient(135deg,var(--c-romance),var(--c-romance-300))"></span><span class="hot-topics__small-info"><span class="hot-topics__small-name">#校园日常</span><span class="hot-topics__small-views">9600</span></span></div>
+                  <div class="hot-topics__small"><span class="hot-topics__small-cover" style="background:linear-gradient(135deg,var(--c-warning),var(--c-gold))"></span><span class="hot-topics__small-info"><span class="hot-topics__small-name">#找搭子</span><span class="hot-topics__small-views">8200</span></span></div>
+                  <div class="hot-topics__small"><span class="hot-topics__small-cover" style="background:linear-gradient(135deg,var(--c-status-info),var(--c-brand-300))"></span><span class="hot-topics__small-info"><span class="hot-topics__small-name">#表白墙</span><span class="hot-topics__small-views">7400</span></span></div>
+                  <div class="hot-topics__small"><span class="hot-topics__small-cover" style="background:linear-gradient(135deg,var(--c-purple),var(--c-romance-300))"></span><span class="hot-topics__small-info"><span class="hot-topics__small-name">#恋爱问答</span><span class="hot-topics__small-views">5300</span></span></div>
+                </div>
+              </div>
+            </div>
+            <div class="channel-section">
+              <div class="channel-section__header"><span class="channel-section__title">精选话题</span></div>
+              <div class="topic-list">
+                <div class="topic-item">
+                  <span class="topic-item__title">期末图书馆占座攻略</span>
+                  <span class="topic-item__summary">期末周图书馆太难占座了！分享一个经验：早上七点半前到三楼东区，人少光线好。</span>
+                  <div class="topic-item__meta">
+                    <span class="topic-item__author"><span class="topic-item__avatar">小</span><span class="topic-item__author-name">小满</span></span>
+                    <span class="topic-item__stats"><svg><use href="#i-chat"/></svg><span class="topic-item__stats-count">45</span></span>
+                  </div>
+                </div>
+                <div class="topic-item">
+                  <span class="topic-item__title">本周六校园歌手大赛决赛，求组队观赛</span>
+                  <span class="topic-item__summary">周六晚上七点大礼堂，决赛选手都好强！想找几个同学一起去，结束后可以约夜宵。</span>
+                  <div class="topic-item__meta">
+                    <span class="topic-item__author"><span class="topic-item__avatar">周</span><span class="topic-item__author-name">周岚</span></span>
+                    <span class="topic-item__stats"><svg><use href="#i-chat"/></svg><span class="topic-item__stats-count">19</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="feed-bottom-spacer"></div>
+          </div>
+          <div class="composer-bar">
+            <div class="composer-bar__input"><span class="composer-bar__placeholder">在兴趣圈发帖...</span></div>
+            <div class="composer-bar__publish"><svg><use href="#i-pencil"/></svg><span class="composer-bar__publish-text">发帖</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">学校圈 · 未认证（认证门）</span><span class="d">isSchoolChannel &amp;&amp; !isCampusVerified · 生产形态（模拟钮不渲染）</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="village-page">
+          <div class="village-header">
+            <div class="village-header__top">
+              <div class="village-header__title-wrap"><span class="village-header__title">圈子</span><span class="village-header__subtitle">校园恋爱社区</span></div>
+              <div class="village-search"><svg class="village-search__icon"><use href="#i-search"/></svg><span class="village-search__placeholder">搜索感兴趣的人、标签和学校</span></div>
+            </div>
+            <div class="channel-tabs">
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-group"/></svg></span><span class="channel-tab__label">关注</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-sparkles"/></svg></span><span class="channel-tab__label">今日广场</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-heart"/></svg></span><span class="channel-tab__label">兴趣圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab channel-tab--active"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-cap"/></svg><svg class="channel-tab__lock"><use href="#i-lock"/></svg></span><span class="channel-tab__label">学校圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-calendar"/></svg></span><span class="channel-tab__label">活动</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-fire"/></svg></span><span class="channel-tab__label">热度榜</span><span class="channel-tab__indicator"></span></div>
+            </div>
+          </div>
+          <div class="channel-feed">
+            <div class="school-gate">
+              <div class="school-gate__card">
+                <div class="school-gate__icon-wrap"><svg><use href="#i-cap"/></svg><span class="school-gate__lock-wrap"><svg><use href="#i-lock"/></svg></span></div>
+                <span class="school-gate__title">学校认证聊天圈</span>
+                <span class="school-gate__desc">仅限本校同学进入，完成校园认证后即可解锁学校圈发帖与互动</span>
+                <div class="school-gate__points">
+                  <div class="school-gate__point"><svg><use href="#i-check-circle"/></svg><span class="school-gate__point-text">认证后可进入学校圈发帖聊天</span></div>
+                  <div class="school-gate__point"><svg><use href="#i-check-circle"/></svg><span class="school-gate__point-text">同校同学的动态都在这里</span></div>
+                </div>
+                <div class="school-gate__btn">去认证</div>
+              </div>
+            </div>
+          </div>
+          <div class="composer-bar">
+            <div class="composer-bar__input"><svg class="composer-bar__lock"><use href="#i-lock"/></svg><span class="composer-bar__placeholder">完成校园认证后在校园圈发帖</span></div>
+            <div class="composer-bar__publish"><svg><use href="#i-pencil"/></svg><span class="composer-bar__publish-text">发帖</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F08 -->
+    <figure class="frame">
+      <figcaption><b>F08</b><span class="t">学校圈 · 已认证</span><span class="d">自帖待审置顶 + 零图占位 · ↓裁切至第 2 卡</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="village-page">
+          <div class="village-header">
+            <div class="village-header__top">
+              <div class="village-header__title-wrap"><span class="village-header__title">圈子</span><span class="village-header__subtitle">校园恋爱社区</span></div>
+              <div class="village-search"><svg class="village-search__icon"><use href="#i-search"/></svg><span class="village-search__placeholder">搜索感兴趣的人、标签和学校</span></div>
+            </div>
+            <div class="channel-tabs">
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-group"/></svg></span><span class="channel-tab__label">关注</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-sparkles"/></svg></span><span class="channel-tab__label">今日广场</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-heart"/></svg></span><span class="channel-tab__label">兴趣圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab channel-tab--active"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-cap"/></svg></span><span class="channel-tab__label">学校圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-calendar"/></svg></span><span class="channel-tab__label">活动</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-fire"/></svg></span><span class="channel-tab__label">热度榜</span><span class="channel-tab__indicator"></span></div>
+            </div>
+          </div>
+          <div class="channel-feed">
+            <div class="village-daily-entry">
+              <svg class="village-daily-entry__icon"><use href="#i-heart-signal"/></svg>
+              <div class="village-daily-entry__info">
+                <div class="village-daily-entry__title-row"><span class="village-daily-entry__title">每日一问</span><span class="village-daily-entry__answered">已作答</span></div>
+                <span class="village-daily-entry__desc">回答今日话题，看看大家的想法</span>
+              </div>
+              <span class="village-daily-entry__arrow">›</span>
+            </div>
+            <div class="discover-banner">
+              <div class="discover-banner__content">
+                <div class="discover-banner__left">
+                  <svg class="discover-banner__icon"><use href="#i-location"/></svg>
+                  <div class="discover-banner__text-wrap"><span class="discover-banner__title">附近的人</span><span class="discover-banner__subtitle">发现同频的TA，开启心动匹配</span></div>
+                </div>
+                <span class="discover-banner__arrow">›</span>
+              </div>
+            </div>
+            <div class="post-feed__list">
+              <div class="post-card">
+                <div class="post-card__header">
+                  <div class="post-card__user">
+                    <div class="user-avatar"><span class="user-avatar__char">星</span><span class="user-avatar__badge"><svg><use href="#i-cap"/></svg></span></div>
+                    <div class="user-info">
+                      <div class="user-info__name-row"><span class="user-info__name">星辰</span><span class="user-info__campus-badge user-info__campus-badge--mine"><svg class="user-info__campus-badge-icon"><use href="#i-school"/></svg><span class="user-info__campus-badge-text">北京大学</span></span></div>
+                      <span class="user-info__meta">23岁 · 北京 · 硕士</span>
+                      <span class="user-info__headline">篮球队常驻替补</span>
+                    </div>
+                  </div>
+                  <span class="follow-chip follow-chip--active"><span class="follow-chip__text">已关注</span></span>
+                </div>
+                <div class="post-card__body"><span class="post-card__content">刚发的这条还在审核，先占个位：周三晚体育馆三分局，缺两个人。</span></div>
+                <div class="post-card__images--placeholder"><svg><use href="#i-image"/></svg></div>
+                <div class="post-card__tags"><span class="post-card__tag">#运动</span><span class="post-card__tag">#找搭子</span></div>
+                <div class="post-card__footer">
+                  <span class="post-card__time">刚刚</span>
+                  <span class="post-card__audit badge badge--warn">审核中</span>
+                  <div class="post-card__actions">
+                    <span class="action-btn"><svg><use href="#i-chat"/></svg></span>
+                    <span class="action-btn"><svg><use href="#i-heart"/></svg></span>
+                    <span class="action-btn"><svg><use href="#i-bookmark"/></svg></span>
+                  </div>
+                </div>
+              </div>
+              <div class="post-card">
+                <div class="post-card__header">
+                  <div class="post-card__user">
+                    <div class="user-avatar"><span class="user-avatar__char">阿</span><span class="user-avatar__badge"><svg><use href="#i-cap"/></svg></span></div>
+                    <div class="user-info">
+                      <div class="user-info__name-row"><span class="user-info__name">阿辰</span><span class="user-info__campus-badge user-info__campus-badge--mine"><svg class="user-info__campus-badge-icon"><use href="#i-school"/></svg><span class="user-info__campus-badge-text">北京大学</span></span></div>
+                      <span class="user-info__meta">20岁 · 北京 · 本科</span>
+                    </div>
+                  </div>
+                  <span class="follow-chip"><span class="follow-chip__text">+ 关注</span></span>
+                </div>
+                <div class="post-card__body"><span class="post-card__content">五楼主库的《中国历代政治得失》借不到，只能蹲还书口等复本。有同学知道哪个分馆还有吗？下周要交读书报告，真的会谢。</span></div>
+                <div class="post-card__tags"><span class="post-card__tag">#校园日常</span><span class="post-card__tag">#求助</span></div>
+                <div class="post-card__footer">
+                  <span class="post-card__time">2 小时前</span>
+                  <div class="post-card__actions">
+                    <span class="action-btn"><svg><use href="#i-chat"/></svg><span class="action-btn__count">2</span></span>
+                    <span class="action-btn"><svg><use href="#i-heart"/></svg><span class="action-btn__count">7</span></span>
+                    <span class="action-btn"><svg><use href="#i-bookmark"/></svg><span class="action-btn__count">1</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="composer-bar">
+            <div class="composer-bar__input"><span class="composer-bar__placeholder">在校园圈发帖...</span></div>
+            <div class="composer-bar__publish"><svg><use href="#i-pencil"/></svg><span class="composer-bar__publish-text">发帖</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F09 -->
+    <figure class="frame">
+      <figcaption><b>F09</b><span class="t">活动频道 · 活动列表 + 关联活动帖</span><span class="d">含回到顶部钮 · ↓裁切至加载更多</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="village-page">
+          <div class="village-header">
+            <div class="village-header__top">
+              <div class="village-header__title-wrap"><span class="village-header__title">圈子</span><span class="village-header__subtitle">校园恋爱社区</span></div>
+              <div class="village-search"><svg class="village-search__icon"><use href="#i-search"/></svg><span class="village-search__placeholder">搜索感兴趣的人、标签和学校</span></div>
+            </div>
+            <div class="channel-tabs">
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-group"/></svg></span><span class="channel-tab__label">关注</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-sparkles"/></svg></span><span class="channel-tab__label">今日广场</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-heart"/></svg></span><span class="channel-tab__label">兴趣圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-cap"/></svg><svg class="channel-tab__lock"><use href="#i-lock"/></svg></span><span class="channel-tab__label">学校圈</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab channel-tab--active"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-calendar"/></svg></span><span class="channel-tab__label">活动</span><span class="channel-tab__indicator"></span></div>
+              <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-fire"/></svg></span><span class="channel-tab__label">热度榜</span><span class="channel-tab__indicator"></span></div>
+            </div>
+          </div>
+          <div class="channel-feed">
+            <div class="channel-section">
+              <div class="channel-section__header"><span class="channel-section__title">推荐活动</span><span class="channel-section__sub">点击卡片报名或查看详情</span></div>
+              <div class="activity-list">
+                <div class="activity-card">
+                  <div class="activity-card__cover"><svg><use href="#i-image"/></svg></div>
+                  <div class="activity-card__body">
+                    <div class="activity-card__title-row"><span class="activity-card__title-wrap"><svg><use href="#i-calendar"/></svg><span class="activity-card__title">电影社线下碰面</span></span><span class="activity-card__status">预告</span></div>
+                    <div class="activity-card__meta">
+                      <span class="activity-card__meta-item"><svg><use href="#i-clock"/></svg><span class="activity-card__meta-text">周五 19:00</span></span>
+                      <span class="activity-card__meta-item"><svg><use href="#i-location"/></svg><span class="activity-card__meta-text">影像楼 B 厅</span></span>
+                      <span class="activity-card__meta-item"><svg><use href="#i-user"/></svg><span class="activity-card__meta-text">23人已报名</span></span>
+                    </div>
+                    <span class="activity-card__desc">放映结束后自由讨论，不用带票，直接来占座就行。</span>
+                  </div>
+                  <span class="activity-card__enroll"><span class="activity-card__enroll-text">报名</span></span>
+                </div>
+                <div class="activity-card">
+                  <div class="activity-card__cover"><svg><use href="#i-image"/></svg></div>
+                  <div class="activity-card__body">
+                    <div class="activity-card__title-row"><span class="activity-card__title-wrap"><svg><use href="#i-calendar"/></svg><span class="activity-card__title">周末篮球友谊赛</span></span><span class="activity-card__status">预告</span></div>
+                    <div class="activity-card__meta">
+                      <span class="activity-card__meta-item"><svg><use href="#i-clock"/></svg><span class="activity-card__meta-text">周六 15:00</span></span>
+                      <span class="activity-card__meta-item"><svg><use href="#i-location"/></svg><span class="activity-card__meta-text">东区篮球场</span></span>
+                      <span class="activity-card__meta-item"><svg><use href="#i-user"/></svg><span class="activity-card__meta-text">12人已报名</span></span>
+                    </div>
+                    <span class="activity-card__desc">三对三轮流打，缺人也能上场，打完一起去食堂喝绿豆汤。</span>
+                  </div>
+                  <span class="activity-card__enroll activity-card__enroll--done"><span class="activity-card__enroll-text">已报名</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="post-feed__list">
+              <div class="post-card">
+                <div class="post-card__header">
+                  <div class="post-card__user">
+                    <div class="user-avatar"><span class="user-avatar__char">小</span><span class="user-avatar__badge"><svg><use href="#i-cap"/></svg></span></div>
+                    <div class="user-info">
+                      <div class="user-info__name-row"><span class="user-info__name">小溪</span><span class="user-info__campus-badge user-info__campus-badge--other"><svg class="user-info__campus-badge-icon"><use href="#i-school"/></svg><span class="user-info__campus-badge-text">四川大学</span></span></div>
+                      <span class="user-info__meta">20岁 · 成都 · 本科</span>
+                      <span class="user-info__headline">刚刚活跃</span>
+                    </div>
+                  </div>
+                  <span class="follow-chip"><span class="follow-chip__text">+ 关注</span></span>
+                </div>
+                <div class="post-card__body"><span class="post-card__content">今晚电影社放映《你的名字》，现场报名 ing！</span></div>
+                <div class="post-card__activity">
+                  <div class="activity-card">
+                    <div class="activity-card__body">
+                      <div class="activity-card__title-row"><span class="activity-card__title-wrap"><svg><use href="#i-calendar"/></svg><span class="activity-card__title">电影社线下碰面</span></span></div>
+                      <div class="activity-card__meta">
+                        <span class="activity-card__meta-item"><svg><use href="#i-clock"/></svg><span class="activity-card__meta-text">周五 19:00</span></span>
+                        <span class="activity-card__meta-item"><svg><use href="#i-location"/></svg><span class="activity-card__meta-text">影像楼 B 厅</span></span>
+                        <span class="activity-card__meta-item"><svg><use href="#i-user"/></svg><span class="activity-card__meta-text">23人已报名</span></span>
+                      </div>
+                    </div>
+                    <span class="activity-card__enroll"><span class="activity-card__enroll-text">报名</span></span>
+                  </div>
+                </div>
+                <div class="post-card__tags"><span class="post-card__tag">#电影</span><span class="post-card__tag">#活动</span></div>
+                <div class="post-card__comments">
+                  <div class="comment-preview"><span class="comment-preview__char">阿</span><span class="comment-preview__name">阿辰</span><span class="comment-preview__content">带我一个！正好周末没安排</span></div>
+                </div>
+                <div class="post-card__footer">
+                  <span class="post-card__time">1 小时前</span>
+                  <div class="post-card__actions">
+                    <span class="action-btn"><svg><use href="#i-chat"/></svg><span class="action-btn__count">4</span></span>
+                    <span class="action-btn"><svg><use href="#i-heart"/></svg><span class="action-btn__count">11</span></span>
+                    <span class="action-btn"><svg><use href="#i-bookmark"/></svg><span class="action-btn__count">2</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="load-more"><span class="loading-spinner"></span><span class="load-more__text">加载中...</span></div>
+          </div>
+          <div class="composer-bar">
+            <div class="composer-bar__input"><span class="composer-bar__placeholder">发帖推荐活动...</span></div>
+            <div class="composer-bar__publish"><svg><use href="#i-pencil"/></svg><span class="composer-bar__publish-text">发帖</span></div>
+          </div>
+          <div class="back-to-top"><svg><use href="#i-arrow-up"/></svg></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F10 -->
+    <figure class="frame">
+      <figcaption><b>F10</b><span class="t">登录门 · 未登录（LockScreen 整页替换）</span><span class="d">!isUnlocked 且 isLoggedIn=false：无页头无发帖条</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lock-screen">
+          <div class="lock-screen__atmosphere"></div>
+          <div class="lock-screen__close"><svg><use href="#i-x"/></svg></div>
+          <div class="lock-screen__body">
+            <div class="lock-screen__illustration">
+              <div class="illustration__ring"><svg><use href="#i-lock"/></svg></div>
+              <span class="illustration__heart illustration__heart--1"><svg><use href="#i-heart-fill" class="ico--fill"/></svg></span>
+              <span class="illustration__heart illustration__heart--2"><svg><use href="#i-heart-fill" class="ico--fill"/></svg></span>
+            </div>
+            <div class="lock-screen__content">
+              <span class="lock-screen__title">登录后解锁完整交友功能</span>
+              <span class="lock-screen__subtitle">完成登录授权与基础资料填写，即可开启匹配、聊天、校园活动等全部功能</span>
+              <div class="lock-screen__benefits">
+                <div class="benefit"><svg><use href="#i-heart"/></svg><span class="benefit__text">解锁精准匹配推荐</span></div>
+                <div class="benefit"><svg><use href="#i-cap"/></svg><span class="benefit__text">查看同校校友主页</span></div>
+                <div class="benefit"><svg><use href="#i-chat"/></svg><span class="benefit__text">发起私信与匿名聊天</span></div>
+              </div>
+            </div>
+            <div class="lock-screen__action">
+              <div class="lock-screen__btn">立即登录并完善</div>
+              <div class="lock-screen__btn-link">先去逛逛匹配推荐</div>
+            </div>
+          </div>
+          <div class="lock-screen__footer"><span class="lock-screen__footer-text">资料越完善，匹配越精准，曝光机会越多</span></div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页六类件决定「看得见什么 / 发得出去吗」：频道 Tab、帖子卡、列表页态、底部发帖条、置顶折叠条、认证门与登录门。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>频道 Tab · 6 档（config/channels.ts 顺序即展示顺序）</h3>
+      <p class="hint">选中态＝图标满不透明度 + 文字 700 + 32px 品牌渐变下划线；未选中 <code>--c-text-tertiary</code> + 0.55 不透明度。
+        锁定集合来自 <code>channelLockedIds = isCampusVerified ? [] : ["school"]</code>——只有「学校圈」一枚会带锁。</p>
+      <div class="row">
+        <div class="cell" style="width:340px">
+          <div class="channel-tabs" style="border:1px solid var(--c-border-light);border-radius:var(--r-lg)">
+            <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-group"/></svg></span><span class="channel-tab__label">关注</span><span class="channel-tab__indicator"></span></div>
+            <div class="channel-tab channel-tab--active"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-sparkles"/></svg></span><span class="channel-tab__label">今日广场</span><span class="channel-tab__indicator"></span></div>
+            <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-heart"/></svg></span><span class="channel-tab__label">兴趣圈</span><span class="channel-tab__indicator"></span></div>
+            <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-cap"/></svg><svg class="channel-tab__lock"><use href="#i-lock"/></svg></span><span class="channel-tab__label">学校圈</span><span class="channel-tab__indicator"></span></div>
+          </div>
+          <span class="lab">未认证：学校圈带锁 · 横向可滑，「活动」「热度榜」在屏外</span>
+        </div>
+        <div class="cell" style="width:340px">
+          <div class="channel-tabs" style="border:1px solid var(--c-border-light);border-radius:var(--r-lg)">
+            <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-calendar"/></svg></span><span class="channel-tab__label">活动</span><span class="channel-tab__indicator"></span></div>
+            <div class="channel-tab channel-tab--active"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-fire"/></svg></span><span class="channel-tab__label">热度榜</span><span class="channel-tab__indicator"></span></div>
+            <div class="channel-tab"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-cap"/></svg></span><span class="channel-tab__label">学校圈</span><span class="channel-tab__indicator"></span></div>
+            <div class="channel-tab channel-tab--pressed" style="opacity:.7"><span class="channel-tab__icon-wrap"><svg class="channel-tab__icon"><use href="#i-heart"/></svg></span><span class="channel-tab__label">兴趣圈</span><span class="channel-tab__indicator"></span></div>
+          </div>
+          <span class="lab">已认证：锁标消失 · 末一枚为 pressed（opacity .7）</span>
+        </div>
+      </div>
+      <table class="tbl">
+        <tr><th>频道</th><th>dataSource</th><th>postCategory</th><th>排序</th><th>内容体</th></tr>
+        <tr><td>关注</td><td><code class="plain">post-feed</code></td><td>following</td><td>latest</td><td>置顶折叠 + 帖流</td></tr>
+        <tr><td>今日广场</td><td><code class="plain">post-feed</code></td><td>all</td><td>latest</td><td>置顶折叠 + 帖流（F01）</td></tr>
+        <tr><td>兴趣圈</td><td><code class="plain">interest-hub</code></td><td>—（不拉帖）</td><td>—</td><td>宫格 + 热门/精选话题（F06）</td></tr>
+        <tr><td>学校圈</td><td><code class="plain">post-feed</code></td><td>campus</td><td>latest</td><td>认证门｜每日一问 + banner + 帖流（F07/F08）</td></tr>
+        <tr><td>活动</td><td><code class="plain">activity-feed</code></td><td>activity</td><td>latest</td><td>活动卡列表 + 帖流（F09）</td></tr>
+        <tr><td>热度榜</td><td><code class="plain">hot-board</code></td><td>all</td><td>hot</td><td>置顶折叠 + 帖流（不重复过滤热度）</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>帖子卡 PostCard · 分支枚举（组件结构 = 卡片件真实结构）</h3>
+      <p class="hint">顺序恒为：作者行 → 正文 → 配图区 → 内嵌活动卡（<code>post.activity</code>）→ 标签 → 评论预览（最新 2 条）→ 互动栏（时间 / 审核中 / 评论 · 点赞 · 收藏）。
+        2026-10-22 R13-L01-D11 起「分享」键已撤除，画板不得出现第四枚动作。</p>
+      <div class="row">
+        <div class="cell"><span class="follow-chip"><span class="follow-chip__text">+ 关注</span></span><span class="lab">未关注（品牌描边）</span></div>
+        <div class="cell"><span class="follow-chip follow-chip--active"><span class="follow-chip__text">已关注</span></span><span class="lab">已关注（中性底）</span></div>
+        <div class="cell"><span class="action-btn"><svg><use href="#i-heart"/></svg><span class="action-btn__count">9</span></span><span class="lab">点赞·未点</span></div>
+        <div class="cell"><span class="action-btn action-btn--liked"><svg><use href="#i-heart-fill" class="ico--fill"/></svg><span class="action-btn__count">18</span></span><span class="lab">点赞·已点（romance）</span></div>
+        <div class="cell"><span class="action-btn action-btn--collected"><svg><use href="#i-bookmark"/></svg><span class="action-btn__count">4</span></span><span class="lab">收藏·已收</span></div>
+        <div class="cell"><span class="action-btn"><svg><use href="#i-chat"/></svg></span><span class="lab">计数为 0：数字不出</span></div>
+        <div class="cell"><span class="post-card__audit badge badge--warn">审核中</span><span class="lab">selfPending 帖置顶可见</span></div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <div class="cell" style="width:150px"><div class="post-media-grid post-media-grid--1" style="margin-top:0"><div class="post-media-grid__cell"><span class="post-media-grid__glyph"><svg><use href="#i-image"/></svg></span></div></div><span class="lab">1–2–4 图：两列方格</span></div>
+        <div class="cell" style="width:150px"><div class="post-media-grid post-media-grid--3" style="margin-top:0"><div class="post-media-grid__cell"><span class="post-media-grid__glyph"><svg><use href="#i-image"/></svg></span></div><div class="post-media-grid__cell"></div><div class="post-media-grid__cell"><span class="post-media-grid__more"><span class="post-media-grid__more-text">+6</span></span></div></div><span class="lab">3–9 图：三列 · 第 9 格 +N</span></div>
+        <div class="cell" style="width:150px"><div class="post-card__images--placeholder" style="height:60px"><svg><use href="#i-image"/></svg></div><span class="lab">零图帖：仍占 90px 灰条</span></div>
+        <div class="cell" style="width:150px"><div class="user-avatar" style="width:44px;height:44px"><span class="user-avatar__char">小</span><span class="user-avatar__badge"><svg><use href="#i-cap"/></svg></span></div><span class="lab">无头像源：首字 + 学士帽角标</span></div>
+        <div class="cell" style="width:150px"><div class="user-info"><div class="user-info__name-row"><span class="user-info__name">周岚</span><span class="user-info__campus-badge user-info__campus-badge--other"><svg class="user-info__campus-badge-icon"><use href="#i-school"/></svg><span class="user-info__campus-badge-text">复旦大学</span></span></div><span class="user-info__meta">22岁 · 上海 · 本科</span></div><span class="lab">外校：中性描边校名胶囊</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>条件</th><th>画面结果</th></tr>
+        <tr><td><code>campusName</code> 与本人同校</td><td>胶囊 <code>--c-brand-300</code> 描边 + 头像左上学士帽角标（isAlumni）</td></tr>
+        <tr><td><code>headline === campusName</code></td><td>第三行签名收起，校名只在胶囊出一次</td></tr>
+        <tr><td><code>headline</code> 空</td><td>回落 <code>village.recentlyActive</code>「刚刚活跃」</td></tr>
+        <tr><td><code>recentComments</code> 缺失 / 空</td><td>评论预览整块不渲染（F08 两张卡即此态）</td></tr>
+        <tr><td><code>auditStatus==='pending'</code></td><td>自己刚发的帖被 <code>selfPendingPosts</code> 置顶到 feed 首位 + 时间右侧「审核中」黄标（F08 首卡）</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>帖子流页态 · 五档（帖子频道共用同一条 v-else 链）</h3>
+      <p class="hint">判据依次为 <code>loading &amp;&amp; 零帖</code> → <code>errorMessage &amp;&amp; 零帖</code> → <code>!loading &amp;&amp; 零帖</code>（空态）→ 列表；
+        列表尾再分 <code>isLoadingMore</code> / <code>!hasMore</code>。空态文案随频道变（<code>emptyStateMessage</code>）。</p>
+      <div class="row">
+        <div class="cell" style="width:150px"><div class="skeleton-list" style="padding:8px"><span class="skeleton-avatar shimmer" style="width:32px;height:32px"></span><span class="skeleton-lines"><i class="skeleton-line skeleton-line--w60 shimmer"></i><i class="skeleton-line skeleton-line--w40 shimmer"></i></span></div><span class="lab">骨架（4 条）</span></div>
+        <div class="cell" style="width:150px"><div class="village-state" style="padding:12px 0"><svg class="empty-icon" style="width:40px;height:40px"><use href="#i-search"/></svg><span class="empty-msg">网络连接失败</span><span class="empty-sub">请检查网络后重试</span><span class="error-btn" style="margin-top:8px;padding:6px 24px">重试</span></div><span class="lab">错误重试（图标=放大镜，见 §04）</span></div>
+        <div class="cell" style="width:150px"><div class="village-empty" style="padding:14px 0"><svg class="empty-icon" style="width:40px;height:40px"><use href="#i-box"/></svg><span class="empty-msg">学校圈还没有新动态</span><span class="village-empty__action" style="padding:6px 24px;font-size:var(--fs-md)">发帖</span></div><span class="lab">空态 · 学校频道文案</span></div>
+        <div class="cell" style="width:150px"><div class="village-empty" style="padding:14px 0"><svg class="empty-icon" style="width:40px;height:40px"><use href="#i-box"/></svg><span class="empty-msg">发帖功能暂未开放，敬请期待</span></div><span class="lab">空态 · post_publish_open=false（动作隐藏）</span></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="cell" style="width:186px"><div class="load-more" style="padding:10px 0"><span class="loading-spinner"></span><span class="load-more__text">加载中...</span></div><span class="lab">加载更多 isLoadingMore</span></div>
+        <div class="cell" style="width:186px"><div class="load-more" style="padding:10px 0"><span class="load-more__text">— 没有更多了 —</span></div><span class="lab">到底 !hasMore</span></div>
+        <div class="cell"><div class="back-to-top" style="position:static"><svg><use href="#i-arrow-up"/></svg></div><span class="lab">回到顶部（scrollTop&gt;600）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>底部发帖条 ChannelComposerBar · 5 档 + 隐藏</h3>
+      <p class="hint">占位文案由 <code>composerPlaceholder</code> 计算：<code>isSchoolChannel &amp;&amp; !isCampusVerified</code> 优先，其后按频道 switch；
+        「关注」「热度榜」落 default（与今日广场同文案）。<code>isPostPublishOpen=false</code> 时整条不渲染（此时 feed 底部留白仍占 110px）。</p>
+      <div class="row">
+        <div class="cell" style="width:220px"><div class="composer-bar" style="position:static;border-radius:var(--r-lg);padding-bottom:6px"><div class="composer-bar__input"><span class="composer-bar__placeholder">在今日广场发帖...</span></div><div class="composer-bar__publish"><svg><use href="#i-pencil"/></svg><span class="composer-bar__publish-text">发帖</span></div></div><span class="lab">今日广场 / 关注 / 热度榜</span></div>
+        <div class="cell" style="width:220px"><div class="composer-bar" style="position:static;border-radius:var(--r-lg);padding-bottom:6px"><div class="composer-bar__input"><span class="composer-bar__placeholder">在兴趣圈发帖...</span></div><div class="composer-bar__publish"><svg><use href="#i-pencil"/></svg><span class="composer-bar__publish-text">发帖</span></div></div><span class="lab">兴趣圈</span></div>
+        <div class="cell" style="width:220px"><div class="composer-bar" style="position:static;border-radius:var(--r-lg);padding-bottom:6px"><div class="composer-bar__input"><svg class="composer-bar__lock"><use href="#i-lock"/></svg><span class="composer-bar__placeholder">完成校园认证后在校园圈发帖</span></div><div class="composer-bar__publish"><svg><use href="#i-pencil"/></svg><span class="composer-bar__publish-text">发帖</span></div></div><span class="lab">学校圈未认证：locked（点击 → 认证页）</span></div>
+        <div class="cell" style="width:220px"><div style="height:48px;border-radius:var(--r-lg);border:1px dashed var(--c-border-default);background:var(--c-bg-surface)"></div><span class="lab">后台关闭发帖：整条不出现，feed 底部留白仍在</span></div>
+      </div>
+      <p class="hint" style="margin-top:12px">同档另一支：空态主文案换为 <code>village.postClosed</code>「发帖功能暂未开放，敬请期待」（见 §02 帖子流页态第 4 格）。
+        发帖另有实名前置门槛：<code>handlePublish()</code> 首行 <code>ensureCertified("realname")</code>——未实名时点击只弹引导，不进发帖页。</p>
+    </div>
+
+    <div class="panel">
+      <h3>置顶折叠条 · 折叠 / 展开</h3>
+      <p class="hint">MP-R2-VILLAGE-INDEX-004 后所有帖子频道都渲染（不再只今日广场）；<code>pinnedPosts.length===0</code> 时整块隐藏。箭头折叠态 <code>›</code>、展开态 <code>—</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:220px"><div class="pinned-bar" style="margin:0"><div class="pinned-bar__summary"><svg class="pinned-bar__pin"><use href="#i-pin"/></svg><span class="pinned-bar__text">置顶 2 条</span><span class="pinned-bar__arrow">›</span></div></div><span class="lab">折叠（默认）</span></div>
+        <div class="cell" style="width:220px"><div class="pinned-bar" style="margin:0"><div class="pinned-bar__summary"><svg class="pinned-bar__pin"><use href="#i-pin"/></svg><span class="pinned-bar__text">置顶 2 条</span><span class="pinned-bar__arrow">—</span></div><div class="pinned-bar__list"><div class="pinned-item"><span class="pinned-item__badge">置顶</span><div class="pinned-item__body"><span class="pinned-item__title">本周六草坪电影夜，报名在评论区</span><span class="pinned-item__summary">周六 19:00 东区草坪，自带小板凳就行，不想配对也可以只来看片。</span></div><span class="pinned-item__arrow">›</span></div><div class="pinned-item"><span class="pinned-item__badge">置顶</span><div class="pinned-item__body"><span class="pinned-item__title">圈子规范：禁止引流与广告帖</span><span class="pinned-item__summary">带联系方式、二维码、外链拼团的帖子一律驳回。</span></div><span class="pinned-item__arrow">›</span></div></div></div><span class="lab">展开（标题 + 摘要各一行，超宽省略）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>门槛件 · 认证门 / 每日一问 / 精选话题 / 登录门</h3>
+      <p class="hint">四件都各带一条容易画错的分支，列此备查。</p>
+      <table class="tbl">
+        <tr><th>件</th><th>分支 A</th><th>分支 B</th></tr>
+        <tr><td>SchoolCircleGate</td><td>生产：只出「去认证」（F07）</td><td><code>isDev &amp;&amp; showSimulate</code>：追加「模拟认证一键通过（演示）」粉色虚线钮</td></tr>
+        <tr><td>每日一问</td><td><code>todayQuestion</code> 未到：副行回落 i18n 兜底句（F08 画的就是此态，不造题目）</td><td><code>hasAnswered</code>：标题右侧「已作答」胶囊</td></tr>
+        <tr><td>精选话题</td><td><code>currentTopics.length&gt;0</code>：话题列表（F06）</td><td><code>circleErrorMessage</code>：红底提示条 +「重试」（宫格/热门话题照常渲染，不整屏报错）</td></tr>
+        <tr><td>LockScreen</td><td>未登录：「登录后解锁完整交友功能」+「立即登录并完善」（F10）</td><td>已登录未完善：「完善资料，解锁完整交友功能」+「立即完善」+ 完善度行与条状进度（数值来自 <code>/profile/basic</code>，画板不回填以免造数）</td></tr>
+      </table>
+      <div class="row" style="margin-top:14px">
+        <div class="cell" style="width:240px"><div class="featured-error" style="margin:0"><span class="featured-error__text">加载帖子失败，请稍后重试</span><span class="featured-error__retry">重试</span></div><span class="lab">精选话题失败条（circleStore.errorMessage）</span></div>
+        <div class="cell" style="width:220px"><div class="school-gate" style="padding:0"><div class="school-gate__card" style="padding:12px"><div class="school-gate__btn" style="margin-top:0">去认证</div><div class="school-gate__simulate">模拟认证一键通过（演示）</div></div></div><span class="lab">仅开发 + mock 模式出现的次钮</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位，与 design-variables.scss v4.0.0 一一对应</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">rpx÷2=px；源页私有色值已全部改写到下列最近令牌（映射清单见 §04）。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand / --c-brand-500</code></div><div class="sw__u">发帖条渐变 · 标签 · 校名胶囊</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#55D5A7"></span><div><div class="sw__n">主色 400<code>--c-brand-400</code></div><div class="sw__u">渐变终点 · 重试钮 · 加载环</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">头像底 · 标签底 · 活动卡底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫<code>--c-romance</code></div><div class="sw__u">已赞计数 · 已赞心形</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">频道 Tab 未认证锁标</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">登录门主钮 · 备选链接</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">面板底<code>--c-bg-surface</code></div><div class="sw__u">搜索胶囊 · 发帖输入 · 评论预览</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器<code>--c-bg-container</code></div><div class="sw__u">页底（源写 <code>#ffffff</code>，已并档）</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到七档。注意源文件多处写 <code>var(--fs-base, 28rpx)</code>——兜底值 28rpx 是历史脏值，真值取登记表 <code>--fs-base = 24rpx / 12px</code>。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/800</span><span class="type__p" style="font-size:22px;font-weight:800">圈子</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">登录后解锁完整交友功能</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600</span><span class="type__p" style="font-size:15px;font-weight:600">解锁精准匹配推荐 · 学校认证聊天圈</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/700</span><span class="type__p" style="font-size:14px;font-weight:700">热门话题 · 精选话题 · 推荐活动</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/600</span><span class="type__p" style="font-size:12px;font-weight:600">小满 · 图书馆四楼新开的自习区终于排上了</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/500</span><span class="type__p" style="font-size:11px;font-weight:500;color:var(--c-text-secondary)">21岁 · 北京 · 本科 · 校园恋爱社区 · 搜索</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/700</span><span class="type__p" style="font-size:10px;font-weight:700;color:var(--c-text-tertiary)">置顶 · 审核中 · 北京大学 · 45</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 阴影</h3><p class="hint">rpx ÷ 2 = px；源用 <code>--sp-14</code>（56rpx）无登记档，空态竖向留白并到 <code>--sp-10</code>（2026-10-27 源码同档，两侧一致）。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--sp-10 72rpx</b><i style="width:36px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>12rpx · 评论预览 · 无图占位</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 帖子卡 · 图格 · 话题项</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 每日一问 · banner · 认证门</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>9999rpx · 胶囊 · 发帖钮 · 头像</div>
+      </div>
+      <p class="hint" style="margin-top:14px">阴影四档：<code>--s-sm</code>（页头 · 发帖条）/ <code>--s-card-soft</code>（卡片、回到顶部，源 <code>--s-md</code> 无登记档已并档）/ <code>--s-brand</code>（渐变钮与 banner，源 <code>--s-brand-lg</code> 已并档）/ <code>--c-border-card</code>（0.5px rgba 描边）。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与实况的已知差异</h2><p>头像与配图位一律用灰底/首字占位，不放网图</p></div>
+  <div class="assets">
+    <div class="asset"><div style="height:190px;display:flex;align-items:center;justify-content:center;background:var(--c-bg-surface);gap:18px">
+        <span class="user-avatar" style="width:56px;height:56px"><span class="user-avatar__char" style="font-size:22px">小</span></span>
+        <span class="post-media-grid post-media-grid--1" style="width:84px;margin:0"><span class="post-media-grid__cell" style="width:100%"><span class="post-media-grid__glyph"><svg><use href="#i-image"/></svg></span></span></span>
+      </div>
+      <div class="asset__b"><b>AVATAR / POST 配图位</b><p>工程走 <code>resolveMediaUrl(IMAGE_PATHS…)</code> + <code>@error</code> 兜底（无源即回落 <code>POST_PLACEHOLDER</code>，头像无源即出首字）。画板不引外网图，统一用 <code>--c-border-light</code> / <code>--c-bg-surface</code> 灰底与首字圆底。</p><div class="m">56px / 44px · --c-brand-500 字色</div></div></div>
+    <div class="asset"><div style="height:190px;display:flex;align-items:center;justify-content:center;gap:20px;background:var(--c-bg-surface)">
+        <svg style="width:34px;height:34px;color:var(--c-brand-600)"><use href="#i-cap"/></svg>
+        <svg style="width:34px;height:34px;color:var(--c-brand-600)"><use href="#i-school"/></svg>
+        <svg style="width:34px;height:34px;color:var(--c-brand-600)"><use href="#i-lock"/></svg>
+        <svg style="width:34px;height:34px;color:var(--c-brand-600)"><use href="#i-pin"/></svg>
+        <svg style="width:34px;height:34px;color:var(--c-brand-600)"><use href="#i-pencil"/></svg>
+      </div>
+      <div class="asset__b"><b>ICONS_EMOJI / ICONS_COMMON 体系</b><p>频道 Tab 六枚（group / sparkles / heart / cap / calendar / fire）、校名胶囊（school）、锁、置顶针、铅笔、活动三件（clock / location / user）与互动栏三件（chat / heart / bookmark）在本画板 <code>&lt;defs&gt;</code> 内以 lucide 描边档补齐，未新增工程素材、未改 base。</p><div class="m">描边 currentColor · 1.7 · 尺寸写在宿主节点</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异 · 令牌改写（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>私有色值改写：</b><code>--c-neutral-50 #f7f8fa</code>（搜索胶囊 / 发帖输入 / 评论预览 / 已关注 chip）→ <code>--c-bg-surface</code>；<code>--c-neutral-100 #eef1f6</code>（外校胶囊描边 · 发帖条上边线）→ <code>--c-border-light</code>；<code>--c-neutral-200</code>（加载环轨道）→ <code>--c-border-default</code>；<code>--c-neutral-0</code>（白字）→ <code>--c-text-inverse</code>；<code>--c-bg-brand</code> → <code>--c-brand-50</code>；<code>--c-bg-brand-soft #f0fdf9</code> → <code>--c-brand-50</code>；页底 <code>#ffffff</code>（源 R16 硬写字面量）→ <code>--c-bg-container</code>。<b>待裁决：</b>中性灰族与品牌浅底族在本页高度重叠，是 base 少一档 <code>--c-neutral-*</code> 造成的，不在本页改。</li>
+      <li><b>渐变与阴影改写：</b><code>--c-gradient-brand</code> → <code>linear-gradient(135deg, --c-brand, --c-brand-400)</code>；<code>--c-gradient-brand-soft</code> → <code>linear-gradient(180deg, --c-brand-50, --c-bg-container)</code>（2026-10-27 令牌断引用收口把同一组合登记为 <code>--c-gradient-brand-soft</code>，色标停在 60% 与源码一致，画板已改回直接引用该档）；<code>--c-romance-400</code>（banner 渐变终点）→ <code>--c-romance-300</code>；<code>--c-error-bg-solid / --c-error-border-tint</code>（精选话题失败条）→ <code>--c-romance-50 / --c-romance-300</code>；<code>--c-overlay-mid / --c-overlay-text-secondary</code>（热门话题压字）→ <code>--c-text-primary</code> 渐隐 + <code>--c-text-inverse</code>；发帖条 <code>0 -8rpx 24rpx rgba(0,0,0,.08)</code> → <code>--s-sm</code>；<code>--s-md / --s-brand-lg / --btn-height-md / --sp-14</code> 无登记档，分别并到 <code>--s-card-soft / --s-brand / 48px / --sp-10</code>。</li>
+      <li><b>频道 Tab 图标：</b>真机是彩色 SVG 素材（<code>cfg.icon</code>）+ 整枚 <code>opacity .55</code> 区分选中；画板用描边图标 + <code>--c-text-tertiary / --c-brand-500</code> 两档上色。<b>色彩语义差异（灰族 vs 品牌族）留给全站图标口径裁决，不在本页发明第二套。</b></li>
+      <li><b>错误态图标语义不符：</b><code>ErrorState type="network"</code> 的图取 <code>ICONS_COMMON.SEARCH</code>（一枚放大镜），与「搜索无结果」撞语义；本画板按实况忠实照画（F04 / §02），<b>不在设计稿里替它改</b>。</li>
+      <li><b>零图帖仍占位：</b><code>PostCard</code> 的 <code>v-else</code> 分支给无图帖渲染 180rpx 高的 <code>POST_PLACEHOLDER</code> 灰条（F08 第一张卡即此态）。这是实况行为，不是画板自造；是否该留由产品裁定，画板只登记。</li>
+      <li><b>无原生导航栏：</b>分包页由页面自绘页头（标题「圈子」+ 副标题 + 搜索胶囊 + 频道 Tab），状态栏带用 <code>--statusbar</code> 避让；本页在 <code>village</code> 分包，<b>画 tabbar 即为错</b>（源码内仅存「同步自定义 TabBar」的空注释，无实际 TabBar 渲染）。<b>注意：</b>路由常量 <code>ROUTES.TAB.VILLAGE</code> 说明该页在真机是 Tab 主页之一，与「分包页不得画 tabbar」的画板口径冲突，属全站口径问题，登记不判。</li>
+      <li><b>页头右侧 119px 空带：</b>源 <code>padding-right: calc(var(--capsule-right) + 112px)</code> 为微信胶囊避让；胶囊是系统件，画板不画，空带照留。</li>
+      <li><b>「圈子频道」不含 tag-posts：</b>话题胶囊 <code>open-tag</code> 跳 <code>subpackages/village/village/tag-posts</code>，属另一页，本画板不展开；同理每日一问、活动详情、发帖页各为独立路由。</li>
+      <li><b>示意值清单（非真值，需真机数据替换）：</b>① 帖子正文与标题（小满/周岚/阿辰/星辰/小溪五条，按校园动态口气自写，作者名用真名池、校名用真校名）；② 评论预览文案与评论人；③ 点赞/评论/收藏计数（18 / 9 / 7 / 4 / 3 / 2 / 1）与相对时间（刚刚 / 5 分钟前 / 1 小时前 / 2 小时前，走 <code>formatRelativeTime</code> 口径）；④ 作者 meta（年龄 · 城市 · 学历，取 <code>educationLabels</code> 真词）与签名行（「中文系大三，爱写信」「篮球队常驻替补」）；⑤ 活动卡 <code>description</code> 两句、置顶展开态的公告标题与摘要；⑥ 精选话题的标题与正文取自 <code>stores/circle/mock-data.ts</code> 演示数据（作者名换用真名池），回复数 45 / 19 同源；⑦ 热门话题四宫格的渐变占位色（源第 4 组是无档蓝 <code>#60A5FA→#93C5FD</code>，画板改用 <code>--c-status-info→--c-brand-300</code>，其余三组按源 <code>designTokens</code> 同档）。<b>已核为真值不属示意：</b>频道名 / 发帖条占位 / 空态与错误文案 / 认证门文案 / 每日一问与 banner 文案 / 登录门全部文案（逐字 <code>i18n/locales/zh-CN.ts</code>）、兴趣八类名（<code>circle.cat*</code>）、热门话题五条 tagName 与浏览量 12800/9600/8200/7400/5300（<code>HotTopicsSection.vue</code> mock 常量）、活动两条标题/时间/地点/报名数 23 与 12（<code>stores/village/mock-data.ts</code>）、F09 帖「今晚电影社放映《你的名字》，现场报名 ing！」与其评论「带我一个！正好周末没安排」（同源 mock 帖 post-32）。</li>
+      <li><b>不回填的分数类：</b>每日一问题目正文（服务端 <code>todayQuestion.question</code>）与登录门完善度百分比（服务端 <code>profileCompletion</code>）画板一律留空/走 i18n 兜底句，不造第二个数。</li>
+      <li><b>帧即视口：</b>F01/F08/F09 内容超出 812px 由 <code>.phone overflow:hidden</code> 裁掉（裁掉什么写在题注 <code>.d</code>），画面内无任何裁切注记。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 村口（圈子）信息流页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1845（面积 1,571,940 px，对齐 素材/理想效果图 语料的 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

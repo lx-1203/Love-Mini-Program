@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 帮助与客服页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（AppShell standard + fixed 头部 / SectionCard / FAQ 折叠 / 联系入口） ===== */
+.sh { position: absolute; top: 0; left: 0; width: 100%; z-index: 4; background: var(--c-bg-page);
+  padding: 54px 16px 10px; }
+.sh__back { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; min-width: 44px;
+  padding: 10px 12px 10px 8px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: 0.5px solid var(--c-border-light); margin-bottom: 8px; }
+.sh__back svg { width: 20px; height: 20px; color: var(--c-neutral-700); }
+.sh__back--press { opacity: 0.7; }
+.sh__back-t { font-size: var(--fs-base); color: var(--c-brand-800); font-weight: 500; }
+.sh__t { display: block; font-size: var(--fs-7xl); font-weight: 700; color: var(--c-text-primary); line-height: 1.3; }
+.sh__sub { display: block; font-size: var(--fs-base); color: var(--c-text-secondary); line-height: 1.5; margin-top: 4px; }
+.body--shell { position: absolute; top: 200px; left: 0; width: 100%; padding: 0 16px; z-index: 2;
+  display: flex; flex-direction: column; gap: 12px; }
+.secard { background: var(--c-bg-container); border-radius: var(--card-radius); padding: 16px;
+  box-shadow: var(--card-shadow); border: var(--c-border-card); display: flex; flex-direction: column; gap: 8px; }
+.secard__ti { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); }
+.faq { display: flex; flex-direction: column; gap: 1px; }
+.faq__i { background: var(--c-bg-surface); border-radius: var(--r-md); padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 8px; }
+.faq__q { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.faq__qt { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-primary); flex: 1; line-height: 1.45; }
+.faq__ch { font-size: var(--fs-lg); color: var(--c-text-tertiary); flex: none; transform: rotate(90deg); }
+.faq__ch--open { transform: rotate(270deg); }
+.faq__a { padding-top: 4px; border-top: 0.5px solid var(--c-border-light); }
+.faq__at { font-size: var(--fs-sm); color: var(--c-text-secondary); line-height: 1.7; display: block; }
+.cta { display: flex; align-items: center; gap: 10px; padding: 12px 4px; border-radius: var(--r-md); }
+.cta__w { width: 40px; height: 40px; border-radius: var(--r-full); flex: none;
+  display: flex; align-items: center; justify-content: center; }
+.cta__w svg { width: 20px; height: 20px; }
+.cta__w--pink { background: var(--c-tint-pink-soft); color: var(--c-romance-600); }
+.cta__w--blue { background: var(--c-tint-blue-soft); color: var(--c-status-info); }
+.cta__w--brand { background: var(--c-bg-brand); color: var(--c-brand-700); }
+.cta__info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cta__lb { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-primary); }
+.cta__ds { font-size: var(--fs-lg); color: var(--c-text-tertiary); line-height: 1.45; }
+.cta__em { font-size: var(--fs-base); color: var(--c-text-secondary); word-break: break-all; }
+.cta__ar { font-size: var(--fs-lg); color: var(--c-text-tertiary); flex: none; }
+.cta__cp { font-size: var(--fs-sm); color: var(--c-brand-800); background: var(--c-bg-brand);
+  border-radius: var(--r-full); min-width: 44px; min-height: 44px; padding: 4px 10px; flex: none;
+  display: flex; align-items: center; justify-content: center; }
+.hfoot { display: flex; justify-content: center; padding: 16px 12px 12px; }
+.hfoot__t { font-size: var(--fs-lg); color: var(--c-text-secondary); text-align: center; line-height: 1.6; }
+.toast { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9;
+  background: var(--c-overlay-strong); border-radius: var(--r-lg); padding: 16px 18px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 118px; }
+.toast svg { width: 28px; height: 28px; color: var(--c-neutral-0); }
+.toast__t { font-size: var(--fs-md); color: var(--c-neutral-0); }
+.asset__ic { height: 190px; display: flex; align-items: center; justify-content: center; gap: 14px;
+  background: var(--c-bg-surface); padding: 0 22px; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 描边风格；base 未登记的 symbol 补在本页 <defs>，不改 base） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 12.5c0 3.9-3.6 7-8 7-1 0-2-.2-2.9-.5L5 20.5l1.1-3.2A6.6 6.6 0 0 1 4 12.5c0-3.9 3.6-7 8-7s8 3.1 8 7z"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="6" y="4.5" width="12" height="16" rx="2.2"/><path d="M9.5 4.2h5v2.6h-5z"/><path d="M9 11.8h6M9 15.2h4"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2.2"/><path d="M3.8 7.2 12 13l8.2-5.8"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.2 12.4l2.6 2.6 5-5.6"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>帮助与客服页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/tools/help/index</code>。
+     本页是「常见问题 FAQ（6 组）+ 客服三入口 + 服务说明」的静态聚合页：内容全部来自 i18n 与
+     <code style="font-family:var(--mono);font-size:12.5px">APP_CONFIG.SUPPORT_EMAIL</code> 常量，零后端依赖，
+     免登录可看。因此本页唯一的状态机就是 FAQ 折叠指针
+     <code style="font-family:var(--mono);font-size:12.5px">expandedIndex</code>。
+     页头是 AppShell 的吸顶白胶囊返回 + 28px 大标题（不是渐变带），按该页源码实际形态画。</p>
+  <div class="cover__meta">
+    <span>路由 <b>tools/help</b></span>
+    <span>分包 <b>tools</b>（无 tabbar）</span>
+    <span>状态 <b>3 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 3 屏</h2>
+    <p>全收起 / 单项展开 / 复制邮箱成功</p></div>
+  <div class="sec__sub">本页状态机有 <b>2 态</b>，来自
+    <code style="font-family:var(--mono);font-size:11.5px">v-if="expandedIndex === idx"</code>（<code style="font-family:var(--mono);font-size:11.5px">help/index.vue:107</code>）：
+    <code style="font-family:var(--mono);font-size:11.5px">expandedIndex</code> 初值 <b>null</b>（全收起），点一条即在原位展开、再点同一条收回；
+    <b>六条互斥，同一时刻最多展开一条</b>（不是多开手风琴）。第三屏不是页面状态，而是
+    <code style="font-family:var(--mono);font-size:11.5px">copyEmail()</code> 写剪贴板成功后的
+    <code style="font-family:var(--mono);font-size:11.5px">uni.showToast</code>（<code style="font-family:var(--mono);font-size:11.5px">help.emailCopied</code>）——
+    它是本页唯一触碰系统能力的动作，且 toast 锚在视口而非触发点，故可在首屏视口内如实叠加。
+    帧即视口：AppShell 头部（状态栏 44 + 白胶囊 + 标题带）实测占 200px，「联系我们」卡与页脚说明落在 812px 之下，被裁掉的部分只写在题注里。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">默认 · 六问全收起</span><span class="d">expandedIndex=null · ↓裁切于客服邮箱条目</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="sh">
+          <div class="sh__back"><svg><use href="#i-back"/></svg><span class="sh__back-t">返回</span></div>
+          <span class="sh__t">帮助与客服</span>
+          <span class="sh__sub">常见问题与联系我们</span>
+        </div>
+        <div class="body--shell">
+          <div class="secard">
+            <span class="secard__ti">常见问题</span>
+            <div class="faq">
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">如何完成校园认证？</span><span class="faq__ch">›</span></div></div>
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">交友币是什么？如何获取？</span><span class="faq__ch">›</span></div></div>
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">如何解锁查看「喜欢我的人」？</span><span class="faq__ch">›</span></div></div>
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">语音状态如何录制？</span><span class="faq__ch">›</span></div></div>
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">如何举报不良内容或用户？</span><span class="faq__ch">›</span></div></div>
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">VIP 会员有哪些权益？</span><span class="faq__ch">›</span></div></div>
+            </div>
+          </div>
+          <div class="secard">
+            <span class="secard__ti">联系我们</span>
+            <div class="cta">
+              <span class="cta__w cta__w--pink"><svg><use href="#i-chat"/></svg></span>
+              <span class="cta__info"><span class="cta__lb">在线客服</span><span class="cta__ds">恋爱助手 9:00-21:00 在线</span></span>
+              <span class="cta__ar">›</span>
+            </div>
+            <div class="cta">
+              <span class="cta__w cta__w--blue"><svg><use href="#i-clipboard"/></svg></span>
+              <span class="cta__info"><span class="cta__lb">意见反馈</span><span class="cta__ds">告诉我们你的建议或遇到的问题</span></span>
+              <span class="cta__ar">›</span>
+            </div>
+            <div class="cta">
+              <span class="cta__w cta__w--brand"><svg><use href="#i-mail"/></svg></span>
+              <span class="cta__info"><span class="cta__lb">客服邮箱</span><span class="cta__em">support@campuslove.app</span><span class="cta__ds">服务时间：9:00-21:00</span></span>
+              <span class="cta__cp">复制</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">展开第一条 · 答案出</span><span class="d">expandedIndex=0 · 互斥单开 · ↓裁切于第 5 条问答</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="sh">
+          <div class="sh__back"><svg><use href="#i-back"/></svg><span class="sh__back-t">返回</span></div>
+          <span class="sh__t">帮助与客服</span>
+          <span class="sh__sub">常见问题与联系我们</span>
+        </div>
+        <div class="body--shell">
+          <div class="secard">
+            <span class="secard__ti">常见问题</span>
+            <div class="faq">
+              <div class="faq__i">
+                <div class="faq__q"><span class="faq__qt">如何完成校园认证？</span><span class="faq__ch faq__ch--open">›</span></div>
+                <div class="faq__a"><span class="faq__at">进入「我的 → 校园认证」，选择学校并上传学生证/校园卡照片，审核通过后获得认证徽章，认证用户可解锁同校推荐与专属活动。</span></div>
+              </div>
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">交友币是什么？如何获取？</span><span class="faq__ch">›</span></div></div>
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">如何解锁查看「喜欢我的人」？</span><span class="faq__ch">›</span></div></div>
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">语音状态如何录制？</span><span class="faq__ch">›</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">复制客服邮箱成功 · toast</span><span class="d">视口同 F01 · 触发点在裁切带内</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="sh">
+          <div class="sh__back"><svg><use href="#i-back"/></svg><span class="sh__back-t">返回</span></div>
+          <span class="sh__t">帮助与客服</span>
+          <span class="sh__sub">常见问题与联系我们</span>
+        </div>
+        <div class="body--shell">
+          <div class="secard">
+            <span class="secard__ti">常见问题</span>
+            <div class="faq">
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">如何完成校园认证？</span><span class="faq__ch">›</span></div></div>
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">交友币是什么？如何获取？</span><span class="faq__ch">›</span></div></div>
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">如何解锁查看「喜欢我的人」？</span><span class="faq__ch">›</span></div></div>
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">语音状态如何录制？</span><span class="faq__ch">›</span></div></div>
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">如何举报不良内容或用户？</span><span class="faq__ch">›</span></div></div>
+              <div class="faq__i"><div class="faq__q"><span class="faq__qt">VIP 会员有哪些权益？</span><span class="faq__ch">›</span></div></div>
+            </div>
+          </div>
+          <div class="secard">
+            <span class="secard__ti">联系我们</span>
+            <div class="cta">
+              <span class="cta__w cta__w--pink"><svg><use href="#i-chat"/></svg></span>
+              <span class="cta__info"><span class="cta__lb">在线客服</span><span class="cta__ds">恋爱助手 9:00-21:00 在线</span></span>
+              <span class="cta__ar">›</span>
+            </div>
+            <div class="cta">
+              <span class="cta__w cta__w--blue"><svg><use href="#i-clipboard"/></svg></span>
+              <span class="cta__info"><span class="cta__lb">意见反馈</span><span class="cta__ds">告诉我们你的建议或遇到的问题</span></span>
+              <span class="cta__ar">›</span>
+            </div>
+            <div class="cta">
+              <span class="cta__w cta__w--brand"><svg><use href="#i-mail"/></svg></span>
+              <span class="cta__info"><span class="cta__lb">客服邮箱</span><span class="cta__em">support@campuslove.app</span><span class="cta__ds">服务时间：9:00-21:00</span></span>
+              <span class="cta__cp">复制</span>
+            </div>
+          </div>
+        </div>
+        <div class="toast"><svg><use href="#i-ok"/></svg><span class="toast__t">邮箱已复制</span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页四类件：FAQ 折叠条目、联系入口（两型尾件）、吸顶返回胶囊、结果 toast。
+    FAQ 六条的题文与答文全部逐字取自 <code style="font-family:var(--mono);font-size:11.5px">zh-CN.ts:1752-1768</code> 的 <code style="font-family:var(--mono);font-size:11.5px">help.*</code> 键。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>FAQ 条目 · 三态（收起 / 展开 / 按压）</h3>
+      <p class="hint">底 <code>--c-bg-surface</code>（R7-L07-D06：改前吃 <code>--c-neutral-0</code>，与 SectionCard 的 <code>--c-bg-container</code> 同色，六行之间零像素分隔）；chevron 是裸字符「›」+ <code>rotate(90deg→270deg)</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:100%"><div class="secard" style="box-shadow:none;border:0.5px solid var(--c-border-light);padding:8px">
+          <div class="faq__i"><div class="faq__q"><span class="faq__qt">如何完成校园认证？</span><span class="faq__ch">›</span></div></div></div><span class="lab">收起（默认）</span></div>
+        <div class="cell" style="width:100%"><div class="secard" style="box-shadow:none;border:0.5px solid var(--c-border-light);padding:8px">
+          <div class="faq__i"><div class="faq__q"><span class="faq__qt">如何完成校园认证？</span><span class="faq__ch faq__ch--open">›</span></div>
+            <div class="faq__a"><span class="faq__at">进入「我的 → 校园认证」，选择学校并上传学生证/校园卡照片，审核通过后获得认证徽章，认证用户可解锁同校推荐与专属活动。</span></div></div></div><span class="lab">展开（答案带 0.5px 上分隔线）</span></div>
+        <div class="cell" style="width:100%"><div class="secard" style="box-shadow:none;border:0.5px solid var(--c-border-light);padding:8px">
+          <div class="faq__i cta--press" style="opacity:.7"><div class="faq__q"><span class="faq__qt">如何完成校园认证？</span><span class="faq__ch">›</span></div></div></div><span class="lab">按压（press-feedback，hover-stay 120ms）</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>#</th><th>i18n 键</th><th>问句（题文逐字）</th></tr>
+        <tr><td>1</td><td><code>faqVerifyQ</code></td><td>如何完成校园认证？</td></tr>
+        <tr><td>2</td><td><code>faqCoinsQ</code></td><td>交友币是什么？如何获取？</td></tr>
+        <tr><td>3</td><td><code>faqUnlockQ</code></td><td>如何解锁查看「喜欢我的人」？</td></tr>
+        <tr><td>4</td><td><code>faqVoiceQ</code></td><td>语音状态如何录制？</td></tr>
+        <tr><td>5</td><td><code>faqReportQ</code></td><td>如何举报不良内容或用户？</td></tr>
+        <tr><td>6</td><td><code>faqVipQ</code></td><td>VIP 会员有哪些权益？</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>联系入口 · 三条两型（尾件：箭头 / 复制胶囊）</h3>
+      <p class="hint">整条 <code>role="button"</code>；前两条尾件是裸字符「›」（跳目标页），第三条尾件是「复制」胶囊（写剪贴板）。三条的圆形底各不相同，逐字照源码行内 <code>var()</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:100%"><div class="secard" style="box-shadow:none;border:0.5px solid var(--c-border-light);padding:4px 8px">
+          <div class="cta"><span class="cta__w cta__w--pink"><svg><use href="#i-chat"/></svg></span>
+            <span class="cta__info"><span class="cta__lb">在线客服</span><span class="cta__ds">恋爱助手 9:00-21:00 在线</span></span><span class="cta__ar">›</span></div></div>
+          <span class="lab">在线客服 → official-chat?accountId=official-assistant</span></div>
+        <div class="cell" style="width:100%"><div class="secard" style="box-shadow:none;border:0.5px solid var(--c-border-light);padding:4px 8px">
+          <div class="cta"><span class="cta__w cta__w--blue"><svg><use href="#i-clipboard"/></svg></span>
+            <span class="cta__info"><span class="cta__lb">意见反馈</span><span class="cta__ds">告诉我们你的建议或遇到的问题</span></span><span class="cta__ar">›</span></div></div>
+          <span class="lab">意见反馈 → ROUTES.FEEDBACK_HISTORY</span></div>
+        <div class="cell" style="width:100%"><div class="secard" style="box-shadow:none;border:0.5px solid var(--c-border-light);padding:4px 8px">
+          <div class="cta"><span class="cta__w cta__w--brand"><svg><use href="#i-mail"/></svg></span>
+            <span class="cta__info"><span class="cta__lb">客服邮箱</span><span class="cta__em">support@campuslove.app</span><span class="cta__ds">服务时间：9:00-21:00</span></span>
+            <span class="cta__cp">复制</span></div></div>
+          <span class="lab">客服邮箱 · 三行（明文地址 selectable）+ 复制胶囊</span></div>
+        <div class="cell" style="width:100%"><div class="secard" style="box-shadow:none;border:0.5px solid var(--c-border-light);padding:4px 8px">
+          <div class="cta" style="opacity:.7"><span class="cta__w cta__w--brand"><svg><use href="#i-mail"/></svg></span>
+            <span class="cta__info"><span class="cta__lb">客服邮箱</span><span class="cta__em">support@campuslove.app</span><span class="cta__ds">服务时间：9:00-21:00</span></span>
+            <span class="cta__cp">复制</span></div></div>
+          <span class="lab">按压（press-feedback--active）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>吸顶返回胶囊 · 两态</h3>
+      <p class="hint">AppShell <code>fixed</code> 默认 true（R8-L07-D15），故头部吸顶、底色 <code>--c-bg-page</code>；
+        胶囊底 <code>--c-bg-container</code>、文字 <code>--c-brand-800</code>（R10-L07-D07：改前 <code>--c-brand</code> 压白胶囊只有 2.09:1）；
+        <code>min-height/min-width: 88rpx</code> = 44px 热区。</p>
+      <div class="row">
+        <div class="cell"><div class="sh__back" style="margin:0"><svg><use href="#i-back"/></svg><span class="sh__back-t">返回</span></div><span class="lab">default</span></div>
+        <div class="cell"><div class="sh__back sh__back--press" style="margin:0"><svg><use href="#i-back"/></svg><span class="sh__back-t">返回</span></div><span class="lab">pressed（opacity .7）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>结果 toast · 唯一出口</h3>
+      <p class="hint">本页只有一枚 toast：<code>copyEmail()</code> 成功回调 → <code>help.emailCopied</code>「邮箱已复制」，<code>icon: "success"</code>。
+        复制失败无分支（<code>setClipboardData</code> 未写 fail），故不存在 error 形态——不许补画。</p>
+      <div class="row">
+        <div class="cell"><div style="position:relative;width:186px;height:96px;background:var(--c-bg-surface);border-radius:var(--r-md)">
+          <div class="toast" style="min-width:96px;padding:10px 12px"><svg style="width:20px;height:20px"><use href="#i-ok"/></svg><span class="toast__t" style="font-size:11px">邮箱已复制</span></div></div><span class="lab">success（icon 型，视口居中）</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>动作</th><th>反馈</th><th>落点</th></tr>
+        <tr><td>点「在线客服」</td><td>无 toast</td><td><code>official-chat</code>（分包 chat）</td></tr>
+        <tr><td>点「意见反馈」</td><td>无 toast</td><td><code>feedback/history</code></td></tr>
+        <tr><td>点「复制」</td><td>success toast</td><td>系统剪贴板</td></tr>
+        <tr><td>点任一条 FAQ</td><td>轻震动 <code>lightHaptic()</code></td><td>本页展开/收起</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页未引入任何页内私有色值；三枚圆底逐字照源码行内 <code>var()</code>。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页底<code>--c-bg-page</code></div><div class="sw__u">吸顶头部带底色</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">条目底<code>--c-bg-surface</code></div><div class="sw__u">FAQ 六条（与白卡拉开一档）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">品牌 800<code>--c-brand-800</code></div><div class="sw__u">「返回」文字 · 「复制」胶囊墨色</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FBF2"></span><div><div class="sw__n">品牌浅底<code>--c-bg-brand</code></div><div class="sw__u">邮箱圆底 · 复制胶囊底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFF0F5"></span><div><div class="sw__n">粉底<code>--c-tint-pink-soft</code></div><div class="sw__u">在线客服圆底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8F4FD"></span><div><div class="sw__n">蓝底<code>--c-tint-blue-soft</code></div><div class="sw__u">意见反馈圆底（令牌真值，非行内兜底）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#4A524E"></span><div><div class="sw__n">次级文字<code>--c-text-secondary</code></div><div class="sw__u">副标题 · 答案 · 邮箱行 · 页脚</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到七档（R10-L07-D10 / R11-L07-D20 / R14-L07-D13 三轮把同类控件归到同档）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/700</span><span class="type__p" style="font-size:28px;font-weight:700">帮助与客服</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">常见问题 · 联系我们</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600</span><span class="type__p" style="font-size:15px;font-weight:600">如何完成校园认证？ · 在线客服</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/400</span><span class="type__p" style="font-size:14px">告诉我们你的建议或遇到的问题 ›</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px">support@campuslove.app · 返回</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;color:var(--c-text-secondary)">答案正文 · 「复制」二字</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;color:var(--c-neutral-0);background:var(--c-neutral-700);padding:2px 8px;border-radius:6px">邮箱已复制</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 投影</h3><p class="hint">rpx ÷ 2 = px。SectionCard 走语义档 <code>--card-radius</code>/<code>--card-shadow</code>（R6-B07 / R10-L13-D08 归口），不是 <code>--r-xl</code>/<code>--s-card-soft</code>。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-8 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-4 8rpx</b><i style="width:4px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>12rpx · FAQ 条目</div>
+        <div class="rad__i"><b style="border-radius:20px"></b>--card-radius<br>40rpx · SectionCard</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>返回胶囊 · 复制胶囊</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>本页零照片位；图标以 lucide 描边替身落地</p></div>
+  <div class="assets">
+    <div class="asset"><div class="asset__ic">
+        <span class="cta__w cta__w--pink"><svg><use href="#i-chat"/></svg></span>
+        <span class="cta__w cta__w--blue"><svg><use href="#i-clipboard"/></svg></span>
+        <span class="cta__w cta__w--brand"><svg><use href="#i-mail"/></svg></span>
+      </div>
+      <div class="asset__b"><b>ICONS_EMOJI.CHAT / CLIPBOARD / MAIL</b><p>三枚入口图标在源码里是位图 emoji（<code>&lt;image&gt;</code> 40×40rpx=20px，压在 80rpx=40px 圆底上）。画板按规范 §4 用同语义 lucide 描边 symbol 替身（上方三枚即替身本体，圆底色逐字照源码行内 <code>var()</code>），未新增、未下载、未生成任何图片。</p><div class="m">20px 图标 / 40px 圆底 · 无素材缺口</div></div></div>
+    <div class="asset"><div class="asset__ic" style="font-size:15px;font-weight:600;color:var(--c-text-primary);word-break:break-all">support@campuslove.app</div>
+      <div class="asset__b"><b>无头像 / 无配图位</b><p>本页不含任何用户照片、封面或头像位（§8 的照片纪律在本页无适用对象），故不引用 <code>assets/demo/</code>；唯一文本型真值是 <code>APP_CONFIG.SUPPORT_EMAIL</code> = <code>support@campuslove.app</code>，与 <code>copyEmail()</code> 写进剪贴板的是同一个常量，非画板编造。</p><div class="m">config/app.ts:47</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>免登录可看</b>：本页吃独立的 <code>helpPageRequirements</code>（R7 裁定「页面放开、点击时再拦」），原实现误复用 <code>chatPageRequirements</code> 把「需要登录」带了进来。两枚 CTA 的目标页各自有门槛，未登录点击仍会被拦到登录——<b>本页画面内不出现任何登录提示</b>。</li>
+      <li>页头不是全站常见的品牌渐变带，而是 AppShell 的<b>吸顶白胶囊 + 28px 大标题</b>（<code>fixed</code> 默认 true）。与 campus-certification 样板的「返回」文字带不同型，按本页源码形态画。</li>
+      <li><code>var(--c-tint-blue-soft, #E8F4FF)</code> 的行内兜底 <code>#E8F4FF</code> <b>永不生效</b>——令牌已在登记处定义为 <code>#E8F4FD</code>。画板取令牌真值 <code>#E8F4FD</code>；该「兜底私值与真值不一致」属源码问题，不在画板层修。</li>
+      <li>FAQ 的 chevron 与两条入口的箭头都是<b>裸字符「›」+ CSS rotate</b>，不走 SVG 图标体系（画板如实保留字符形态，未替换为图标）。</li>
+      <li>「复制」胶囊源码 <code>min-width/min-height: 88rpx</code>（44px）远大于「复制」二字的视觉高（R14-L07-D12 热区收口），画板按源码热区画，故该胶囊在帧上比文字明显大一圈——这是裁定结果，不是画错。</li>
+      <li>本页在 <b>tools 分包</b>，无原生导航栏、<b>无 tabbar</b>——画板若出现 tabbar 即为错。</li>
+      <li>六条问答的<b>答案文本</b>在 §01 只在 F02 出现一条（互斥单开），其余五条的答文以 <code>help.faq*A</code> 键为准逐字取 <code>zh-CN.ts:1757-1767</code>，不在此重列。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 帮助与客服页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（deviceScaleFactor 2.273，画框 375 × 812）
+</footer>
+
+</div>
+</body>
+</html>

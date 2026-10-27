@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 消息页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌，rpx÷2=px；不写私有色值） ===== */
+.msg-page { position: absolute; inset: 0; background: var(--c-bg-container); overflow: hidden; }
+
+/* Header（.header：sticky 白底，padding-top = 状态栏44 + 20px + 24rpx，右缘 32rpx 页边距） */
+.msg-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 76px 16px 8px; background: var(--c-bg-container); position: relative; z-index: 5; }
+.msg-header__left { display: flex; flex-direction: column; gap: 3px; }
+.msg-header__titlerow { display: flex; align-items: center; gap: 5px; }
+.msg-header__title { font-size: var(--fs-5xl); font-weight: 800; color: var(--c-text-primary); line-height: 1.2; }
+.msg-header__sprout { width: 20px; height: 20px; color: var(--c-brand); flex: none; }
+.msg-header__sub { font-size: var(--fs-base); color: var(--c-text-tertiary); }
+.msg-header__right { display: flex; gap: 2px; }
+.msg-icobtn { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--c-text-primary); }
+.msg-icobtn svg { width: 20px; height: 20px; }
+.msg-icobtn--plus { font-size: var(--fs-5xl); font-weight: 600; }
+
+/* 摘要卡（.quick-cards / .quick-card：卡底 --c-bg-brand，单卡保持半屏宽 max-width:calc(50% - 10rpx)） */
+.quick-cards { display: flex; gap: 10px; padding: 6px 16px 10px; }
+.quick-card { flex: 1 1 0; max-width: calc(50% - 5px); display: flex; flex-direction: column; gap: 8px;
+  padding: 14px 12px; border-radius: var(--r-xl); background: var(--c-bg-brand); box-shadow: 0 1px 6px rgba(54, 201, 154, 0.06); }
+.quick-card__head { display: flex; align-items: center; gap: 8px; }
+.quick-card__icon { width: 32px; height: 32px; border-radius: 50%; background: var(--c-brand-100); flex: none;
+  display: flex; align-items: center; justify-content: center; color: var(--c-brand); }
+.quick-card__icon svg { width: 18px; height: 18px; }
+.quick-card__body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.quick-card__title { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); }
+.quick-card__desc { font-size: var(--fs-sm); color: var(--c-text-secondary); }
+.quick-card__btn { align-self: flex-end; margin-top: 4px; padding: 6px 16px; border-radius: var(--r-full);
+  background: transparent; border: 0.5px solid var(--c-brand); }
+.quick-card__btn-text { font-size: var(--fs-sm); font-weight: 700; color: var(--c-brand); }
+
+/* 寻觅助手（.assistant-card） */
+.assistant-card { margin: 0 16px 10px; padding: 14px; border-radius: var(--r-xl); background: var(--c-bg-container);
+  border: 0.5px solid var(--c-border-light); box-shadow: 0 1px 6px rgba(54, 201, 154, 0.06); }
+.assistant-card__main { display: flex; align-items: center; gap: 10px; }
+.assistant-card__avatar-wrap { position: relative; width: 44px; height: 44px; border-radius: 50%; background: var(--c-brand-50); flex: none; }
+.assistant-card__avatar { width: 44px; height: 44px; border-radius: 50%; }
+.assistant-card__badge { position: absolute; top: -3px; right: -3px; min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: var(--r-sm); background: var(--c-romance-400); display: flex; align-items: center; justify-content: center; z-index: 2; }
+.assistant-card__badge-text { font-size: var(--fs-xs); font-weight: 700; color: var(--c-bg-container); line-height: 1; transform: scale(0.9); }
+.assistant-card__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.assistant-card__name-row { display: flex; align-items: center; gap: 5px; }
+.assistant-card__name { font-size: var(--fs-xl); font-weight: 700; color: var(--c-text-primary); }
+.assistant-card__official { padding: 1px 5px; border-radius: var(--r-sm); background: rgba(54, 201, 154, 0.15);
+  font-size: var(--fs-xs); font-weight: 600; color: var(--c-brand-700); }
+.assistant-card__subtitle { font-size: var(--fs-base); color: var(--c-text-secondary); }
+.assistant-card__arrow { font-size: var(--fs-4xl); color: var(--c-neutral-300); flex: none; }
+.assistant-card__activity { margin-top: 10px; padding: 10px; border-radius: var(--r-lg); background: var(--c-bg-brand);
+  display: flex; flex-direction: column; gap: 4px; }
+.assistant-card__actrow { display: inline-flex; align-items: center; gap: 3px; }
+.assistant-card__actrow svg { width: 12px; height: 12px; color: var(--c-brand); flex: none; }
+.assistant-card__acttext { font-size: var(--fs-base); color: var(--c-text-secondary); line-height: 1.5; }
+
+/* 分区头（.section / .section__head） */
+.section { padding: 8px 0; }
+.section__head { display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
+.section__title { font-size: var(--fs-2xl); font-weight: 800; color: var(--c-text-primary); }
+.section__more { font-size: var(--fs-md); color: var(--c-text-tertiary); }
+
+/* 正在升温（.warm-list / .warm-item：头像 100rpx 绿描边 + 白底芽角标） */
+.warm-list { display: flex; gap: 12px; padding: 10px 16px 0; }
+.warm-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.warm-item__avawrap { position: relative; width: 50px; height: 50px; flex: none; }
+.warm-item__ava { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--c-brand); box-sizing: border-box; object-fit: cover; display: block; }
+.warm-item__badge { position: absolute; bottom: -1px; right: -1px; width: 15px; height: 15px; border-radius: 50%;
+  background: var(--c-bg-container); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.warm-item__badge svg { width: 12px; height: 12px; color: var(--c-brand); }
+.warm-item__name { font-size: var(--fs-base); color: var(--c-text-secondary); }
+
+/* 最近聊天行（.chat-item） */
+.chat-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 0.5px solid var(--c-border-light); }
+.chat-item__ava { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex: none; display: block; background: var(--c-border-light); }
+.chat-item__content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.chat-item__top { display: flex; align-items: center; gap: 6px; }
+.chat-item__name { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-primary); flex: none; }
+.chat-item__status { padding: 1px 6px; border-radius: var(--r-sm); font-size: var(--fs-xs); font-weight: 500; flex: none; }
+.st-chatting { background: rgba(54, 201, 154, 0.12); color: var(--c-brand); }
+.st-new { background: rgba(154, 163, 159, 0.12); color: var(--c-text-secondary); }
+.st-mutual { background: rgba(60, 201, 154, 0.12); color: var(--c-brand); }
+.st-ambiguous { background: rgba(255, 107, 129, 0.12); color: var(--c-romance); }
+.chat-item__preview { font-size: var(--fs-base); color: var(--c-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-item__right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: none; }
+.chat-item__time { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+.chat-item__unread { min-width: 18px; height: 18px; padding: 0 5px; border-radius: var(--r-full); background: var(--c-romance-400);
+  display: flex; align-items: center; justify-content: center; font-size: var(--fs-xs); font-weight: 700; color: var(--c-bg-container); line-height: 1; transform: scale(0.92); }
+
+/* 活动推荐（.activity-list / .activity-rec-card） */
+.activity-list { display: flex; flex-direction: column; gap: 8px; padding: 6px 16px 0; }
+.act-card { display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: var(--r-xl); background: var(--c-bg-container);
+  border: 0.5px solid var(--c-border-light); box-shadow: 0 1px 6px rgba(54, 201, 154, 0.06); }
+.act-card__icon { width: 48px; height: 48px; border-radius: var(--r-md); background: var(--c-brand-50); flex: none;
+  display: flex; align-items: center; justify-content: center; }
+.act-card__icon svg { width: 22px; height: 22px; color: var(--c-brand); }
+.act-card__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.act-card__title { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.act-card__sub { font-size: var(--fs-sm); color: var(--c-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.act-card__cta { display: inline-flex; align-items: center; gap: 2px; font-size: var(--fs-sm); font-weight: 600; color: var(--c-brand-800); }
+.act-card__cta .arr { font-size: var(--fs-lg); line-height: 1; }
+
+/* 游客态（.guest-wall / 摘要卡灰态 / 私信灰态 / guest-end） */
+.guest-wall { margin: 0 16px 10px; padding: 14px; border-radius: var(--r-xl); background: var(--c-bg-surface);
+  border: 0.5px solid var(--c-border-light); display: flex; flex-direction: column; gap: 8px; }
+.guest-wall__hint { font-size: var(--fs-base); color: var(--c-text-secondary); }
+.guest-wall__row { display: flex; gap: 8px; }
+.gw-btn { flex: 1; min-width: 0; height: var(--btn-height-md); border-radius: var(--r-full); display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-md); font-weight: 600; }
+.gw-btn--primary { background: var(--c-brand-800); color: var(--c-neutral-0); }
+.gw-btn--secondary { background: var(--c-bg-container); border: 0.5px solid var(--c-brand-800); color: var(--c-brand-800); }
+.quick-card__ph--icon { width: 32px; height: 32px; border-radius: 50%; background: var(--c-bg-surface); flex: none; }
+.guest-list { padding: 8px 16px 0; display: flex; flex-direction: column; gap: 6px; }
+.guest-list__label { font-size: var(--fs-lg); font-weight: 700; color: var(--c-text-primary); }
+.skel-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+.skel-cir { width: 48px; height: 48px; border-radius: 50%; background: var(--c-border-light); flex: none; }
+.skel-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.skel-line { height: 12px; border-radius: var(--r-sm); background: var(--c-border-light); }
+.guest-end { display: flex; justify-content: center; padding: 22px 16px 4px; }
+.guest-end__text { font-size: var(--fs-base); line-height: 1.5; color: var(--c-text-secondary); }
+
+/* 空态（PageStateContainer #empty · .empty-chat） */
+.empty-chat { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 40px 16px; }
+.empty-chat__img { width: 180px; height: 135px; object-fit: contain; }
+.empty-chat__title { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); }
+.empty-chat__cta { margin-top: 12px; padding: 8px 24px; border-radius: var(--r-full); border: 0.5px solid var(--c-brand);
+  font-size: var(--fs-md); font-weight: 600; color: var(--c-brand); }
+
+/* tabbar 未读角标（原生 setTabBarBadge，「消息」位） */
+.tabbar__i { position: relative; }
+.tab-badge { position: absolute; top: 2px; right: calc(50% - 20px); min-width: 14px; height: 14px; padding: 0 3px;
+  border-radius: var(--r-full); background: var(--c-romance-400); color: var(--c-bg-container);
+  font-size: var(--fs-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; line-height: 1; transform: scale(0.9); }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格，与工程 SVG 体系一致；§4：不改 base，本页 defs 自补） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.4 4.8 13.3a4.6 4.6 0 0 1 6.5-6.5l.7.7.7-.7a4.6 4.6 0 0 1 6.5 6.5z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M9.5 21v-6h5v6"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-5.6-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.5"/></symbol>
+  <symbol id="i-heart-plus" viewBox="0 0 24 24"><path d="M12 20.4 4.8 13.3a4.6 4.6 0 0 1 6.5-6.5l.7.7.7-.7a4.6 4.6 0 0 1 6.5 6.5z"/><path d="M12 9.5v5M9.5 12h5"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l1.6-3.2A8 8 0 1 1 21 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="2.5"/><path d="M3.5 10h17M8.5 3v4M15.5 3v4"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>消息页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">pages/messages/index</code>（主包，有 tabbar）。
+     本页是全站唯一「关系进展总览」：有人喜欢你摘要卡 → 寻觅助手卡 → 正在升温横滑 → 会话列表 → 活动推荐。
+     理想基准为 素材/理想效果图/消息.png 左屏（右屏是助手会话详情，归 chat/official-chat 页）。
+     登记表第 7 行裁定：理想图上的「正在等待回复」第二卡为条件渲染（游客态无此数），本画板按不出现画，留空理由见 §04。</p>
+  <div class="cover__meta">
+    <span>路由 <b>pages/messages/index</b></span>
+    <span>分包 <b>主包 · 有 tabbar（选中「消息」）</b></span>
+    <span>状态 <b>4 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>消息.png（左屏）</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 4 屏</h2>
+    <p>内容态上下两视口 / 游客态 / 空态</p></div>
+  <div class="sec__sub">本页状态机分两大支：来自 <code>isUnlocked = sessionStore.isLoggedIn || useMock()</code>（:67）——
+    未解锁走 <code>v-else</code> 游客骨架（F03）；解锁后走 PageStateContainer，
+    <code>pageState = loading | error | empty | content</code>（:172-181，条件表达式逐条见 §02 表）。
+    本画板画 4 屏：F01/F02 = content 的上、下两个视口（帧即视口，812px 以下裁掉），F03 = 游客态，F04 = empty；
+    loading / error 为容器通用态（Skeleton / ErrorState），不占屏、在 §02 枚举。
+    内容区各分区块的显隐条件（第二摘要卡 <code>waitingReplyCount &gt; 0</code>、助手活动区
+    <code>assistantActivityCount &gt; 0</code>、正在升温 <code>warmPeople.length &gt; 0</code>、活动推荐
+    <code>activityRecommendations.length &gt; 0</code>）逐条标注在 §04。</div>
+
+  <div class="frames">
+
+    <!-- ============ F01 已登录 · 内容态上视口 ============ -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">已登录 · 内容态上视口</span><span class="d">第二摘要卡按裁定不画 · ↓底缘裁切在最近聊天第 3 行</span></figcaption>
+      <div class="phone">
+        <div class="msg-page">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="msg-header">
+            <div class="msg-header__left">
+              <div class="msg-header__titlerow"><span class="msg-header__title">消息</span><svg class="msg-header__sprout"><use href="#i-logo"/></svg></div>
+              <span class="msg-header__sub">今天也有新的心动在发生</span>
+            </div>
+            <div class="msg-header__right">
+              <span class="msg-icobtn"><svg><use href="#i-search"/></svg></span>
+              <span class="msg-icobtn msg-icobtn--plus">＋</span>
+            </div>
+          </div>
+          <!-- 摘要卡：仅「有人喜欢你」一张，保持半屏宽（R13：v-if 隐藏第二卡时不通栏） -->
+          <div class="quick-cards">
+            <div class="quick-card">
+              <div class="quick-card__head">
+                <span class="quick-card__icon"><svg><use href="#i-heart"/></svg></span>
+                <div class="quick-card__body">
+                  <span class="quick-card__title">有人喜欢你</span>
+                  <span class="quick-card__desc">3 人喜欢了你</span>
+                </div>
+              </div>
+              <div class="quick-card__btn"><span class="quick-card__btn-text">去看看</span></div>
+            </div>
+          </div>
+          <!-- 寻觅助手 -->
+          <div class="assistant-card">
+            <div class="assistant-card__main">
+              <span class="assistant-card__avatar-wrap">
+                <img class="assistant-card__avatar" src="assets/demo/mascot_smile.png" alt="">
+                <span class="assistant-card__badge"><span class="assistant-card__badge-text">2</span></span>
+              </span>
+              <div class="assistant-card__info">
+                <div class="assistant-card__name-row"><span class="assistant-card__name">寻觅助手</span><span class="assistant-card__official">官方</span></div>
+                <span class="assistant-card__subtitle">你的恋爱小管家</span>
+              </div>
+              <span class="assistant-card__arrow">→</span>
+            </div>
+            <div class="assistant-card__activity">
+              <span class="assistant-card__actrow"><svg><use href="#i-logo"/></svg><span class="assistant-card__acttext">今天附近有 2 场活动适合你参加</span></span>
+              <span class="assistant-card__actrow"><span class="assistant-card__acttext">城市露营计划</span></span>
+            </div>
+          </div>
+          <!-- 正在升温 -->
+          <div class="section">
+            <div class="section__head"><span class="section__title">正在升温</span><span class="section__more">更多 ›</span></div>
+            <div class="warm-list">
+              <div class="warm-item"><span class="warm-item__avawrap"><img class="warm-item__ava" src="assets/demo/person-03.png" alt=""><span class="warm-item__badge"><svg><use href="#i-logo"/></svg></span></span><span class="warm-item__name">阿辰</span></div>
+              <div class="warm-item"><span class="warm-item__avawrap"><img class="warm-item__ava" src="assets/demo/xiaoman-avatar.png" alt=""><span class="warm-item__badge"><svg><use href="#i-logo"/></svg></span></span><span class="warm-item__name">小满</span></div>
+              <div class="warm-item"><span class="warm-item__avawrap"><img class="warm-item__ava" src="assets/demo/person-08.png" alt=""><span class="warm-item__badge"><svg><use href="#i-logo"/></svg></span></span><span class="warm-item__name">周岚</span></div>
+              <div class="warm-item"><span class="warm-item__avawrap"><img class="warm-item__ava" src="assets/demo/person-10.png" alt=""><span class="warm-item__badge"><svg><use href="#i-logo"/></svg></span></span><span class="warm-item__name">小溪</span></div>
+            </div>
+          </div>
+          <!-- 最近聊天（第 4 行起被视口裁切） -->
+          <div class="section">
+            <div class="section__head"><span class="section__title">最近聊天</span></div>
+            <div class="chat-item">
+              <img class="chat-item__ava" src="assets/demo/xiaoman-avatar.png" alt="">
+              <div class="chat-item__content">
+                <div class="chat-item__top"><span class="chat-item__name">小满</span><span class="chat-item__status st-chatting">聊天中</span></div>
+                <span class="chat-item__preview">周末一起吃饭吗？🥰</span>
+              </div>
+              <div class="chat-item__right"><span class="chat-item__time">17:32</span><span class="chat-item__unread">2</span></div>
+            </div>
+            <div class="chat-item">
+              <img class="chat-item__ava" src="assets/demo/person-03.png" alt="">
+              <div class="chat-item__content">
+                <div class="chat-item__top"><span class="chat-item__name">阿辰</span><span class="chat-item__status st-new">刚认识</span></div>
+                <span class="chat-item__preview">你的旅行照片很好看~</span>
+              </div>
+              <div class="chat-item__right"><span class="chat-item__time">16:48</span><span class="chat-item__unread">1</span></div>
+            </div>
+            <div class="chat-item">
+              <img class="chat-item__ava" src="assets/demo/person-08.png" alt="">
+              <div class="chat-item__content">
+                <div class="chat-item__top"><span class="chat-item__name">周岚</span><span class="chat-item__status st-mutual">互相关注</span></div>
+                <span class="chat-item__preview">哈哈 下次一起去看电影吧！</span>
+              </div>
+              <div class="chat-item__right"><span class="chat-item__time">昨天</span></div>
+            </div>
+            <div class="chat-item">
+              <img class="chat-item__ava" src="assets/demo/person-10.png" alt="">
+              <div class="chat-item__content">
+                <div class="chat-item__top"><span class="chat-item__name">小溪</span><span class="chat-item__status st-ambiguous">暧昧中</span></div>
+                <span class="chat-item__preview">晚安啦 好梦~</span>
+              </div>
+              <div class="chat-item__right"><span class="chat-item__time">昨天</span></div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+            <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+            <div class="tabbar__i"><svg><use href="#i-heart-plus"/></svg>匹配</div>
+            <div class="tabbar__i tabbar__i--on"><svg><use href="#i-msg"/></svg>消息<span class="tab-badge">3</span></div>
+            <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- ============ F02 已登录 · 内容态下视口 ============ -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">已登录 · 内容态下视口</span><span class="d">页头 sticky 常驻 · 顶缘起于「最近聊天」分区头</span></figcaption>
+      <div class="phone">
+        <div class="msg-page">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="msg-header">
+            <div class="msg-header__left">
+              <div class="msg-header__titlerow"><span class="msg-header__title">消息</span><svg class="msg-header__sprout"><use href="#i-logo"/></svg></div>
+              <span class="msg-header__sub">今天也有新的心动在发生</span>
+            </div>
+            <div class="msg-header__right">
+              <span class="msg-icobtn"><svg><use href="#i-search"/></svg></span>
+              <span class="msg-icobtn msg-icobtn--plus">＋</span>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section__head"><span class="section__title">最近聊天</span></div>
+            <div class="chat-item">
+              <img class="chat-item__ava" src="assets/demo/xiaoman-avatar.png" alt="">
+              <div class="chat-item__content">
+                <div class="chat-item__top"><span class="chat-item__name">小满</span><span class="chat-item__status st-chatting">聊天中</span></div>
+                <span class="chat-item__preview">周末一起吃饭吗？🥰</span>
+              </div>
+              <div class="chat-item__right"><span class="chat-item__time">17:32</span><span class="chat-item__unread">2</span></div>
+            </div>
+            <div class="chat-item">
+              <img class="chat-item__ava" src="assets/demo/person-03.png" alt="">
+              <div class="chat-item__content">
+                <div class="chat-item__top"><span class="chat-item__name">阿辰</span><span class="chat-item__status st-new">刚认识</span></div>
+                <span class="chat-item__preview">你的旅行照片很好看~</span>
+              </div>
+              <div class="chat-item__right"><span class="chat-item__time">16:48</span><span class="chat-item__unread">1</span></div>
+            </div>
+            <div class="chat-item">
+              <img class="chat-item__ava" src="assets/demo/person-08.png" alt="">
+              <div class="chat-item__content">
+                <div class="chat-item__top"><span class="chat-item__name">周岚</span><span class="chat-item__status st-mutual">互相关注</span></div>
+                <span class="chat-item__preview">哈哈 下次一起去看电影吧！</span>
+              </div>
+              <div class="chat-item__right"><span class="chat-item__time">昨天</span></div>
+            </div>
+            <div class="chat-item">
+              <img class="chat-item__ava" src="assets/demo/person-10.png" alt="">
+              <div class="chat-item__content">
+                <div class="chat-item__top"><span class="chat-item__name">小溪</span><span class="chat-item__status st-ambiguous">暧昧中</span></div>
+                <span class="chat-item__preview">晚安啦 好梦~</span>
+              </div>
+              <div class="chat-item__right"><span class="chat-item__time">昨天</span></div>
+            </div>
+          </div>
+          <!-- 活动推荐（v-if activityRecommendations.length > 0，文案取 i18n activities.sample.*） -->
+          <div class="section">
+            <div class="section__head"><span class="section__title">活动推荐</span></div>
+            <div class="activity-list">
+              <div class="act-card">
+                <span class="act-card__icon"><svg><use href="#i-cal"/></svg></span>
+                <div class="act-card__body">
+                  <span class="act-card__title">城市露营计划</span>
+                  <span class="act-card__sub">周六 14:00-18:00 · 中央公园 2.3km</span>
+                  <span class="act-card__cta">查看详情<span class="arr">›</span></span>
+                </div>
+              </div>
+              <div class="act-card">
+                <span class="act-card__icon"><svg><use href="#i-cal"/></svg></span>
+                <div class="act-card__body">
+                  <span class="act-card__title">周末派对</span>
+                  <span class="act-card__sub">周六 19:00-22:00 · 大学生活动中心</span>
+                  <span class="act-card__cta">查看详情<span class="arr">›</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+            <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+            <div class="tabbar__i"><svg><use href="#i-heart-plus"/></svg>匹配</div>
+            <div class="tabbar__i tabbar__i--on"><svg><use href="#i-msg"/></svg>消息<span class="tab-badge">3</span></div>
+            <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- ============ F03 游客态（v-else .guest-state） ============ -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">游客态 · 登录墙 + 灰态骨架</span><span class="d">!isUnlocked 分支 · 灰态区点击均跳登录 · 整支内容未触底无裁切</span></figcaption>
+      <div class="phone">
+        <div class="msg-page">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="msg-header">
+            <div class="msg-header__left">
+              <div class="msg-header__titlerow"><span class="msg-header__title">消息</span><svg class="msg-header__sprout"><use href="#i-logo"/></svg></div>
+              <span class="msg-header__sub">今天也有新的心动在发生</span>
+            </div>
+            <div class="msg-header__right">
+              <span class="msg-icobtn"><svg><use href="#i-search"/></svg></span>
+              <span class="msg-icobtn msg-icobtn--plus">＋</span>
+            </div>
+          </div>
+          <!-- 登录浮层（R2b-B24/D18：登录墙从整页替换降为一张卡） -->
+          <div class="guest-wall">
+            <span class="guest-wall__hint">登录后即可解锁全部功能</span>
+            <div class="guest-wall__row">
+              <span class="gw-btn gw-btn--primary">微信一键登录</span>
+              <span class="gw-btn gw-btn--secondary">手机号登录</span>
+            </div>
+          </div>
+          <!-- 摘要卡灰态：只放占位形状 + 既有键文案，不给捏造计数 -->
+          <div class="quick-cards">
+            <div class="quick-card">
+              <div class="quick-card__head">
+                <span class="quick-card__ph--icon"></span>
+                <div class="quick-card__body">
+                  <span class="quick-card__title">喜欢你的</span>
+                  <span class="quick-card__desc">登录后可查看更多内容</span>
+                </div>
+              </div>
+            </div>
+            <div class="quick-card">
+              <div class="quick-card__head">
+                <span class="quick-card__ph--icon"></span>
+                <div class="quick-card__body">
+                  <span class="quick-card__title">未读消息</span>
+                  <span class="quick-card__desc">登录后可查看更多内容</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 会话列表灰态（Skeleton variant=list ×4，同 loading 态同一组件） -->
+          <div class="guest-list">
+            <span class="guest-list__label">私信</span>
+            <div class="skel-row"><span class="skel-cir"></span><div class="skel-col"><span class="skel-line" style="width:38%"></span><span class="skel-line" style="width:62%"></span></div></div>
+            <div class="skel-row"><span class="skel-cir"></span><div class="skel-col"><span class="skel-line" style="width:44%"></span><span class="skel-line" style="width:58%"></span></div></div>
+            <div class="skel-row"><span class="skel-cir"></span><div class="skel-col"><span class="skel-line" style="width:36%"></span><span class="skel-line" style="width:66%"></span></div></div>
+            <div class="skel-row"><span class="skel-cir"></span><div class="skel-col"><span class="skel-line" style="width:42%"></span><span class="skel-line" style="width:56%"></span></div></div>
+          </div>
+          <div class="guest-end"><span class="guest-end__text">登录后可查看更多内容</span></div>
+          <div class="tabbar">
+            <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+            <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+            <div class="tabbar__i"><svg><use href="#i-heart-plus"/></svg>匹配</div>
+            <div class="tabbar__i tabbar__i--on"><svg><use href="#i-msg"/></svg>消息</div>
+            <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- ============ F04 已登录 · 空态（PageStateContainer #empty） ============ -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">已登录 · 空态</span><span class="d">privateSessions 与 warmPeople 均空 · 内容区整块替换</span></figcaption>
+      <div class="phone">
+        <div class="msg-page">
+          <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+          <div class="msg-header">
+            <div class="msg-header__left">
+              <div class="msg-header__titlerow"><span class="msg-header__title">消息</span><svg class="msg-header__sprout"><use href="#i-logo"/></svg></div>
+              <span class="msg-header__sub">今天也有新的心动在发生</span>
+            </div>
+            <div class="msg-header__right">
+              <span class="msg-icobtn"><svg><use href="#i-search"/></svg></span>
+              <span class="msg-icobtn msg-icobtn--plus">＋</span>
+            </div>
+          </div>
+          <div class="empty-chat">
+            <img class="empty-chat__img" src="assets/demo/mascot_default.png" alt="">
+            <span class="empty-chat__title">还没有新的缘分</span>
+            <span class="empty-chat__cta">去附近看看</span>
+          </div>
+          <div class="tabbar">
+            <div class="tabbar__i"><svg><use href="#i-home"/></svg>首页</div>
+            <div class="tabbar__i"><svg><use href="#i-pin"/></svg>附近</div>
+            <div class="tabbar__i"><svg><use href="#i-heart-plus"/></svg>匹配</div>
+            <div class="tabbar__i tabbar__i--on"><svg><use href="#i-msg"/></svg>消息</div>
+            <div class="tabbar__i"><svg><use href="#i-user"/></svg>我的</div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页五类件：摘要卡 / 助手卡 / 会话行 / 活动推荐卡 / 登录墙。状态枚举全部取自源码 v-if 与三元分支，不是想象。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>摘要卡 · 四态（<code>.quick-cards</code> :478-510 / :755-782）</h3>
+      <p class="hint">第二卡显隐条件 <code>waitingReplyCount &gt; 0</code>（:496）；单卡时保持半屏宽不通栏（R13）。游客灰态只放占位形状 + 既有键文案，不给捏造计数。</p>
+      <div class="row">
+        <div class="cell" style="width:170px"><div class="quick-card" style="max-width:none"><div class="quick-card__head"><span class="quick-card__icon"><svg><use href="#i-heart"/></svg></span><div class="quick-card__body"><span class="quick-card__title">有人喜欢你</span><span class="quick-card__desc">3 人喜欢了你</span></div></div><div class="quick-card__btn"><span class="quick-card__btn-text">去看看</span></div></div><span class="lab">常态（喜欢卡）</span></div>
+        <div class="cell" style="width:170px"><div class="quick-card" style="max-width:none"><div class="quick-card__head"><span class="quick-card__ph--icon"></span><div class="quick-card__body"><span class="quick-card__title">喜欢你的</span><span class="quick-card__desc">登录后可查看更多内容</span></div></div></div><span class="lab">游客灰态</span></div>
+        <div class="cell" style="width:170px"><div class="quick-card" style="max-width:none"><div class="quick-card__head"><span class="quick-card__icon"><svg><use href="#i-msg"/></svg></span><div class="quick-card__body"><span class="quick-card__title">正在等待回复</span><span class="quick-card__desc">N 个聊天正在继续</span></div></div><div class="quick-card__btn"><span class="quick-card__btn-text">去回复</span></div></div><span class="lab">等待卡（waitingReplyCount&gt;0 才出现；本画板按裁定不画，计数位以 N 示形）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>寻觅助手卡 · 两态（<code>.assistant-card</code> :513-556）</h3>
+      <p class="hint">活动子卡显隐条件 <code>assistantActivityCount &gt; 0</code>（:542，dashboard.assistant 为空整块隐藏）；未读角标显隐条件 <code>totalUnreadCount + unreadNotificationCount &gt; 0</code>（:525，封顶 99+）。</p>
+      <div class="row">
+        <div class="cell" style="width:100%;max-width:340px"><div class="assistant-card" style="margin:0"><div class="assistant-card__main"><span class="assistant-card__avatar-wrap"><img class="assistant-card__avatar" src="assets/demo/mascot_smile.png" alt=""><span class="assistant-card__badge"><span class="assistant-card__badge-text">2</span></span></span><div class="assistant-card__info"><div class="assistant-card__name-row"><span class="assistant-card__name">寻觅助手</span><span class="assistant-card__official">官方</span></div><span class="assistant-card__subtitle">你的恋爱小管家</span></div><span class="assistant-card__arrow">→</span></div><div class="assistant-card__activity"><span class="assistant-card__actrow"><svg><use href="#i-logo"/></svg><span class="assistant-card__acttext">今天附近有 2 场活动适合你参加</span></span></div></div><span class="lab">有活动 + 有角标</span></div>
+        <div class="cell" style="width:100%;max-width:340px"><div class="assistant-card" style="margin:0"><div class="assistant-card__main"><span class="assistant-card__avatar-wrap"><img class="assistant-card__avatar" src="assets/demo/mascot_smile.png" alt=""></span><div class="assistant-card__info"><div class="assistant-card__name-row"><span class="assistant-card__name">寻觅助手</span><span class="assistant-card__official">官方</span></div><span class="assistant-card__subtitle">你的恋爱小管家</span></div><span class="assistant-card__arrow">→</span></div></div><span class="lab">无活动（assistant 空）· 无角标（未读=0）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>会话行 · 状态标签五态 + 修饰态（<code>.chat-item</code> :609-663）</h3>
+      <p class="hint">关系标签显隐条件 <code>session.relationship?.status</code>（:635），标签文案来自 <code>getStatusLabel</code>（:370-378，未知态兜底「新朋友」）；未读徽章条件 <code>unreadCount &gt; 0</code>（:659，&gt;99 显 99+）；置顶 <code>session.pinned</code>（:630）与免打扰 <code>session.muted</code>（:641）为昵称行同带修饰图标；无预览时兜底「暂无消息」（:653）。在线绿点已整条撤除（MP-R1-004，:624），不得画回。</p>
+      <div class="row">
+        <div class="cell"><span class="chat-item__status st-chatting">聊天中</span><span class="lab">chatting</span></div>
+        <div class="cell"><span class="chat-item__status st-new">刚认识</span><span class="lab">just_met</span></div>
+        <div class="cell"><span class="chat-item__status st-mutual">互相关注</span><span class="lab">mutual_follow</span></div>
+        <div class="cell"><span class="chat-item__status st-ambiguous">暧昧中</span><span class="lab">ambiguous</span></div>
+        <div class="cell"><span class="chat-item__status st-new">新朋友</span><span class="lab">未知兜底（status-new 档）</span></div>
+        <div class="cell"><span class="chat-item__unread">2</span><span class="lab">未读徽章</span></div>
+        <div class="cell"><span class="chat-item__unread">99+</span><span class="lab">封顶</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>登录墙 / 搜索条 / tabbar 角标 · 其余分支</h3>
+      <table class="tbl">
+        <tr><th>件</th><th>条件表达式</th><th>真值源</th></tr>
+        <tr><td>游客整支</td><td><code>!isUnlocked</code>（:717 v-else）</td><td><code>sessionStore.isLoggedIn || useMock()</code>（:67）</td></tr>
+        <tr><td>搜索条</td><td><code>searchActive && isUnlocked</code>（:450）</td><td>placeholder「搜索聊天记录...」</td></tr>
+        <tr><td>loading / error / empty</td><td><code>pageState</code>（:172-181）</td><td>Skeleton×5 / ErrorState / 空态卡（F04）</td></tr>
+        <tr><td>正在升温分区</td><td><code>warmPeople.length &gt; 0</code>（:559）</td><td>dashboard.warmPeople，slice(0,4)</td></tr>
+        <tr><td>活动推荐分区</td><td><code>activityRecommendations.length &gt; 0</code>（:674）</td><td>dashboard.assistant（title/subtitle/icon）</td></tr>
+        <tr><td>tabbar「消息」角标</td><td>原生 setTabBarBadge</td><td>会话+通知未读合计（演示值 3）</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用以下档位，未引入页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">升温头像描边 · 去看看描边 · 芽图标</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#D1F5E7"></span><div><div class="sw__n">主色 100<code>--c-brand-100</code></div><div class="sw__u">摘要卡图标圆底（两枚统一浅绿，R9-D09）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FBF2"></span><div><div class="sw__n">品牌浅底<code>--c-bg-brand</code></div><div class="sw__u">摘要卡卡底 · 助手活动子卡（R9-D12）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">登录主按钮 · 查看详情 CTA（R10-D05 可达性升档）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FF7C91"></span><div><div class="sw__n">浪漫 400<code>--c-romance-400</code></div><div class="sw__u">未读徽章 · 助手角标（对齐理想图修复）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#4A524E"></span><div><div class="sw__n">文本次级<code>--c-text-secondary</code></div><div class="sw__u">摘要卡副标 · 会话预览 · 活动子卡文本</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#9AA39F"></span><div><div class="sw__n">文本三级<code>--c-text-tertiary</code></div><div class="sw__u">时间戳 · 更多 ›</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到八档（rpx÷2）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/800</span><span class="type__p" style="font-size:22px;font-weight:800">消息</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/800</span><span class="type__p" style="font-size:16px;font-weight:800">正在升温 · 最近聊天</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600-700</span><span class="type__p" style="font-size:15px;font-weight:700">寻觅助手 · 会话昵称</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/700</span><span class="type__p" style="font-size:14px;font-weight:700">有人喜欢你 · 城市露营计划</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/600</span><span class="type__p" style="font-size:13px;font-weight:600">更多 › · 微信一键登录 · 去附近看看</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px;color:var(--c-text-secondary)">你的恋爱小管家 · 周末一起吃饭吗？</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/500-700</span><span class="type__p" style="font-size:11px;font-weight:700;color:var(--c-brand)">去看看 · 3 人喜欢了你</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/500-600</span><span class="type__p" style="font-size:10px;font-weight:600"><span class="chat-item__status st-ambiguous">暧昧中</span> <span class="assistant-card__official">官方</span></span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。页边距 32rpx→16px 一条到底（header / 卡 / 列表同缘）。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-3 6px</b><i style="width:6px"></i></div>
+        <div class="space__i"><b>--sp-4 8px</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-6 10–12px</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-7 16px</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:4px"></b>--r-sm<br>8rpx · 状态标签</div>
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>16rpx · 活动图标</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 活动子卡</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 全部卡片同档</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材与差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与实况的已知差异</h2><p>真值位留空逐条登记（§7 第 1 条）</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/xiaoman-avatar.png" alt="" style="object-fit:cover">
+      <div class="asset__b"><b>assets/demo/xiaoman-avatar.png · person-03 / person-08 / person-10.png</b><p>正在升温 4 枚与最近聊天 4 行的人设头像（§8：照片位必须真素材）。小满=person-04 真身已登记；阿辰=person-03、周岚=person-08 已于 2026-10-26 实测在 assets/demo 在册；小溪在 9 人角色表无对应素材，借用已登记的 person-10（女性照片）。</p><div class="m">素材缺口：无（四枚均已在册）</div></div></div>
+    <div class="asset"><img src="assets/demo/mascot_smile.png" alt="" style="object-fit:contain;background:var(--c-brand-50);height:120px">
+      <div class="asset__b"><b>mascot_smile.png / mascot_default.png（MASCOT.SMILE / MASCOT.DEFAULT）</b><p>寻觅助手 44px 头像与空态 180×135 吉祥物。素材在 <code>static/assets/images/mascot/</code> 在册、尚未进 assets/demo；在复制到位前，本画板引用会出空位。摘要卡心形图标（HEART_GREEN）与芽图标（ICONS_V2.SPROUT）为 12–18px 图标件，按 §4 以 lucide 风格 inline symbol 代画，不占素材缺口。</p><div class="m">NEED_ASSET: apps/client/src/static/assets/images/mascot/mascot_smile.png · mascot_default.png</div></div></div>
+  </div>
+  <div class="note">
+    <b>真值位留空 + 与理想图/实况的已知差异（逐条）：</b>
+    <ul>
+      <li><b>「正在等待回复」第二摘要卡——按裁定不出现。</b>理想图此处为「正在等待回复 · 2 个聊天正在继续 · 去回复」第二卡，源码显隐条件是 <code>v-if="waitingReplyCount > 0"</code>（:496）；<code>waitingReplyCount = dashboard?.todayHeart.waitingReplyCount ?? likes.likes.length - likes.mutualLikes.length</code>（:83），游客态无此真值、条件不成立，该卡是条件渲染不出现的——产品裁定真值就绪前不回填，画板按留空画（整卡不出现，第一卡保持半屏宽，右半留空）。这就是登记表第 7 行点名的真值位。</li>
+      <li>理想图第一卡副标文案是「3 个人想认识你」，源码文案为 <code>{{ likedMeCount }} 人喜欢了你</code>（:489，i18n <code>messages.likedMeCount</code> 同值）——按源码画；「3」沿用理想图演示计数，演示计数、非真值。</li>
+      <li>理想图助手卡活动第二行是「周末露营活动开始报名啦~」，该硬编码文案已按 MP-R1-PAGES-MESSAGES-INDEX-011 从源码删除（现取 <code>dashboard.assistant[0].title</code>，:553）；画板按在册演示落点「城市露营计划」画（i18n <code>activities.sample.cityCamp.title</code>，与助手会话详情右屏同一活动）。「2 场活动」「角标 2」为演示计数，非真值。</li>
+      <li>理想图演示人设「小林 / 小雨 / 小周 / 阿杰」不在画板规范 §3.4 真名池（该批假用户已于 2026-09-03 从源码移除，见 :124-128 注释）；画板按真名池换名为 阿辰 / 小满 / 周岚 / 小溪，分区结构、组件形态、状态档位均照图不变。</li>
+      <li>理想图「暧昧中」徽章带 💕 尾缀，源码 <code>getStatusLabel</code>（:370-378）只返回「暧昧中」——按源码画（§10）。</li>
+      <li>理想图正在升温头像右下是实心绿点，源码是 30rpx 白底圆 + 芽图标（<code>.warm-item__heart-icon</code> :1278-1294）——按源码画；会话行的在线绿点已整条撤除（MP-R1-004，:624），不画。</li>
+      <li>活动推荐两卡的标题/副题取 i18n <code>activities.sample.*</code>（城市露营计划 / 周末派对 的 time+location），非编造文案；该分区与助手活动区、正在升温同为 dashboard 数据驱动分支，画板画「有数据」态。</li>
+      <li>页头 padding-top 按源码口径（状态栏 + 20px + 24rpx，:876），比理想图略低——理想图拍于 useMenuButtonRect 注入前，按源码画（§10）。</li>
+      <li>tabbar「消息」角标 3 为演示计数（会话+通知未读合计），非真值。本页为主包页，tabbar 必须出现且选中「消息」。</li>
+      <li>右屏（寻觅助手会话详情）不属于本页，归 <code>subpackages/chat/official-chat/index</code>，不在本画板范围。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 消息页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（1.573 Mpx，对齐 素材/理想效果图 语料的像素预算）
+</footer>
+
+</div>
+</body>
+</html>

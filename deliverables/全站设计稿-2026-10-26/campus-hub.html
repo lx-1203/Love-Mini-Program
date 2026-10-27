@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 校园圈页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（几何值 = 源码 rpx ÷ 2；色值一律取 base 已登记令牌） ===== */
+.hub { position: absolute; inset: 0; background: var(--c-bg-container); overflow: hidden; }
+.hub__pad { padding: 0 16px; }
+
+/* 吸顶导航带（源码 .campus-hub__header：状态栏 44 + 呼吸 + 44rpx 下衬） */
+.hub-hdr { display: flex; align-items: center; gap: 8px; padding: 48px 16px 22px;
+  background: var(--c-bg-container); }
+.hub-back { flex: none; width: 44px; height: 44px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; background: var(--c-bg-page);
+  border: 1px solid var(--c-brand-200); }
+.hub-back span { font-size: 20px; line-height: 1; color: var(--c-text-primary); }
+.hub-titlecol { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.hub-title { font-size: 24px; font-weight: 800; letter-spacing: -0.4px; line-height: 1.2;
+  color: var(--c-text-primary); }
+.hub-sub { font-size: var(--fs-lg); font-weight: 400; color: var(--c-text-tertiary); }
+.hub-hdr__cert { margin-left: auto; padding: 6px 12px; border-radius: var(--r-full);
+  background: var(--c-brand-50); font-size: var(--fs-base); font-weight: 600; color: var(--c-brand); }
+
+/* 认证引导横幅（源码 .campus-guide：28rpx 内衬 / 22rpx 圆角 / 品牌底纹单色） */
+.hub-guide { display: flex; align-items: center; gap: 8px; padding: 14px; margin-bottom: 16px;
+  border-radius: 11px; background: var(--c-brand-50); border: 1px solid var(--c-border-light); }
+.hub-guide__ic { flex: none; width: 20px; height: 36px; display: flex; align-items: center;
+  justify-content: center; }
+.hub-guide__ic img { width: 20px; height: 20px; }
+.hub-guide__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.hub-guide__t { font-size: var(--fs-lg); font-weight: 800; color: var(--c-text-primary); }
+.hub-guide__d { font-size: var(--fs-sm); color: var(--c-text-secondary); }
+.hub-guide__btn { flex: none; padding: 7px 14px; border-radius: var(--r-full);
+  background: var(--c-brand-800); color: var(--c-text-inverse); font-size: var(--fs-base);
+  font-weight: 700; }
+.hub-guide__badge { flex: none; padding: 6px 12px; border-radius: var(--r-full);
+  background: var(--c-brand-100); color: var(--c-brand-600); font-size: var(--fs-base);
+  font-weight: 700; }
+
+/* 搜索胶囊（源码 .campus-search：76rpx 高 / 与卡片同栅格） */
+.hub-search { display: flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px;
+  margin-bottom: 10px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: 1px solid var(--c-border-light); }
+.hub-search img { width: 15px; height: 15px; flex: none; }
+.hub-search__i { flex: 1; min-width: 0; font-size: var(--fs-lg); color: var(--c-text-primary);
+  white-space: nowrap; overflow: hidden; }
+.hub-search__i--ph { color: var(--c-text-placeholder); }
+.hub-search__x { flex: none; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--c-border-light); color: var(--c-text-tertiary); font-size: var(--fs-lg);
+  display: flex; align-items: center; justify-content: center; }
+
+/* 分段 Tab（源码 .campus-hub__tabs：88rpx 热区 + 48rpx 指示条） */
+.hub-tabs { display: flex; border-bottom: 1px solid var(--c-border-light); margin-bottom: 14px; }
+.hub-tab { position: relative; flex: none; min-height: 44px; padding: 6px 0; margin-right: 24px;
+  display: flex; align-items: center; }
+.hub-tab__t { font-size: var(--fs-lg); font-weight: 500; color: var(--c-text-tertiary); }
+.hub-tab__t--on { font-weight: 700; color: var(--c-brand-800); }
+.hub-tab__i { position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%);
+  width: 24px; height: 3px; border-radius: 2px; background: var(--c-brand-800); }
+
+/* 学校卡（源码 .campus-school-card：封面 132rpx / 内衬 20rpx / 圆角 28rpx） */
+.hub-card { display: flex; align-items: stretch; gap: 10px; margin-top: 10px; padding: 10px;
+  border-radius: 14px; background: var(--c-bg-container); border: 1px solid var(--c-border-light);
+  box-shadow: var(--s-card-soft); }
+.hub-card__cover { flex: none; align-self: center; width: 66px; height: 66px; border-radius: 8px;
+  overflow: hidden; background: var(--c-border-light); }
+.hub-card__cover img { width: 100%; height: 100%; object-fit: cover; }
+.hub-card__body { flex: 1; min-width: 0; display: flex; flex-direction: column;
+  justify-content: center; }
+.hub-card__row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.hub-card__name { flex: 0 1 auto; min-width: 0; font-size: var(--fs-lg); font-weight: 700;
+  color: var(--c-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hub-badge { flex: none; padding: 2px 4px; border-radius: var(--r-full); font-size: var(--fs-base);
+  font-weight: 600; line-height: 1.4; }
+.hub-badge--unver { background: #EDE9FE; color: #6D28D9; }
+.hub-badge--ver { background: var(--c-brand); color: var(--c-text-inverse); }
+.hub-badge--pend { background: rgba(245, 158, 11, 0.1); color: var(--c-warning); }
+.hub-card__stats { display: block; margin-top: 4px; font-size: var(--fs-base);
+  color: var(--c-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hub-cta { flex: none; align-self: center; display: flex; align-items: center; justify-content: center;
+  min-height: 44px; padding: 7px 14px; border-radius: var(--r-full); font-size: var(--fs-base);
+  font-weight: 700; }
+.hub-cta--fill { background: var(--c-brand-600); color: var(--c-text-inverse); box-shadow: var(--s-brand); }
+.hub-cta--outline { background: var(--c-bg-container); border: 1px solid var(--c-brand-800);
+  color: var(--c-brand-800); }
+
+/* 空态 / 列表末行 / 错误条 */
+.hub-empty { display: flex; align-items: center; justify-content: center; padding: 40px 0; }
+.hub-empty__t { font-size: var(--fs-md); color: var(--c-text-tertiary); }
+.hub-more { display: flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 16px 0 10px; font-size: var(--fs-base); color: var(--c-text-tertiary); }
+.hub-more svg { width: 14px; height: 14px; }
+.hub-more--up svg { transform: rotate(180deg); }
+.hub-err { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 12px; border-radius: 8px; background: rgba(229, 69, 77, 0.1); font-size: var(--fs-base);
+  color: var(--c-error); }
+.hub-err__b { flex: none; padding: 4px 12px; border-radius: var(--r-full); background: var(--c-brand);
+  color: var(--c-text-inverse); font-weight: 600; }
+
+/* §02 组件枚举用的小件 */
+.mini { background: var(--c-bg-page); border-radius: 14px; padding: 10px; }
+.mini .hub-card { margin-top: 0; }
+.mini--w { width: 300px; }
+.stat { display: inline-flex; align-items: center; gap: 6px; font-size: 12px;
+  color: var(--c-text-secondary); font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 风格；页内不重复引 base 的描边规则） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.8v4.8"/><path d="M12 16.2h.01"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>校园圈页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/campus/campus/hub</code>。
+     本页有理想效果图（素材/理想效果图/校园圈.png），本画板按登记表的口径承接它作为**永久验收基准**：
+     版式照图，卡上统计行按 2026-10-26 裁定只补「N 位同学 · M 条动态」两项真值，
+     好友头像重叠行与距离不画（无真值源）。数字全部取当日只读 SQL 实测分布，不抄理想图的 3.2k/2.8w。</p>
+  <div class="cover__meta">
+    <span>路由 <b>campus/hub</b></span>
+    <span>分包 <b>campus</b>（无 tabbar）</span>
+    <span>状态 <b>6 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>理想效果图 校园圈.png（本画板取代之）</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 6 屏</h2>
+    <p>未认证 / 我加入的空态 / 审核中 / 已认证两 tab / 搜索无结果</p></div>
+  <div class="sec__sub">本页状态机有 8 态，来自源码条件表达式
+    <code>activeTab = ref&lt;"joined" | "recommend"&gt;("recommend")</code>（默认落推荐）、
+    <code>isVerified</code>、<code>isPending = certificationStatus === "pending"</code>、
+    <code>filteredSchools.length === 0</code>、<code>searchKeyword</code>、
+    <code>canToggleMore = filteredSchools.length &gt; 6</code>、<code>headerCompact = scrollTop &gt; 24</code>、
+    <code>certLoadFailed</code>；其中「滚动后收起副标题」的 compact 头不属于首屏，错误条在 §02 枚举。
+    帧即视口 375×812：超出部分裁掉，被裁掉了什么只写在题注 <code>.d</code> 里，画面内零注记。
+    卡上统计行的渲染条件是 <code>v-if="schoolStatsText(school.name)"</code>——后端未下发读数时整行缺席，不留空行也不补 0。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">未认证 · 默认「推荐圈子」</span><span class="d">第 6 卡（同济）与末行入口在视口外</span></figcaption>
+      <div class="phone">
+        <div class="hub"><div class="hub-hdr">
+          <span class="hub-back"><span>&#8249;</span></span>
+          <div class="hub-titlecol"><span class="hub-title">校园圈</span><span class="hub-sub">发现和加入你的校园圈子</span></div>
+        </div>
+        <div class="hub__pad">
+          <div class="hub-guide">
+            <span class="hub-guide__ic"><img src="../../apps/client/src/static/assets/icons/common/graduation-cap.svg" alt=""></span>
+            <div class="hub-guide__body"><span class="hub-guide__t">加入校园圈，发现更多同校的 TA</span><span class="hub-guide__d">完成学校认证，即可加入该校专属校园圈</span></div>
+            <span class="hub-guide__btn">去认证</span>
+          </div>
+          <div class="hub-search"><img src="../../apps/client/src/static/assets/icons/search.svg" alt=""><span class="hub-search__i hub-search__i--ph">搜索学校或校园圈</span></div>
+          <div class="hub-tabs">
+            <span class="hub-tab"><span class="hub-tab__t">我加入的</span></span>
+            <span class="hub-tab"><span class="hub-tab__t hub-tab__t--on">推荐圈子</span><span class="hub-tab__i"></span></span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-gate-landmark.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">北京大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">53 位同学 · 26 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-arch-landmark.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">清华大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">29 位同学 · 22 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-lake-pavilion.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">中国人民大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">23 位同学 · 0 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-playground.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">复旦大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">31 位同学 · 21 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-night.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">上海交通大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">23 位同学 · 0 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-classroom.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">同济大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">6 位同学 · 0 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+        </div></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">未认证 · 切到「我加入的」</span><span class="d">空态 · 内容不足一屏，无裁切</span></figcaption>
+      <div class="phone">
+        <div class="hub"><div class="hub-hdr">
+          <span class="hub-back"><span>&#8249;</span></span>
+          <div class="hub-titlecol"><span class="hub-title">校园圈</span><span class="hub-sub">发现和加入你的校园圈子</span></div>
+        </div>
+        <div class="hub__pad">
+          <div class="hub-guide">
+            <span class="hub-guide__ic"><img src="../../apps/client/src/static/assets/icons/common/graduation-cap.svg" alt=""></span>
+            <div class="hub-guide__body"><span class="hub-guide__t">加入校园圈，发现更多同校的 TA</span><span class="hub-guide__d">完成学校认证，即可加入该校专属校园圈</span></div>
+            <span class="hub-guide__btn">去认证</span>
+          </div>
+          <div class="hub-search"><img src="../../apps/client/src/static/assets/icons/search.svg" alt=""><span class="hub-search__i hub-search__i--ph">搜索学校或校园圈</span></div>
+          <div class="hub-tabs">
+            <span class="hub-tab"><span class="hub-tab__t hub-tab__t--on">我加入的</span><span class="hub-tab__i"></span></span>
+            <span class="hub-tab"><span class="hub-tab__t">推荐圈子</span></span>
+          </div>
+          <div class="hub-empty"><span class="hub-empty__t">暂未加入任何校园圈</span></div>
+          <div class="hub-more"><span>更多校园圈持续接入中</span></div>
+        </div></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">审核中 · 引导卡改「查看进度」</span><span class="d">第 6 卡（同济）在视口外</span></figcaption>
+      <div class="phone">
+        <div class="hub"><div class="hub-hdr">
+          <span class="hub-back"><span>&#8249;</span></span>
+          <div class="hub-titlecol"><span class="hub-title">校园圈</span><span class="hub-sub">发现和加入你的校园圈子</span></div>
+        </div>
+        <div class="hub__pad">
+          <div class="hub-guide">
+            <span class="hub-guide__ic"><img src="../../apps/client/src/static/assets/icons/common/graduation-cap.svg" alt=""></span>
+            <div class="hub-guide__body"><span class="hub-guide__t">加入校园圈，发现更多同校的 TA</span><span class="hub-guide__d">完成学校认证，即可加入该校专属校园圈</span></div>
+            <span class="hub-guide__btn">查看进度</span>
+          </div>
+          <div class="hub-search"><img src="../../apps/client/src/static/assets/icons/search.svg" alt=""><span class="hub-search__i hub-search__i--ph">搜索学校或校园圈</span></div>
+          <div class="hub-tabs">
+            <span class="hub-tab"><span class="hub-tab__t">我加入的</span></span>
+            <span class="hub-tab"><span class="hub-tab__t hub-tab__t--on">推荐圈子</span><span class="hub-tab__i"></span></span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-gate-landmark.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">北京大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">53 位同学 · 26 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-arch-landmark.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">清华大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">29 位同学 · 22 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-lake-pavilion.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">中国人民大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">23 位同学 · 0 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-playground.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">复旦大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">31 位同学 · 21 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-night.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">上海交通大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">23 位同学 · 0 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-classroom.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">同济大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">6 位同学 · 0 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+        </div></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">已认证 ·「我加入的」有内容</span><span class="d">本校单卡 · 无裁切</span></figcaption>
+      <div class="phone">
+        <div class="hub"><div class="hub-hdr">
+          <span class="hub-back"><span>&#8249;</span></span>
+          <div class="hub-titlecol"><span class="hub-title">校园圈</span><span class="hub-sub">发现和加入你的校园圈子</span></div>
+          <span class="hub-hdr__cert">已认证</span>
+        </div>
+        <div class="hub__pad">
+          <div class="hub-guide">
+            <span class="hub-guide__ic"><img src="../../apps/client/src/static/assets/icons/common/graduation-cap.svg" alt=""></span>
+            <div class="hub-guide__body"><span class="hub-guide__t">加入校园圈，发现更多同校的 TA</span><span class="hub-guide__d">完成学校认证，即可加入该校专属校园圈</span></div>
+            <span class="hub-guide__badge">已认证</span>
+          </div>
+          <div class="hub-search"><img src="../../apps/client/src/static/assets/icons/search.svg" alt=""><span class="hub-search__i hub-search__i--ph">搜索学校或校园圈</span></div>
+          <div class="hub-tabs">
+            <span class="hub-tab"><span class="hub-tab__t hub-tab__t--on">我加入的</span><span class="hub-tab__i"></span></span>
+            <span class="hub-tab"><span class="hub-tab__t">推荐圈子</span></span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-gate-landmark.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">北京大学圈</span><span class="hub-badge hub-badge--ver">已认证</span></div><span class="hub-card__stats">53 位同学 · 26 条动态</span></div>
+            <span class="hub-cta hub-cta--fill">进入</span>
+          </div>
+          <div class="hub-more"><span>更多校园圈持续接入中</span></div>
+        </div></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">已认证 ·「推荐圈子」排除本校</span><span class="d">首卡已是清华 · 第 6 卡（浙江）在视口外</span></figcaption>
+      <div class="phone">
+        <div class="hub"><div class="hub-hdr">
+          <span class="hub-back"><span>&#8249;</span></span>
+          <div class="hub-titlecol"><span class="hub-title">校园圈</span><span class="hub-sub">发现和加入你的校园圈子</span></div>
+          <span class="hub-hdr__cert">已认证</span>
+        </div>
+        <div class="hub__pad">
+          <div class="hub-guide">
+            <span class="hub-guide__ic"><img src="../../apps/client/src/static/assets/icons/common/graduation-cap.svg" alt=""></span>
+            <div class="hub-guide__body"><span class="hub-guide__t">加入校园圈，发现更多同校的 TA</span><span class="hub-guide__d">完成学校认证，即可加入该校专属校园圈</span></div>
+            <span class="hub-guide__badge">已认证</span>
+          </div>
+          <div class="hub-search"><img src="../../apps/client/src/static/assets/icons/search.svg" alt=""><span class="hub-search__i hub-search__i--ph">搜索学校或校园圈</span></div>
+          <div class="hub-tabs">
+            <span class="hub-tab"><span class="hub-tab__t">我加入的</span></span>
+            <span class="hub-tab"><span class="hub-tab__t hub-tab__t--on">推荐圈子</span><span class="hub-tab__i"></span></span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-arch-landmark.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">清华大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">29 位同学 · 22 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-lake-pavilion.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">中国人民大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">23 位同学 · 0 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-playground.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">复旦大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">31 位同学 · 21 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-night.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">上海交通大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">23 位同学 · 0 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-classroom.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">同济大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">6 位同学 · 0 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+          <div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-cafeteria.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">浙江大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">14 位同学 · 24 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div>
+        </div></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">搜索无结果空态</span><span class="d">关键词「北京电影」0 命中 · 无裁切</span></figcaption>
+      <div class="phone">
+        <div class="hub"><div class="hub-hdr">
+          <span class="hub-back"><span>&#8249;</span></span>
+          <div class="hub-titlecol"><span class="hub-title">校园圈</span><span class="hub-sub">发现和加入你的校园圈子</span></div>
+        </div>
+        <div class="hub__pad">
+          <div class="hub-guide">
+            <span class="hub-guide__ic"><img src="../../apps/client/src/static/assets/icons/common/graduation-cap.svg" alt=""></span>
+            <div class="hub-guide__body"><span class="hub-guide__t">加入校园圈，发现更多同校的 TA</span><span class="hub-guide__d">完成学校认证，即可加入该校专属校园圈</span></div>
+            <span class="hub-guide__btn">去认证</span>
+          </div>
+          <div class="hub-search"><img src="../../apps/client/src/static/assets/icons/search.svg" alt=""><span class="hub-search__i">北京电影</span><span class="hub-search__x">&#215;</span></div>
+          <div class="hub-tabs">
+            <span class="hub-tab"><span class="hub-tab__t">我加入的</span></span>
+            <span class="hub-tab"><span class="hub-tab__t hub-tab__t--on">推荐圈子</span><span class="hub-tab__i"></span></span>
+          </div>
+          <div class="hub-empty"><span class="hub-empty__t">暂无推荐圈子</span></div>
+          <div class="hub-more"><span>更多校园圈持续接入中</span></div>
+        </div></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每类交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页五类件：学校卡（统计行 + 徽标 + CTA 三个从属位）、分段 Tab、搜索框、列表末行、认证状态条。
+    统计行的三态是 2026-10-26 裁定的落点，必须逐态锁死。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>学校卡统计行 · 三态（裁定 A 的落点）</h3>
+      <p class="hint">渲染条件 <code>v-if="schoolStatsText(school.name)"</code>；文案模板
+        <code>campus.hub.schoolStatsMembers</code> =「{n} 位同学」+ <code>schoolStatsPosts</code> =「{n} 条动态」，
+        两段以 <code>" · "</code> 连接。缩写走同一个 <code>formatCampusCount</code>：≥1w 折「w」，千位段裸数字，<b>不引入 k 档</b>（R8-L02-D02）。
+        卡上<b>没有</b>好友头像重叠行，也<b>没有</b>距离。</p>
+      <div class="row">
+        <div class="cell" style="width:360px">
+          <div class="mini"><div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-gate-landmark.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">北京大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">53 位同学 · 26 条动态</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div></div>
+          <span class="lab">双段齐（memberCount / postCount 都有读数）</span>
+        </div>
+        <div class="cell" style="width:360px">
+          <div class="mini"><div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-gate-landmark.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">北京大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div><span class="hub-card__stats">53 位同学</span></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div></div>
+          <span class="lab">单段（另一读数下发 null：缺哪段省哪段）</span>
+        </div>
+        <div class="cell" style="width:360px">
+          <div class="mini"><div class="hub-card">
+            <span class="hub-card__cover"><img src="../../apps/client/src/static/generated/images/campus/campus-gate-landmark.jpg" alt=""></span>
+            <div class="hub-card__body"><div class="hub-card__row"><span class="hub-card__name">北京大学圈</span><span class="hub-badge hub-badge--unver">未认证</span></div></div>
+            <span class="hub-cta hub-cta--outline">申请加入</span>
+          </div></div>
+          <span class="lab">整行缺席（两段都缺 / 统计整条降级）——不留空行、不补 0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>学校卡徽标 + CTA · 按 tab 成对出现</h3>
+      <p class="hint">二者都由 <code>activeTab</code> 单值驱动，<b>整列表共用同一颗徽标</b>（不是逐校判定）：
+        推荐 tab 恒「未认证」+ 描边「申请加入」，我加入的 tab 恒「已认证」+ 实心「进入」。</p>
+      <div class="row">
+        <div class="cell"><span class="hub-badge hub-badge--unver">未认证</span><span class="lab">badge · 未认证（淡紫，推荐 tab）</span></div>
+        <div class="cell"><span class="hub-badge hub-badge--ver">已认证</span><span class="lab">badge · 已认证（实心绿，joined+isVerified）</span></div>
+        <div class="cell"><span class="hub-badge hub-badge--pend">认证中</span><span class="lab">badge · 认证中（源码分支，见 §04：当前不可达）</span></div>
+        <div class="cell"><span class="hub-cta hub-cta--outline" style="min-height:38px">申请加入</span><span class="lab">CTA · 描边（推荐 tab）</span></div>
+        <div class="cell"><span class="hub-cta hub-cta--fill" style="min-height:38px">进入</span><span class="lab">CTA · 实心（我加入的 tab）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>分段 Tab · 两态</h3>
+      <p class="hint">选中态字重 700 + 色 <code>--c-brand-800</code>（R10-L04-D18 从 2.10:1 收到 6.45:1）+ 24×3px 指示条；
+        未选 <code>--c-text-tertiary</code>/500。热区 min-height 44px（88rpx 口径）。</p>
+      <div class="row">
+        <div class="cell"><div class="hub-tabs" style="margin:0;background:var(--c-bg-page);padding:0 10px;border-radius:10px">
+          <span class="hub-tab"><span class="hub-tab__t hub-tab__t--on">我加入的</span><span class="hub-tab__i"></span></span>
+          <span class="hub-tab"><span class="hub-tab__t">推荐圈子</span></span>
+        </div><span class="lab">选中「我加入的」</span></div>
+        <div class="cell"><div class="hub-tabs" style="margin:0;background:var(--c-bg-page);padding:0 10px;border-radius:10px">
+          <span class="hub-tab"><span class="hub-tab__t">我加入的</span></span>
+          <span class="hub-tab"><span class="hub-tab__t hub-tab__t--on">推荐圈子</span><span class="hub-tab__i"></span></span>
+        </div><span class="lab">选中「推荐圈子」＝进页默认（activeTab 初值）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>搜索框 · 三态</h3>
+      <p class="hint">过滤条件 <code>sc.name.includes(kw) || sc.id.includes(kw.toLowerCase())</code>；
+        有词时列表<b>不折叠</b>（<code>visibleSchools</code> 直接返回全量命中），末行自动退化为静态说明。</p>
+      <div class="row">
+        <div class="cell" style="width:220px"><div class="hub-search" style="margin:0"><img src="../../apps/client/src/static/assets/icons/search.svg" alt=""><span class="hub-search__i hub-search__i--ph">搜索学校或校园圈</span></div><span class="lab">空（placeholder）</span></div>
+        <div class="cell" style="width:220px"><div class="hub-search" style="margin:0"><img src="../../apps/client/src/static/assets/icons/search.svg" alt=""><span class="hub-search__i">北京</span><span class="hub-search__x">&#215;</span></div><span class="lab">有词（出清除钮）</span></div>
+        <div class="cell" style="width:220px"><div class="hub-search" style="margin:0;border-color:var(--c-brand-200);box-shadow:0 0 0 3px rgba(54,201,154,.12)"><img src="../../apps/client/src/static/assets/icons/search.svg" alt=""><span class="hub-search__i">北京</span><span class="hub-search__x">&#215;</span></div><span class="lab">focus（本页源码未定义态，沿用全站输入框口径）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>列表末行 · 三态</h3>
+      <p class="hint"><code>canToggleMore = filteredSchools.length &gt; 6</code>：可点态文案
+        <code>common.viewMore + campus.hub.title</code> =「查看更多校园圈」，箭头随 <code>schoolsExpanded</code> 翻转；
+        不可点态换成 <code>campus.hub.moreHint</code>「更多校园圈持续接入中」且<b>无箭头</b>。</p>
+      <div class="row">
+        <div class="cell" style="width:220px"><div class="hub-more" style="background:var(--c-bg-page);border-radius:10px"><span>查看更多校园圈</span><svg><use href="#i-chev-down"/></svg></div><span class="lab">收起态（6 张预览，箭头朝下）</span></div>
+        <div class="cell" style="width:220px"><div class="hub-more hub-more--up" style="background:var(--c-bg-page);border-radius:10px"><span>查看更多校园圈</span><svg><use href="#i-chev-down"/></svg></div><span class="lab">展开态（11 张全量，箭头朝上）</span></div>
+        <div class="cell" style="width:220px"><div class="hub-more" style="background:var(--c-bg-page);border-radius:10px"><span>更多校园圈持续接入中</span></div><span class="lab">静态说明（命中 ≤6 或空态）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>认证状态条 · 引导卡三态 + 拉取失败</h3>
+      <p class="hint">引导卡右侧位是 <code>v-if="!isVerified"</code> 的按钮 / <code>v-else</code> 的徽标；
+        按钮文案再分 <code>isPending ? 查看进度 : 去认证</code>。错误条是 <code>certLoadFailed</code> 独立分支，
+        出现在吸顶带<b>之上</b>（自带状态栏内衬），把整页下推 33px。</p>
+      <div class="row">
+        <div class="cell" style="width:300px"><div class="hub-guide" style="margin:0"><span class="hub-guide__ic"><img src="../../apps/client/src/static/assets/icons/common/graduation-cap.svg" alt=""></span><div class="hub-guide__body"><span class="hub-guide__t">加入校园圈，发现更多同校的 TA</span><span class="hub-guide__d">完成学校认证，即可加入该校专属校园圈</span></div><span class="hub-guide__btn">去认证</span></div><span class="lab">未认证</span></div>
+        <div class="cell" style="width:300px"><div class="hub-guide" style="margin:0"><span class="hub-guide__ic"><img src="../../apps/client/src/static/assets/icons/common/graduation-cap.svg" alt=""></span><div class="hub-guide__body"><span class="hub-guide__t">加入校园圈，发现更多同校的 TA</span><span class="hub-guide__d">完成学校认证，即可加入该校专属校园圈</span></div><span class="hub-guide__btn">查看进度</span></div><span class="lab">审核中</span></div>
+        <div class="cell" style="width:300px"><div class="hub-guide" style="margin:0"><span class="hub-guide__ic"><img src="../../apps/client/src/static/assets/icons/common/graduation-cap.svg" alt=""></span><div class="hub-guide__body"><span class="hub-guide__t">加入校园圈，发现更多同校的 TA</span><span class="hub-guide__d">完成学校认证，即可加入该校专属校园圈</span></div><span class="hub-guide__badge">已认证</span></div><span class="lab">已认证（按钮整块撤下）</span></div>
+        <div class="cell" style="width:300px"><div class="hub-err"><span>网络错误</span><span class="hub-err__b">重试</span></div><span class="lab">拉取失败（common.networkError + common.retry）</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位，不抄全量色板</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">全部取 base 已登记令牌；仅「未认证」淡紫档与「认证中」橙档 base 未登记，
+      按源码实际值以页内字面量落地（已回报 BASE_PROBLEM）。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">「去认证」实心 · 选中 tab · 描边「申请加入」</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#2AAE83"></span><div><div class="sw__n">主色 600<code>--c-brand-600</code></div><div class="sw__u">「进入」实心 CTA</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">「已认证」徽标底 · 页头状态标记字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FAF3;border:1px solid #DDE3E0"></span><div><div class="sw__n">主色 50<code>--c-brand-50</code></div><div class="sw__u">认证引导横幅底 · 页头状态标记底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#D1F5E7;border:1px solid #DDE3E0"></span><div><div class="sw__n">主色 100<code>--c-brand-100</code></div><div class="sw__u">横幅内「已认证」徽标底（比实况加深一档，见 §04）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#A3EBCF"></span><div><div class="sw__n">主色 200<code>--c-brand-200</code></div><div class="sw__u">返回钮描边（R6-L05-D26 反白底白钮）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EDE9FE;border:1px solid #DDE3E0"></span><div><div class="sw__n">未认证底<code>--c-lavender-100</code></div><div class="sw__u">base 未登记 · 页内字面量（配 #6D28D9 字 = 5.99:1）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-container</code></div><div class="sw__u">整页纯白（R2b-L05-D10：理想图取色 #FEFEFE，卡靠描边+投影分层）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF2F0"></span><div><div class="sw__n">描边<code>--c-border-light</code></div><div class="sw__u">卡片/搜索/封面占位底（= 源码 --c-line、--c-neutral-100）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#4A524E"></span><div><div class="sw__n">次要文字<code>--c-text-secondary</code></div><div class="sw__u">统计行「N 位同学 · M 条动态」</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">rpx ÷ 2 = px；24px 页头大标题（48rpx，R1-L05-D13）base 无对应档，按源码值落地。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">24px /800（48rpx）</span><span class="type__p" style="font-size:24px;font-weight:800">校园圈</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14 /700</span><span class="type__p" style="font-size:14px;font-weight:700">北京大学圈</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14 /400</span><span class="type__p" style="font-size:14px;font-weight:400;color:var(--c-text-tertiary)">发现和加入你的校园圈子</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12 /600</span><span class="type__p" style="font-size:12px;font-weight:600">未认证 · 53 位同学 · 26 条动态</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11 /400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-secondary)">完成学校认证，即可加入该校专属校园圈</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13 /400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-text-tertiary)">暂未加入任何校园圈</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">页边距 16px（32rpx）；卡内衬 10px（20rpx）；封面 66px（132rpx，R15-L04-D13 从 80px 收下来）。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-4 8px</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>10px（20rpx）</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 12px</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>16px（32rpx）</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>24px（48rpx）</b><i style="width:24px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:8px"></b>封面<br>16rpx</div>
+        <div class="rad__i"><b style="border-radius:11px"></b>引导横幅<br>22rpx</div>
+        <div class="rad__i"><b style="border-radius:14px"></b>学校卡<br>28rpx</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>胶囊 / CTA<br>999rpx</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 + 与实况的已知差异</h2><p>差异不修，逐条登记在此</p></div>
+  <div class="assets">
+    <div class="asset"><img src="../../apps/client/src/static/generated/images/campus/campus-gate-landmark.jpg" alt="" style="height:150px;object-fit:cover">
+      <div class="asset__b"><b>IMAGE_PATHS.GENERATED.CAMPUS_*</b><p>11 张学校封面，画板经相对路径直引工程既有素材
+        （<code>apps/client/src/static/generated/images/campus/</code>），与实况帧同一批图，非网图、非新素材。
+        映射表是源码里的 <code>CAMPUS_COVER</code>（pku→gate-landmark、thu→arch-landmark、ruc→lake-pavilion、
+        fudan→playground、sjtu→night、tongji→classroom、zju→cafeteria、nju→rain、whu→gate、sysu→library、szu→lake）。</p>
+        <div class="m">66×66px · border-radius 8px · object-fit cover</div></div></div>
+    <div class="asset"><img src="../../apps/client/src/static/assets/icons/common/graduation-cap.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-brand-50)">
+      <div class="asset__b"><b>ICONS_COMMON.GRADUATION_CAP_SVG</b><p>引导卡学士帽。素材内描边硬编码 #94A3B8（slate），
+        源码注释已登记「学士帽着品牌绿需换/改素材」——本画板沿用现状灰色描边，不擅自改色。</p>
+        <div class="m">20×20px（40rpx）· 无托盘（R11-L04-D17 撤下白托盘）</div></div></div>
+    <div class="asset"><img src="../../apps/client/src/static/assets/icons/search.svg" alt="" style="height:150px;object-fit:contain;background:var(--c-bg-container)">
+      <div class="asset__b"><b>ICONS_EMOJI.SEARCH</b><p>搜索框放大镜，同为 #94A3B8 描边的 lucide 风格 svg。</p>
+        <div class="m">15×15px（30rpx）</div></div></div>
+  </div>
+
+  <div class="note">
+    <b>与实况的已知差异 · 以及必须留空/不画的位（画板不修，登记在此）：</b>
+    <ul>
+      <li>理想图卡上有好友头像重叠行「等 342 位同学」；后端无真好友关系数据（只有 estimateFriendJoinedCount 估算），按裁定不画。距离同理无真值源。</li>
+      <li><b>默认 tab 偏离理想图：</b>理想图 校园圈.png 默认选中「我加入的」，实况源码是
+        <code>activeTab = ref&lt;"joined" | "recommend"&gt;("recommend")</code>（2026-08-27 注释：避免「我加入的」仅 1 校导致大片空白）——
+        <b>按实况画</b>，F01/F03/F05/F06 首屏均落「推荐圈子」。</li>
+      <li><b>tabbar 偏离理想图：</b>理想图 PNG 底部画了五格 tabbar（首页/附近/匹配/消息/我的），那是<b>图错</b>——
+        本页在 campus 分包、源码模板内无 tabbar 节点，实况帧底部只有系统 home 指示条。规范 §3.7：分包页画 tabbar = 退稿，
+        故本画板<b>不画 tabbar</b>。</li>
+      <li><b>统计行数字不照抄理想图：</b>理想图的 3.2k / 2.8w / 2.6k / 9,823 是演示值。画板取 2026-10-26 只读 SQL 实测分布：
+        同学数 北大 53 / 复旦 31 / 清华 29 / 上交 23 / 人大 23 / 浙大 14 / 南大 14 / 武大 13 / 同济 6 / 中山 5；
+        动态数 北大 26 / 浙大 24 / 清华 22 / 复旦 21 / 武大 21 / 南大 11 / 中山 1 / 同济 0。
+        同济「0 条动态」是事实（该校确无可见动态），不是缺数，故照画 0。</li>
+      <li><b>人大 / 上交的「0 条动态」是推导值：</b>后端 <code>RealConfigService#valueOrUnknown</code> 在统计整条成功时按
+        <code>counts.getOrDefault(name, 0)</code> 下发——缺席即 0，只有统计查询抛异常才下发 null。
+        两校在同学数名单内（各 23）⇒ 确认在 campuses 响应内 ⇒ 动态读数取 0，与同济同口径。</li>
+      <li><b>深圳大学圈不画统计行：</b>该校在同学数、动态数两份名单里都没出现，无法区分「后端未下发该校区」与「0 位同学 · 0 条动态」，
+        按源码 <code>v-if="schoolStatsText(...)"</code> 的整行缺席画，不补 0。它排在第 11 位，首屏视口内本就看不到。</li>
+      <li><b>后端名单里的「北京师范大学」（31 位同学 · 42 条动态）本页无卡：</b>学校列表来自客户端静态配置
+        <code>config/schools.ts</code> 的 11 校，不含北师大；统计读数按校名匹配，多出来的键无处落位。
+        这是数据源与配置表的口径差，不是画板可修的差异。</li>
+      <li><b>源码观察（非差异，登记备查）：</b><code>joinedBadge</code> 的「认证中」分支当前不可达——
+        pending ⇒ <code>isVerified</code> 为假 ⇒ <code>joinedSchools</code> 为空 ⇒ 我加入的 tab 一张卡都不渲染，
+        而推荐 tab 又走「未认证」首分支。故 F03 审核中屏与 F01 的唯一可见差是引导卡按钮文案「查看进度」，
+        橙底「认证中」徽标只在 §02 枚举、不出现在状态稿。</li>
+      <li><b>页头不画微信胶囊：</b>与样板 campus-certification.html 同口径，只画状态栏。
+        实况源码在吸顶带上留了 <code>padding-right: calc(--capsule-right + 104px)</code> 做胶囊避让（实况帧可见胶囊压在右上角），
+        画板因此把「已认证」状态标记画在右栅格边线上。</li>
+      <li><b>一处令牌替换：</b>引导卡内「已认证」徽标实况底是 <code>--c-brand-50</code>，与横幅底同色（白卡上读得出、绿底上读不出），
+        画板把它加深一档到 <code>--c-brand-100</code> 以保持层级；实况侧若要跟进属令牌问题，不在画板车道改。</li>
+      <li><b>一处几何微调（出图环境所致）：</b>引导卡学士帽的宿主节点实况是 <code>72rpx</code>（36px）宽的<b>透明</b>托盘
+        （R11-L04-D17 撤掉白底后只剩占位），画板把它收到 20px（＝图标本体 <code>40rpx</code>），
+        因为出图机回落到 Microsoft YaHei、比真机 PingFang SC 宽，36px 托盘会把标题「加入校园圈，发现更多同校的 TA」挤成两行；
+        图标尺寸、字阶、卡内其余间距均按源码 rpx÷2 未动。</li>
+      <li><b>base 缺档：</b><code>--c-lavender-100</code>（未认证底 #EDE9FE）与 <code>--c-warning-bg-tint</code>（认证中底）未在
+        <code>assets/board-base.css</code> 登记，本页按源码实际值以页内字面量落地，已回报主控统一补档。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 校园圈页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

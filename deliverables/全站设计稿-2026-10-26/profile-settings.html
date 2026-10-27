@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 设置页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌；px 均为源码 rpx ÷ 2 的实测换算） ===== */
+/* 吸顶页头：safe-top 状态栏带 44 + nav-bar 88rpx=44（index.vue:722 / :730） */
+.psh { position: absolute; top: 0; left: 0; width: 100%; height: 88px; z-index: 6;
+  background: var(--c-bg-container); box-shadow: var(--s-sm); }
+.psn { position: absolute; top: 44px; left: 0; width: 100%; height: 44px; display: flex;
+  align-items: center; justify-content: space-between; padding: 0 16px; box-sizing: border-box;
+  z-index: 7; }   /* 必须高于 .psh(6)，否则返回键与标题被不透明吸顶底吞掉 */
+.psn__back { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-7xl); color: var(--c-text-primary); font-weight: 300; line-height: 1; }
+.psn__t { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); }
+.psn__ph { width: 32px; height: 32px; flex: none; }
+
+/* 文档流列表（帧即视口：超出 812 由 .phone overflow 裁掉） */
+.lsta { position: absolute; top: 88px; left: 0; width: 100%; height: 1400px; z-index: 2; }
+.lsta--up { top: auto; bottom: 0; height: auto; }   /* 已滚到文档底部（maxScroll 态）：末行贴视口底 */
+
+.stg { margin: 12px 16px 0; }                    /* .section: 24rpx var(--page-padding) */
+.stg__h { font-size: var(--fs-base); color: var(--c-text-secondary); font-weight: 500;
+  padding: 0 6px 6px; }                           /* 0 12rpx 12rpx */
+.mgrp { background: var(--c-bg-container); border-radius: var(--r-xl);
+  box-shadow: var(--s-card-soft); overflow: hidden; }
+.mrow { display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; border-bottom: 0.5px solid var(--c-border-light); }  /* 24rpx 28rpx / 1rpx */
+.mrow:last-child { border-bottom: none; }
+.mrow__l { display: flex; align-items: center; gap: 10px; min-width: 0; }   /* gap 20rpx */
+.mrow__rt { display: flex; align-items: center; gap: 8px; }
+.mic { width: 32px; height: 32px; border-radius: var(--r-xl); flex: none;
+  display: flex; align-items: center; justify-content: center; color: var(--c-text-primary); }
+.mic svg { width: 18px; height: 18px; }
+.mic--cream { background: var(--c-tint-cream-50); }
+.mic--blue { background: var(--c-tint-blue-soft); }
+.mic--pink { background: var(--c-tint-pink-soft); }
+.mic--pink50 { background: var(--c-tint-pink-50); }
+.mic--lav { background: var(--c-lavender-100); }
+.mic--brand { background: var(--c-bg-brand); }
+.mic--page { background: var(--c-bg-page); }
+.mic--none { background: transparent; }          /* .settings-card--mint 全仓未定义 ⇒ 实测无底 */
+.mrow__t { font-size: var(--fs-lg); color: var(--c-text-primary); font-weight: 500; }
+.mrow__val { font-size: var(--fs-base); color: var(--c-text-tertiary); font-variant-numeric: tabular-nums; }
+.mrow__ar { font-size: var(--fs-3xl); color: var(--c-text-tertiary); font-weight: 300; line-height: 1; }
+
+/* 原生 switch（微信默认几何：52×32；关闭态白轨+发丝边 = dnd.vue:378 注释所指的可达性问题现场） */
+.tg { position: relative; width: 52px; height: 32px; border-radius: var(--r-full); flex: none;
+  background: var(--c-neutral-0); border: 1px solid var(--c-border-default); box-sizing: border-box; }
+.tg::after { content: ""; position: absolute; top: 2px; left: 2px; width: 26px; height: 26px;
+  border-radius: var(--r-circle); background: var(--c-neutral-0); box-shadow: var(--s-md); }
+.tg--on { background: var(--c-brand); border-color: var(--c-brand); }
+.tg--on::after { left: 22px; }
+
+.logout { margin: 16px 16px 0; padding: 14px; background: var(--c-bg-container);
+  border-radius: var(--r-xl); box-shadow: var(--s-card-soft); text-align: center; }
+.logout__t { font-size: var(--fs-xl); color: var(--c-error); font-weight: 500; }
+.fver { display: flex; justify-content: center; padding: 16px 0 8px; }
+.fver__t { font-size: var(--fs-sm); color: var(--c-text-tertiary); }
+
+/* uni.showModal 系统弹窗层 */
+.mask { position: absolute; inset: 0; background: var(--c-bg-overlay); z-index: 20;
+  display: flex; align-items: center; justify-content: center; }
+.dlg { width: 300px; background: var(--c-bg-container); border-radius: var(--r-xxl);
+  box-shadow: var(--s-modal); overflow: hidden; }
+.dlg__h { font-size: var(--fs-2xl); font-weight: 600; color: var(--c-text-primary);
+  text-align: center; padding: 20px 18px 8px; }
+.dlg__c { font-size: var(--fs-lg); color: var(--c-text-secondary); line-height: 1.65;
+  text-align: center; padding: 0 20px 20px; white-space: pre-line; }
+.dlg__r { display: flex; border-top: 0.5px solid var(--c-border-light); }
+.dlg__b { flex: 1; height: 48px; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-xl); }
+.dlg__b--c { color: var(--c-text-secondary); border-right: 0.5px solid var(--c-border-light); }
+.dlg__b--k { color: var(--c-brand); font-weight: 600; }
+
+/* §04 素材条：图标芯片墙（本页无照片位） */
+.athumb { height: 190px; background: var(--c-bg-container); display: flex; flex-wrap: wrap;
+  align-content: center; justify-content: center; gap: 12px; padding: 22px; }
+.athumb .mic { width: 44px; height: 44px; }
+.athumb .mic svg { width: 24px; height: 24px; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 描边风格；源码此位是 <image src=IMAGE_PATHS...>，同位改用矢量表达见 §04） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M3 11.4v1.2l14 5.4V6l-14 5.4z"/><path d="M17 9.5a2.6 2.6 0 0 1 0 5"/><path d="M6.5 13.4v3.9a1.8 1.8 0 0 0 3.6 0v-2.6"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><circle cx="17.5" cy="6" r="2.6"/><circle cx="6.5" cy="12" r="2.6"/><circle cx="17.5" cy="18" r="2.6"/><path d="M8.8 10.7 15.3 7.3M8.8 13.3l6.5 3.4"/></symbol>
+  <symbol id="i-user-edit" viewBox="0 0 24 24"><circle cx="11" cy="8" r="3.6"/><path d="M5 20a6 6 0 0 1 9.6-4.8"/><path d="M18.8 14.2 21 16.4l-3.2 3.2-2.4.8.8-2.4z"/></symbol>
+  <symbol id="i-badge-ok" viewBox="0 0 24 24"><path d="M12 3.2 19.6 6v5.4c0 4.2-3 7.4-7.6 9.4-4.6-2-7.6-5.2-7.6-9.4V6z"/><path d="M9.2 12.2l2 2 3.6-4"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M14.4 9.4h-4a1.9 1.9 0 0 0 0 3.8h3.2a1.9 1.9 0 0 1 0 3.8H9.6M12 7.8v8.4"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9.4A3.9 3.9 0 0 1 12 8.4 3.9 3.9 0 0 1 19 10.6c0 5-7 9.4-7 9.4z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9.5" cy="8.4" r="3.4"/><path d="M4 19.4a5.6 5.6 0 0 1 11 0"/><path d="M16.4 6.4a3.2 3.2 0 0 1 0 6.2M17.6 14.6a5.2 5.2 0 0 1 2.6 4.2"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.6 12S6.2 6.4 12 6.4 21.4 12 21.4 12 17.8 17.6 12 17.6 2.6 12 2.6 12z"/><circle cx="12" cy="12" r="2.6"/></symbol>
+  <symbol id="i-album" viewBox="0 0 24 24"><rect x="3.4" y="5.4" width="17.2" height="13.2" rx="2.2"/><circle cx="9" cy="10.4" r="1.5"/><path d="M4.4 16.4l4.4-3.6 3.4 2.8 3-2.4 4.4 3.6"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.6" y="5.4" width="16.8" height="14" rx="2.4"/><path d="M3.6 10h16.8M8.4 3.6v3.4M15.6 3.6v3.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.4 8.4 0 1 0 10.6 10.6z"/></symbol>
+  <symbol id="i-shield-lock" viewBox="0 0 24 24"><path d="M12 3.2 19.6 6v5.4c0 4.2-3 7.4-7.6 9.4-4.6-2-7.6-5.2-7.6-9.4V6z"/><rect x="9.4" y="11.4" width="5.2" height="4.4" rx="1.2"/><path d="M10.6 11.4v-1a1.4 1.4 0 0 1 2.8 0v1"/></symbol>
+  <symbol id="i-broom" viewBox="0 0 24 24"><path d="M13.6 10.4 19.8 4.2"/><path d="M11.4 12.6 8.6 9.8l3-3 2.8 2.8z"/><path d="M8.6 15.4c-2 2-4.4 2.6-5.6 3.2 1.2.6 6.6 1.6 9.2-.8l1.6-1.6z"/></symbol>
+  <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M14 3.6H7.4a2 2 0 0 0-2 2v12.8a2 2 0 0 0 2 2h9.2a2 2 0 0 0 2-2V8.6z"/><path d="M14 3.6v5h4.6M9 13h6M9 16.4h4"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11.4a8 8 0 1 0-2.6 6.4"/><path d="M20 5.4v6h-6"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M12 11v5.4M12 7.8h.01"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>设置页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/profile-extra/settings/index</code>。
+     个人页右上角齿轮的唯一落点，也是全站功能入口的汇聚处：2026-08-14 起「社交资产 / 隐私安全」两组
+     从主页收敛到此，本页因此成为 15 条入口 + 2 枚开关 + 1 个危险操作的总闸口。
+     画板把「顶部四段 / 底部四段」两个滚动位、商业化开关造成的入口增减、两枚开关的档位、
+     以及退出登录与清除缓存两个确认弹窗逐屏画全，作为该页的验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>profile-extra/settings/index</b></span>
+    <span>分包 <b>profile-extra</b>（无 tabbar）</span>
+    <span>状态 <b>6 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1845</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 6 屏</h2>
+    <p>顶/底两个滚动位 · 商业化增减 · 开关档位 · 两个确认弹窗</p></div>
+  <div class="sec__sub">本页状态机有 <b>6 屏</b>，来自源码条件表达式
+    <code>appConfig.isCommerceOn("coin")</code>（index.vue:339，决定「交友币」条目是否存在于社交资产组）、
+    <code>weeklyScheduleEnabled</code>（:585）、<code>themeStore.isDark</code>（:604）两枚原生 switch 的档位、
+    以及 <code>uni.showModal</code>（:248 退出登录 / :133 清除缓存）两个模态层。
+    F01–F03 是同一文档流 scrollTop=0 的三个状态；F04–F06 是 scrollTop=maxScroll（吸顶页头常驻，
+    源码 :722 把整块头部包进 <code>position:sticky</code>）下的同一屏与其上的两个模态——
+    帧即视口，超 812px 的部分由画框裁掉，裁切只写题注不写进画面。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">浅色 · 首屏 · 默认（coin 关 / 两开关全关）</span><span class="d">isCommerceOn("coin")=false · ↓裁切于「本周安排」行</span></figcaption>
+      <div class="phone">
+        <div class="psh"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="psn"><span class="psn__back">‹</span><span class="psn__t">设置</span><span class="psn__ph"></span></div>
+        <div class="lsta">
+          <div class="stg"><div class="stg__h">帮助</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-megaphone"/></svg></i><span class="mrow__t">反馈与帮助</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-share"/></svg></i><span class="mrow__t">推荐给好友</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">账号管理</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--blue"><svg><use href="#i-user-edit"/></svg></i><span class="mrow__t">编辑资料</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-badge-ok"/></svg></i><span class="mrow__t">恋爱认证</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">社交资产</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-heart"/></svg></i><span class="mrow__t">我的动态</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--brand"><svg><use href="#i-users"/></svg></i><span class="mrow__t">访客记录</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--blue"><svg><use href="#i-eye"/></svg></i><span class="mrow__t">浏览记录</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-album"/></svg></i><span class="mrow__t">我的相册</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-calendar"/></svg></i><span class="mrow__t">时间安排</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">通知设置</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-moon"/></svg></i><span class="mrow__t">免打扰</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--none"><svg><use href="#i-calendar"/></svg></i><span class="mrow__t">本周安排</span></span><span class="tg"></span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-moon"/></svg></i><span class="mrow__t">深色模式</span></span><span class="tg"></span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">隐私安全</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-shield-lock"/></svg></i><span class="mrow__t">隐私权限设置</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink50"><svg><use href="#i-badge-ok"/></svg></i><span class="mrow__t">安全中心</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">存储管理</div>
+            <div class="mgrp"><div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-broom"/></svg></i><span class="mrow__t">清除缓存</span></span><span class="mrow__rt"><span class="mrow__val">0 KB</span><span class="mrow__ar">›</span></span></div></div></div>
+          <div class="stg"><div class="stg__h">关于</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-file-text"/></svg></i><span class="mrow__t">用户协议</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-shield-lock"/></svg></i><span class="mrow__t">隐私政策</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-refresh"/></svg></i><span class="mrow__t">检查更新</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-info"/></svg></i><span class="mrow__t">关于我们</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="logout"><span class="logout__t">退出登录</span></div>
+          <div class="fver"><span class="fver__t">校园恋爱 v1.0.0</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">浅色 · 首屏 · 商业化开启（社交资产多一条）</span><span class="d">isCommerceOn("coin")=true · 下方整体下移 56px · ↓裁切于「免打扰」行</span></figcaption>
+      <div class="phone">
+        <div class="psh"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="psn"><span class="psn__back">‹</span><span class="psn__t">设置</span><span class="psn__ph"></span></div>
+        <div class="lsta">
+          <div class="stg"><div class="stg__h">帮助</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-megaphone"/></svg></i><span class="mrow__t">反馈与帮助</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-share"/></svg></i><span class="mrow__t">推荐给好友</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">账号管理</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--blue"><svg><use href="#i-user-edit"/></svg></i><span class="mrow__t">编辑资料</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-badge-ok"/></svg></i><span class="mrow__t">恋爱认证</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">社交资产</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-coin"/></svg></i><span class="mrow__t">交友币</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-heart"/></svg></i><span class="mrow__t">我的动态</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--brand"><svg><use href="#i-users"/></svg></i><span class="mrow__t">访客记录</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--blue"><svg><use href="#i-eye"/></svg></i><span class="mrow__t">浏览记录</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-album"/></svg></i><span class="mrow__t">我的相册</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-calendar"/></svg></i><span class="mrow__t">时间安排</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">通知设置</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-moon"/></svg></i><span class="mrow__t">免打扰</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--none"><svg><use href="#i-calendar"/></svg></i><span class="mrow__t">本周安排</span></span><span class="tg"></span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-moon"/></svg></i><span class="mrow__t">深色模式</span></span><span class="tg"></span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">隐私安全</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-shield-lock"/></svg></i><span class="mrow__t">隐私权限设置</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink50"><svg><use href="#i-badge-ok"/></svg></i><span class="mrow__t">安全中心</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">存储管理</div>
+            <div class="mgrp"><div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-broom"/></svg></i><span class="mrow__t">清除缓存</span></span><span class="mrow__rt"><span class="mrow__val">0 KB</span><span class="mrow__ar">›</span></span></div></div></div>
+          <div class="stg"><div class="stg__h">关于</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-file-text"/></svg></i><span class="mrow__t">用户协议</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-shield-lock"/></svg></i><span class="mrow__t">隐私政策</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-refresh"/></svg></i><span class="mrow__t">检查更新</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-info"/></svg></i><span class="mrow__t">关于我们</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="logout"><span class="logout__t">退出登录</span></div>
+          <div class="fver"><span class="fver__t">校园恋爱 v1.0.0</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">浅色 · 首屏 · 两枚开关全开</span><span class="d">weeklyScheduleEnabled=true 且 themeStore.isDark=true · 页面本体不换肤（见 §04）</span></figcaption>
+      <div class="phone">
+        <div class="psh"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="psn"><span class="psn__back">‹</span><span class="psn__t">设置</span><span class="psn__ph"></span></div>
+        <div class="lsta">
+          <div class="stg"><div class="stg__h">帮助</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-megaphone"/></svg></i><span class="mrow__t">反馈与帮助</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-share"/></svg></i><span class="mrow__t">推荐给好友</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">账号管理</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--blue"><svg><use href="#i-user-edit"/></svg></i><span class="mrow__t">编辑资料</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-badge-ok"/></svg></i><span class="mrow__t">恋爱认证</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">社交资产</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-heart"/></svg></i><span class="mrow__t">我的动态</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--brand"><svg><use href="#i-users"/></svg></i><span class="mrow__t">访客记录</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--blue"><svg><use href="#i-eye"/></svg></i><span class="mrow__t">浏览记录</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-album"/></svg></i><span class="mrow__t">我的相册</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-calendar"/></svg></i><span class="mrow__t">时间安排</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">通知设置</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-moon"/></svg></i><span class="mrow__t">免打扰</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--none"><svg><use href="#i-calendar"/></svg></i><span class="mrow__t">本周安排</span></span><span class="tg tg--on"></span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-moon"/></svg></i><span class="mrow__t">深色模式</span></span><span class="tg tg--on"></span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">隐私安全</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-shield-lock"/></svg></i><span class="mrow__t">隐私权限设置</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink50"><svg><use href="#i-badge-ok"/></svg></i><span class="mrow__t">安全中心</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">存储管理</div>
+            <div class="mgrp"><div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-broom"/></svg></i><span class="mrow__t">清除缓存</span></span><span class="mrow__rt"><span class="mrow__val">0 KB</span><span class="mrow__ar">›</span></span></div></div></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">浅色 · 续屏 · 已滚到文档底部</span><span class="d">吸顶页头常驻（:722 sticky）· 顶缘是「免打扰」行残影 · 末行贴视口底</span></figcaption>
+      <div class="phone">
+        <div class="psh"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="psn"><span class="psn__back">‹</span><span class="psn__t">设置</span><span class="psn__ph"></span></div>
+        <div class="lsta lsta--up">
+          <div class="stg"><div class="stg__h">帮助</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-megaphone"/></svg></i><span class="mrow__t">反馈与帮助</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-share"/></svg></i><span class="mrow__t">推荐给好友</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">账号管理</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--blue"><svg><use href="#i-user-edit"/></svg></i><span class="mrow__t">编辑资料</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-badge-ok"/></svg></i><span class="mrow__t">恋爱认证</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">社交资产</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-heart"/></svg></i><span class="mrow__t">我的动态</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--brand"><svg><use href="#i-users"/></svg></i><span class="mrow__t">访客记录</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--blue"><svg><use href="#i-eye"/></svg></i><span class="mrow__t">浏览记录</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-album"/></svg></i><span class="mrow__t">我的相册</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-calendar"/></svg></i><span class="mrow__t">时间安排</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">通知设置</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-moon"/></svg></i><span class="mrow__t">免打扰</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--none"><svg><use href="#i-calendar"/></svg></i><span class="mrow__t">本周安排</span></span><span class="tg"></span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-moon"/></svg></i><span class="mrow__t">深色模式</span></span><span class="tg"></span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">隐私安全</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-shield-lock"/></svg></i><span class="mrow__t">隐私权限设置</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink50"><svg><use href="#i-badge-ok"/></svg></i><span class="mrow__t">安全中心</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">存储管理</div>
+            <div class="mgrp"><div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-broom"/></svg></i><span class="mrow__t">清除缓存</span></span><span class="mrow__rt"><span class="mrow__val">0 KB</span><span class="mrow__ar">›</span></span></div></div></div>
+          <div class="stg"><div class="stg__h">关于</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-file-text"/></svg></i><span class="mrow__t">用户协议</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-shield-lock"/></svg></i><span class="mrow__t">隐私政策</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-refresh"/></svg></i><span class="mrow__t">检查更新</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-info"/></svg></i><span class="mrow__t">关于我们</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="logout"><span class="logout__t">退出登录</span></div>
+          <div class="fver"><span class="fver__t">校园恋爱 v1.0.0</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">危险操作 · 退出登录确认</span><span class="d">uni.showModal（:248）· 未传 confirmText ⇒ 系统默认「取消/确定」</span></figcaption>
+      <div class="phone">
+        <div class="psh"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="psn"><span class="psn__back">‹</span><span class="psn__t">设置</span><span class="psn__ph"></span></div>
+        <div class="lsta lsta--up">
+          <div class="stg"><div class="stg__h">帮助</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-megaphone"/></svg></i><span class="mrow__t">反馈与帮助</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-share"/></svg></i><span class="mrow__t">推荐给好友</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">账号管理</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--blue"><svg><use href="#i-user-edit"/></svg></i><span class="mrow__t">编辑资料</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-badge-ok"/></svg></i><span class="mrow__t">恋爱认证</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">社交资产</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-heart"/></svg></i><span class="mrow__t">我的动态</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--brand"><svg><use href="#i-users"/></svg></i><span class="mrow__t">访客记录</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--blue"><svg><use href="#i-eye"/></svg></i><span class="mrow__t">浏览记录</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-album"/></svg></i><span class="mrow__t">我的相册</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-calendar"/></svg></i><span class="mrow__t">时间安排</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">通知设置</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-moon"/></svg></i><span class="mrow__t">免打扰</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--none"><svg><use href="#i-calendar"/></svg></i><span class="mrow__t">本周安排</span></span><span class="tg"></span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-moon"/></svg></i><span class="mrow__t">深色模式</span></span><span class="tg"></span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">隐私安全</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-shield-lock"/></svg></i><span class="mrow__t">隐私权限设置</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink50"><svg><use href="#i-badge-ok"/></svg></i><span class="mrow__t">安全中心</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">存储管理</div>
+            <div class="mgrp"><div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-broom"/></svg></i><span class="mrow__t">清除缓存</span></span><span class="mrow__rt"><span class="mrow__val">0 KB</span><span class="mrow__ar">›</span></span></div></div></div>
+          <div class="stg"><div class="stg__h">关于</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-file-text"/></svg></i><span class="mrow__t">用户协议</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-shield-lock"/></svg></i><span class="mrow__t">隐私政策</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-refresh"/></svg></i><span class="mrow__t">检查更新</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-info"/></svg></i><span class="mrow__t">关于我们</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="logout"><span class="logout__t">退出登录</span></div>
+          <div class="fver"><span class="fver__t">校园恋爱 v1.0.0</span></div>
+        </div>
+        <div class="mask">
+          <div class="dlg">
+            <div class="dlg__h">提示</div>
+            <div class="dlg__c">确定要退出登录吗？</div>
+            <div class="dlg__r"><span class="dlg__b dlg__b--c">取消</span><span class="dlg__b dlg__b--k">确定</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">存储管理 · 清除缓存确认</span><span class="d">uni.showModal（:133）· {size} 取源码初值 0 KB</span></figcaption>
+      <div class="phone">
+        <div class="psh"></div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="psn"><span class="psn__back">‹</span><span class="psn__t">设置</span><span class="psn__ph"></span></div>
+        <div class="lsta lsta--up">
+          <div class="stg"><div class="stg__h">帮助</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-megaphone"/></svg></i><span class="mrow__t">反馈与帮助</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-share"/></svg></i><span class="mrow__t">推荐给好友</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">账号管理</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--blue"><svg><use href="#i-user-edit"/></svg></i><span class="mrow__t">编辑资料</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-badge-ok"/></svg></i><span class="mrow__t">恋爱认证</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">社交资产</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-heart"/></svg></i><span class="mrow__t">我的动态</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--brand"><svg><use href="#i-users"/></svg></i><span class="mrow__t">访客记录</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--blue"><svg><use href="#i-eye"/></svg></i><span class="mrow__t">浏览记录</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink"><svg><use href="#i-album"/></svg></i><span class="mrow__t">我的相册</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-calendar"/></svg></i><span class="mrow__t">时间安排</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">通知设置</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-moon"/></svg></i><span class="mrow__t">免打扰</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--none"><svg><use href="#i-calendar"/></svg></i><span class="mrow__t">本周安排</span></span><span class="tg"></span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-moon"/></svg></i><span class="mrow__t">深色模式</span></span><span class="tg"></span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">隐私安全</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-shield-lock"/></svg></i><span class="mrow__t">隐私权限设置</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--pink50"><svg><use href="#i-badge-ok"/></svg></i><span class="mrow__t">安全中心</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="stg"><div class="stg__h">存储管理</div>
+            <div class="mgrp"><div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-broom"/></svg></i><span class="mrow__t">清除缓存</span></span><span class="mrow__rt"><span class="mrow__val">0 KB</span><span class="mrow__ar">›</span></span></div></div></div>
+          <div class="stg"><div class="stg__h">关于</div>
+            <div class="mgrp">
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-file-text"/></svg></i><span class="mrow__t">用户协议</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-shield-lock"/></svg></i><span class="mrow__t">隐私政策</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-refresh"/></svg></i><span class="mrow__t">检查更新</span></span><span class="mrow__ar">›</span></div>
+              <div class="mrow"><span class="mrow__l"><i class="mic mic--page"><svg><use href="#i-info"/></svg></i><span class="mrow__t">关于我们</span></span><span class="mrow__ar">›</span></div>
+            </div></div>
+          <div class="logout"><span class="logout__t">退出登录</span></div>
+          <div class="fver"><span class="fver__t">校园恋爱 v1.0.0</span></div>
+        </div>
+        <div class="mask">
+          <div class="dlg">
+            <div class="dlg__h">清除缓存</div>
+            <div class="dlg__c">当前缓存大小：0 KB
+
+清除缓存不会影响您的账号数据，但会清除本地图片缓存与临时文件。</div>
+            <div class="dlg__r"><span class="dlg__b dlg__b--c">取消</span><span class="dlg__b dlg__b--k">立即清除</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每类交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页没有输入框，却有全站最多的「可点行」——15 条入口 + 2 枚开关 + 1 个危险操作 + 1 个只读值。
+    行的七种形态若退化，用户就分不清「这条能点 / 这条只能拨 / 这条只是在看」。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>菜单行 · 七种形态</h3>
+      <p class="hint">行高实算 56px = 上下 <code>24rpx</code> + 芯片 32px；分隔线 <code>--c-border-light</code>；末行去线（<code>menu-item--no-border</code>）。</p>
+      <div class="row">
+        <div class="cell" style="width:186px"><div class="mgrp"><div class="mrow"><span class="mrow__l"><i class="mic mic--cream"><svg><use href="#i-megaphone"/></svg></i><span class="mrow__t">反馈与帮助</span></span><span class="mrow__ar">›</span></div></div><span class="lab">default</span></div>
+        <div class="cell" style="width:186px"><div class="mgrp"><div class="mrow" style="background:var(--c-bg-surface)"><span class="mrow__l"><i class="mic mic--blue"><svg><use href="#i-user-edit"/></svg></i><span class="mrow__t">编辑资料</span></span><span class="mrow__ar">›</span></div></div><span class="lab">hover（hover-class 实测档）</span></div>
+        <div class="cell" style="width:186px"><div class="mgrp"><div class="mrow"><span class="mrow__l"><i class="mic mic--lav"><svg><use href="#i-broom"/></svg></i><span class="mrow__t">清除缓存</span></span><span class="mrow__rt"><span class="mrow__val">0 KB</span><span class="mrow__ar">›</span></span></div></div><span class="lab">带只读值 + 箭头</span></div>
+        <div class="cell" style="width:186px"><div class="mgrp"><div class="mrow"><span class="mrow__l"><i class="mic mic--none"><svg><use href="#i-calendar"/></svg></i><span class="mrow__t">本周安排</span></span><span class="tg"></span></div></div><span class="lab">带开关 · 无箭头 · 芯片无底</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>原生 switch · 两档</h3>
+      <p class="hint">源码 <code>&lt;switch color="#36C99A"&gt;</code>（:586 / :605）⇒ ON 轨 <code>--c-brand</code>；
+        OFF 轨是微信默认白底 + <code>--c-border-default</code> 发丝边，坐在白卡上（dnd.vue:378 同判点），
+        本页两枚开关<strong>没有</strong> dnd 页的深灰槽底 ⇒ 关闭态只能靠滑块在左读出来。</p>
+      <div class="row">
+        <div class="cell"><span class="tg"></span><span class="lab">OFF（checked=false）</span></div>
+        <div class="cell"><span class="tg tg--on"></span><span class="lab">ON（checked=true）</span></div>
+      </div>
+      <table class="tbl" style="margin-top:16px">
+        <tr><th>开关</th><th>真值来源</th><th>切换副作用</th></tr>
+        <tr><td>本周安排</td><td><code>weeklyScheduleEnabled</code>（:585，存 STORAGE_KEYS.WEEKLY_SCHEDULE_ENABLED）</td><td>toast「本周安排已开启 / 已关闭」；首页课区块随启停</td></tr>
+        <tr><td>深色模式</td><td><code>themeStore.isDark</code>（:604）</td><td><code>toggleTheme()</code> + toast「深色 / 浅色」（:43）；页面本体在 mp 端不即时换肤</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>系统确认弹窗 · 两型</h3>
+      <p class="hint"><code>uni.showModal</code> 无自定义样式文件可依，画板按微信系统件几何画；
+        标题/正文/按钮文案全部逐字取自 i18n。</p>
+      <table class="tbl">
+        <tr><th>触发</th><th>标题</th><th>正文</th><th>取消 / 确定</th></tr>
+        <tr><td>退出登录（:248）</td><td><code>settings.logoutTitle</code> 提示</td><td><code>settings.logoutConfirm</code> 确定要退出登录吗？</td><td>未传参 ⇒ 系统默认「取消」「确定」</td></tr>
+        <tr><td>清除缓存（:133）</td><td><code>settings.clearCacheTitle</code> 清除缓存</td><td><code>settings.clearCacheContent</code>，含 <code>{size}</code> 插值</td><td>取消 / <code>settings.clearCacheConfirm</code> 立即清除</td></tr>
+      </table>
+      <p class="hint" style="margin-top:12px">确定后另有两个瞬态：清除缓存 → <code>uni.showLoading</code>「清除中...」→ toast「缓存已清除」；
+        退出登录 → <code>sessionStore.logout()</code> 后整页让位登录页。瞬态 loading 不占独立屏（无法在本页停帧）。</p>
+    </div>
+
+    <div class="panel">
+      <h3>入口全枚举 · 15 条（分组顺序即源码顺序）</h3>
+      <table class="tbl">
+        <tr><th>分组</th><th>条目</th><th>i18n key</th><th>落点 / 条件</th></tr>
+        <tr><td>帮助</td><td>反馈与帮助</td><td><code>settings.feedbackHelp</code></td><td>goToFeedbackHelp()</td></tr>
+        <tr><td>帮助</td><td>推荐给好友</td><td><code>profile.shareFriend</code></td><td>uni.showShareMenu</td></tr>
+        <tr><td>账号管理</td><td>编辑资料</td><td><code>settings.editProfile</code></td><td>goToProfileSetup()</td></tr>
+        <tr><td>账号管理</td><td>恋爱认证</td><td><code>settings.verification</code></td><td>profile-extra/verification</td></tr>
+        <tr><td>社交资产</td><td>交友币</td><td><code>profile.coinBalance</code></td><td><b>仅 <code>isCommerceOn("coin")</code> 为真</b> ⇒ ROUTES.WALLET</td></tr>
+        <tr><td>社交资产</td><td>我的动态</td><td><code>profile.myPosts</code></td><td>ROUTES.TAB.PROFILE + tabQuery source=my-posts</td></tr>
+        <tr><td>社交资产</td><td>访客记录</td><td><code>profile.visitors</code></td><td>profile-extra/profile/visitors</td></tr>
+        <tr><td>社交资产</td><td>浏览记录</td><td><code>profile.browseHistory</code></td><td>ROUTES.VILLAGE.HISTORY</td></tr>
+        <tr><td>社交资产</td><td>我的相册</td><td><code>profile.albumTitle</code></td><td>profile-extra/profile/album</td></tr>
+        <tr><td>社交资产</td><td>时间安排</td><td><code>profile.scheduleSetting</code></td><td>subpackages/setup/schedule</td></tr>
+        <tr><td>通知设置</td><td>免打扰</td><td><code>dnd.title</code></td><td>→ 本画板第二页 profile-settings-dnd.html</td></tr>
+        <tr><td>隐私安全</td><td>隐私权限设置</td><td><code>profile.privacyPermission</code></td><td>ROUTES.PROFILE.PRIVACY</td></tr>
+        <tr><td>隐私安全</td><td>安全中心</td><td><code>profile.safetyCenter</code></td><td>ROUTES.SECURITY（注销账号在该页，见 §04）</td></tr>
+        <tr><td>存储管理</td><td>清除缓存</td><td><code>settings.clearCache</code></td><td>危险等级低（可重建缓存，不动账号数据）</td></tr>
+        <tr><td>关于</td><td>用户协议 / 隐私政策 / 检查更新 / 关于我们</td><td><code>settings.userAgreement</code> 等 4 键</td><td>协议页跳转 / checkUpdate / aboutUs</td></tr>
+        <tr><td>—（组外）</td><td><strong style="color:var(--c-error)">退出登录</strong></td><td><code>settings.logout</code></td><td>本页唯一危险操作：清 token + 通知后端 + 跳登录页</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">芯片底色七档全部来自 <code>item.bgColor</code> / <code>settings-card--*</code>，无页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2;border:1px solid #DDE3E0"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">整页单色底（R8-L09-D07 收口，不再渐变）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFFFFF;border:1px solid #DDE3E0"></span><div><div class="sw__n">容器<code>--c-bg-container</code></div><div class="sw__u">吸顶页头 · 分组卡 · 退出登录卡</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色<code>--c-brand</code></div><div class="sw__u">switch ON 轨道（源码 #36C99A 同值）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E5454D"></span><div><div class="sw__n">错误<code>--c-error</code></div><div class="sw__u">退出登录文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFF8E7"></span><div><div class="sw__n">奶油底<code>--c-tint-cream-50</code></div><div class="sw__u">反馈与帮助 / 推荐给好友 / 时间安排 / 交友币</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8F4FD"></span><div><div class="sw__n">蓝底<code>--c-tint-blue-soft</code></div><div class="sw__u">编辑资料 / 浏览记录</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFF0F5"></span><div><div class="sw__n">粉底<code>--c-tint-pink-soft</code></div><div class="sw__u">恋爱认证 / 我的动态 / 我的相册</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EDE9FE"></span><div><div class="sw__n">淡紫<code>--c-lavender-100</code></div><div class="sw__u">免打扰 / 深色模式 / 隐私权限 / 清除缓存</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E8FBF2"></span><div><div class="sw__n">主色浅底<code>--c-bg-brand</code></div><div class="sw__u">访客记录</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FCE4EC"></span><div><div class="sw__n">粉 50<code>--c-tint-pink-50</code></div><div class="sw__u">安全中心</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">本页实际用到七档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-7xl 28/300</span><span class="type__p" style="font-size:28px;font-weight:300;line-height:1">‹</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/300</span><span class="type__p" style="font-size:18px;font-weight:300;color:var(--c-text-tertiary)">› 行末箭头</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">设置</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/500</span><span class="type__p" style="font-size:15px;font-weight:500;color:var(--c-error)">退出登录</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/500</span><span class="type__p" style="font-size:14px;font-weight:500">反馈与帮助 · 本周安排</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/500</span><span class="type__p" style="font-size:12px;font-weight:500;color:var(--c-text-secondary)">帮助 · 账号管理 · 社交资产</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/400</span><span class="type__p" style="font-size:11px;font-weight:400;color:var(--c-text-tertiary)">校园恋爱 v1.0.0</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">rpx ÷ 2 = px。gutter 全站口径 <code>--page-padding</code> 32rpx=16px。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i><span style="margin-left:8px">分组上外边距 · 节标题下衬</span></div>
+        <div class="space__i"><b>28rpx → 14px</b><i style="width:14px"></i><span style="margin-left:8px">行内横向内衬（卡内文气，不属 gutter）</span></div>
+        <div class="space__i"><b>--sp-7 32rpx</b><i style="width:16px"></i><span style="margin-left:8px">页左右留白 · 退出登录外边距</span></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 分组卡 · 图标芯片</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>9999rpx · switch 轨道</div>
+        <div class="rad__i"><b style="border-radius:50%"></b>--r-circle<br>50% · switch 滑块</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>本页零照片位，无素材池引用</p></div>
+  <div class="assets">
+    <div class="asset"><div class="athumb">
+        <i class="mic mic--cream"><svg><use href="#i-megaphone"/></svg></i><i class="mic mic--blue"><svg><use href="#i-user-edit"/></svg></i><i class="mic mic--pink"><svg><use href="#i-badge-ok"/></svg></i><i class="mic mic--brand"><svg><use href="#i-users"/></svg></i><i class="mic mic--lav"><svg><use href="#i-moon"/></svg></i><i class="mic mic--none"><svg><use href="#i-calendar"/></svg></i><i class="mic mic--pink50"><svg><use href="#i-shield-lock"/></svg></i><i class="mic mic--page"><svg><use href="#i-info"/></svg></i>
+      </div>
+      <div class="asset__b"><b>15 枚菜单图标（IMAGE_PATHS.ICONS_PROFILE / ICONS_EMOJI）</b><p>源码该位是 <code>&lt;image :src="…" mode="aspectFit"&gt;</code>，36rpx=18px，工程侧既有 svg/png，无需新素材。画板按 §4 用 lucide 描边 symbol 同位表达（本文件 &lt;defs&gt; 内 17 枚），底色芯片逐一取 <code>item.bgColor</code> 与 <code>settings-card--*</code>。第 6 枚「本周安排」芯片即实测无底的那枚（<code>--mint</code> 未定义）。</p>
+        <div class="m">芯片 32px · --r-xl · 图标 18px · 无照片位 ⇒ 素材池引用 0 件</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><strong>「注销账号」不在本页。</strong>本页唯一危险操作是「退出登录」（模板 :692，确认弹窗 :248）。
+        注销入口在「隐私安全 → 安全中心」的 <code>subpackages/tools/security/index.vue</code>
+        （<code>security.deleteAccount</code>「注销账号」），且该页 :1807 另有 <code>deleteTodo</code>
+        「注销功能即将上线，请通过客服联系」。画板不在本页凭空补一行注销。</li>
+      <li><code>.settings-card--mint</code>（:578，「本周安排」芯片）全仓没有定义——
+        本页样式只有 <code>--cream / --page / --lavender</code> 三档（:859-870），
+        <code>styles/tokens.scss</code>、<code>theme/design-variables.scss</code> 也无此类 ⇒ 该芯片实测无底色，
+        画板按实测画（F01/F03 的「本周安排」无底）。这是源码侧缺陷，不在画板修。</li>
+      <li>缓存大小取源码初值 <code>ref("0 KB")</code>（:58）；真值由 getStorageInfoSync 折算（:75）。
+        真机值就绪前不编造体积，F06 弹窗的 <code>{size}</code> 同为 0 KB。</li>
+      <li>「深色模式」开关只决定档位视觉；整页换肤在 mp-weixin 端由 CSS 媒体查询接管
+        （<code>stores/theme.ts:90</code> 的 <code>data-theme</code> 仅 H5 分支）⇒ 画板不画暗色页面，
+        <code>board-base.css</code> 亦无暗色令牌档。</li>
+      <li>页头返回是文字字形「‹」（<code>nav-bar__back-icon</code> :759），非 svg 箭头；
+        页头整块 sticky（:722）是 R8-L09-D10/D11 的修复结果，续屏必须仍看得见页头。</li>
+      <li>本页在 profile-extra 分包，<strong>无 tabbar</strong>——画板若出现 tabbar 即为错。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 设置页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1845（deviceScaleFactor 2.273，对齐语料 1.573 Mpx 预算）
+</footer>
+
+</div>
+</body>
+</html>

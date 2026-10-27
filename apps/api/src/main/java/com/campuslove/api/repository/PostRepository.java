@@ -188,6 +188,31 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Object[]> countAdminPostsGroupedByCategory(@Param("campusName") String campusName);
 
     /**
+     * 按<b>作者所属校区</b>分组统计对外可见的发帖数（校园圈学校卡「N 条动态」的唯一真值源）。
+     *
+     * <p>口径：{@code status = active} 且 {@code auditStatus = approved} 的帖子，
+     * 按作者 {@code user_campus_profile.campus_name} 归校。校区归属取自
+     * {@link UserCampusProfile}（{@code user_id} 唯一，1:1，不会放大计数），
+     * 与 {@code searchForAdmin}/{@code countAdminPostFlags} 的校区隔离口径同源。</p>
+     *
+     * <p>不按观看者收窄可见性：卡片语义是「这所学校有多少条动态」，
+     * 若按 {@code findVisiblePosts} 的 visibility 分支收窄，同一个数会随观看者身份变化，
+     * 无法作为学校卡上的稳定计数。仅统计已发布且过审的内容，避免把待审/驳回/软删算进去。</p>
+     *
+     * @return 二元组列表：{@code [String campusName, Long count]}，仅含有可见帖子的校区
+     */
+    @Query("""
+            SELECT ucp.campusName, COUNT(p)
+            FROM Post p, UserCampusProfile ucp
+            WHERE ucp.userId = p.authorId
+              AND p.status = :status
+              AND p.auditStatus = :auditStatus
+            GROUP BY ucp.campusName
+            """)
+    List<Object[]> countVisibleGroupByAuthorCampus(@Param("status") PostStatus status,
+                                                   @Param("auditStatus") AuditStatus auditStatus);
+
+    /**
      * 管理后台首页统计：时间窗口内按创建日期分组的发帖数（近 7 天发帖趋势）。
      *
      * <p>与 {@code HeartSignalRepository#countDailyBetween} 同一实现口径
@@ -328,9 +353,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      *                    （{@code CreatePostRequest} + {@code VillagePostService}），
      *                    导致审核员既看不到也搜不到标题，故一并匹配 title。</p>
      * @param campusName  校区筛选（按作者所属校区过滤），可空
-     * @param circlePath  圈层前缀筛选（posts.owner_circle_path LIKE '前缀%'，与
-     *                    EvidenceController 的 viewer scope 语义一致：选中大区
-     *                    C1/R1 时其下全部学校 C1/R1/Sx 的帖子均命中），可空。
+     * @param circlePath  圈层前缀筛选（按路径段：{@code owner_circle_path = 节点}
+     *                    或 {@code LIKE '节点/%'}；选中大区 C1/R1 时其下全部学校
+     *                    C1/R1/Sx 的帖子命中，但 C1/R1/S1 不得命中 C1/R1/S14），可空。
      *                    <p>Post 实体（ddl-auto=validate，不可加映射列）未映射
      *                    owner_circle_path，JPQL 无法引用该列，故本查询采用
      *                    native SQL + 显式 countQuery；auditStatus/status 由
@@ -352,7 +377,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                             SELECT 1 FROM user_campus_profile ucp
                             WHERE ucp.user_id = p.author_id AND ucp.campus_name = :campusName))
                       AND (:circlePath IS NULL OR :circlePath = ''
-                           OR p.owner_circle_path LIKE CONCAT(:circlePath, '%'))
+                           OR p.owner_circle_path = :circlePath
+                           OR p.owner_circle_path LIKE CONCAT(:circlePath, '/%'))
                     ORDER BY p.is_pinned DESC, p.created_at DESC
                     """,
             countQuery = """
@@ -367,7 +393,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                             SELECT 1 FROM user_campus_profile ucp
                             WHERE ucp.user_id = p.author_id AND ucp.campus_name = :campusName))
                       AND (:circlePath IS NULL OR :circlePath = ''
-                           OR p.owner_circle_path LIKE CONCAT(:circlePath, '%'))
+                           OR p.owner_circle_path = :circlePath
+                           OR p.owner_circle_path LIKE CONCAT(:circlePath, '/%'))
                     """,
             nativeQuery = true)
     Page<Post> searchForVillageAdmin(
@@ -406,12 +433,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                             SELECT 1 FROM user_campus_profile ucp
                             WHERE ucp.user_id = p.author_id AND ucp.campus_name = :campusName))
                       AND (:circlePath IS NULL OR :circlePath = ''
-                           OR p.owner_circle_path LIKE CONCAT(:circlePath, '%'))
+                           OR p.owner_circle_path = :circlePath
+                           OR p.owner_circle_path LIKE CONCAT(:circlePath, '/%'))
                       AND EXISTS (
                             SELECT 1 FROM admin_layer al
                             JOIN circle_layer cl ON cl.id = al.circle_layer_id
                             WHERE al.admin_id = :adminId
-                              AND p.owner_circle_path LIKE CONCAT(cl.circle_path, '%'))
+                              AND (p.owner_circle_path = cl.circle_path
+                                   OR p.owner_circle_path LIKE CONCAT(cl.circle_path, '/%')))
                     ORDER BY p.is_pinned DESC, p.created_at DESC
                     """,
             countQuery = """
@@ -426,12 +455,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                             SELECT 1 FROM user_campus_profile ucp
                             WHERE ucp.user_id = p.author_id AND ucp.campus_name = :campusName))
                       AND (:circlePath IS NULL OR :circlePath = ''
-                           OR p.owner_circle_path LIKE CONCAT(:circlePath, '%'))
+                           OR p.owner_circle_path = :circlePath
+                           OR p.owner_circle_path LIKE CONCAT(:circlePath, '/%'))
                       AND EXISTS (
                             SELECT 1 FROM admin_layer al
                             JOIN circle_layer cl ON cl.id = al.circle_layer_id
                             WHERE al.admin_id = :adminId
-                              AND p.owner_circle_path LIKE CONCAT(cl.circle_path, '%'))
+                              AND (p.owner_circle_path = cl.circle_path
+                                   OR p.owner_circle_path LIKE CONCAT(cl.circle_path, '/%')))
                     """,
             nativeQuery = true)
     Page<Post> searchForVillageAdminScoped(

@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 心动信号页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（tools/heart-signals：粉绿渐变带页头 + 三态 Tab + 信号卡 / 锁定层 / 骨架 / 空态） ===== */
+.hs { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden;
+  background: var(--c-gradient-page); padding: 56px 16px 16px; display: flex; flex-direction: column; }
+.hs__ov { position: absolute; top: 0; left: 0; right: 0; height: 140px; z-index: 0;
+  background: linear-gradient(135deg, var(--c-romance-100) 0%, var(--c-bg-brand) 100%); }
+.hsh { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 1px; margin-bottom: 12px; }
+.hsh__top { display: flex; align-items: center; gap: 6px; }
+.hsh__back { width: 32px; height: 32px; border-radius: var(--r-full); background: var(--c-bg-container);
+  border: var(--c-border-card); display: flex; align-items: center; justify-content: center; flex: none; }
+.hsh__back svg { width: 20px; height: 20px; color: var(--c-neutral-700); }
+.hsh__t { font-size: var(--fs-5xl); font-weight: 800; color: var(--c-romance-600); }
+.hsh__sub { font-size: var(--fs-base); color: var(--c-text-tertiary); }
+.tabs { display: flex; background: var(--c-bg-container); border-radius: var(--r-xl); padding: 2px;
+  box-shadow: var(--s-card-soft); margin-bottom: 12px; position: relative; z-index: 1; flex: none; }
+.tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 8px 0; border-radius: var(--r-lg); }
+.tab--on { background: var(--c-gradient-brand); box-shadow: var(--s-brand); }
+.tab__tx { font-size: var(--fs-lg); font-weight: 500; color: var(--c-text-secondary); }
+.tab--on .tab__tx { color: var(--c-text-inverse); font-weight: 600; }
+.tab__bd { min-width: 16px; height: 16px; padding: 0 2px; border-radius: var(--r-full);
+  background: var(--c-romance-500); display: flex; align-items: center; justify-content: center; }
+.tab__bt { font-size: var(--fs-xs); font-weight: 700; color: var(--c-text-inverse); }
+.scl { position: relative; z-index: 1; flex: 1; overflow: hidden; }
+.sc { background: var(--c-bg-container); border-radius: var(--r-xl); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--s-card-soft); border: var(--c-border-card); overflow: hidden; }
+.sc--done { padding: 10px 16px; }
+.sc__hd { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.sc__dh { display: flex; align-items: center; gap: 8px; }
+.av { width: 48px; height: 48px; border-radius: var(--r-full); overflow: hidden; flex: none;
+  border: 1px solid var(--c-romance-200); background: var(--c-border-light); }
+.av img { width: 100%; height: 100%; object-fit: cover; }
+.av--s { width: 36px; height: 36px; }
+.avp { width: 48px; height: 48px; border-radius: var(--r-full); flex: none; border: 1px solid var(--c-romance-200);
+  background: linear-gradient(135deg, var(--c-romance-100), var(--c-romance-200));
+  display: flex; align-items: center; justify-content: center; }
+.avp--s { width: 36px; height: 36px; }
+.avp__c { font-size: var(--fs-4xl); font-weight: 700; color: var(--c-romance-500); }
+.avp--s .avp__c { font-size: var(--fs-2xl); }
+.uinfo { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.nm { font-size: var(--fs-2xl); font-weight: 700; color: var(--c-text-primary); }
+.nm--s { font-size: var(--fs-lg); }
+.tm { font-size: var(--fs-sm); color: var(--c-romance-500); font-weight: 500; }
+.scb { margin-bottom: 10px; padding: 8px 10px; background: var(--c-romance-50); border-radius: var(--r-md); }
+.scb__d { font-size: var(--fs-md); color: var(--c-romance-600); line-height: 1.6; }
+.acts { display: flex; gap: 8px; }
+.b2 { flex: 1; padding: 8px 0; border-radius: var(--r-full); display: flex; align-items: center;
+  justify-content: center; font-size: var(--fs-lg); font-weight: 600; }
+.b2--d { background: var(--c-neutral-100); color: var(--c-text-secondary); }
+.b2--a { background: var(--c-gradient-brand); box-shadow: var(--s-brand); color: var(--c-text-inverse); }
+.b2--w { flex: 0 1 120px; }
+.cbar { margin-top: 10px; height: 2px; border-radius: var(--r-xs); background: var(--c-neutral-100); overflow: hidden; }
+.cfill { height: 100%; background: var(--c-gradient-brand); }
+.stag { padding: 2px 10px; border-radius: var(--r-full); flex: none; }
+.stag__t { font-size: var(--fs-sm); }
+.stag--a { background: var(--c-bg-brand); }
+.stag--a .stag__t { color: var(--c-brand); font-weight: 600; }
+.stag--e, .stag--x { background: var(--c-neutral-100); }
+.stag--e .stag__t, .stag--x .stag__t { color: var(--c-text-tertiary); font-weight: 500; }
+/* 骨架（SkeletonBlock variant=list：卡 padding 12 / 头像 44 圆 / 三行 40·90·70%） */
+.sk { background: var(--c-bg-container); border-radius: var(--r-xl); padding: 12px; margin-bottom: 10px;
+  display: flex; gap: 10px; }
+.sk__av { width: 44px; height: 44px; border-radius: var(--r-full); background: var(--c-bg-surface); flex: none; }
+.sk__ln { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.sk__i { height: 12px; border-radius: 6px; background: var(--c-bg-surface); }
+/* 空态（EmptyState type=no-data 预设 box 图标） */
+.es { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 20px; text-align: center; position: relative; z-index: 1; }
+.es svg { width: 60px; height: 60px; color: var(--c-neutral-300); margin-bottom: 8px; }
+.es__m { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-secondary); }
+.es__s { font-size: var(--fs-base); color: var(--c-text-secondary); margin-top: 6px; line-height: 1.6; }
+/* 锁定层（LockScreen 全屏模态） */
+.lk { position: absolute; inset: 0; background: var(--c-gradient-page); display: flex; flex-direction: column;
+  align-items: center; padding: 0 16px; overflow: hidden; }
+.lk__at { position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 20% 20%, var(--c-brand-bg-tint) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 30%, var(--c-romance-100) 0%, transparent 45%); }
+.lk__x { position: absolute; top: 50px; left: 10px; width: 44px; height: 44px; border-radius: var(--r-full);
+  background: var(--c-overlay-bg-strong); display: flex; align-items: center; justify-content: center; z-index: 2; }
+.lk__x svg { width: 20px; height: 20px; color: var(--c-text-secondary); }
+.lk__bd { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; width: 100%; max-width: 280px; }
+.lk__ill { position: relative; width: 220px; height: 155px; margin-bottom: 16px; flex: none; }
+.lk__ring { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 140px; height: 140px;
+  border-radius: var(--r-circle); background: var(--c-gradient-brand); display: flex; align-items: center;
+  justify-content: center; box-shadow: var(--s-brand-md); }
+.lk__ring svg { width: 60px; height: 60px; color: var(--c-text-inverse); }
+.lk__h { position: absolute; }
+.lk__h svg { width: 100%; height: 100%; }
+.lk__h--1 { top: 0; left: 30px; width: 26px; height: 26px; color: var(--c-romance-300); }
+.lk__h--2 { top: 30px; right: 18px; width: 20px; height: 20px; color: var(--c-romance-300); }
+.lk__t { font-size: var(--fs-3xl); font-weight: 700; color: var(--c-text-primary); text-align: center; line-height: 1.4; }
+.lk__s { font-size: var(--fs-lg); color: var(--c-text-secondary); text-align: center; line-height: 1.5;
+  max-width: 275px; margin-top: 6px; }
+.lk__pg { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-secondary); text-align: center; margin-top: 6px; }
+.lk__bar { align-self: stretch; height: 8px; border-radius: var(--r-full); background: var(--c-brand-200);
+  border: 1px solid var(--c-brand-700); box-sizing: border-box; overflow: hidden; margin-top: 6px; }
+.lk__fill { height: 100%; background: var(--c-brand-800); }
+.lk__bn { width: 100%; display: flex; flex-direction: column; gap: 6px; margin: 12px 0 24px; }
+.bf { display: flex; align-items: center; gap: 6px; }
+.bf svg { width: 18px; height: 18px; flex: none; color: var(--c-text-secondary); }
+.bf__t { font-size: var(--fs-xl); line-height: 1.5; color: var(--c-text-secondary); }
+.lk__btn { width: 100%; height: 48px; border-radius: var(--r-full); background: var(--c-brand-800);
+  color: var(--c-neutral-0); font-size: var(--fs-2xl); font-weight: 700; display: flex; align-items: center;
+  justify-content: center; box-shadow: var(--s-brand-md); }
+.lk__link { padding: 12px 0; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+.lk__link-t { font-size: var(--fs-md); color: var(--c-brand-800); }
+.lk__ft { position: relative; z-index: 1; padding: 16px 0 24px; text-align: center; }
+.lk__ft-t { font-size: var(--fs-xl); line-height: 1.5; color: var(--c-text-secondary); }
+</style>
+</head>
+<body>
+
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-9.3A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7 2.7c0 4.9-7 9.3-7 9.3z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.4"/><path d="M8 10.5V7.6a4 4 0 0 1 8 0v2.9"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M12 3.2 20 7v10l-8 3.8L4 17V7z"/><path d="M4 7l8 3.8L20 7M12 10.8v10"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>心动信号页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/tools/heart-signals/index</code>。
+     本页是契约 <code style="font-family:var(--mono);font-size:12.5px">likes.yaml</code> 里
+     <code style="font-family:var(--mono);font-size:12.5px">status enum=[pending, accepted, declined]</code> <b>真正的消费方</b>：
+     三个 Tab 与三组 computed 一一对应，状态标签只在「已接受 / 已拒绝」列表里渲染。
+     另有资料完善度门槛（<code style="font-family:var(--mono);font-size:12.5px">!isUnlocked</code> → LockScreen 全屏锁定层）。
+     本画板把 9 屏画全，作为该页永久验收基准。</p>
+  <div class="cover__meta">
+    <span>路由 <b>tools/heart-signals</b></span>
+    <span>分包 <b>tools</b>（无 tabbar）</span>
+    <span>状态 <b>9 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>本页此前无理想效果图</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 9 屏</h2>
+    <p>锁定 2 态 / 骨架 / 三分组各有·各空</p></div>
+  <div class="sec__sub">本页状态机是<b>两层串联</b>：
+    第一层 <code style="font-family:var(--mono);font-size:11.5px">v-if="!isUnlocked"</code>（<code style="font-family:var(--mono);font-size:11.5px">= sessionStore.isProfileComplete</code>）整页换成 LockScreen，
+    第二层在解锁后按 <code style="font-family:var(--mono);font-size:11.5px">loading → 三分组空态 → 三分组列表</code> 的 <code style="font-family:var(--mono);font-size:11.5px">v-if / v-else-if</code> 链走。
+    <b>status 各态的实际渲染条件（本页查清）：</b>
+    ① <code style="font-family:var(--mono);font-size:11.5px">pending</code> 只进「待处理」列表（<code style="font-family:var(--mono);font-size:11.5px">pendingSignals = filter(status === "pending")</code>），
+    该列表的卡片<b>没有状态标签节点</b>，只有倒计时 + 拒绝/接受两钮 ⇒ <code style="font-family:var(--mono);font-size:11.5px">getStatusLabel("pending")</code>（「待处理」）在本页<b>永不渲染</b>；
+    ② <code style="font-family:var(--mono);font-size:11.5px">accepted</code> 进「已接受」列表，渲染 <code style="font-family:var(--mono);font-size:11.5px">.signal-card__status-tag--accepted</code>「已接受」<b>且</b>「开聊」按钮（<code style="font-family:var(--mono);font-size:11.5px">v-if="activeTab === 'accepted'"</code>）；
+    ③ <code style="font-family:var(--mono);font-size:11.5px">declined</code> 与 ④ 契约外的历史值 <code style="font-family:var(--mono);font-size:11.5px">expired</code> <b>合并进「已拒绝」列表</b>
+    （<code style="font-family:var(--mono);font-size:11.5px">String(s.status) === "declined" || s.status === "expired"</code>），
+    两者共用同一卡片形态但<b>标签样式不同档</b>（declined/expired 都是灰底中性），且<b>都不出「开聊」</b>；
+    ⑤ <code style="font-family:var(--mono);font-size:11.5px">getStatusLabel</code> 的 <code style="font-family:var(--mono);font-size:11.5px">default</code> 分支把未知 status <b>原样上屏</b>（无兜底文案）。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">未解锁 · 游客（LockScreen）</span><span class="d">showProgress=false · 整页无进度行</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lk">
+          <div class="lk__at"></div>
+          <div class="lk__x"><svg><use href="#i-x"/></svg></div>
+          <div class="lk__bd">
+            <div class="lk__ill">
+              <span class="lk__h lk__h--1"><svg><use href="#i-heart"/></svg></span>
+              <span class="lk__h lk__h--2"><svg><use href="#i-heart"/></svg></span>
+              <div class="lk__ring"><svg><use href="#i-lock"/></svg></div>
+            </div>
+            <span class="lk__t">登录后解锁心动信号</span>
+            <span class="lk__s">完成登录授权与基础资料填写，即可开启匹配、聊天、校园活动等全部功能</span>
+            <div class="lk__bn">
+              <div class="bf"><svg><use href="#i-lock"/></svg><span class="bf__t">解锁精准匹配推荐</span></div>
+              <div class="bf"><svg><use href="#i-lock"/></svg><span class="bf__t">双向心动，从这里开始</span></div>
+              <div class="bf"><svg><use href="#i-lock"/></svg><span class="bf__t">发起私信与匿名聊天</span></div>
+            </div>
+            <div class="lk__btn">立即登录并完善</div>
+            <div class="lk__link"><span class="lk__link-t">先逛逛公开内容</span></div>
+          </div>
+          <div class="lk__ft"><span class="lk__ft-t">资料越完善，匹配越精准，曝光机会越多</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">未解锁 · 已登录未完善</span><span class="d">进度行出 · 完善度真值位留空</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="lk">
+          <div class="lk__at"></div>
+          <div class="lk__x"><svg><use href="#i-x"/></svg></div>
+          <div class="lk__bd">
+            <div class="lk__ill">
+              <span class="lk__h lk__h--1"><svg><use href="#i-heart"/></svg></span>
+              <span class="lk__h lk__h--2"><svg><use href="#i-heart"/></svg></span>
+              <div class="lk__ring"><svg><use href="#i-lock"/></svg></div>
+            </div>
+            <span class="lk__t">完善资料，解锁心动信号</span>
+            <span class="lk__s">完成资料完善即可解锁心动信号</span>
+            <span class="lk__pg">当前完善度 —</span>
+            <div class="lk__bar"><div class="lk__fill" style="width:0"></div></div>
+            <div class="lk__bn">
+              <div class="bf"><svg><use href="#i-lock"/></svg><span class="bf__t">解锁精准匹配推荐</span></div>
+              <div class="bf"><svg><use href="#i-lock"/></svg><span class="bf__t">双向心动，从这里开始</span></div>
+              <div class="bf"><svg><use href="#i-lock"/></svg><span class="bf__t">发起私信与匿名聊天</span></div>
+            </div>
+            <div class="lk__btn">立即完善</div>
+            <div class="lk__link"><span class="lk__link-t">先逛逛公开内容</span></div>
+          </div>
+          <div class="lk__ft"><span class="lk__ft-t">资料越完善，匹配越精准，曝光机会越多</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">已解锁 · 加载中（骨架）</span><span class="d">loading=true · 无可见「加载中」文字</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hs">
+          <div class="hs__ov"></div>
+          <div class="hsh"><div class="hsh__top"><span class="hsh__back"><svg><use href="#i-back"/></svg></span><span class="hsh__t">心动信号</span></div>
+            <span class="hsh__sub">双向心动，从这里开始</span></div>
+          <div class="tabs">
+            <div class="tab tab--on"><span class="tab__tx">待处理</span></div>
+            <div class="tab"><span class="tab__tx">已接受</span></div>
+            <div class="tab"><span class="tab__tx">已拒绝</span></div>
+          </div>
+          <div class="scl">
+            <div class="sk"><div class="sk__av"></div><div class="sk__ln"><i class="sk__i" style="width:40%"></i><i class="sk__i" style="width:90%"></i><i class="sk__i" style="width:70%"></i></div></div>
+            <div class="sk"><div class="sk__av"></div><div class="sk__ln"><i class="sk__i" style="width:40%"></i><i class="sk__i" style="width:90%"></i><i class="sk__i" style="width:70%"></i></div></div>
+            <div class="sk"><div class="sk__av"></div><div class="sk__ln"><i class="sk__i" style="width:40%"></i><i class="sk__i" style="width:90%"></i><i class="sk__i" style="width:70%"></i></div></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">待处理 · 有信号（pending）</span><span class="d">无状态标签节点 · 倒计时两态同屏</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hs">
+          <div class="hs__ov"></div>
+          <div class="hsh"><div class="hsh__top"><span class="hsh__back"><svg><use href="#i-back"/></svg></span><span class="hsh__t">心动信号</span></div>
+            <span class="hsh__sub">双向心动，从这里开始</span></div>
+          <div class="tabs">
+            <div class="tab tab--on"><span class="tab__tx">待处理</span><span class="tab__bd"><span class="tab__bt">2</span></span></div>
+            <div class="tab"><span class="tab__tx">已接受</span></div>
+            <div class="tab"><span class="tab__tx">已拒绝</span></div>
+          </div>
+          <div class="scl">
+            <div class="sc">
+              <div class="sc__hd">
+                <span class="av"><img src="assets/demo/person-02-avatar.png" alt=""></span>
+                <span class="uinfo"><span class="nm">周岚</span><span class="tm">5小时12分钟后过期</span></span>
+              </div>
+              <div class="scb"><span class="scb__d">TA 也对你心动了！双向心动后即可开始聊天</span></div>
+              <div class="acts">
+                <div class="b2 b2--d">拒绝</div>
+                <div class="b2 b2--a">接受</div>
+              </div>
+              <div class="cbar"><div class="cfill" style="width:79%"></div></div>
+            </div>
+            <div class="sc">
+              <div class="sc__hd">
+                <span class="avp"><span class="avp__c">辰</span></span>
+                <span class="uinfo"><span class="nm">阿辰</span><span class="tm">已过期</span></span>
+              </div>
+              <div class="scb"><span class="scb__d">TA 也对你心动了！双向心动后即可开始聊天</span></div>
+              <div class="acts">
+                <div class="b2 b2--d">拒绝</div>
+                <div class="b2 b2--a">接受</div>
+              </div>
+              <div class="cbar"><div class="cfill" style="width:0"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">待处理 · 空</span><span class="d">pendingSignals.length===0 · 角标随之消失</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hs">
+          <div class="hs__ov"></div>
+          <div class="hsh"><div class="hsh__top"><span class="hsh__back"><svg><use href="#i-back"/></svg></span><span class="hsh__t">心动信号</span></div>
+            <span class="hsh__sub">双向心动，从这里开始</span></div>
+          <div class="tabs">
+            <div class="tab tab--on"><span class="tab__tx">待处理</span></div>
+            <div class="tab"><span class="tab__tx">已接受</span></div>
+            <div class="tab"><span class="tab__tx">已拒绝</span></div>
+          </div>
+          <div class="es"><svg><use href="#i-box"/></svg><span class="es__m">暂无心动信号</span>
+            <span class="es__s">多去看看推荐的人，双向喜欢后会收到心动信号</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F06 -->
+    <figure class="frame">
+      <figcaption><b>F06</b><span class="t">已接受 · 有（accepted）</span><span class="d">绿底标签 + 「开聊」仅此分组</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hs">
+          <div class="hs__ov"></div>
+          <div class="hsh"><div class="hsh__top"><span class="hsh__back"><svg><use href="#i-back"/></svg></span><span class="hsh__t">心动信号</span></div>
+            <span class="hsh__sub">双向心动，从这里开始</span></div>
+          <div class="tabs">
+            <div class="tab"><span class="tab__tx">待处理</span><span class="tab__bd"><span class="tab__bt">2</span></span></div>
+            <div class="tab tab--on"><span class="tab__tx">已接受</span></div>
+            <div class="tab"><span class="tab__tx">已拒绝</span></div>
+          </div>
+          <div class="scl">
+            <div class="sc sc--done">
+              <div class="sc__dh">
+                <span class="av av--s"><img src="assets/demo/person-04-avatar.png" alt=""></span>
+                <span class="uinfo"><span class="nm nm--s">小满</span></span>
+                <span class="stag stag--a"><span class="stag__t">已接受</span></span>
+              </div>
+              <div class="acts"><div class="b2 b2--a b2--w">开聊</div></div>
+            </div>
+            <div class="sc sc--done">
+              <div class="sc__dh">
+                <span class="avp avp--s"><span class="avp__c">星</span></span>
+                <span class="uinfo"><span class="nm nm--s">星辰</span></span>
+                <span class="stag stag--a"><span class="stag__t">已接受</span></span>
+              </div>
+              <div class="acts"><div class="b2 b2--a b2--w">开聊</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F07 -->
+    <figure class="frame">
+      <figcaption><b>F07</b><span class="t">已接受 · 空</span><span class="d">acceptedSignals.length===0</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hs">
+          <div class="hs__ov"></div>
+          <div class="hsh"><div class="hsh__top"><span class="hsh__back"><svg><use href="#i-back"/></svg></span><span class="hsh__t">心动信号</span></div>
+            <span class="hsh__sub">双向心动，从这里开始</span></div>
+          <div class="tabs">
+            <div class="tab"><span class="tab__tx">待处理</span></div>
+            <div class="tab tab--on"><span class="tab__tx">已接受</span></div>
+            <div class="tab"><span class="tab__tx">已拒绝</span></div>
+          </div>
+          <div class="es"><svg><use href="#i-box"/></svg><span class="es__m">暂无已接受的心动信号</span>
+            <span class="es__s">接受心动信号后，双方可以开始聊天</span></div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F08 -->
+    <figure class="frame">
+      <figcaption><b>F08</b><span class="t">已拒绝 · declined + expired 同列表</span><span class="d">两档标签 · 均无「开聊」</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hs">
+          <div class="hs__ov"></div>
+          <div class="hsh"><div class="hsh__top"><span class="hsh__back"><svg><use href="#i-back"/></svg></span><span class="hsh__t">心动信号</span></div>
+            <span class="hsh__sub">双向心动，从这里开始</span></div>
+          <div class="tabs">
+            <div class="tab"><span class="tab__tx">待处理</span></div>
+            <div class="tab"><span class="tab__tx">已接受</span></div>
+            <div class="tab tab--on"><span class="tab__tx">已拒绝</span></div>
+          </div>
+          <div class="scl">
+            <div class="sc sc--done">
+              <div class="sc__dh">
+                <span class="av av--s"><img src="assets/demo/person-06-avatar.png" alt=""></span>
+                <span class="uinfo"><span class="nm nm--s">小溪</span></span>
+                <span class="stag stag--x"><span class="stag__t">已拒绝</span></span>
+              </div>
+            </div>
+            <div class="sc sc--done">
+              <div class="sc__dh">
+                <span class="avp avp--s"><span class="avp__c">辰</span></span>
+                <span class="uinfo"><span class="nm nm--s">阿辰</span></span>
+                <span class="stag stag--e"><span class="stag__t">已过期</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <!-- F09 -->
+    <figure class="frame">
+      <figcaption><b>F09</b><span class="t">已拒绝 · 空</span><span class="d">declinedSignals.length===0</span></figcaption>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+        <div class="hs">
+          <div class="hs__ov"></div>
+          <div class="hsh"><div class="hsh__top"><span class="hsh__back"><svg><use href="#i-back"/></svg></span><span class="hsh__t">心动信号</span></div>
+            <span class="hsh__sub">双向心动，从这里开始</span></div>
+          <div class="tabs">
+            <div class="tab"><span class="tab__tx">待处理</span></div>
+            <div class="tab"><span class="tab__tx">已接受</span></div>
+            <div class="tab tab--on"><span class="tab__tx">已拒绝</span></div>
+          </div>
+          <div class="es"><svg><use href="#i-box"/></svg><span class="es__m">暂无已拒绝的心动信号</span>
+            <span class="es__s">拒绝的心动信号会保留在这里</span></div>
+        </div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每个组件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">四类件：状态 Tab（含角标）、待处理卡（倒计时两态 + 进度条）、已完成卡（status 标签四档）、头像位（真图 / 首字兜底）。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>status 枚举 → 渲染落点（本页唯一真值表）</h3>
+      <p class="hint">契约 <code>likes.yaml</code> 只有三档；<code>expired</code> 是契约外的历史兜底值，源码把它并进 declined 分组。标签样式表只写了 <code>--accepted / --expired / --declined</code> 三条，<b>没有 <code>--pending</code> 规则</b>。</p>
+      <table class="tbl">
+        <tr><th>status</th><th>进的分组</th><th>标签是否渲染</th><th>标签样式</th><th>「开聊」</th></tr>
+        <tr><td>pending</td><td>待处理列表</td><td><b>否</b>（该列表无标签节点）</td><td>—（CSS 无 <code>--pending</code> 档）</td><td>否（改出拒绝/接受）</td></tr>
+        <tr><td>accepted</td><td>已接受列表</td><td>是「已接受」</td><td><code>--c-bg-brand</code> 底 + <code>--c-brand</code> 600</td><td><b>是</b></td></tr>
+        <tr><td>declined</td><td>已拒绝列表</td><td>是「已拒绝」</td><td><code>--c-neutral-100</code> 底 + <code>--c-text-tertiary</code> 500</td><td>否</td></tr>
+        <tr><td>expired<br><span class="hint" style="font-size:10.5px">契约外</span></td><td>已拒绝列表（合并）</td><td>是「已过期」</td><td>同 declined 一档（灰底中性）</td><td>否</td></tr>
+        <tr><td>其它字符串</td><td><b>三组都不进</b>（filter 不命中）</td><td>—</td><td><code>getStatusLabel</code> default 原样回显</td><td>否</td></tr>
+      </table>
+      <p class="hint" style="margin-top:12px">⇒ <code>heartSignals.statusPending</code>「待处理」这一枚标签文案在本页<b>不可达</b>（同名的 Tab 文案可达，两者是不同键：<code>tabPending</code> / <code>statusPending</code>）。个人页 likes 画板已确认那页不渲染 status，本页是<b>唯一</b>渲染方。</p>
+    </div>
+
+    <div class="panel">
+      <h3>状态 Tab · 三枚两态 + 角标</h3>
+      <p class="hint">选中档 = <code>--c-gradient-brand</code> + <code>--s-brand</code>，文字转 <code>--c-text-inverse</code>/600；角标只挂在「待处理」一枚上，条件 <code>pendingSignals.length &gt; 0</code>，<b>与当前选中 Tab 无关</b>。</p>
+      <div class="row">
+        <div class="cell" style="width:100%"><div class="tabs" style="margin:0"><div class="tab tab--on"><span class="tab__tx">待处理</span><span class="tab__bd"><span class="tab__bt">2</span></span></div><div class="tab"><span class="tab__tx">已接受</span></div><div class="tab"><span class="tab__tx">已拒绝</span></div></div><span class="lab">default（选中=待处理 · 角标出）</span></div>
+        <div class="cell" style="width:100%"><div class="tabs" style="margin:0"><div class="tab"><span class="tab__tx">待处理</span></div><div class="tab tab--on"><span class="tab__tx">已接受</span></div><div class="tab"><span class="tab__tx">已拒绝</span></div></div><span class="lab">切换后（角标按 pending 数保留）</span></div>
+        <div class="cell" style="width:100%"><div class="tabs" style="margin:0"><div class="tab"><span class="tab__tx">待处理</span></div><div class="tab"><span class="tab__tx">已接受</span></div><div class="tab"><span class="tab__tx">已拒绝</span></div></div><span class="lab">pending=0 ⇒ 角标消失（非置灰）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>待处理卡 · 倒计时两态 + 进度条同源</h3>
+      <p class="hint">文案 = <code>countdownHM</code>「{hours}小时{minutes}分钟」+ <code>cardExpireSuffix</code>「后过期」；
+        <code>diff &lt;= 0</code> 时<b>只</b>出 <code>expiredLabel</code>「已过期」（后缀不再拼接，MP-R1-HEARTSIGNALS-001 已修「已过期后过期」）；
+        <code>countdownMap</code> 未回填时出 <code>countdownCalculating</code>「计算中...」。条宽 = <code>countdownWidth()</code> 的剩余比例，与文案同一个 <code>expiresAt</code>。</p>
+      <div class="row">
+        <div class="cell" style="width:100%"><div class="sc" style="margin:0"><div class="sc__hd"><span class="avp"><span class="avp__c">星</span></span><span class="uinfo"><span class="nm">星辰</span><span class="tm">5小时12分钟后过期</span></span></div><div class="scb"><span class="scb__d">TA 也对你心动了！双向心动后即可开始聊天</span></div><div class="acts"><div class="b2 b2--d">拒绝</div><div class="b2 b2--a">接受</div></div><div class="cbar"><div class="cfill" style="width:79%"></div></div></div><span class="lab">未过期（条 &gt; 0）</span></div>
+        <div class="cell" style="width:100%"><div class="sc" style="margin:0"><div class="sc__hd"><span class="avp"><span class="avp__c">星</span></span><span class="uinfo"><span class="nm">星辰</span><span class="tm">已过期</span></span></div><div class="scb"><span class="scb__d">TA 也对你心动了！双向心动后即可开始聊天</span></div><div class="acts"><div class="b2 b2--d">拒绝</div><div class="b2 b2--a">接受</div></div><div class="cbar"><div class="cfill" style="width:0"></div></div></div><span class="lab">已过期 / expiresAt 非法（条宽 0，按钮仍可点）</span></div>
+        <div class="cell" style="width:100%"><div class="sc" style="margin:0;padding:10px 16px"><div class="sc__hd" style="margin:0"><span class="avp avp--s"><span class="avp__c">星</span></span><span class="uinfo"><span class="nm nm--s">星辰</span><span class="tm">计算中...</span></span></div></div><span class="lab">首轮 tick 前的兜底读数（30s 刷新一次）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>头像位 · 真图 / 首字兜底 · 两档尺寸</h3>
+      <p class="hint">判据 <code>v-if="signal.fromUserAvatar"</code>；兜底是<b>粉渐变圆 + 名字首字</b>（不是灰块），
+        待处理卡 96rpx=48px、已完成卡 72rpx=36px。名字为空时首字取 <code>'?'</code>。</p>
+      <div class="row">
+        <div class="cell"><span class="av"><img src="assets/demo/person-02-avatar.png" alt=""></span><span class="lab">真图 48px · 粉描边</span></div>
+        <div class="cell"><span class="avp"><span class="avp__c">辰</span></span><span class="lab">首字兜底 48px</span></div>
+        <div class="cell"><span class="av av--s"><img src="assets/demo/person-04-avatar.png" alt=""></span><span class="lab">真图 36px</span></div>
+        <div class="cell"><span class="avp avp--s"><span class="avp__c">?</span></span><span class="lab">名字为空 → '?' 36px</span></div>
+      </div>
+      <table class="tbl">
+        <tr><th>空态（EmptyState type=no-data）</th><th>主文案</th><th>副文案</th></tr>
+        <tr><td>待处理 · 空</td><td>暂无心动信号</td><td>多去看看推荐的人，双向喜欢后会收到心动信号</td></tr>
+        <tr><td>已接受 · 空</td><td>暂无已接受的心动信号</td><td>接受心动信号后，双方可以开始聊天</td></tr>
+        <tr><td>已拒绝 · 空</td><td>暂无已拒绝的心动信号</td><td>拒绝的心动信号会保留在这里</td></tr>
+      </table>
+      <p class="hint" style="margin-top:8px">三枚空态形态同形（box 图标 60px + 主 15/600 + 副 12），只有文案不同；另有 <code>emptyExpiredTitle/Desc</code>（「暂无过期的心动信号」/「心动信号有效期为24小时」）<b>在本页无入口</b>——expired 已并入「已拒绝」分组，模板里没有 expired Tab。</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页是「粉主视觉 + 绿主操作」双色族同屏：标题与角标走 romance 族，选中态与主按钮走 brand 族。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#FF6B81"></span><div><div class="sw__n">浪漫 500<code>--c-romance</code></div><div class="sw__u">Tab 角标底 · 倒计时文字 · 首字色</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#E85A70"></span><div><div class="sw__n">浪漫 600<code>--c-romance-600</code></div><div class="sw__u">页头大标题 · 卡内说明文字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFECEF"></span><div><div class="sw__n">浪漫 50<code>--c-romance-50</code></div><div class="sw__u">说明条底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:linear-gradient(135deg,#36C99A,#55D5A7)"></span><div><div class="sw__n">品牌渐变<code>--c-gradient-brand</code></div><div class="sw__u">选中 Tab · 接受/开聊 · 倒计时条</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">品牌 800<code>--c-brand-800</code></div><div class="sw__u">LockScreen 主 CTA · 完善度填充</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#DDE3E0"></span><div><div class="sw__n">中性 100<code>--c-neutral-100</code></div><div class="sw__u">拒绝钮底 · declined/expired 标签底 · 条槽</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:linear-gradient(180deg,#DFF3EA,#EEF7F2)"></span><div><div class="sw__n">页底渐变<code>--c-gradient-page</code></div><div class="sw__u">页面底色（上浅下实）</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">页头主标题走 <code>--fs-5xl</code> 22px/800（非全站常见的 28px AppShell 档）。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/800</span><span class="type__p" style="font-size:22px;font-weight:800;color:var(--c-romance-600)">心动信号</span></div>
+        <div class="type__i"><span class="type__m">--fs-3xl 18/700</span><span class="type__p" style="font-size:18px;font-weight:700">完善资料，解锁心动信号</span></div>
+        <div class="type__i"><span class="type__m">--fs-2xl 16/700</span><span class="type__p" style="font-size:16px;font-weight:700">周岚</span></div>
+        <div class="type__i"><span class="type__m">--fs-lg 14/500·600</span><span class="type__p" style="font-size:14px;font-weight:600">待处理 · 已接受 · 拒绝 / 开聊</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/400</span><span class="type__p" style="font-size:13px;font-weight:400;color:var(--c-romance-600)">TA 也对你心动了！双向心动后即可开始聊天</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px;font-weight:400;color:var(--c-text-tertiary)">双向心动，从这里开始</span></div>
+        <div class="type__i"><span class="type__m">--fs-sm 11/500·600</span><span class="type__p" style="font-size:11px;color:var(--c-romance-500)">5小时12分钟后过期 · 已拒绝</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/700</span><span class="type__p" style="font-size:10px">2</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角 / 投影</h3><p class="hint">rpx ÷ 2 = px。信号卡与 Tab 都走 <code>--r-xl</code>（12px），Tab 内滑块走 <code>--r-lg</code>（10px）。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-8 32rpx</b><i style="width:16px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-3 12rpx</b><i style="width:6px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · Tab 滑块</div>
+        <div class="rad__i"><b style="border-radius:12px"></b>--r-xl<br>24rpx · 信号卡 · Tab 容器</div>
+        <div class="rad__i"><b style="border-radius:9999px"></b>--r-full<br>头像 · 按钮 · 标签 · 角标</div>
+      </div>
+      <p class="hint" style="margin-top:14px">投影两枚：<code>--s-card-soft</code>（卡 / Tab 容器）、<code>--s-brand</code>（选中 Tab 与主操作钮）。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖</h2><p>头像走 assets/demo 真素材；锁形与 box 为描边替身</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/person-02-avatar.png" alt="">
+      <div class="asset__b"><b>assets/demo/person-02 / 04 / 06-avatar.png</b><p>信号卡头像位（48px 待处理 / 36px 已完成）。§8 纪律：头像位必须引用盘上真演示素材，不许灰块。首字兜底那一档不是占位，是 <code>v-else</code> 的真实组件形态（粉渐变圆 + 名字首字），故照画。</p><div class="m">48 / 36px · 1px --c-romance-200 描边</div></div></div>
+    <div class="asset"><img src="assets/demo/xiaoman-avatar.png" alt="">
+      <div class="asset__b"><b>ICONS_COMMON.LOCK_SVG / BOX_SVG</b><p>LockScreen 主视觉锁形与 EmptyState 预设 box 在源码里是包内 SVG 素材；画板按 §4 用同语义 lucide 描边 symbol 替身，未新增、未下载、未生成任何图片。<b>无 NEED_ASSET</b>。</p><div class="m">锁 60px / box 60px</div></div></div>
+  </div>
+  <div class="note">
+    <b>与实况的已知差异（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>status 各态渲染条件已在本页查清</b>：个人页 likes 画板确认那页不渲染 status ⇒ 本页是唯一消费方。<code>statusPending</code>「待处理」这一枚标签文案在本页<b>不可达</b>（pending 卡片无标签节点，且 CSS 无 <code>--pending</code> 档），可达的「待处理」三字来自另一枚键 <code>tabPending</code>。这不是画板遗漏，是源码形态。</li>
+      <li><code>expired</code> 不在契约 <code>likes.yaml</code> 的 status enum 内，源码把它作为历史数据兜底并入「已拒绝」分组 ⇒ 「已拒绝」Tab 一屏内可能同时出现「已拒绝」与「已过期」两枚标签（F08 即为此态）。<code>emptyExpiredTitle/Desc</code> 两枚 i18n 键在本页<b>无渲染入口</b>（无 expired Tab）。</li>
+      <li>加载态只有骨架（<code>SkeletonBlock variant="list" :rows="3"</code>）；<code>heartSignals.loadingText</code>「加载中...」仅作为 <code>label</code> 传给读屏，<b>画面上不出字</b>。画板如实不画该文字。</li>
+      <li>倒计时读数与进度条宽度都是 <b>演示值</b>（79% / 「5小时12分钟」）：二者由同一个 <code>expiresAt</code> 派生（<code>countdownWidth()</code> 与 <code>updateCountdowns()</code>），上线时随真实信号变化，非真值。</li>
+      <li>LockScreen 的「当前完善度 N%」在 F02 画成 <code>—</code> 且进度条不填充：该数由 <code>profileStore.basicProfile.profileCompletion</code>（服务端权威值）回退 <code>sessionStore.profileCompletion</code> 加权算出，<b>画板无会话真值</b>，按 §3.3 留空并标口径；文字行与条共用同一 <code>v-if="showProgress"</code> 判据，故二者必须同时留空、不许只留一个。</li>
+      <li>LockScreen 关闭钮底色：源码原写 <code>var(--c-overlay-white-bg-mid, rgba(255,255,255,0.6))</code>，该令牌在两个登记处均未定义（本条曾按缺令牌上报 <code>BASE_PROBLEM</code>）。2026-10-27 令牌断引用收口已把源码改成等值已登记档 <code>--c-overlay-bg-strong</code>（rgba(255,255,255,.6)），画板同步改用同一档 ⇒ 本条不一致关闭，替身 0.25 作废。</li>
+      <li>LockScreen 的三条权益行<b>图标同形（三枚锁）</b>：R15-L02-D13 给默认三条各配了 heart / graduation-cap / message 三枚异型图标，但判据是 <code>benefitIcons[index] || lockIconSrc</code>，而 <code>benefitIcons</code> 在宿主传了 <code>benefitsOverride</code> 时<b>恒为空数组</b>（<code>LockScreen.vue:132-136</code>）——本页正是覆盖方（<code>lockBenefits</code> 三条）⇒ 三行全部回落到锁形。画板按实况画三枚同形锁，<b>不是画错</b>；要让三行图标可辨，得改组件的覆盖口，属组件车道。</li>
+      <li>本页在 <b>tools 分包</b>、<code>navigationStyle: custom</code>：页头由页面自画（粉绿渐变带 + 白圆返回键），<b>无原生导航栏、无 tabbar</b>——画板若出现 tabbar 即为错。</li>
+      <li>门槛吃 <code>likesPageRequirements</code>（与「喜欢与访客」同口径），未完善资料时整页被 LockScreen 顶掉，<b>不存在</b>「锁定层 + 列表」同屏的形态。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 心动信号页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（deviceScaleFactor 2.273，画框 375 × 812）
+</footer>
+
+</div>
+</body>
+</html>

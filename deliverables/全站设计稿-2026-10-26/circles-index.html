@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寻觅 · 兴趣圈列表页 高保真设计稿 &amp; 设计规范</title>
+<link rel="stylesheet" href="assets/board-base.css">
+<style>
+/* ===== 本页专属组件（值一律取 base 的令牌；rpx÷2=px；源码锚见 §04） ===== */
+.cl-hdr { position: absolute; top: 0; left: 0; right: 0; z-index: 4; background: var(--c-bg-page);
+  padding: 54px 16px 10px; }
+.cl-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+.cl-back { width: 32px; height: 32px; border-radius: 50%; background: var(--c-bg-container);
+  border: 0.5px solid var(--c-border-light); display: flex; align-items: center; justify-content: center;
+  flex: none; font-size: 22px; line-height: 1; color: var(--c-text-primary); font-weight: 500; }
+.cl-title { font-size: 22px; font-weight: 800; color: var(--c-text-primary); letter-spacing: 1px; }
+.cl-title u { text-decoration: none; display: inline-block; border-bottom: 1.5px solid var(--c-brand);
+  padding: 0 1px 4px; font-weight: 600; letter-spacing: 1px; }
+.cl-search { margin-left: auto; width: 32px; height: 32px; border-radius: 50%; background: var(--c-bg-surface);
+  display: flex; align-items: center; justify-content: center; flex: none; }
+.cl-search svg { width: 18px; height: 18px; color: var(--c-text-tertiary); }
+.cl-banner { margin-top: 10px; font-size: var(--fs-base); color: var(--c-text-secondary); }
+.cl-tabs-row { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.cl-tabs { flex: 1; min-width: 0; display: flex; gap: 4px; overflow: hidden; }
+.cl-tab { flex: none; padding: 6px 8px; border-radius: var(--r-full); background: var(--c-bg-surface);
+  border: 0.5px solid var(--c-border-light); font-size: 13px; color: var(--c-text-primary); white-space: nowrap; }
+.cl-tab--on { background: var(--c-brand-800); border-color: var(--c-brand-800); }
+.cl-tab--on span { color: var(--c-neutral-0); font-weight: 700; }
+.cl-filter { position: relative; width: 32px; height: 32px; border-radius: 50%; background: var(--c-bg-container);
+  border: 0.5px solid var(--c-border-light); display: flex; align-items: center; justify-content: center; flex: none; }
+.cl-filter svg { width: 17px; height: 17px; color: var(--c-text-secondary); }
+.cl-filter__dot { position: absolute; top: 1px; right: 1px; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--c-brand-500); border: 1px solid var(--c-bg-container); }
+
+.cl-list { position: absolute; top: 156px; left: 0; right: 0; bottom: 0; padding: 10px 16px 0; overflow: hidden; }
+.cl-card { display: flex; align-items: center; gap: 8px; padding: 12px 10px; background: var(--c-bg-container);
+  border-radius: var(--r-lg); box-shadow: var(--s-card-soft); }
+.cl-card + .cl-card { margin-top: 8px; }
+.cl-cover { width: 72px; height: 72px; border-radius: var(--r-md); overflow: hidden; flex: none; }
+.cl-cover img { width: 100%; height: 100%; object-fit: cover; }
+.cl-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cl-name-row { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.cl-name { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-primary); max-width: 150px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-hot { flex: none; padding: 1px 7px; border-radius: var(--r-full); background: var(--c-romance-50);
+  border: 0.5px solid var(--c-romance-100); font-size: var(--fs-xs); font-weight: 600; color: var(--c-romance-700); }
+.cl-desc { font-size: var(--fs-base); color: var(--c-text-tertiary); line-height: 1.5;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cl-meta { display: flex; align-items: center; gap: 2px; font-size: var(--fs-base); color: var(--c-text-tertiary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.cl-meta svg { width: 12px; height: 12px; flex: none; color: var(--c-text-tertiary); }
+.cl-friends { display: flex; align-items: center; gap: 5px; margin-top: 3px; min-width: 0; white-space: nowrap; }
+.cl-fav { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--c-bg-container);
+  background: var(--c-neutral-100); margin-left: -5px; flex: none; overflow: hidden; }
+.cl-fav:first-child { margin-left: 0; }
+.cl-fav img { width: 100%; height: 100%; object-fit: cover; }
+.cl-ftext { font-size: var(--fs-base); color: var(--c-text-tertiary); flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; }
+.cl-act { flex: none; padding: 6px 8px; border-radius: var(--r-full); border: 1px solid var(--c-brand-800);
+  color: var(--c-brand-800); font-size: var(--fs-md); font-weight: 600; white-space: nowrap; }
+.cl-act--joined { background: var(--c-brand-50); border-color: var(--c-brand-100);
+  color: var(--c-text-tertiary); font-weight: 500; }
+
+/* 页面态（PageStateContainer 三态插槽的 1:1 还原） */
+.cl-state { position: absolute; top: 156px; left: 0; right: 0; bottom: 0; display: flex;
+  flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
+.cl-state svg { width: 60px; height: 60px; margin-bottom: 8px; color: var(--c-text-tertiary); }
+.cl-state__t { font-size: var(--fs-xl); font-weight: 600; color: var(--c-text-secondary); }
+.cl-state__s { font-size: var(--fs-base); color: var(--c-text-secondary); margin-top: 1px; text-align: center; }
+.cl-state__a { margin-top: 12px; padding: 8px 20px; border-radius: var(--r-full); background: var(--c-brand-800);
+  min-height: 44px; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-base); font-weight: 600; color: var(--c-neutral-0); }
+.cl-state__a--warn { background: var(--c-brand-400); color: var(--c-text-inverse); font-size: var(--fs-md); }
+.cl-ring { width: 26px; height: 26px; border-radius: 50%; border: 2.5px solid var(--c-brand-100);
+  border-top-color: var(--c-brand); margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG 图标库（lucide 描边风格，与工程 ICONS_COMMON 同形） ===== -->
+<svg style="display:none" aria-hidden="true"><defs>
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 21v-7"/><path d="M12 14C12 10.4 9.2 8 5.6 8 5.7 11.7 8.4 14 12 14z"/><path d="M12 12.4c.2-3.1 2.7-5.2 5.9-5.2-.2 3.4-2.8 5.4-5.9 5.2z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.6"/><path d="M16.2 16.2 21 21"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8.4" r="3.4"/><path d="M3.4 19.4c.4-3 2.8-4.8 5.6-4.8s5.2 1.8 5.6 4.8"/><path d="M16.2 5.6a3.2 3.2 0 0 1 0 5.9"/><path d="M17.6 14.9c2.1.5 3.4 2.2 3.7 4.5"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3.4 7.6 12 3.4l8.6 4.2v8.8L12 20.6l-8.6-4.2z"/><path d="M3.4 7.6 12 11.8l8.6-4.2"/><path d="M12 11.8v8.8"/></symbol>
+  <symbol id="i-arrow-r" viewBox="0 0 24 24"><path d="M9 5.5 15.6 12 9 18.5"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<!-- ================= 封面 ================= -->
+<div class="cover">
+  <div class="cover__brand"><span class="logo"><svg><use href="#i-logo"/></svg></span>寻觅 · 校园恋爱小程序　|　设计稿画板</div>
+  <h1>兴趣圈列表页 <em>高保真设计稿</em></h1>
+  <p>路由 <code style="font-family:var(--mono);font-size:12.5px">subpackages/circles/circles/index</code>。
+     本页是兴趣圈域的入口页：固定页头（返回 / 「兴<u>趣</u>圈」/ 搜索 / 副标题 / 分类 chips / 行尾筛选钮）
+     + 圈子卡流（封面 · 圈名 · 热门角标 · 简介 · 人数与动态数 · 好友头像行 · 加入钮）。
+     对应理想效果图 <code style="font-family:var(--mono);font-size:12.5px">素材/理想效果图/兴趣圈列表.png</code>
+     （登记表第 11 行），本画板为其首个可复现像素基准，此后 PNG 降为历史参照。</p>
+  <div class="cover__meta">
+    <span>路由 <b>circles/index</b></span>
+    <span>分包 <b>circles</b>（无 tabbar）</span>
+    <span>状态 <b>5 屏</b></span>
+    <span>画框 <b>375 × 812</b></span>
+    <span>出图 <b>2.273× → 852 × 1846</b></span>
+    <span>令牌 <b>design-variables.scss v4.0.0</b></span>
+    <span>基准 <b>理想图 兴趣圈列表.png（登记表第 11 行）</b></span>
+  </div>
+</div>
+
+<!-- ================= 01 状态稿 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">01</span><h2>页面状态稿 · 5 屏</h2>
+    <p>内容 / 加载 / 错误 / 空态（游客） / 内容 · 只看已加入</p></div>
+  <div class="sec__sub">本页状态机有 <b>4 态</b>，来自 <code>index.vue:136-141</code> 的
+    <code>pageState</code>：<code>loading &amp;&amp; circles.length===0</code> → loading；
+    <code>errorMessage &amp;&amp; circles.length===0</code> → error；<code>circles.length===0</code> → empty；否则 content。
+    其中 empty 再按 <code>isGuest</code>（<code>:153</code>）分「游客引导登录」与「真无数据」两支，
+    两支共用同一 EmptyState 形态、只有文案与动作钮不同，故合画一屏（F04 取游客支，登录后的真无数据支在 §02 枚举）。
+    content 另按 <code>activeQuickTab</code> / <code>filterMode</code> / <code>circle.isJoined</code> 三个开关分叉，
+    F01 画默认组合、F05 画筛选生效组合。<b>页头与 chips 同处吸顶层</b>（R2b-L04-D16），
+    四态切换时页头不动、只有其下内容区换脸。</div>
+
+  <div class="frames">
+
+    <!-- F01 -->
+    <figure class="frame">
+      <figcaption><b>F01</b><span class="t">内容态 · 全部 · 无筛选</span><span class="d">6 卡 · 第 6 卡天文圈视口下沿裁切</span></figcaption>
+      <div class="phone">
+        <div class="cl-hdr">
+          <div class="cl-row">
+            <span class="cl-back">‹</span>
+            <span class="cl-title">兴<u>趣</u>圈</span>
+            <span class="cl-search"><svg><use href="#i-search"/></svg></span>
+          </div>
+          <div class="cl-banner">找到与你志趣相投的人</div>
+          <div class="cl-tabs-row">
+            <div class="cl-tabs">
+              <span class="cl-tab cl-tab--on"><span>全部</span></span>
+              <span class="cl-tab"><span>摄影</span></span>
+              <span class="cl-tab"><span>旅行</span></span>
+              <span class="cl-tab"><span>音乐</span></span>
+              <span class="cl-tab"><span>运动</span></span>
+              <span class="cl-tab"><span>美食</span></span>
+            </div>
+            <span class="cl-filter"><svg><use href="#i-list"/></svg></span>
+          </div>
+        </div>
+        <div class="cl-list">
+
+          <div class="cl-card">
+            <div class="cl-cover"><img src="assets/demo/circle-cover-photography.jpg" alt=""></div>
+            <div class="cl-body">
+              <div class="cl-name-row"><span class="cl-name">摄影圈</span><span class="cl-hot">热门</span></div>
+              <div class="cl-desc">分享光影与构图，一起扫街、看展、记录生活</div>
+              <div class="cl-meta"><svg><use href="#i-users"/></svg><span>1.2w 人加入 · 6 条动态</span></div>
+              <div class="cl-friends">
+                <span class="cl-fav"><img src="assets/demo/person-02-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-01-avatar.png" alt=""></span>
+                <span class="cl-ftext">等 12 位朋友已加入</span>
+              </div>
+            </div>
+            <span class="cl-act">加入</span>
+          </div>
+
+          <div class="cl-card">
+            <div class="cl-cover"><img src="assets/demo/circle-cover-travel.jpg" alt=""></div>
+            <div class="cl-body">
+              <div class="cl-name-row"><span class="cl-name">旅行圈</span><span class="cl-hot">热门</span></div>
+              <div class="cl-desc">记录旅途中的美好，寻找同行旅伴</div>
+              <div class="cl-meta"><svg><use href="#i-users"/></svg><span>8,932 人加入 · 4 条动态</span></div>
+              <div class="cl-friends">
+                <span class="cl-fav"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-01-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-02-avatar.png" alt=""></span>
+                <span class="cl-ftext">等 9 位朋友已加入</span>
+              </div>
+            </div>
+            <span class="cl-act">加入</span>
+          </div>
+
+          <div class="cl-card">
+            <div class="cl-cover"><img src="assets/demo/circle-cover-music.jpg" alt=""></div>
+            <div class="cl-body">
+              <div class="cl-name-row"><span class="cl-name">音乐圈</span><span class="cl-hot">热门</span></div>
+              <div class="cl-desc">分享你喜欢的音乐，发现更多好声音</div>
+              <div class="cl-meta"><svg><use href="#i-users"/></svg><span>8,123 人加入 · 4 条动态</span></div>
+              <div class="cl-friends">
+                <span class="cl-fav"><img src="assets/demo/person-01-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-02-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+                <span class="cl-ftext">等 8 位朋友已加入</span>
+              </div>
+            </div>
+            <span class="cl-act">加入</span>
+          </div>
+
+          <div class="cl-card">
+            <div class="cl-cover"><img src="assets/demo/circle-cover-sports.jpg" alt=""></div>
+            <div class="cl-body">
+              <div class="cl-name-row"><span class="cl-name">运动圈</span></div>
+              <div class="cl-desc">跑步、篮球、羽毛球，运动让生活更精彩</div>
+              <div class="cl-meta"><svg><use href="#i-users"/></svg><span>6,532 人加入 · 4 条动态</span></div>
+              <div class="cl-friends">
+                <span class="cl-fav"><img src="assets/demo/person-02-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-01-avatar.png" alt=""></span>
+                <span class="cl-ftext">等 7 位朋友已加入</span>
+              </div>
+            </div>
+            <span class="cl-act">加入</span>
+          </div>
+
+          <div class="cl-card">
+            <div class="cl-cover"><img src="assets/demo/circle-food.png" alt=""></div>
+            <div class="cl-body">
+              <div class="cl-name-row"><span class="cl-name">美食圈</span></div>
+              <div class="cl-desc">发现身边的美食，分享你的味蕾体验</div>
+              <div class="cl-meta"><svg><use href="#i-users"/></svg><span>7,240 人加入 · 5 条动态</span></div>
+              <div class="cl-friends">
+                <span class="cl-fav"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-01-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-02-avatar.png" alt=""></span>
+                <span class="cl-ftext">等 7 位朋友已加入</span>
+              </div>
+            </div>
+            <span class="cl-act">加入</span>
+          </div>
+
+          <div class="cl-card">
+            <div class="cl-cover"><img src="assets/demo/circle-sky.png" alt=""></div>
+            <div class="cl-body">
+              <div class="cl-name-row"><span class="cl-name">天文圈</span></div>
+              <div class="cl-desc">仰望星空，分享观星攻略与宇宙之美</div>
+              <div class="cl-meta"><svg><use href="#i-users"/></svg><span>4,860 人加入 · 2 条动态</span></div>
+              <div class="cl-friends">
+                <span class="cl-fav"><img src="assets/demo/person-01-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-02-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+                <span class="cl-ftext">等 5 位朋友已加入</span>
+              </div>
+            </div>
+            <span class="cl-act">加入</span>
+          </div>
+
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F02 -->
+    <figure class="frame">
+      <figcaption><b>F02</b><span class="t">加载态</span><span class="d">loading &amp;&amp; 列表空 · 页头照常在场</span></figcaption>
+      <div class="phone">
+        <div class="cl-hdr">
+          <div class="cl-row">
+            <span class="cl-back">‹</span>
+            <span class="cl-title">兴<u>趣</u>圈</span>
+            <span class="cl-search"><svg><use href="#i-search"/></svg></span>
+          </div>
+          <div class="cl-banner">找到与你志趣相投的人</div>
+          <div class="cl-tabs-row">
+            <div class="cl-tabs">
+              <span class="cl-tab cl-tab--on"><span>全部</span></span>
+              <span class="cl-tab"><span>摄影</span></span>
+              <span class="cl-tab"><span>旅行</span></span>
+              <span class="cl-tab"><span>音乐</span></span>
+              <span class="cl-tab"><span>运动</span></span>
+              <span class="cl-tab"><span>美食</span></span>
+            </div>
+            <span class="cl-filter"><svg><use href="#i-list"/></svg></span>
+          </div>
+        </div>
+        <div class="cl-state">
+          <div class="cl-ring"></div>
+          <span class="cl-state__t">加载中...</span>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F03 -->
+    <figure class="frame">
+      <figcaption><b>F03</b><span class="t">错误态</span><span class="d">errorMessage &amp;&amp; 列表空 · ErrorState type=network</span></figcaption>
+      <div class="phone">
+        <div class="cl-hdr">
+          <div class="cl-row">
+            <span class="cl-back">‹</span>
+            <span class="cl-title">兴<u>趣</u>圈</span>
+            <span class="cl-search"><svg><use href="#i-search"/></svg></span>
+          </div>
+          <div class="cl-banner">找到与你志趣相投的人</div>
+          <div class="cl-tabs-row">
+            <div class="cl-tabs">
+              <span class="cl-tab cl-tab--on"><span>全部</span></span>
+              <span class="cl-tab"><span>摄影</span></span>
+              <span class="cl-tab"><span>旅行</span></span>
+              <span class="cl-tab"><span>音乐</span></span>
+              <span class="cl-tab"><span>运动</span></span>
+              <span class="cl-tab"><span>美食</span></span>
+            </div>
+            <span class="cl-filter"><svg><use href="#i-list"/></svg></span>
+          </div>
+        </div>
+        <div class="cl-state">
+          <svg><use href="#i-search"/></svg>
+          <span class="cl-state__t">网络连接失败</span>
+          <span class="cl-state__s">加载失败，请稍后重试</span>
+          <span class="cl-state__a cl-state__a--warn">重试</span>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F04 -->
+    <figure class="frame">
+      <figcaption><b>F04</b><span class="t">空态 · 游客（未登录引导）</span><span class="d">isGuest 支 · EmptyState + 去登录</span></figcaption>
+      <div class="phone">
+        <div class="cl-hdr">
+          <div class="cl-row">
+            <span class="cl-back">‹</span>
+            <span class="cl-title">兴<u>趣</u>圈</span>
+            <span class="cl-search"><svg><use href="#i-search"/></svg></span>
+          </div>
+          <div class="cl-banner">找到与你志趣相投的人</div>
+          <div class="cl-tabs-row">
+            <div class="cl-tabs">
+              <span class="cl-tab cl-tab--on"><span>全部</span></span>
+              <span class="cl-tab"><span>摄影</span></span>
+              <span class="cl-tab"><span>旅行</span></span>
+              <span class="cl-tab"><span>音乐</span></span>
+              <span class="cl-tab"><span>运动</span></span>
+              <span class="cl-tab"><span>美食</span></span>
+            </div>
+            <span class="cl-filter"><svg><use href="#i-list"/></svg></span>
+          </div>
+        </div>
+        <div class="cl-state">
+          <svg><use href="#i-box"/></svg>
+          <span class="cl-state__t">暂无数据</span>
+          <span class="cl-state__s">登录后可查看全部兴趣圈</span>
+          <span class="cl-state__a">去登录</span>
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+    <!-- F05 -->
+    <figure class="frame">
+      <figcaption><b>F05</b><span class="t">内容态 · 只看已加入</span><span class="d">filterMode=joined · 筛选钮绿点 · 已加入钮</span></figcaption>
+      <div class="phone">
+        <div class="cl-hdr">
+          <div class="cl-row">
+            <span class="cl-back">‹</span>
+            <span class="cl-title">兴<u>趣</u>圈</span>
+            <span class="cl-search"><svg><use href="#i-search"/></svg></span>
+          </div>
+          <div class="cl-banner">找到与你志趣相投的人</div>
+          <div class="cl-tabs-row">
+            <div class="cl-tabs">
+              <span class="cl-tab cl-tab--on"><span>全部</span></span>
+              <span class="cl-tab"><span>摄影</span></span>
+              <span class="cl-tab"><span>旅行</span></span>
+              <span class="cl-tab"><span>音乐</span></span>
+              <span class="cl-tab"><span>运动</span></span>
+              <span class="cl-tab"><span>美食</span></span>
+            </div>
+            <span class="cl-filter"><svg><use href="#i-list"/></svg><span class="cl-filter__dot"></span></span>
+          </div>
+        </div>
+        <div class="cl-list">
+
+          <div class="cl-card">
+            <div class="cl-cover"><img src="assets/demo/circle-cover-music.jpg" alt=""></div>
+            <div class="cl-body">
+              <div class="cl-name-row"><span class="cl-name">音乐圈</span><span class="cl-hot">热门</span></div>
+              <div class="cl-desc">分享你喜欢的音乐，发现更多好声音</div>
+              <div class="cl-meta"><svg><use href="#i-users"/></svg><span>8,123 人加入 · 4 条动态</span></div>
+              <div class="cl-friends">
+                <span class="cl-fav"><img src="assets/demo/person-01-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-02-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+                <span class="cl-ftext">等 8 位朋友已加入</span>
+              </div>
+            </div>
+            <span class="cl-act cl-act--joined">已加入</span>
+          </div>
+
+          <div class="cl-card">
+            <div class="cl-cover"><img src="assets/demo/circle-food.png" alt=""></div>
+            <div class="cl-body">
+              <div class="cl-name-row"><span class="cl-name">美食圈</span></div>
+              <div class="cl-desc">发现身边的美食，分享你的味蕾体验</div>
+              <div class="cl-meta"><svg><use href="#i-users"/></svg><span>7,240 人加入 · 5 条动态</span></div>
+              <div class="cl-friends">
+                <span class="cl-fav"><img src="assets/demo/person-03-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-01-avatar.png" alt=""></span>
+                <span class="cl-fav"><img src="assets/demo/person-02-avatar.png" alt=""></span>
+                <span class="cl-ftext">等 7 位朋友已加入</span>
+              </div>
+            </div>
+            <span class="cl-act cl-act--joined">已加入</span>
+          </div>
+
+        </div>
+        <div class="sb"><span>9:41</span><span class="sb__r"><svg class="ico--fill" viewBox="0 0 24 24"><path d="M2 17h3v4H2zM7 13h3v8H7zM12 9h3v12h-3zM17 5h3v16h-3z"/></svg><svg class="ico--fill" viewBox="0 0 24 24"><path d="M12 18.5a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM12 13c-2.2 0-4.2.9-5.6 2.3l1.8 1.8A5.4 5.4 0 0 1 12 15.4c1.5 0 2.8.6 3.8 1.7l1.8-1.8A7.9 7.9 0 0 0 12 13zM12 7.6c-3.7 0-7 1.5-9.4 3.9l1.9 1.9A10.6 10.6 0 0 1 12 10c2.9 0 5.6 1.2 7.5 3.4l1.9-1.9A13.3 13.3 0 0 0 12 7.6z"/></svg><svg viewBox="0 0 26 24"><rect x="2" y="8" width="18" height="11" rx="3" stroke-width="1.4"/><rect x="4" y="10" width="13" height="7" rx="1.6" class="ico--fill" style="fill:currentColor;stroke:none"/><path d="M22.5 12v3.5" stroke-width="2"/></svg></span></div>
+      </div>
+    </figure>
+
+  </div>
+</div>
+
+<!-- ================= 02 组件状态规范 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">02</span><h2>组件状态规范</h2><p>每类交互件的全状态枚举，缺一不可</p></div>
+  <div class="sec__sub">本页五类交互件：分类 chip、行尾筛选钮、卡片加入钮、卡片内条件件（热门角标 / 好友行）、页面级四态。
+    条件件的判据全部来自源码表达式，不按想象补态。</div>
+  <div class="grid2">
+
+    <div class="panel">
+      <h3>分类 chip · 三态</h3>
+      <p class="hint">QUICK_TABS 固定 6 枚（<code>index.vue:243-250</code>：all/photo/travel/music/sports/food），
+        原第 7 枚 <code>key:"more"</code> 已删（R8-L03-D24，与「全部」重复且被右缘裁断）。
+        选中档取 <code>--c-brand-800</code>（R10-L03-D13：改前 brand-500 压白字 2.10:1 读不出选中项）。</p>
+      <div class="row">
+        <div class="cell"><span class="cl-tab"><span>摄影</span></span><span class="lab">default（浅灰胶囊）</span></div>
+        <div class="cell"><span class="cl-tab cl-tab--on"><span>全部</span></span><span class="lab">active</span></div>
+        <div class="cell"><span class="cl-tab" style="opacity:.7"><span>美食</span></span><span class="lab">hover-class 按压（同页无独立按压档，随 active 前置态）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>行尾筛选钮 · 两态 + 弹层三档</h3>
+      <p class="hint">钮本体常驻、不参与横滚（<code>.circles-tabs-row</code> flex-shrink:0）。
+        绿点判据 <code>v-if="filterMode !== 'all'"</code>（<code>:470</code>）。点击走
+        <code>uni.showActionSheet</code>，三档文案硬编码在 <code>:259</code>（非 i18n，登记在 §04）。</p>
+      <div class="row">
+        <div class="cell"><span class="cl-filter"><svg><use href="#i-list"/></svg></span><span class="lab">filterMode=all（无点）</span></div>
+        <div class="cell"><span class="cl-filter"><svg><use href="#i-list"/></svg><span class="cl-filter__dot"></span></span><span class="lab">筛选生效（绿点）</span></div>
+        <div class="cell" style="width:200px"><div class="input input--ph" style="height:34px;font-size:12px">全部圈子</div><div class="input input--ph" style="height:34px;font-size:12px;margin-top:4px">只看已加入</div><div class="input input--ph" style="height:34px;font-size:12px;margin-top:4px">按人数排序</div><span class="lab">ActionSheet 三档（系统弹层，非页内件）</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>卡片加入钮 · 三态</h3>
+      <p class="hint">文案走展示层 <code>joinLabel()</code>（<code>:371-374</code>）：未加入取
+        <code>circle.joinBtn</code>「+ 加入」并剥掉加号前缀 ⇒ 落「加入」；已加入取 <code>circle.joinedBtn</code>「已加入」。
+        描边与字色同为 <code>--c-brand-800</code>（R10-L03-D14）。点击 <code>@tap.stop</code>（R4-00099，防冒泡进主页）。</p>
+      <div class="row">
+        <div class="cell"><span class="cl-act">加入</span><span class="lab">未加入（描边）</span></div>
+        <div class="cell"><span class="cl-act cl-act--joined">已加入</span><span class="lab">已加入（浅绿实心）</span></div>
+        <div class="cell"><span class="cl-act" style="transform:scale(.95)">加入</span><span class="lab">:active 缩放 0.95</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>卡片内条件件 · 判据枚举</h3>
+      <table class="tbl">
+        <tr><th>件</th><th>判据（源码锚）</th><th>不成立时</th></tr>
+        <tr><td>热门角标</td><td><code>circle.memberCount &gt;= HOT_THRESHOLD</code>，阈值 <b>8000</b>（<code>:235 / :512</code>）</td><td>角标不渲染，圈名独占行首</td></tr>
+        <tr><td>好友头像行</td><td><code>friendJoinedCount(circle) &gt; 0</code>（<code>:530</code>）</td><td>整行不渲染（real 缺字段即 0，<code>:325</code>）</td></tr>
+        <tr><td>统计行</td><td>恒渲染：<code>formatMemberCount</code> + <code>circle.memberUnit</code> · <code>topicCount</code> + <code>circle.topicUnit</code>（<code>:525</code>）</td><td>—（超宽走 ellipsis，不删词）</td></tr>
+        <tr><td>圈名后缀</td><td>展示层 <code>circleTitle()</code> 补「圈」（<code>:361-364</code>，数据侧 name 是「摄影」）</td><td>已带「圈」字者不重复拼</td></tr>
+        <tr><td>封面</td><td><code>circleCoverFor(name)</code> 关键词首命中映射（<code>config/circle-covers.ts</code>）</td><td>未命中回退 <code>DEFAULT</code>（摄影封面）</td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>页面级四态 · 组件与文案</h3>
+      <table class="tbl">
+        <tr><th>态</th><th>组件</th><th>主句 / 副句 / 动作</th></tr>
+        <tr><td>loading</td><td>LoadingSpinner（圆圈 + 文案，非骨架屏）</td><td>「加载中...」（<code>common.loading</code>）</td></tr>
+        <tr><td>error</td><td>ErrorState type=network</td><td>「网络连接失败」/ <code>errorText</code>＝store 报文，缺省「加载失败，请稍后重试」/ 「重试」</td></tr>
+        <tr><td>empty · 游客</td><td>EmptyState（box 图标）</td><td>「暂无数据」/「登录后可查看全部兴趣圈」/「去登录」</td></tr>
+        <tr><td>empty · 已登录</td><td>EmptyState</td><td>「暂无数据」/「暂无兴趣圈」/ 无动作钮（<code>emptyActionText</code> 返回空串）</td></tr>
+        <tr><td>content</td><td>卡流</td><td>F01 / F05</td></tr>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= 03 令牌 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">03</span><h2>设计令牌 · Design Tokens</h2><p>只列本页实际用到的档位</p></div>
+  <div class="tokens">
+    <div class="panel"><h3>色板</h3><p class="hint">本页只用以下档，未引入页内私有色值。</p>
+      <div class="sw">
+        <div class="sw__i"><span class="sw__c" style="background:#156B51"></span><div><div class="sw__n">主色 800<code>--c-brand-800</code></div><div class="sw__u">选中 chip · 加入钮描边与字</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#36C99A"></span><div><div class="sw__n">主色 500<code>--c-brand-500</code></div><div class="sw__u">筛选钮绿点 · 标题「趣」下划线</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#EEF7F2"></span><div><div class="sw__n">页面底<code>--c-bg-page</code></div><div class="sw__u">吸顶页头带 · 画框底色</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#F3FAF6;border:1px solid #DDE3E0"></span><div><div class="sw__n">面底<code>--c-bg-surface</code></div><div class="sw__u">未选中 chip · 搜索钮圆底</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#FFECEF;border:1px solid #FFD9DF"></span><div><div class="sw__n">浪漫 50/100<code>--c-romance-50</code></div><div class="sw__u">热门角标底与描边</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#CC4A5F"></span><div><div class="sw__n">浪漫 700<code>--c-romance-700</code></div><div class="sw__u">热门角标字（源码真值档缺登记，见 §04）</div></div></div>
+        <div class="sw__i"><span class="sw__c" style="background:#6B7571"></span><div><div class="sw__n">三级文本<code>--c-text-tertiary</code></div><div class="sw__u">简介 · 统计行 · 好友行</div></div></div>
+      </div>
+    </div>
+    <div class="panel"><h3>字阶</h3><p class="hint">rpx÷2=px；本页实际用到五档。</p>
+      <div class="type">
+        <div class="type__i"><span class="type__m">--fs-5xl 22/800</span><span class="type__p" style="font-size:22px;font-weight:800">兴趣圈</span></div>
+        <div class="type__i"><span class="type__m">--fs-xl 15/600</span><span class="type__p" style="font-size:15px;font-weight:600">摄影圈 · 旅行圈</span></div>
+        <div class="type__i"><span class="type__m">--fs-md 13/600</span><span class="type__p" style="font-size:13px;font-weight:600">加入</span></div>
+        <div class="type__i"><span class="type__m">26rpx→13/400</span><span class="type__p" style="font-size:13px">全部 · 摄影 · 旅行 · 音乐</span></div>
+        <div class="type__i"><span class="type__m">--fs-base 12/400</span><span class="type__p" style="font-size:12px;color:var(--c-text-tertiary)">1.2w 人加入 · 6 条动态　等 12 位朋友已加入</span></div>
+        <div class="type__i"><span class="type__m">--fs-xs 10/600</span><span class="type__p" style="font-size:10px;color:var(--c-romance-700)">热门</span></div>
+      </div>
+    </div>
+    <div class="panel"><h3>间距 / 圆角</h3><p class="hint">卡内衬与列间距是 MP-R1-CIRCLE-005 收窄后的档。</p>
+      <div class="space">
+        <div class="space__i"><b>--sp-2 4rpx</b><i style="width:2px"></i></div>
+        <div class="space__i"><b>--sp-4 16rpx</b><i style="width:8px"></i></div>
+        <div class="space__i"><b>--sp-5 20rpx</b><i style="width:10px"></i></div>
+        <div class="space__i"><b>--sp-6 24rpx</b><i style="width:12px"></i></div>
+        <div class="space__i"><b>gutter 32rpx</b><i style="width:16px"></i></div>
+      </div>
+      <div class="rad" style="margin-top:16px">
+        <div class="rad__i"><b style="border-radius:6px"></b>--r-md<br>12rpx · 封面</div>
+        <div class="rad__i"><b style="border-radius:10px"></b>--r-lg<br>20rpx · 圈子卡</div>
+        <div class="rad__i"><b style="border-radius:999px"></b>--r-full<br>999rpx · chip / 加入钮</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 04 素材 + 差异 ================= -->
+<div class="sec">
+  <div class="sec__head"><span class="no">04</span><h2>素材依赖 &amp; 与实况的已知差异</h2><p>照片位全部走盘上真素材，无灰块</p></div>
+  <div class="assets">
+    <div class="asset"><img src="assets/demo/circle-cover-photography.jpg" alt="" style="height:120px">
+      <div class="asset__b"><b>covers/circle-cover-*.jpg</b><p>摄影 / 旅行 / 音乐 / 运动四枚封面，<code>IMAGE_PATHS.CIRCLE_COVERS</code>（images.ts:954-958）→ <code>circleCoverFor()</code> 关键词映射，与主页、首页兴趣推荐同源。</p><div class="m">72×72 · --r-md · mode=aspectFill</div></div></div>
+    <div class="asset"><img src="assets/demo/circle-food.png" alt="" style="height:120px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>covers/circle-food.png · circle-sky.png</b><p>美食沿用旧素材 FOOD，天文走 ASTRONOMY=<code>circle-sky.png</code>（images.ts:968）。这两枚是饱和实拍档，与前四枚淡彩档同框时明度差明显——R6-L04-D16 已在册，属素材侧议题，不在画板修。</p><div class="m">72×72 · aspectFill</div></div></div>
+    <div class="asset"><img src="assets/demo/person-01-avatar.png" alt="" style="height:120px;object-fit:contain;background:var(--c-bg-surface)">
+      <div class="asset__b"><b>avatars/person-01..03-avatar.png</b><p>好友行三枚头像＝<code>IMAGE_PATHS.PEOPLE.AVATAR_1~3</code>（images.ts:360-362）公共池，按 <code>circleIdSeed(circle.id)%3</code> 轮转取三张（index.vue:305-321）。源码自注（:301-303）：「此处仅作装饰性头像组，不指向任何真实用户」。</p><div class="m">20px · 描边 1px · 重叠 -5px</div></div></div>
+  </div>
+
+  <div class="note">
+    <b>与实况的已知差异 · 真值口径登记（画板不修，登记在此）：</b>
+    <ul>
+      <li><b>好友头像行的口径（本画板唯一的「数字类」判点，已逐层复核属实）：</b>
+        列表页 <code>index.vue:530</code> 仍渲染该行；计数优先取后端字段
+        <code>CircleView.friendJoinedCount</code>（<code>apps/api/.../discover/CircleController.java:194</code> 下发），
+        其真身是 <code>apps/api/.../discover/RealCircleService.java:191-195</code> 的
+        <code>estimateFriendJoinedCount(memberCount) = clamp(round(memberCount/1000), 3, 99)</code>
+        （memberCount&lt;=0 时返回 3；<code>:181</code> 处逐圈调用），
+        <b>是成员数的千分之一估算，与「我的好友里有谁加入了这个圈」无关</b>。
+        三枚头像由公共池按圈 id 字符码取模拼出（见上），非真实用户。
+        real 档缺字段 ⇒ <code>:325</code> 返回 0 ⇒ 整行不渲染；mock 档无该字段 ⇒ <code>:326</code> 走 <code>5+seed%8</code>。
+        画板按 <b>real 档公式回算</b>：12000→12、8932→9、8123→8、6532→7、7240→7、4860→5。
+        <b>理想图此处为 8 / 12 / 16 / 9 / 7 / 5，后端无该展示值的真值源（它不是任何字段的读数），画板按估算公式回算画、不照抄。</b>
+        这一行是「装饰性社交证明」而非事实陈述，恢复真口径需后端补 viewer 为锚的好友-圈子关联统计（缺列已在 <code>circle-home.vue:245-247</code> 在册）。</li>
+      <li><b>成员数 / 动态数取后端真值，不取理想图演示值：</b>登记表通用规则第 0 条判据是「后端有没有真值源」——
+        <code>memberCount</code> 有（<code>interest_circles</code> 种子 <code>V2026.08.15.0002</code>：摄影 12000 / 旅行 8932 / 音乐 8123 / 运动 6532 / 美食 7240；天文 4860 与 mock 种子同值），
+        <code>topicCount</code> 有（<code>RealCircleService</code> 的 <code>countTopicsByCircleIds</code> 实算）。
+        理想图的 9,875 / 1.1w / 9,210 / 8,123 与 362 / 245 / 512 / 298 / 361 / 197 是 mockup 演示值，未照抄；
+        动态数按登记表第 11 行「2–6 随数据」取实况帧读数 6 / 4 / 4 / 4 / 5。</li>
+      <li><b>天文圈的动态数未取到读数：</b>实况两帧（<code>兴趣圈列表-1-top.png</code> / <code>-2-bottom.png</code>）都在视口下沿把该行裁掉，
+        画 2 条（同批新增圈各 2 条话题，<code>reports/verify/2026-10-26/50-fidelity/cards.md</code> 第 11 行），属「随数据」位、非真值锚。</li>
+      <li><b>热门角标阈值两页不一致：</b>本页 <code>HOT_THRESHOLD = 8000</code>（<code>:235</code>），
+        主页 <code>isHot</code> 是 <code>memberCount &gt;= 10000</code>（<code>circle-home.vue:373</code>）——
+        同一圈子可能列表带角标、主页不带。按本页档画即摄影 / 旅行 / 音乐三张带角标，恰好与理想图三张带角标同数；
+        若照抄理想图的成员数（运动 1.1w、美食 9,210、天文 8,123 全 ≥8000）会变成六张全带，反成第三种差异。全站阈值归一不在本车道。</li>
+      <li><b>实况帧过期项（§10，按源码画）：</b><code>兴趣圈列表-1-top.png</code> 的运动圈（6,532）带「热门」角标，
+        与源码阈值 8000 矛盾 ⇒ 该帧拍在阈值改动之前，本画板按源码判该卡不带角标；同帧美食圈读数 7,241 是运行期加入漂移，画种子值 7,240。<b>这两帧需重拍。</b></li>
+      <li><b>不画 tabbar、不画原生导航栏：</b>本页在 circles 分包、<code>navigationStyle: custom</code>，
+        页头由页面自绘（<code>#header</code> 插槽 + <code>AppShell</code> sticky 层）。
+        理想图底部那条五签 tabbar 是 mockup 自带件，真机此页没有 ⇒ 不照搬。页头与 chips 同处一条吸顶层（R2b-L04-D16）。</li>
+      <li><b>胶囊避让：</b>搜索钮 <code>margin-right: calc(var(--capsule-right) + 87px)</code>（<code>:946</code>）为微信胶囊预留，
+        真机放大镜右缘紧贴胶囊左缘；画板按理想图把它放在页头最右端，全站画板统一不画胶囊。</li>
+      <li><b>文案口径：</b>统计行不用词条 <code>circle.cardStats</code>（其值「{members} 人 · {posts} 条动态」缺「加入」二字），
+        改用 <code>circle.memberUnit</code>「人加入」+ <code>circle.topicUnit</code>「条动态」拼（<code>:519-525</code> 记的裁定）；
+        「+ 加入」的加号在展示层剥掉（<code>:366-374</code>）。筛选 ActionSheet 三档文案「全部圈子 / 只看已加入 / 按人数排序」
+        是 <code>:259</code> 的硬编码中文，未走 i18n——全站口径问题，登记不修。</li>
+      <li><b>BASE_PROBLEM：</b><code>assets/board-base.css</code> 缺源码在用的两档——
+        <code>--c-text-error-dark</code>（#991b1b，热门角标文字真值档，R10-L03-D16 为过 10px 小字 4.5:1 才选它）与
+        <code>--c-overlay-border-light</code>（rgba(255,255,255,.18)）。本页角标文字暂落已登记的最近档 <code>--c-romance-700</code>（#CC4A5F）。</li>
+    </ul>
+  </div>
+</div>
+
+<footer>
+  寻觅 · 兴趣圈列表页高保真设计稿　|　2026-10-26　|　令牌真源 apps/client/src/theme/design-variables.scss v4.0.0<br>
+  出图：scripts/qa/shoot-design-board.mjs → 每屏 852 × 1846（面积 1.573 Mpx，对齐 素材/理想效果图 语料预算）
+</footer>
+
+</div>
+</body>
+</html>

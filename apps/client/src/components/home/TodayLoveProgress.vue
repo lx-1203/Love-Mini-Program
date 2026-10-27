@@ -63,12 +63,12 @@ function stepTitle(step: { id: string; title?: string }): string {
     </view>
     <view class="love-progress__steps">
       <view v-for="step in steps" :key="step.id" class="love-step" :style="{ background: stepMeta(step.id).softBg }" @tap="$emit('step', step.action)">
-        <!-- R21（2026-09-09）：序号圆点改回理想图的语义图标（对勾/爱心/对话/星星），
-             完成态显示对勾，未完成显示该步骤的类别图标 -->
+        <!-- 2026-10-26 对齐理想图（首页.png 步骤行）：四步恒显语义图标（盾形勾/心形/对话气泡/星形），
+             不再因完成态切换成白色对勾（状态图形）——完成态语义由下方「已完成」文案与顶部进度条表达 -->
         <view class="love-step__index" :style="{ background: stepMeta(step.id).bg }">
           <image
             class="love-step__index-icon"
-            :src="step.completed ? IMAGE_PATHS.ICONS_COMMON.CHECK_WHITE_SVG : stepMeta(step.id).iconSrc || stepMeta(step.id).icon"
+            :src="stepMeta(step.id).iconSrc || stepMeta(step.id).icon"
             mode="aspectFit"
           />
         </view>

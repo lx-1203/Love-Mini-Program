@@ -13,7 +13,7 @@ import { storeToRefs } from "pinia";
 // MP-R8-OWNPOST-001：判断作者是否为当前用户（自己的帖子不再显示「+关注」）
 import { useSessionStore } from "../../../stores/session";
 import { useI18n } from "vue-i18n";
-import { useVillageStore, formatRelativeTime, type CommentItem } from "../../../stores/village";
+import { useVillageStore, formatRelativeTime, MAX_CONTENT_LENGTH, type CommentItem } from "../../../stores/village";
 // R4-00087：评论分页加载更多（契约 CommentListResponse 含 total/page/pageSize）
 import { mapToCommentItem } from "../../../stores/village/utils";
 import type { CommentListResponse } from "../../../stores/village/types";
@@ -166,6 +166,11 @@ const similarExpanded = ref(false);
 const AUDIT_SEED_RE = /取证|端到端|幂等|落库|读回|G\d{1,2}\b|\d{8,}/i;
 const displayContent = computed<string>(() => {
   const raw = currentPost.value?.content ?? "";
+  /* 2026-10-26：真档不伪造正文。原实现无条件把命中取证/长数字的帖子替换成理想图示例文案，
+     real 档实测把含 8 位以上数字（手机号/时间戳）的真实帖子也吞成同一段演示云海文案——
+     既是伪造内容，也会误伤真实用户。现仅在 mock/dev 保留设计示例兜底；
+     真档原样透传，取证/种子帖应走数据清理或后端可见性过滤，不在客户端编内容。 */
+  if (!useMock()) return raw;
   return AUDIT_SEED_RE.test(raw) ? "周末去爬山拍到了云海，随手记录一下今天的校园～" : raw;
 });
 const displayTags = computed<string[]>(() => {
@@ -1469,6 +1474,7 @@ onShareTimeline(() => {
             class="input-bar__input"
             :placeholder="replyPlaceholder"
             confirm-type="send"
+            :maxlength="MAX_CONTENT_LENGTH"
             :focus="commentInputFocused || commentInputFocus"
             @blur="commentInputFocused = false; commentInputFocus = false"
             @confirm="submitComment"
