@@ -22,7 +22,7 @@ import SafeImage from "../../components/common/SafeImage.vue";
 // 理想图 附近的首页.png 右下角有绿色圆形悬浮发布钮，本页此前只有页头「发动态」药丸一个入口。
 // 复用既有全局组件 GlobalPublishFab（自述「全局发帖悬浮按钮」，此前仅 profile 页挂载；
 // 组件内部自带 isPostPublishOpen 配置闸与展开动画），跳转走本页既有 goToPublishPost
-// （与页头药丸同一落点 /subpackages/village/village/post），不新造链路。
+// （与页头药丸同一落点 /subpackages/village/village/publish），不新造链路。
 import GlobalPublishFab from "../../components/common/GlobalPublishFab.vue";
 import { clientApi } from "../../services/api";
 import { mapToDiscoverCard, NEARBY_MAX_DISTANCE_KM } from "../../stores/discover/utils";
@@ -521,7 +521,7 @@ function onPostActivity(activityId: number | string) {
 
 /** 发帖（动态/找搭子/活动 三段式入口） */
 function goToPublishPost() {
-  openAppPath("/subpackages/village/village/post");
+  openAppPath(ROUTES.VILLAGE.PUBLISH);
 }
 
 /** 查看全部动态 */

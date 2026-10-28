@@ -385,7 +385,7 @@ onMounted(() => {
   top: 4rpx;
   left: 4rpx;
   transition: left var(--d-normal, 200ms) ease;
-  box-shadow: 0 2rpx 8rpx var(--c-black-shadow-lg, rgba(0, 0, 0, 0.12)));
+  box-shadow: 0 2rpx 8rpx var(--c-black-shadow-lg, var(--c-black-shadow-lg, rgba(0, 0, 0, 0.12)));
 }
 
 .toggle-switch--on .toggle-knob {

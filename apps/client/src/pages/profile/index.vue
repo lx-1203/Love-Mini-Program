@@ -1150,8 +1150,8 @@ function handleVipClick() {
 
 /** Task F：全局发帖 FAB publish 事件 → 发帖编辑页 */
 function goToPublishTopic() {
-  // 统一发帖入口（P12）：个人主页加号跳转标准发帖页
-  openAppPath(ROUTES.VILLAGE.POST);
+  // 统一发帖入口（P12）：个人主页加号跳转统一发布页
+  openAppPath(ROUTES.VILLAGE.PUBLISH);
 }
 
 /**

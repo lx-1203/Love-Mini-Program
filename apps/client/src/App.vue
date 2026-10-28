@@ -530,7 +530,7 @@ page {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    var(--c-overlay-bg-mid, var(--c-overlay-border-strong, rgba(255, 255, 255, 0.3)))) 50%,
+    var(--c-overlay-bg-mid, var(--c-overlay-border-strong, rgba(255, 255, 255, 0.3))) 50%,
     transparent 100%
   );
   background-size: 200% 100%;

@@ -408,8 +408,8 @@ function openActivityFromPost(activityId: number) {
 function handlePublish() {
   // B4 认证门控：发帖为互动操作，需已通过实名认证（浏览不受限）
   if (!ensureCertified("realname")) return;
-  // 统一发帖入口（P12）：村口底部发帖栏跳转标准发帖页
-  openAppPath(ROUTES.VILLAGE.POST);
+  // 统一发帖入口（P12）：村口底部发帖栏跳转统一发布页
+  openAppPath(ROUTES.VILLAGE.PUBLISH);
 }
 
 /** 学校圈未认证：底部输入条锁定，点击引导认证 */

@@ -278,10 +278,10 @@ function goBack() {
 /**
  * 空态出口：去发帖（R6-L04-D05）。
  * 目标页取本页同族、且在村口页实际在用的发布页路由（village/index.vue:390 亦走
- * ROUTES.VILLAGE.POST），不新造路径。
+ * ROUTES.VILLAGE.PUBLISH），不新造路径。
  */
 function goToPublish(): void {
-  openAppPath(ROUTES.VILLAGE.POST);
+  openAppPath(ROUTES.VILLAGE.PUBLISH);
 }
 
 onLoad((query) => {
@@ -342,7 +342,7 @@ onShareTimeline(() => ({
     <!-- R8-L03-D10（P2 需新建）：标签页此前导航带之下 y98 直接进列表，与 circle-home 同族页
          相比少一整个信息层。补标签头卡＝#标签名 + 该标签下帖子数 + 内容入口按钮。
          数据全部来自本页既有状态（tagName / posts.length），按钮走既有 goToPublish()
-         （→ ROUTES.VILLAGE.POST，R6-L04-D05 已裁定同族出口）；「关注/参与标签」后端无字段，
+         （→ ROUTES.VILLAGE.PUBLISH，R6-L04-D05 已裁定同族出口）；「关注/参与标签」后端无字段，
          不在前端编造 ⇒ 入口取真实可用的「去发布」。文案复用既有键，locales 不在本车道可写集。 -->
     <view class="tag-hero">
       <view class="tag-hero__main">
@@ -575,7 +575,7 @@ $red-badge: var(--c-error, #FF4757);
   /* R4-02540：品牌渐变底上的反色文字改用 --c-text-inverse（深色模式自动适配）
      R8-L03-D11：底档加深到 brand-800/900 后，白字复算 6.45..10.24:1，过 4.5:1 */
   color: var(--c-text-inverse);
-  text-shadow: 0 2rpx 8rpx var(--c-black-shadow-md, rgba(0,0,0,0.1)));
+  text-shadow: 0 2rpx 8rpx var(--c-black-shadow-md, var(--c-black-shadow-md, rgba(0,0,0,0.1)));
 }
 
 .tag-header__spacer {

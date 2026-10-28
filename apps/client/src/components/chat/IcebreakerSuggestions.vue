@@ -107,10 +107,10 @@ const { t } = useI18n();
   border-radius: var(--r-lg, 20rpx) var(--r-lg, 20rpx) 0 0;
   background: linear-gradient(
     135deg,
-    var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))),
-    var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0.03)))
+    var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))),
+    var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(91, 127, 255, 0.03)))
   );
-  border-bottom: 1px solid var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.06)));
+  border-bottom: 1px solid var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.06)));
 }
 
 /* ========== 标题行 ========== */
@@ -145,12 +145,12 @@ const { t } = useI18n();
   gap: var(--sp-1);
   padding: var(--sp-2) var(--sp-4);
   border-radius: var(--r-full, 9999rpx);
-  background: var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08)));
+  background: var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08)));
   transition: background var(--d-normal, 200ms);
 }
 
 .icebreaker__refresh-btn:active {
-  background: var(--c-secondary-blue-border-tint-strong, rgba(37, 99, 235, 0.14)));
+  background: var(--c-secondary-blue-border-tint-strong, var(--c-secondary-blue-border-tint-strong, rgba(37, 99, 235, 0.14)));
 }
 
 .icebreaker__refresh-icon {
@@ -189,15 +189,15 @@ const { t } = useI18n();
   padding: 22rpx var(--sp-6);
   border-radius: var(--r-xl, 24rpx);
   background: var(--c-bg-container, #FFFFFF);
-  border: 1rpx solid var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08)));
-  box-shadow: 0 2rpx 12rpx var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04)));
+  border: 1rpx solid var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08)));
+  box-shadow: 0 2rpx 12rpx var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04)));
   transition: all var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .icebreaker__card:active {
   transform: scale(0.97);
   border-color: var(--c-brand-200);
-  box-shadow: 0 4rpx 16rpx var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.06)));
+  box-shadow: 0 4rpx 16rpx var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.06)));
 }
 
 .icebreaker__card-badge {
@@ -205,7 +205,7 @@ const { t } = useI18n();
   display: inline-flex;
   padding: var(--sp-1) var(--sp-3);
   border-radius: var(--r-full, 9999rpx);
-  background: linear-gradient(135deg, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08))), var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))));
+  background: linear-gradient(135deg, var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08))), var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))));
 }
 
 .icebreaker__card-badge-text {
@@ -246,7 +246,7 @@ const { t } = useI18n();
   padding: var(--sp-5) 22rpx;
   border-radius: var(--r-lg, 18rpx);
   background: var(--c-bg-container, #FFFFFF);
-  border: 1px solid var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.06)));
+  border: 1px solid var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.06)));
 }
 
 .icebreaker__skeleton-line {
@@ -254,9 +254,9 @@ const { t } = useI18n();
   border-radius: var(--r-xs, 6rpx);
   background: linear-gradient(
     90deg,
-    var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))) 25%,
-    var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08))) 50%,
-    var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))) 75%
+    var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))) 25%,
+    var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.08))) 50%,
+    var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.04))) 75%
   );
   background-size: 200% 100%;
   animation: skeleton-shimmer var(--d-particle, 1500ms) ease-in-out infinite;
