@@ -1041,23 +1041,27 @@ export const useLikesStore = defineStore("likes", {
           // 操作完成后从 likedBy 列表移除已喜欢成功的用户（保留失败项，允许重试）
           this.likedBy = this.likedBy.filter((item) => !userIds.includes(item.userId) || failed.includes(item.userId));
         } else if (action === "skip") {
-          // 批量跳过：从 likedBy 列表移除选中项（前端操作，无后端调用）
-          // mock 模式下直接操作本地状态；real 模式下后续可扩展批量 API
-          // TODO(backend): 后端暂无 batch-skip 接口（/matches/skip 仅支持单个），
-          // real 模式暂为本地移除，不产生网络请求；接入后端后应改为批量调用。
+          // 批量跳过：real 模式落库（liked-me 查询已排除 pass，刷新不会回弹）；
+          // mock 模式保持本地移除。失败项保留在列表里，允许用户重试。
           if (useMock()) {
             this.likedBy = this.likedBy.filter((item) => !userIds.includes(item.userId));
           } else {
-            // real 模式：批量调用 cancel-like 反向操作或新增 batch-skip 接口
-            // 此处复用 unlikeUser（语义：从 likedBy 移除并不再展示）
-            for (const userId of userIds) {
+            const BATCH_SIZE = 5;
+            for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+              const batch = userIds.slice(i, i + BATCH_SIZE);
               try {
-                // 跳过不发起喜欢，仅本地移除
-                this.likedBy = this.likedBy.filter((item) => item.userId !== userId);
+                await request({
+                  url: "/matches/pass/batch",
+                  method: "POST",
+                  data: { passedUserIds: batch.map((id) => Number(id)) },
+                });
               } catch (_e) {
-                failed.push(userId);
+                failed.push(...batch);
               }
             }
+            this.likedBy = this.likedBy.filter(
+              (item) => !userIds.includes(item.userId) || failed.includes(item.userId),
+            );
           }
         } else if (action === "cancel") {
           // 批量取消喜欢：从 likes 列表移除选中项

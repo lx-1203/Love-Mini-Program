@@ -1095,6 +1095,18 @@ export const clientApi = {
     await request({ url: `/matches/pass?passedUserId=${encodeURIComponent(targetUserId)}`, method: "POST" });
   },
 
+  /** 批量跳过：POST /api/v1/matches/pass/batch，逐条幂等落库。 */
+  async passUsers(targetUserIds: string[]): Promise<void> {
+    if (useMock()) {
+      return;
+    }
+    const ids = targetUserIds.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0);
+    if (ids.length === 0) {
+      return;
+    }
+    await request({ url: "/matches/pass/batch", method: "POST", data: { passedUserIds: ids } });
+  },
+
   /** 搜索用户（v3 搜索分组 · 用户）：GET /api/v1/search/users?keyword= */
   async searchUsers(keyword: string): Promise<UserSearchView[]> {
     if (useMock()) {

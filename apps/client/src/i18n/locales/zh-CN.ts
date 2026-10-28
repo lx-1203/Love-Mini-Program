@@ -906,6 +906,8 @@ export default {
     "consulting": {
       "title": "恋爱咨询课程",
       "subtitle": "精选课程，助你提升恋爱能力",
+      "lecturer": "讲师",
+      "signupClosed": "报名暂未开放",
       "course1": {
         "title": "恋爱沟通课",
         "lecturer": "讲师：林老师",
@@ -2017,6 +2019,12 @@ export default {
       "visibilityPrivate": "仅自己可见",
       "locationHint": "位置选择即将开放",
       "mentionHint": "提及好友即将开放",
+      "mentionTitle": "提及好友",
+      "mentionEmpty": "暂无可提及的关注好友",
+      "mentionConfirm": "插入 @",
+      "mentionLoginRequired": "请先登录",
+      "mentionLoadFailed": "加载关注列表失败",
+      "mentionLimit": "最多提及 10 位好友",
       "draftModalTitle": "是否保留草稿？",
       "draftModalContent": "你还有未发布的内容，是否保留以便下次继续编辑？",
       "draftKeep": "保留",
@@ -2731,7 +2739,7 @@ export default {
   },
   "messages": {
     "title": "消息",
-    "unreadLocalHint": "已标为未读（仅本机生效，离开页面后会还原）",
+    "unreadSyncFailed": "标记未读失败，请重试",
     "todayHeartSubtitle": "今天也有新的心动在发生",
     "wsNewMatchTitle": "新的匹配",
     "wsNewMatchContent": "你和 TA 成功匹配，可以开始聊天了",

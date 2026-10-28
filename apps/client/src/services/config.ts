@@ -274,7 +274,12 @@ export const DEFAULT_LEGAL_VERSION = "v1.0.0";
  */
 export async function fetchAgreedLegalVersion(): Promise<string> {
   try {
-    const view = await request<LegalTextView>({
+    // 后端 2026-10-28 起统一返回 { items: [...] }；兼容旧的扁平对象。
+    const response = await request<{
+      items?: Array<{ type?: string; version?: string; updatedAt?: string }>;
+      version?: string;
+      updatedAt?: string;
+    }>({
       url: "/config/legal",
       method: "GET",
       data: { type: "user_agreement" },
@@ -283,11 +288,14 @@ export async function fetchAgreedLegalVersion(): Promise<string> {
       // 版本号获取属可降级辅助调用，失败由本函数兜底，不进 http 层上报
       reportError: false,
     });
-    if (view && typeof view.version === "string" && view.version.trim()) {
-      return view.version.trim();
+    const item = response?.items?.find((entry) => entry.type === "user_agreement")
+      ?? response?.items?.[0]
+      ?? response;
+    if (item && typeof item.version === "string" && item.version.trim()) {
+      return item.version.trim();
     }
-    if (view && typeof view.updatedAt === "string" && view.updatedAt.trim()) {
-      return view.updatedAt.trim();
+    if (item && typeof item.updatedAt === "string" && item.updatedAt.trim()) {
+      return item.updatedAt.trim();
     }
     return DEFAULT_LEGAL_VERSION;
   } catch (e) {

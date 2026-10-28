@@ -140,10 +140,12 @@ const coverImage = computed<string>(() => circleCoverFor(circle.value.name));
 /** 是否已加入（控制底部栏按钮态） */
 const joined = computed(() => circle.value.isJoined);
 
-/** 圈标签（本地 mock —— TODO(后端): 圈子标签字段）。
- *  MP-R1-CIRCLEHOME-001：real 模式不渲染写死演示标签（任何圈子都显示摄影技巧…） */
+/** 圈子 meta（标签 + 公告），2026-10-28 起由后端 /circles/{id}/meta 下发。 */
+const circleMeta = ref<{ tags: string[]; announcement: string }>({ tags: [], announcement: "" });
+
+/** 圈标签：mock 保留演示标签，real 用后端 meta。 */
 const circleTags = computed<string[]>(() =>
-  useMock() ? ["摄影技巧", "风景拍摄", "人像写真", "城市漫游"] : []
+  useMock() ? ["摄影技巧", "风景拍摄", "人像写真", "城市漫游"] : circleMeta.value.tags
 );
 
 /** 置顶公告（本地 mock —— TODO(后端): 圈公告接口）。
@@ -152,7 +154,7 @@ const circleTags = computed<string[]>(() =>
  *  写死中文字面量，改走本页其余文案同一套 useI18n().t()（circle.home.* 命名，
  *  与相邻 circle.home.pinnedBadge 成对）；文案内容原样入词条，视觉零变化。 */
 const pinnedNotice = computed<string>(() =>
-  useMock() ? t("circle.home.pinnedNotice") : ""
+  useMock() ? t("circle.home.pinnedNotice") : circleMeta.value.announcement
 );
 
 /** 动态 feed 项（2026-09-12：真实数据来自 circleStore.fetchTopics，mock 仅兜底） */
@@ -282,9 +284,10 @@ watch(
         title: tp.title,
         content: tp.content,
         images: (tp.images ?? []).slice(0, 3).map((img) => resolveMediaUrl(img)),
-        // R11-L04-D14（按 §12.4 合法形态之二）：后端 CircleTopicView 只有 replyCount，
-        // 没有 likeCount/likedByMe 列 ⇒ 不再写死 0/false 冒充「零赞」，两个字段缺省，
-        // 模板据此撤掉点赞位；等后端补列再接（见交件缺列清单）。
+        // 2026-10-28：后端已补 likeCount/likedByMe，真实 feed 恢复点赞位；
+        // 旧数据/未下发时仍为 undefined，模板据此隐藏。
+        likes: tp.likeCount,
+        liked: tp.likedByMe,
         comments: tp.replyCount ?? 0,
       }));
   },
@@ -346,6 +349,9 @@ onLoad((query) => {
     circleStore.fetchTopics(circleId.value, 1).catch(() => {
       // store 内部已置 errorMessage；本页静默回退 mock feed
     });
+    circleStore.fetchCircleMeta(circleId.value)
+      .then((meta) => { circleMeta.value = meta; })
+      .catch(() => { /* meta 失败时标签/公告不渲染，不影响 feed */ });
   }
 });
 
@@ -430,10 +436,21 @@ function goToPostTopic(): void {
  * R11-L04-D14：真实数据没有点赞列，item.likes 缺省时点赞位不渲染，本函数也不会被调到；
  * 这里保留守卫，避免将来接线时对 undefined 做 += 得到 NaN。
  */
-function toggleLike(item: FeedItem): void {
+async function toggleLike(item: FeedItem): Promise<void> {
   if (item.likes === undefined) return;
-  item.liked = !item.liked;
-  item.likes += item.liked ? 1 : -1;
+  const nextLiked = !item.liked;
+  const previousLikes = item.likes;
+  item.liked = nextLiked;
+  item.likes += nextLiked ? 1 : -1;
+  try {
+    const result = await circleStore.toggleTopicLike(item.id, nextLiked);
+    item.liked = result.liked;
+    item.likes = result.likeCount;
+  } catch (_e) {
+    item.liked = !nextLiked;
+    item.likes = previousLikes;
+    uni.showToast({ title: t("apiErrors.operationFailed"), icon: "none" });
+  }
 }
 
 /**

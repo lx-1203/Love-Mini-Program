@@ -22,6 +22,7 @@ import { useProfileStore } from "../../../stores/profile";
 // 2026-10-26 按规范 §3.14 与理想效果图的 0/1000 反向收口——单一真源仍是本常量，数值为 1000
 import { useVillageStore, MAX_CONTENT_LENGTH } from "../../../stores/village";
 import { useMock } from "../../../stores/helpers/use-mock";
+import { useSessionStore } from "../../../stores/session";
 import { clientApi } from "../../../services/api";
 // MP-R1-PUBLISH-004：publish 独立草稿存储键（原与 post.vue 共用 village:post-draft，
 // 两页快照结构不同互写污染：post 的 title 被静默丢弃、publish 的空 title 反向覆盖）
@@ -87,6 +88,13 @@ const targetType = ref<"general" | "circle" | "campus" | "friends">("general");
 const targetId = ref<number | null>(null);
 const targetCircle = ref<CircleItem | null>(null);
 const targetOpen = ref(false);
+
+/* ---------- @提及（2026-10-28） ---------- */
+const mentionSheetOpen = ref(false);
+const mentionLoading = ref(false);
+const followingUsers = ref<Array<{ userId: number; nickname: string; avatarUrl?: string }>>([]);
+const selectedMentionIds = ref<number[]>([]);
+const mentionedUsers = ref<Array<{ userId: number; nickname: string }>>([]);
 
 const currentLength = computed(() => content.value.length);
 /** MP-R1-PUB-016：接近上限时计数警示（颜色提示用 token，见样式 --c-warning） */
@@ -353,8 +361,54 @@ function removeTopic(index: number) {
   topics.value.splice(index, 1);
 }
 
-function openMentionPicker() {
-  uni.showToast({ title: t("village.post.mentionHint"), icon: "none" });
+async function openMentionPicker() {
+  const me = useSessionStore().userSession;
+  if (!me?.userId) {
+    uni.showToast({ title: t("village.post.mentionLoginRequired"), icon: "none" });
+    return;
+  }
+  mentionSheetOpen.value = true;
+  mentionLoading.value = true;
+  selectedMentionIds.value = mentionedUsers.value.map((u) => u.userId);
+  try {
+    followingUsers.value = await clientApi.getMyFollowing(String(me.userId));
+  } catch (_e) {
+    followingUsers.value = [];
+    uni.showToast({ title: t("village.post.mentionLoadFailed"), icon: "none" });
+  } finally {
+    mentionLoading.value = false;
+  }
+}
+
+function isMentionSelected(userId: number): boolean {
+  return selectedMentionIds.value.includes(userId);
+}
+
+function toggleMention(user: { userId: number; nickname: string }): void {
+  const index = selectedMentionIds.value.indexOf(user.userId);
+  if (index >= 0) {
+    selectedMentionIds.value.splice(index, 1);
+    return;
+  }
+  if (selectedMentionIds.value.length >= 10) {
+    uni.showToast({ title: t("village.post.mentionLimit"), icon: "none" });
+    return;
+  }
+  selectedMentionIds.value.push(user.userId);
+}
+
+function confirmMentions(): void {
+  const newlySelected = followingUsers.value.filter(
+    (u) => selectedMentionIds.value.includes(u.userId)
+      && !mentionedUsers.value.some((m) => m.userId === u.userId),
+  );
+  if (newlySelected.length > 0) {
+    const insert = newlySelected.map((u) => `@${u.nickname} `).join("");
+    const base = content.value.trimEnd();
+    content.value = `${base}${base ? " " : ""}${insert}`.slice(0, MAX_CONTENT_LENGTH);
+    mentionedUsers.value.push(...newlySelected.map((u) => ({ userId: u.userId, nickname: u.nickname })));
+  }
+  mentionSheetOpen.value = false;
 }
 /* ---------- R10-L02-D14（P1）：位置选择接真实能力 ----------
  * 原状态：无城市缓存时「添加位置」行只剩一句「位置选择即将开放」，整行无 @tap、无选择器，
@@ -741,6 +795,7 @@ async function submitPublish() {
           visibility: visibility.value,
           targetType: targetType.value,
           targetId: targetId.value,
+          mentionedUserIds: mentionedUsers.value.map((u) => Number(u.userId)).filter((id) => Number.isInteger(id) && id > 0),
         });
       }
     }
@@ -923,15 +978,9 @@ onUnmounted(() => {
           <text class="publish-location-note__text">位置仅保存在草稿，暂不随本条帖子对外展示</text>
           <text class="publish-location-note__clear" @tap="location = ''">清除位置</text>
         </view>
-        <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-A01：本行能力与 post.vue:164-168
-             insertMention（真往正文插 @）不一致，且本页 openMentionPicker 只弹「即将开放」。
-             按台账 (b) 支取只读形态：剥掉 press-feedback / hover-class / role=button / › 四件
-             交互线索（对齐 MP-R1-VILLAGE-PUBLISH-103 对「谁可以看」行的既有裁定——点了不改值
-             却保留可点线索=可点假象）；@tap 保留，因为「即将开放」这一信息只有点下去才拿得到
-             （tap-to-explain，同页 -A04 已认可的形态）。行内灰色「即将开放」常驻标记需新增
-             village.post.comingSoon 双语键，已登记 .zcode/tmp/fixwave/i18n-requests/closer.json，
-             键落地后再补标记，避免本轮出现渲染键路径字面量的中间态。 -->
-        <view class="publish-row" @tap="openMentionPicker">
+        <!-- 2026-10-28：@提及已接通关注列表（最多 10 人），正文插入 @昵称并提交 mentionedUserIds；
+             圈子目标下隐藏——createTopic 请求体暂无 mentions，避免 UI 承诺了却静默丢弃。 -->
+        <view v-if="!isCircleTarget" class="publish-row" @tap="openMentionPicker">
           <text class="publish-row__icon">@</text>
           <text class="publish-row__label">提及好友</text>
         </view>
@@ -1037,6 +1086,7 @@ onUnmounted(() => {
         <text class="publish-tool__label">位置</text>
       </view>
       <view
+        v-if="!isCircleTarget"
         class="publish-tool press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
@@ -1164,6 +1214,41 @@ onUnmounted(() => {
           >
             <text class="publish-sheet__confirm-text">{{ t("village.post.addTag") }}</text>
           </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 2026-10-28：@提及好友选择器（关注列表；最多 10 人；正文插 @昵称，提交带 mentionedUserIds） -->
+    <view v-if="mentionSheetOpen" class="publish-sheet" @tap="mentionSheetOpen = false">
+      <view class="publish-sheet__panel" @tap.stop>
+        <view class="publish-sheet__head">
+          <text class="publish-sheet__title">{{ t("village.post.mentionTitle") }}</text>
+          <text class="publish-sheet__sub">{{ selectedMentionIds.length }}/10</text>
+        </view>
+        <text v-if="mentionLoading" class="publish-sheet__hint">{{ t("common.loading") }}</text>
+        <text v-else-if="!followingUsers.length" class="publish-sheet__hint">{{ t("village.post.mentionEmpty") }}</text>
+        <scroll-view v-else scroll-y class="mention-list">
+          <view
+            v-for="user in followingUsers"
+            :key="user.userId"
+            class="publish-target-sheet__option press-feedback"
+            hover-class="press-feedback--active"
+            hover-stay-time="40"
+            role="button"
+            @tap="toggleMention(user)"
+          >
+            <text class="publish-target-sheet__name">{{ user.nickname }}</text>
+            <image
+              v-if="isMentionSelected(user.userId)"
+              class="publish-target-sheet__check"
+              :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHECK)"
+              mode="aspectFit"
+              alt=""
+            />
+          </view>
+        </scroll-view>
+        <view class="publish-sheet__confirm press-feedback" hover-class="press-feedback--active" hover-stay-time="40" role="button" @tap="confirmMentions">
+          <text class="publish-sheet__confirm-text">{{ t("village.post.mentionConfirm") }}</text>
         </view>
       </view>
     </view>
@@ -1402,4 +1487,7 @@ page {
   background: #ffffff;
 }
 
+.mention-list {
+  max-height: 50vh;
+}
 </style>

@@ -47,6 +47,8 @@ export enum LegalTextType {
  *   - updatedAt: 最后更新时间（ISO 8601 字符串）
  */
 export interface LegalTextView {
+  /** 文本类型（user_agreement / privacy_policy） */
+  type?: string;
   /** 文本标题 */
   title: string;
   /** 正文内容 */
@@ -173,6 +175,7 @@ async function fetchLegalTextFromBackend(type: LegalTextType): Promise<LegalText
     }
 
     return {
+      type: matched.type ?? type,
       title: matched.title,
       content: matched.content,
       version: matched.version,

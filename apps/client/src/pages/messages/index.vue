@@ -307,9 +307,9 @@ function onSessionLongpress(session: MessageSession) {
         void messagesStore.setSessionPinned(session.id, !session.pinned).catch(toastOpError);
       }
       if (tapIndex === 1) {
-        messagesStore.markSessionUnread(session.id);
-        // 未读位只活在本地 store（后端没有这个字段），不说就等于假装它持久化
-        uni.showToast({ title: t("messages.unreadLocalHint"), icon: "none" });
+        void messagesStore.markSessionUnread(session.id).then((ok) => {
+          uni.showToast({ title: t(ok ? "messages.markedUnread" : "messages.unreadSyncFailed"), icon: "none" });
+        });
       }
       if (tapIndex === 2) {
         void messagesStore.setSessionMuted(session.id, !session.muted).then((ok) => {
@@ -340,8 +340,8 @@ async function loadPage(force = false) {
   ]);
   avatarFailedIds.value = new Set();
   warmAvatarFailedIds.value = new Set(); // R1-B25/D10：重载后升温行头像失败位同样清零，给坏链一次重试
-  // 2026-08-31 待办：加载完成后标记全部会话已读（红点闭环：badge→进入→清除）
-  void messagesStore.markAllSessionsRead();
+  // 2026-10-28：不再在列表加载时自动清空全部未读；打开会话或显式「标为已读」才清零，
+  // 否则服务端持久化的「标为未读」会被下一次 loadPage 立刻抹掉。
 }
 
 watch(isUnlocked, (unlocked) => {

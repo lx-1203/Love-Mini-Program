@@ -49,9 +49,9 @@ const quickEntries = computed(() => {
     { id: "nearby", icon: IMAGE_PATHS.ICONS_COMMON.LOCATION, titleKey: "contentPages.entries.nearby", url: ROUTES.LOVE_CENTER.NEARBY },
     // R10-P2-014：MBTI 与下方「恋爱测试」区重复，仅保留后者
   ];
-  if (appConfig.isCommerceOn("course")) {
-    entries.push({ id: "consulting", icon: IMAGE_PATHS.ICONS_EMOJI.DOUBLE_HEART, titleKey: "contentPages.entries.consulting", url: ROUTES.LOVE_CENTER.CONSULTING as string });
-  }
+  // 2026-10-28：咨询页已改为内容页（无价格/报名），不再受 commerce.course 交易开关限制；
+  // 页面内仍按 signupEnabled/支付就绪情况隐藏报名。
+  entries.push({ id: "consulting", icon: IMAGE_PATHS.ICONS_EMOJI.DOUBLE_HEART, titleKey: "contentPages.entries.consulting", url: ROUTES.LOVE_CENTER.CONSULTING as string });
   return entries;
 });
 

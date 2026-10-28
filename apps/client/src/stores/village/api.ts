@@ -213,6 +213,8 @@ export async function createPostApi(data: {
   targetType?: string;
   /** 批次 B4：目标 ID */
   targetId?: number | null;
+  /** 2026-10-28：@提及的用户 ID（最多 10 个） */
+  mentionedUserIds?: number[];
 }): Promise<PostDetailView> {
   return request<PostDetailView, {
     title: string;
@@ -224,6 +226,7 @@ export async function createPostApi(data: {
     visibility?: string;
     targetType?: string;
     targetId?: number | null;
+    mentionedUserIds?: number[];
   }>({
     url: "/posts",
     method: "POST",
@@ -237,6 +240,7 @@ export async function createPostApi(data: {
       visibility: data.visibility,
       targetType: data.targetType,
       targetId: data.targetId,
+      mentionedUserIds: data.mentionedUserIds,
     },
   });
 }

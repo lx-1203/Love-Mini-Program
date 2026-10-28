@@ -116,7 +116,7 @@ export interface MessageHeartSignal {
  */
 export interface SystemNotification {
   id: string;
-  type: "system" | "match" | "like" | "activity" | "follow" | "interaction_like" | "comment" | "visitor" | "interaction_match";
+  type: "system" | "match" | "like" | "activity" | "follow" | "interaction_like" | "comment" | "visitor" | "interaction_match" | "mention";
   title: string;
   content: string;
   isRead: boolean;
@@ -476,6 +476,7 @@ function mapNotificationType(backendType: string): SystemNotification["type"] {
     "comment": "comment",
     "visitor": "visitor",
     "match": "interaction_match",
+    "mention": "mention",
   } as const satisfies Record<string, SystemNotification["type"]>;
   return (typeMap as Record<string, SystemNotification["type"]>)[backendType] || "system";
 }
@@ -916,6 +917,26 @@ export const useMessagesStore = defineStore("messages", {
       } catch (error) {
         // 静默失败 + console.warn：已读回执失败不阻塞消息流（与 markNotificationRead 同策略）
         console.warn("[messages] markConversationRead 失败:", sessionId, error);
+        return false;
+      }
+    },
+
+    /**
+     * 会话级「标为未读」服务端回执。
+     * 仅私信（纯数字 ID）落库；temp/官方号会话没有该字段，保留本地语义。
+     */
+    async markConversationUnread(sessionId: string): Promise<boolean> {
+      if (!/^\d+$/.test(sessionId)) return true;
+      if (useMock()) return true;
+      try {
+        await withTimeout(
+          request<void>({ url: `/messages/conversations/${encodeURIComponent(sessionId)}/unread`, method: "PUT" }),
+          ASYNC_TIMEOUT_MS,
+          t("storeErrors.messages.timeoutMarkRead")
+        );
+        return true;
+      } catch (error) {
+        console.warn("[messages] markConversationUnread 失败:", sessionId, error);
         return false;
       }
     },
@@ -1401,11 +1422,17 @@ export const useMessagesStore = defineStore("messages", {
      * R4-00184：当前仅本地改状态，无后端同步（未读计数以服务端会话数据为准，
      * 刷新后按后端计数还原）。TODO(backend): 后端补充会话未读元数据同步接口。
      */
-    markSessionUnread(sessionId: string) {
+    async markSessionUnread(sessionId: string): Promise<boolean> {
       const session = this.sessions.find((s) => s.id === sessionId);
-      if (session) {
-        session.unreadCount = Math.max(1, session.unreadCount);
+      if (!session) return false;
+      const previous = session.unreadCount;
+      session.unreadCount = Math.max(1, previous);
+      const ok = await this.markConversationUnread(sessionId);
+      if (!ok) {
+        session.unreadCount = previous;
+        return false;
       }
+      return true;
     },
 
     /**
@@ -1442,8 +1469,11 @@ export const useMessagesStore = defineStore("messages", {
     async markAllSessionsRead(): Promise<void> {
       const targets = this.sessions.filter((s) => s.unreadCount > 0);
       if (targets.length === 0) return;
-      await Promise.allSettled(targets.map((s) => this.markConversationRead(s.id, true)));
-      targets.forEach((s) => { s.unreadCount = 0; });
+      const results = await Promise.allSettled(targets.map((s) => this.markConversationRead(s.id, true)));
+      results.forEach((r, i) => {
+        const target = targets[i];
+        if (target && r.status === "fulfilled" && r.value) target.unreadCount = 0;
+      });
     },
 
     async deleteSession(sessionId: string) {

@@ -1846,13 +1846,6 @@ async function handleImagePlaceholder() {
     uni.showToast({ title: t("chat.moreMenuSessionMissing"), icon: "none" });
     return;
   }
-  // MP-R2-CHAT-CHAT-SESSION-INDEX-002：temp 会话 id 非数字，私信图片接口
-  // @PathVariable @Positive Long 必 400——在支持 temp 图片链路前明确提示，
-  // 不再发起必然失败的请求（本页上拉分页/撤回均已按同约束绕行）
-  if (isTempSession.value) {
-    uni.showToast({ title: t("chat.imageTempUnsupported"), icon: "none" });
-    return;
-  }
   if (isSendingImage.value) return;
   isSendingImage.value = true;
   try {
@@ -1875,7 +1868,16 @@ async function handleImagePlaceholder() {
           failedCount += 1;
           continue;
         }
-        await messagesStore.sendMessage(sessionId.value, url, undefined, "image");
+        if (isTempSession.value) {
+          // 临时会话走 chatStore 的 temp-chat 发送链路；后端 kind=image 已放行
+          const ok = await chatStore.sendText(url, "image");
+          if (!ok) {
+            failedCount += 1;
+            continue;
+          }
+        } else {
+          await messagesStore.sendMessage(sessionId.value, url, undefined, "image");
+        }
         sentCount += 1;
       } catch (err) {
         failedCount += 1;

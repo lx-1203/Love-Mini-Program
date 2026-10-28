@@ -454,6 +454,8 @@ export const useVillageStore = defineStore("village", {
       targetType?: string;
       /** 批次 B4：目标 ID（圈子 ID 等） */
       targetId?: number | null;
+      /** 2026-10-28：@提及的用户 ID（最多 10 个） */
+      mentionedUserIds?: number[];
     }) {
       this.errorMessage = null;
 
@@ -531,6 +533,7 @@ export const useVillageStore = defineStore("village", {
           visibility: data.visibility,
           targetType: data.targetType,
           targetId: data.targetId,
+          mentionedUserIds: data.mentionedUserIds,
         });
         // 将后端 PostDetailView 映射为前端 PostItem
         const newPost = mapDetailToPostItem(result);

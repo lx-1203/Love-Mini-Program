@@ -49,6 +49,10 @@ export interface BackendCircleTopicView {
   replyCount: number;
   isPinned: boolean;
   createdAt: string;
+  /** 点赞数（2026-10-28 后端补列） */
+  likeCount?: number;
+  /** 当前用户是否已点赞（2026-10-28 后端按 viewer 下发） */
+  likedByMe?: boolean;
 }
 
 /**
@@ -112,6 +116,8 @@ function mapToTopicItem(raw: BackendCircleTopicView): TopicItem {
     },
     replyCount: raw.replyCount,
     createdAt: raw.createdAt,
+    likeCount: raw.likeCount,
+    likedByMe: raw.likedByMe,
   };
 }
 
@@ -133,6 +139,8 @@ function mapToTopicDetail(raw: BackendCircleTopicView): TopicDetail {
     },
     replyCount: raw.replyCount,
     createdAt: raw.createdAt,
+    likeCount: raw.likeCount,
+    likedByMe: raw.likedByMe,
   };
 }
 
@@ -208,6 +216,10 @@ export interface TopicItem {
   replyCount: number;
   /** 创建时间 */
   createdAt: string;
+  /** 点赞数（2026-10-28） */
+  likeCount?: number;
+  /** 当前用户是否已点赞（2026-10-28） */
+  likedByMe?: boolean;
 }
 
 /**
@@ -222,6 +234,8 @@ export interface TopicDetail {
   author: TopicAuthor;
   replyCount: number;
   createdAt: string;
+  likeCount?: number;
+  likedByMe?: boolean;
 }
 
 /**
@@ -466,6 +480,26 @@ export const useCircleStore = defineStore("circle", {
       } finally {
         this.loading = false;
       }
+    },
+
+    /** 圈子标签 + 置顶公告（2026-10-28 后端 meta 接口）。 */
+    async fetchCircleMeta(circleId: string): Promise<{ tags: string[]; announcement: string }> {
+      if (useMock()) return { tags: [], announcement: "" };
+      const data = await request<{ circleId: number; tags: string[] | null; announcement: string | null }>({
+        url: `/circles/${circleId}/meta`,
+        method: "GET",
+      });
+      return { tags: data.tags ?? [], announcement: data.announcement ?? "" };
+    },
+
+    /** 话题点赞/取消（乐观更新由页面负责，失败回滚）。 */
+    async toggleTopicLike(topicId: string, like: boolean): Promise<{ liked: boolean; likeCount: number }> {
+      if (useMock()) return { liked: like, likeCount: 0 };
+      const data = await request<{ topicId: number; liked: boolean; likeCount: number }>({
+        url: `/circles/topics/${topicId}/like`,
+        method: like ? "POST" : "DELETE",
+      });
+      return { liked: data.liked, likeCount: data.likeCount };
     },
 
     /**

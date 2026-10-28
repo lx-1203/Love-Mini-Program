@@ -109,7 +109,7 @@ export function toChatMessageView(message: MessageLike): ChatMessageView {
     id: String(message.id),
     sessionId: message.sessionId ?? "",
     sender: (message.sender as "self" | "peer" | "system") ?? "peer",
-    kind: (message.kind as "text" | "voice" | "emoji" | "system") ?? "text",
+    kind: (message.kind as "text" | "voice" | "emoji" | "system" | "image") ?? "text",
     body: message.body ?? "",
     sentAt:
       typeof message.sentAt === "number"

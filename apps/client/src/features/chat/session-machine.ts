@@ -1,5 +1,5 @@
 export type ChatPhase = "matching" | "active" | "closing" | "closed";
-export type ChatMessageKind = "text" | "voice" | "emoji" | "system";
+export type ChatMessageKind = "text" | "voice" | "emoji" | "system" | "image";
 export type ChatSender = "self" | "peer" | "system";
 export type ContactExchangeStatus =
   | "idle"

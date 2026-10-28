@@ -51,8 +51,8 @@ export type MessageDeliveryStatusMap = Record<string, MessageDeliveryStatus>;
 export interface SendMessageRequest {
   /** 发送方：self / peer（system 仅由后端生成，前端不可发送） */
   sender: "self" | "peer";
-  /** 消息类型：text / voice / emoji */
-  kind: "text" | "voice" | "emoji";
+  /** 消息类型：text / voice / emoji / image */
+  kind: "text" | "voice" | "emoji" | "image";
   /** 消息正文（voice 类型为音频文件 URL） */
   body: string;
   /** 语音时长（秒），仅 voice 类型必填，其他类型为 null */

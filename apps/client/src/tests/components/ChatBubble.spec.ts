@@ -24,7 +24,7 @@ describe("ChatBubble component - 聊天气泡组件", () => {
    */
   function mountBubble(props?: {
     sender?: "self" | "peer" | "system";
-    kind?: "text" | "voice" | "emoji" | "system";
+    kind?: "text" | "voice" | "emoji" | "system" | "image";
     body?: string;
     sentAt?: string;
     durationSeconds?: number | null;

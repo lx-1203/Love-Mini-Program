@@ -293,7 +293,10 @@ function formatTopicTime(iso: string): string {
  * 按 §12.4 的合法形态之二处置：没有真相源的内容 real 档整条撤下、降级为不承诺，
  * 只在 mock 演示档保留；等后端补列后把 useMock() 分支换成读字段。
  */
-const pinnedNotice = computed<string>(() => (useMock() ? t("circle.home.pinnedNotice") : ""));
+const circleMeta = ref<{ tags: string[]; announcement: string }>({ tags: [], announcement: "" });
+const pinnedNotice = computed<string>(() =>
+  useMock() ? t("circle.home.pinnedNotice") : circleMeta.value.announcement
+);
 
 /**
  * R11-L04-D05（P2 · 位置）：页签行吸顶态。
@@ -414,6 +417,9 @@ onLoad((query) => {
         circleName.value = circle.name;
       }
       await circleStore.fetchTopics(circleId.value, 1).catch(() => {});
+      await circleStore.fetchCircleMeta(circleId.value)
+        .then((meta) => { circleMeta.value = meta; })
+        .catch(() => { /* 公告失败不阻塞话题列表 */ });
     })();
   } else {
     // infra R2-00075: circleId 缺失时给出错误态提示，避免直开链接白屏

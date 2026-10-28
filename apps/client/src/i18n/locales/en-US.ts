@@ -795,6 +795,8 @@ export default {
     consulting: {
       title: "Dating Consulting Courses",
       subtitle: "Hand-picked courses to boost your dating skills",
+      lecturer: "Lecturer",
+      signupClosed: "Enrollment is not open yet.",
       course1: { title: "Love Communication", lecturer: "Instructor: Ms. Lin", desc: "Master high-EQ communication for more comfortable interactions" },
       course2: { title: "Finding a Partner", lecturer: "Instructor: Mr. Chen", desc: "Start by understanding yourself to find the right one" },
       course3: { title: "Relationship Repair", lecturer: "Instructor: Counselor Mr. Wang", desc: "Resolve conflicts and rebuild trust and intimacy" },
@@ -2002,6 +2004,12 @@ export default {
       visibilityPrivate: "Only me",
       locationHint: "Location picker coming soon",
       mentionHint: "Mention coming soon",
+      mentionTitle: "Mention a friend",
+      mentionEmpty: "No followed friends to mention",
+      mentionConfirm: "Insert @",
+      mentionLoginRequired: "Please sign in first",
+      mentionLoadFailed: "Failed to load following list",
+      mentionLimit: "You can mention up to 10 friends",
       draftModalTitle: "Keep draft?",
       draftModalContent: "You still have unpublished content. Keep it to edit later?",
       draftKeep: "Keep",
@@ -2558,7 +2566,7 @@ export default {
   /* ========== Messages ========== */
   messages: {
     title: "Messages",
-    unreadLocalHint: "Marked unread (local only; reverts once you leave this page)",
+    unreadSyncFailed: "Failed to mark unread. Please try again.",
     todayHeartSubtitle: "Something new is happening today",
     /* R4-00175: WebSocket /queue/matches real-time match push notification copy */
     wsNewMatchTitle: "New Match",
