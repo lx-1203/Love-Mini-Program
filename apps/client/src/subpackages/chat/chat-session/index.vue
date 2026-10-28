@@ -1579,6 +1579,10 @@ function hashString(s: string): number {
 }
 
 const peerAvatarSrc = computed(() => {
+  // 2026-10-28 强匿名 B：临时会话未完成联系交换前使用默认头像，不暴露任何真人照片
+  if (isTempSession.value && !isIdentityRevealed.value) {
+    return IMAGE_PATHS.DEFAULT_AVATAR;
+  }
   const session = currentSession.value;
   const raw = session && "partnerAvatar" in session ? session.partnerAvatar : "";
   if (raw) return raw;
