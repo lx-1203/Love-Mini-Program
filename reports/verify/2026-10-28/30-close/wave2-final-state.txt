@@ -1,0 +1,16 @@
+# Wave-2 最终状态（2026-10-28）
+
+- HEAD: `eb3406e5`（docs(audit): wave-2 acceptance and admin read-only write gates）
+- Flyway: `2026.10.28.0012`（0009–0012 已应用）
+- API: `http://127.0.0.1:8080/api/v1`，real profile，最终 jar 于 19:58 启动
+- 数据库：
+  - posts=206
+  - circle_topics=39
+  - circle_announcements=0（旧列无数据、QA 公告已清理）
+  - temp_chat_session=1（非 QA 的既有会话）
+  - TEMP_CHAT 资产=0
+  - topic/reply mentions=0
+  - 话题点赞通知去重=0
+- 小程序产物：`apps/client/dist/build/mp-weixin-real`，`RELEASECHAIN_RESULT=PASS steps=15`，主包 1.64MB / 总包 2.74MB，`shippable=no`
+- `src/static`：已还原 1354 文件
+- 报告：`wave2-implementation.md`、`final-report.md §10.1`

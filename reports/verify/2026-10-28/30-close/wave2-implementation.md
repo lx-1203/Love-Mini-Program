@@ -50,7 +50,7 @@
   - `post-topic` 增加「@ 提及圈成员」入口（仅 real + 数字圈 ID），提交带 `mentionedUserIds`。
   - `topic-detail` 回复栏增加 @ 按钮，提交带 mentions，成功后清空。
 - 消息中心：`mention` 映射与 `referenceType` 字段已补齐；当前切片无独立通知列表页，摘要直接消费后端 `summary`。
-- 冒烟：话题 pending 不发 → 审核通过发；回复立即发；摘要/引用类型均判到。
+- 冒烟：话题 pending 不发 → 审核通过发；回复立即发；摘要/引用类型均判到；非圈成员请求候选返回空（实测 `count=0`）。
 
 ## 4. 临时会话图片 B 强匿名
 
