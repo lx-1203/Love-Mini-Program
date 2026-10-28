@@ -238,13 +238,14 @@ pnpm --filter @campus-love/client run build:mp-weixin
 4. **管理后台**（`pnpm --dir apps/admin dev`，5177）：
    - 超管：`local-dev-admin-openid-123456` + 本地 `.env` 的 `ADMIN_LOGIN_PASSWORD`；
    - 校区管理员：`phone:13711110004` / `Campus@12345`（北大）；审核员：`phone:13711110005` / `Auditor@12345`（本地演示，生产必须换）。
+   - 2026-10-28 新增页：法律文本 `http://localhost:5177/configs/legal`、咨询课程 `http://localhost:5177/business/consulting`；兴趣圈编辑增加标签/置顶公告。启动 API 时 Flyway 会自动应用 `V2026.10.28.*`；法律文本种子 v1.0.0 待法务复核。
 5. **本地超管复通**（迁移 `V2026.10.26.0001` 点名路径；DB 先备份；只写仓库里不存在的新强口令）：
    ```bash
    LOCAL_ADMIN_PASSWORD='<新强口令>' DB_PASSWORD='<.env DB_PASSWORD>' \
    MYSQL_BIN=/d/mysql-8.0.45-winx64/bin/mysql \
    node scripts/dev/reset-local-admin.mjs --apply
    ```
-6. **边界**：真机/提审/发布需要真实 HTTPS 域名、AppID、`WECHAT_SECRET`，当前产物 `shippable=no`；VIP、课表网格、隐私正式文本、北师大统计行等产品缺口见 `reports/verify/2026-10-28/30-close/final-report.md`。
+6. **边界**：真机/提审/发布需要真实 HTTPS 域名、AppID、`WECHAT_SECRET`，当前产物 `shippable=no`；**法律正式文本待法务复核、咨询首批内容待运营、临时会话图片的匿名/保留策略待裁定**；VIP、课表网格、北师大统计行按本轮口径不做。产品缺口落地见 `reports/verify/2026-10-28/30-close/product-gaps-report.md`。
 
 ## 环境变量配置
 
