@@ -84,3 +84,29 @@ describe("ChatSession 页面样式分支", () => {
     expect(codeOnly).toMatch(/^\.chat-input-area--keyboard-up\s*\{/m);
   });
 });
+
+/**
+ * 2026-10-29 冷启动回归：深链 sessionId 必须在登录门之前落位，
+ * 否则登录态异步恢复后补载 watcher 没有 sessionId 可用（全量回归实测）。
+ */
+describe("ChatSession 深链冷启动", () => {
+  const source = readFileSync(
+    resolve(__dirname, "../../subpackages/chat/chat-session/index.vue"),
+    "utf-8"
+  );
+  const onLoadStart = source.indexOf("onLoad(async (query) => {");
+  const earlyAssign = source.indexOf("sessionId.value = query.sessionId;", onLoadStart);
+  const authGate = source.indexOf("if (!isUnlocked.value) return;", onLoadStart);
+
+  it("sessionId 赋值早于 isUnlocked 登录门", () => {
+    expect(onLoadStart).toBeGreaterThan(-1);
+    expect(earlyAssign).toBeGreaterThan(onLoadStart);
+    expect(authGate).toBeGreaterThan(onLoadStart);
+    expect(earlyAssign).toBeLessThan(authGate);
+  });
+
+  it("登录态恢复后有补载 watcher", () => {
+    expect(source).toContain("deepLinkAuthResumeDone");
+    expect(source).toContain("void loadSessionData();");
+  });
+});

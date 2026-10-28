@@ -709,6 +709,12 @@ onLoad(async (query) => {
   // 第五轮 QA 验收入口：dev-user=1 页面级兜底（导航拦截器之外的直开/自动化场景）。
   // 必须在登录锁判断之前注入 mock 会话，保证 isUnlocked 放行、onLoad 正常加载会话。
   applyDevUserFromQuery(query);
+  // 2026-10-29：深链 sessionId 在登录门之前落位。原实现先 `if (!isUnlocked) return`，
+  // 冷启动时 query 来不及赋值，登录态恢复后的补载 watcher 没有 sessionId 可用。
+  if (query && typeof query.sessionId === "string" && query.sessionId.trim().length > 0) {
+    sessionId.value = query.sessionId;
+    pageErrorMessage.value = null;
+  }
   // 2026-09-03（统一角色展示）：进入会话即确保本人资料已加载（头像/昵称单一数据源），
   // 幂等（profileStore.load 内部 60s 缓存 + in-flight 守卫），失败静默回落默认头像
   if (isUnlocked.value && !profileStore.avatarUrl) {
