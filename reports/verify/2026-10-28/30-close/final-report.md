@@ -71,7 +71,7 @@
 ## 5. 真实小程序验收
 
 ### 5.1 构建与包体
-- 失败两轮（真实缺陷，已修）：`App.vue` 的 `linear-gradient` 多 `)`；`topic-detail.vue` 的 `box-shadow` 多 `)`；Sass 全量扫描共 11 个样式块语法错，全部来自 030def02 的自指包裹收口。
+- 失败两轮（真实缺陷，已修）：`App.vue` 的 `linear-gradient` 多 `)`；`topic-detail.vue` 的 `box-shadow` 多 `)`；Sass 全量扫描报 11 条语法错，其中 **10 个真实样式块 + 1 条提取器假阳性**（`interest/index.vue` 的模板行被误当样式块）；真实块全部来自 030def02 的自指包裹收口。
 - 修复后 `RELEASECHAIN_RESULT=PASS steps=15`；主包 1.63MB（上限 2.00MB）、总包 2.72MB（上限 10.00MB）、CDN 294 条、`shippable=no`。
 - 产物：`apps/client/dist/build/mp-weixin-real`（985 文件）；`src/static` 已用 `prepare-static --dev` 还原为 1354 文件，完整备份树保留在 `static-local-backup/full-static`。
 
@@ -79,7 +79,7 @@
 | 路径 | 结果 |
 |---|---|
 | 体验号（guest-login） | 可用（五环、UI 链均实测 200） |
-| 手机号（`13711110011` / `Demo@12345`） | 可用（登录页 phone-login 接口；演示号） |
+| 手机号 | API 实测 200（ADMWRITE 用 `13711110002`/`Student@12345`）；`13711110011`/`Demo@12345` 是演示学生号，登录页表单走同一 `/auth/phone-login` 端点；本轮 DevTools 未逐号点击表单 |
 | 微信 `wx.login` | **外部阻断**：`.env` 无 `WECHAT_SECRET`，后端无法用 code 换会话；本轮不把它算产品红 |
 
 ### 5.3 DevTools 9 页只读巡检（变更面）
@@ -119,7 +119,7 @@
 | `publish-pending` | PASS：落 `subpackages/village/village/publish`，DB 行 `430 pending author=100254`，console 0 | QA 帖验收后软删 |
 | `messages-send` | PASS：进 `chat-session`，API 回读命中，convs=3，console 0 | 发出一条 QA 消息，验收后按键删除 |
 | `settings-weekly-toggle` | PASS：周报开关 1→0→1 并复原，console 0 | 个人页齿轮入口 = NOT-EVIDENCED(selector-not-found) |
-| `circle-join` | 见 `20-mp/ui-chains.log` 末行 | 加入/退出往返，文案复原 |
+| `circle-join` | PASS：加入→已加入→加入，console 0 | 往返复原 |
 
 > 媒体：DevTools 巡检的 9 张截图均为有效 PNG（`89504e47`）且字节 >0；后台媒体门 20/20 真解码、裂图 0。小程序端没有 `naturalWidth` 级别的自动断言，媒体「真图」以截图目检 + 10-26 资产门为基线，本轮记为 `NOT-EVIDENCED` 的自动化项。
 
