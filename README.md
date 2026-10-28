@@ -21,7 +21,7 @@
 | 端 | 主要技术 | 备注 |
 |----|----------|------|
 | 客户端（apps/client） | uni-app + Vue 3 + TypeScript + Pinia + vue-i18n | 支持 mp-weixin / H5 双端构建，使用 uni-ui 组件 |
-| Admin 后台（apps/admin） | Vue 3 + TypeScript + Vite + Pinia + vue-router + vue-i18n | 自研组件库（无第三方 UI 框架依赖），SPA |
+| Admin 后台（apps/admin） | Vue 3 + TypeScript + Vite + Pinia + vue-router + vue-i18n + Element Plus | SPA，45 个视图；39 个单元测试 |
 | 后端 API（apps/api） | Spring Boot 3 + Java 17 + Maven | JPA / MyBatis、Spring Security、JWT、Flyway、STOMP WebSocket |
 | 数据库 | MySQL 8.0 + Redis 7 | Flyway 管理迁移，Redis 缓存 / 限流 / 会话 |
 | 监控 | Prometheus + Grafana + Alertmanager + Node Exporter | Docker Compose `monitoring` profile |
@@ -79,7 +79,7 @@
 
 | 工具 | 版本 | 用途 |
 |------|------|------|
-| Node.js | `>=18.0.0 <21.0.0` | 前端构建（与根 `engines`、Dockerfile node:20、CI node 20 一致） |
+| Node.js | `>=18.0.0 <23.0.0`（推荐 20 或 22） | 前端构建；pnpm 11 需要 ≥22.13，Docker/CI 用 node 20 |
 | pnpm | `11.x`（见 `packageManager` 字段） | 前端包管理 |
 | JDK | 17+ | 后端构建与运行 |
 | Maven | 3.9+（或使用 `./mvnw` wrapper） | 后端构建 |
@@ -155,7 +155,7 @@ npm run lint:openapi:spectral  # Spectral CLI 校验
 npm run test:prototype         # 原型契约测试
 npm run test:structure         # 项目结构契约测试
 npm run test:client            # 客户端单元测试（含 OpenAPI 类型生成）
-npm test                       # test:prototype + test:structure + test:client
+npm test                       # test:contracts + test:admin + test:coverage + api:verify + test:client
 npm run verify:client-builds   # 验证客户端构建（mp-weixin / H5）
 npm run verify:phase01         # 完整验证（test + lint + typecheck + build + api test）
 ```
@@ -189,7 +189,7 @@ pnpm install
 pnpm dev          # 开发（http://localhost:5177）
 pnpm build        # 生产构建（含 vue-tsc 类型检查）
 pnpm typecheck    # 仅类型检查
-# 注：admin 当前无单元测试文件（R4-00500），vitest 未配置实际用例
+# 注：admin 有 5 个测试文件 / 39 个用例；技术栈含 Element Plus
 ```
 
 ### 后端 API（apps/api）
@@ -216,6 +216,35 @@ pnpm --filter @campus-love/client run build:mp-weixin
 ```
 
 构建产物位于 `apps/client/dist/build/mp-weixin`，使用微信开发者工具导入该目录即可预览。
+
+### 真实小程序 + 管理后台（本地验收基线 2026-10-28）
+
+本轮只覆盖真实小程序（mp-weixin real + 微信开发者工具）与管理后台（real API + Admin）。H5/mock 演示配置仍保留，但不是本轮验收口径。
+
+1. **真实后端**（本机 MySQL/Redis 已启动）：
+   ```bash
+   set -a; source .env; set +a
+   java -jar apps/api/target/campus-love-api-0.1.0.jar \
+     --spring.profiles.active=real --server.port=8080 \
+     --spring.flyway.validate-on-migrate=false --app.guest-login.enabled=true
+   ```
+2. **小程序 real 构建**（Node 22；产物 `shippable=no`，仅本机 DevTools）：
+   ```bash
+   PATH="/d/codex-tools/node-v22.17.0-win-x64:$PATH" \
+   node apps/client/scripts/release-chain.mjs --allow-loopback
+   ```
+   用微信开发者工具导入 `apps/client/dist/build/mp-weixin-real`；构建成功会把 `src/static` 置为发布裁剪态，继续开发前执行 `node apps/client/scripts/prepare-static.mjs --dev` 还原。
+3. **小程序登录路径**：体验号 / 手机号演示号（`13711110011` / `Demo@12345`）可用；微信 `wx.login` 需要 `.env` 的 `WECHAT_SECRET`，本地未配置时无法用 code 换会话（外部阻断），先用体验号/手机号验其余流程。
+4. **管理后台**（`pnpm --dir apps/admin dev`，5177）：
+   - 超管：`local-dev-admin-openid-123456` + 本地 `.env` 的 `ADMIN_LOGIN_PASSWORD`；
+   - 校区管理员：`phone:13711110004` / `Campus@12345`（北大）；审核员：`phone:13711110005` / `Auditor@12345`（本地演示，生产必须换）。
+5. **本地超管复通**（迁移 `V2026.10.26.0001` 点名路径；DB 先备份；只写仓库里不存在的新强口令）：
+   ```bash
+   LOCAL_ADMIN_PASSWORD='<新强口令>' DB_PASSWORD='<.env DB_PASSWORD>' \
+   MYSQL_BIN=/d/mysql-8.0.45-winx64/bin/mysql \
+   node scripts/dev/reset-local-admin.mjs --apply
+   ```
+6. **边界**：真机/提审/发布需要真实 HTTPS 域名、AppID、`WECHAT_SECRET`，当前产物 `shippable=no`；VIP、课表网格、隐私正式文本、北师大统计行等产品缺口见 `reports/verify/2026-10-28/30-close/final-report.md`。
 
 ## 环境变量配置
 
