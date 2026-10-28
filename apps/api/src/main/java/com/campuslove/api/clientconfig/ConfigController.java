@@ -2,6 +2,7 @@ package com.campuslove.api.clientconfig;
 
 import com.campuslove.api.config.SecurityUtils;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,6 +44,10 @@ public class ConfigController {
 
     /** R4-00341：法律文本提供者（联系方式配置注入，避免假邮箱/占位热线） */
     private final LegalTextProvider legalTextProvider;
+
+    /** 法律文本 CMS（real profile 才有 DB；mock 下为 null，回退 Provider） */
+    @Autowired(required = false)
+    private LegalDocumentService legalDocumentService;
 
     public ConfigController(ConfigService configService, LegalTextProvider legalTextProvider) {
         this.configService = configService;
@@ -113,12 +118,18 @@ public class ConfigController {
      * 登录前（注册页/登录页）即需要展示条款，因此该端点在 SecurityConfig 中
      * 标记为 permitAll，不要求携带鉴权头。</p>
      *
-     * @param type 文本类型：privacy_policy / user_agreement
-     * @return 法律文本视图（title / content / updatedAt）
+     * @param type 文本类型：privacy_policy / user_agreement（可空：real 下返回全部已发布文本）
+     * @return 法律文本列表（items 数组，含 type/title/content/version/updatedAt）
      */
     @GetMapping("/legal")
-    public ResponseEntity<LegalTextView> getLegalText(
-            @RequestParam("type") String type) {
-        return ResponseEntity.ok(legalTextProvider.getLegalText(type));
+    public ResponseEntity<LegalTextListResponse> getLegalText(
+            @RequestParam(value = "type", required = false) String type) {
+        if (legalDocumentService != null) {
+            return ResponseEntity.ok(legalDocumentService.list(type));
+        }
+        String resolvedType = type == null || type.isBlank()
+                ? LegalDocumentService.TYPE_USER_AGREEMENT : type;
+        return ResponseEntity.ok(new LegalTextListResponse(
+                List.of(legalTextProvider.getLegalText(resolvedType))));
     }
 }

@@ -343,6 +343,7 @@ public class TempChatMessageService {
         return switch (kind) {
             case "voice" -> "语音消息";
             case "emoji" -> "表情消息";
+            case "image" -> "[图片]";
             case "system" -> body;
             default -> body != null && body.length() > 50 ? body.substring(0, 50) + "..." : body;
         };

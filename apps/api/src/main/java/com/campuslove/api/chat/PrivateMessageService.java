@@ -61,6 +61,15 @@ public interface PrivateMessageService {
      */
     void markAsRead(Long conversationId, Long userId);
 
+    /**
+     * 将指定会话按当前用户侧标为未读（幂等）。
+     * 与 markAsRead 相对：只写当前用户侧的会话未读标记，不改对方看到的已读回执。
+     *
+     * @param conversationId 会话 ID
+     * @param userId         当前用户 ID（必须为会话参与者）
+     */
+    void markUnread(Long conversationId, Long userId);
+
     // ---- Phase 2 新增：会话置顶 ----
 
     /**

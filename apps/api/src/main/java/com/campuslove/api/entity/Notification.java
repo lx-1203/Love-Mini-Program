@@ -54,7 +54,9 @@ public class Notification {
         /** R4-00372/00374：系统通知（签到奖励等运营/系统语义），不再归入 match */
         system,
         /** R4-00375：取消匹配通知，与 match（互相喜欢）区分语义 */
-        unmatch
+        unmatch,
+        /** 2026-10-28：帖子 @提及 */
+        mention
     }
 
     /** 关联实体类型枚举 */

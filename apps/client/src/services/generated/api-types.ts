@@ -1417,7 +1417,7 @@ export interface components {
             /** @enum {string} */
             sender: "self" | "peer" | "system";
             /** @enum {string} */
-            kind: "text" | "voice" | "emoji" | "system";
+            kind: "text" | "voice" | "emoji" | "system" | "image";
             body: string;
             sentAt: string;
             durationSeconds?: number | null;
@@ -1439,7 +1439,7 @@ export interface components {
             /** @enum {string} */
             sender: "self" | "peer";
             /** @enum {string} */
-            kind: "text" | "voice" | "emoji" | "system";
+            kind: "text" | "voice" | "emoji" | "system" | "image";
             body: string;
             durationSeconds?: number | null;
             /** @description Optional quoted message ID. */

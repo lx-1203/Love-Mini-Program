@@ -24,6 +24,8 @@ public record CreatePostRequest(
     // 统一发布目标类型：general | circle | campus（默认 general）
     @Size(max = 20) String targetType,
     // 统一发布目标 ID：circle/campus 时必填
-    Long targetId
+    Long targetId,
+    // @提及的用户 ID（最多 10 个；服务端去重、排除自己，审核通过后发通知）
+    @Size(max = 10) List<Long> mentionedUserIds
 ) {
 }

@@ -62,6 +62,34 @@ public class ConsultingCourse {
     @Column(name = "status", nullable = false)
     private Integer status = STATUS_ONLINE;
 
+    /** 课程正文（Markdown/长文） */
+    @Column(name = "content", columnDefinition = "MEDIUMTEXT")
+    private String content;
+
+    /** 讲师 */
+    @Column(name = "lecturer", length = 64)
+    private String lecturer;
+
+    /** 排序（升序） */
+    @Column(name = "sort_order", nullable = false)
+    private Integer sortOrder = 0;
+
+    /** 是否展示价格（支付未就绪前默认 false） */
+    @Column(name = "price_visible", nullable = false)
+    private Boolean priceVisible = false;
+
+    /** 是否开放报名（支付未就绪前默认 false） */
+    @Column(name = "signup_enabled", nullable = false)
+    private Boolean signupEnabled = false;
+
+    /** 发布时间 */
+    @Column(name = "published_at")
+    private LocalDateTime publishedAt;
+
+    /** 更新时间 */
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
     /** 创建时间 */
 
     @CreatedDate
@@ -126,6 +154,62 @@ public class ConsultingCourse {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public String getLecturer() {
+        return lecturer;
+    }
+
+    public void setLecturer(String lecturer) {
+        this.lecturer = lecturer;
+    }
+
+    public Integer getSortOrder() {
+        return sortOrder;
+    }
+
+    public void setSortOrder(Integer sortOrder) {
+        this.sortOrder = sortOrder;
+    }
+
+    public Boolean getPriceVisible() {
+        return priceVisible;
+    }
+
+    public void setPriceVisible(Boolean priceVisible) {
+        this.priceVisible = priceVisible;
+    }
+
+    public Boolean getSignupEnabled() {
+        return signupEnabled;
+    }
+
+    public void setSignupEnabled(Boolean signupEnabled) {
+        this.signupEnabled = signupEnabled;
+    }
+
+    public LocalDateTime getPublishedAt() {
+        return publishedAt;
+    }
+
+    public void setPublishedAt(LocalDateTime publishedAt) {
+        this.publishedAt = publishedAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
     public LocalDateTime getCreatedAt() {

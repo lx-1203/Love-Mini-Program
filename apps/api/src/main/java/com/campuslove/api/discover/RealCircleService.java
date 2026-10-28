@@ -14,6 +14,7 @@ import com.campuslove.api.entity.InterestCircle;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.repository.CircleMembershipRepository;
 import com.campuslove.api.repository.CircleReplyRepository;
+import com.campuslove.api.repository.CircleTopicLikeRepository;
 import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.InterestCircleRepository;
 import com.campuslove.api.repository.UserRepository;
@@ -24,11 +25,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
@@ -77,6 +81,10 @@ public class RealCircleService implements CircleService {
      */
     @Autowired(required = false)
     private ContentSecurityChecker contentSecurityChecker;
+
+    /** 话题点赞（2026-10-28）；单元测试未注入时点赞状态按未点赞处理。 */
+    @Autowired(required = false)
+    private CircleTopicLikeRepository circleTopicLikeRepository;
 
     /**
      * JPA 实体管理器（FIN-00037/00038 修复）。
@@ -360,10 +368,15 @@ public class RealCircleService implements CircleService {
      * @return 话题视图分页列表
      */
     @Override
-    @Transactional(readOnly = true)
     public Page<CircleTopicView> getTopics(Long circleId, Pageable pageable) {
-        log.debug("获取圈子话题列表, circleId={}, page={}, size={}",
-                circleId, pageable.getPageNumber(), pageable.getPageSize());
+        return getTopics(circleId, null, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<CircleTopicView> getTopics(Long circleId, Long viewerId, Pageable pageable) {
+        log.debug("获取圈子话题列表, circleId={}, viewerId={}, page={}, size={}",
+                circleId, viewerId, pageable.getPageNumber(), pageable.getPageSize());
 
         // 验证圈子是否存在
         findCircleOrThrow(circleId);
@@ -379,8 +392,9 @@ public class RealCircleService implements CircleService {
                 .toList();
         Map<Long, User> authorMap = loadAuthorMap(
                 topics.stream().map(CircleTopic::getAuthorId).toList());
+        Set<Long> likedTopicIds = loadLikedTopicIds(viewerId, topics);
         List<CircleTopicView> views = topics.stream()
-                .map(t -> toTopicView(t, authorMap))
+                .map(t -> toTopicView(t, authorMap, likedTopicIds.contains(t.getId())))
                 .toList();
 
         return new PageImpl<>(views, pageable, views.size());
@@ -470,14 +484,19 @@ public class RealCircleService implements CircleService {
      * @throws IllegalArgumentException 话题不存在时抛出
      */
     @Override
-    @Transactional(readOnly = true)
     public CircleTopicView getTopicDetail(Long topicId) {
-        log.debug("获取话题详情, topicId={}", topicId);
+        return getTopicDetail(topicId, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CircleTopicView getTopicDetail(Long topicId, Long viewerId) {
+        log.debug("获取话题详情, topicId={}, viewerId={}", topicId, viewerId);
 
         CircleTopic topic = findTopicOrThrow(topicId);
 
         // 详情页返回完整内容，不做截断
-        return toTopicViewFullContent(topic);
+        return toTopicViewFullContent(topic, isTopicLiked(viewerId, topicId));
     }
 
     // ==================== 回复 ====================
@@ -588,9 +607,15 @@ public class RealCircleService implements CircleService {
      * @return 话题视图分页列表
      */
     @Override
-    @Transactional(readOnly = true)
     public Page<CircleTopicView> getFeaturedTopics(Pageable pageable) {
-        log.debug("获取精选话题, page={}, size={}", pageable.getPageNumber(), pageable.getPageSize());
+        return getFeaturedTopics(null, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<CircleTopicView> getFeaturedTopics(Long viewerId, Pageable pageable) {
+        log.debug("获取精选话题, viewerId={}, page={}, size={}",
+                viewerId, pageable.getPageNumber(), pageable.getPageSize());
 
         // 构建带排序的分页请求：置顶优先，创建时间倒序
         Sort sort = Sort.by(Sort.Direction.DESC, "isPinned")
@@ -607,11 +632,76 @@ public class RealCircleService implements CircleService {
                 .toList();
         Map<Long, User> authorMap = loadAuthorMap(
                 topics.stream().map(CircleTopic::getAuthorId).toList());
+        Set<Long> likedTopicIds = loadLikedTopicIds(viewerId, topics);
         List<CircleTopicView> views = topics.stream()
-                .map(t -> toTopicView(t, authorMap))
+                .map(t -> toTopicView(t, authorMap, likedTopicIds.contains(t.getId())))
                 .toList();
 
         return new PageImpl<>(views, pageable, views.size());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CircleMetaView getCircleMeta(Long circleId) {
+        InterestCircle circle = findCircleOrThrow(circleId);
+        return new CircleMetaView(circleId, splitTags(circle.getTags()), circle.getAnnouncement());
+    }
+
+    @Override
+    @Transactional
+    public TopicLikeView likeTopic(Long topicId, Long userId) {
+        findTopicOrThrow(topicId);
+        if (circleTopicLikeRepository == null) {
+            throw new IllegalStateException("circle topic like repository unavailable");
+        }
+        if (!circleTopicLikeRepository.existsByTopicIdAndUserId(topicId, userId)) {
+            com.campuslove.api.entity.CircleTopicLike like = new com.campuslove.api.entity.CircleTopicLike();
+            like.setTopicId(topicId);
+            like.setUserId(userId);
+            like.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+            circleTopicLikeRepository.save(like);
+            circleTopicRepository.incrementLikeCount(topicId);
+        }
+        Integer count = circleTopicRepository.findLikeCountById(topicId);
+        return new TopicLikeView(topicId, true, count == null ? 0 : count);
+    }
+
+    @Override
+    @Transactional
+    public TopicLikeView unlikeTopic(Long topicId, Long userId) {
+        findTopicOrThrow(topicId);
+        if (circleTopicLikeRepository == null) {
+            throw new IllegalStateException("circle topic like repository unavailable");
+        }
+        long removed = circleTopicLikeRepository.deleteByTopicIdAndUserId(topicId, userId);
+        if (removed > 0) {
+            circleTopicRepository.decrementLikeCount(topicId);
+        }
+        Integer count = circleTopicRepository.findLikeCountById(topicId);
+        return new TopicLikeView(topicId, false, count == null ? 0 : count);
+    }
+
+    private Set<Long> loadLikedTopicIds(Long viewerId, List<CircleTopic> topics) {
+        if (circleTopicLikeRepository == null || viewerId == null || topics.isEmpty()) {
+            return Collections.emptySet();
+        }
+        List<Long> topicIds = topics.stream().map(CircleTopic::getId).toList();
+        return new HashSet<>(circleTopicLikeRepository.findTopicIdsByUserIdAndTopicIdIn(viewerId, topicIds));
+    }
+
+    private boolean isTopicLiked(Long viewerId, Long topicId) {
+        return circleTopicLikeRepository != null && viewerId != null
+                && circleTopicLikeRepository.existsByTopicIdAndUserId(topicId, viewerId);
+    }
+
+    private List<String> splitTags(String tags) {
+        if (tags == null || tags.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(tags.split(","))
+                .map(String::trim)
+                .filter(tag -> !tag.isEmpty())
+                .toList();
     }
 
     // ==================== 私有辅助方法 ====================
@@ -756,6 +846,10 @@ public class RealCircleService implements CircleService {
      * @return 话题视图（内容预览）
      */
     private CircleTopicView toTopicView(CircleTopic topic, Map<Long, User> authorMap) {
+        return toTopicView(topic, authorMap, false);
+    }
+
+    private CircleTopicView toTopicView(CircleTopic topic, Map<Long, User> authorMap, boolean liked) {
         return new CircleTopicView(
                 topic.getId(),
                 topic.getCircle().getId(),
@@ -768,7 +862,9 @@ public class RealCircleService implements CircleService {
                 parseJsonToList(topic.getImages()),
                 topic.getReplyCount() != null ? topic.getReplyCount() : 0,
                 topic.getIsPinned() != null ? topic.getIsPinned() : false,
-                topic.getCreatedAt()
+                topic.getCreatedAt(),
+                topic.getLikeCount() != null ? topic.getLikeCount() : 0,
+                liked
         );
     }
 
@@ -780,6 +876,10 @@ public class RealCircleService implements CircleService {
      * @return 话题视图（完整内容）
      */
     private CircleTopicView toTopicViewFullContent(CircleTopic topic, Map<Long, User> authorMap) {
+        return toTopicViewFullContent(topic, authorMap, false);
+    }
+
+    private CircleTopicView toTopicViewFullContent(CircleTopic topic, Map<Long, User> authorMap, boolean liked) {
         return new CircleTopicView(
                 topic.getId(),
                 topic.getCircle().getId(),
@@ -792,7 +892,9 @@ public class RealCircleService implements CircleService {
                 parseJsonToList(topic.getImages()),
                 topic.getReplyCount() != null ? topic.getReplyCount() : 0,
                 topic.getIsPinned() != null ? topic.getIsPinned() : false,
-                topic.getCreatedAt()
+                topic.getCreatedAt(),
+                topic.getLikeCount() != null ? topic.getLikeCount() : 0,
+                liked
         );
     }
 
@@ -822,6 +924,10 @@ public class RealCircleService implements CircleService {
      * @return 话题视图（内容预览）
      */
     private CircleTopicView toTopicView(CircleTopic topic) {
+        return toTopicView(topic, false);
+    }
+
+    private CircleTopicView toTopicView(CircleTopic topic, boolean liked) {
         return new CircleTopicView(
                 topic.getId(),
                 topic.getCircle().getId(),
@@ -834,7 +940,9 @@ public class RealCircleService implements CircleService {
                 parseJsonToList(topic.getImages()),
                 topic.getReplyCount() != null ? topic.getReplyCount() : 0,
                 topic.getIsPinned() != null ? topic.getIsPinned() : false,
-                topic.getCreatedAt()
+                topic.getCreatedAt(),
+                topic.getLikeCount() != null ? topic.getLikeCount() : 0,
+                liked
         );
     }
 
@@ -845,6 +953,10 @@ public class RealCircleService implements CircleService {
      * @return 话题视图（完整内容）
      */
     private CircleTopicView toTopicViewFullContent(CircleTopic topic) {
+        return toTopicViewFullContent(topic, false);
+    }
+
+    private CircleTopicView toTopicViewFullContent(CircleTopic topic, boolean liked) {
         return new CircleTopicView(
                 topic.getId(),
                 topic.getCircle().getId(),
@@ -857,7 +969,9 @@ public class RealCircleService implements CircleService {
                 parseJsonToList(topic.getImages()),
                 topic.getReplyCount() != null ? topic.getReplyCount() : 0,
                 topic.getIsPinned() != null ? topic.getIsPinned() : false,
-                topic.getCreatedAt()
+                topic.getCreatedAt(),
+                topic.getLikeCount() != null ? topic.getLikeCount() : 0,
+                liked
         );
     }
 

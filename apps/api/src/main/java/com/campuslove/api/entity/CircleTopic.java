@@ -64,9 +64,21 @@ public class CircleTopic {
     @Column(name = "reply_count", nullable = false)
     private Integer replyCount = 0;
 
+    public Integer getLikeCount() {
+        return likeCount;
+    }
+
+    public void setLikeCount(Integer likeCount) {
+        this.likeCount = likeCount;
+    }
+
     /** 是否置顶 */
     @Column(name = "is_pinned", nullable = false)
     private Boolean isPinned = false;
+
+    /** 话题点赞数（2026-10-28） */
+    @Column(name = "like_count", nullable = false)
+    private Integer likeCount = 0;
 
     /** 审核状态（管理后台审核接口维护，默认 approved 视为已通过；新建话题默认 pending） */
     @Enumerated(EnumType.STRING)

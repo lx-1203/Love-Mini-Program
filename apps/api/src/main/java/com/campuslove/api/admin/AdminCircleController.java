@@ -151,6 +151,8 @@ public class AdminCircleController {
         circle.setIcon(icon != null ? icon : "\uD83D\uDCCB");
         circle.setDescription(normalize(req.description()));
         circle.setSortOrder(req.sortOrder() != null ? req.sortOrder() : 0);
+        circle.setTags(normalize(req.tags()));
+        circle.setAnnouncement(normalize(req.announcement()));
         // 创建路径必须使用 save 返回值（@Version 乐观锁 + ID 由 JPA 回填）
         InterestCircle saved = interestCircleRepository.save(circle);
 
@@ -202,6 +204,12 @@ public class AdminCircleController {
         }
         if (req.sortOrder() != null) {
             circle.setSortOrder(req.sortOrder());
+        }
+        if (req.tags() != null) {
+            circle.setTags(req.tags().isBlank() ? null : req.tags().trim());
+        }
+        if (req.announcement() != null) {
+            circle.setAnnouncement(req.announcement().isBlank() ? null : req.announcement().trim());
         }
 
         InterestCircle saved = interestCircleRepository.save(circle);
@@ -464,7 +472,9 @@ public class AdminCircleController {
                 circle.getDescription(),
                 circle.getMemberCount(),
                 circle.getSortOrder(),
-                circle.getCreatedAt()
+                circle.getCreatedAt(),
+                circle.getTags(),
+                circle.getAnnouncement()
         );
     }
 
@@ -516,7 +526,11 @@ record AdminCircleRequest(
         String icon,
         @Size(max = 256, message = ErrorMessages.CIRCLE_DESC_MAX_LENGTH)
         String description,
-        Integer sortOrder
+        Integer sortOrder,
+        @Size(max = 255, message = "圈子标签最多 255 字符")
+        String tags,
+        @Size(max = 500, message = "圈子公告最多 500 字符")
+        String announcement
 ) {
 }
 
@@ -538,7 +552,9 @@ record AdminCircleSummaryView(
         String description,
         Integer memberCount,
         Integer sortOrder,
-        java.time.LocalDateTime createdAt
+        java.time.LocalDateTime createdAt,
+        String tags,
+        String announcement
 ) {
 }
 

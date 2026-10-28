@@ -21,6 +21,15 @@ public interface ConsultingService {
     List<CourseView> listCourses(Long userId);
 
     /**
+     * 课程详情（内容页）。
+     *
+     * @param userId   当前用户 ID（用于 isSignedUp）
+     * @param courseId 课程 ID
+     * @return 课程视图
+     */
+    CourseView getCourse(Long userId, Long courseId);
+
+    /**
      * 报名课程（幂等成功：重复报名直接返回已有报名记录）。
      *
      * <p>校验：课程存在（404）、课程可报名（下架返回 400）。</p>
@@ -59,7 +68,12 @@ public interface ConsultingService {
             BigDecimal price,
             String coverUrl,
             String category,
-            boolean isSignedUp
+            boolean isSignedUp,
+            String content,
+            String lecturer,
+            int sortOrder,
+            boolean priceVisible,
+            boolean signupEnabled
     ) {
         static CourseView fromEntity(ConsultingCourse c, boolean signedUp) {
             return new CourseView(
@@ -69,7 +83,12 @@ public interface ConsultingService {
                     c.getPrice(),
                     c.getCoverUrl(),
                     c.getCategory(),
-                    signedUp
+                    signedUp,
+                    c.getContent(),
+                    c.getLecturer(),
+                    c.getSortOrder() != null ? c.getSortOrder() : 0,
+                    Boolean.TRUE.equals(c.getPriceVisible()),
+                    Boolean.TRUE.equals(c.getSignupEnabled())
             );
         }
     }

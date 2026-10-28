@@ -28,11 +28,14 @@ public class MockConsultingService implements ConsultingService {
 
     public MockConsultingService() {
         courses.add(new CourseView(1L, "恋爱沟通课", "掌握高情商沟通，让相处更舒服",
-                new BigDecimal("99.00"), null, "communication", false));
+                new BigDecimal("99.00"), null, "communication", false,
+                "掌握高情商沟通，让相处更舒服", null, 1, false, false));
         courses.add(new CourseView(2L, "脱单攻略课", "从认识自己开始，找到对的TA",
-                new BigDecimal("129.00"), null, "dating", false));
+                new BigDecimal("129.00"), null, "dating", false,
+                "从认识自己开始，找到对的TA", null, 2, false, false));
         courses.add(new CourseView(3L, "亲密关系修复课", "化解矛盾，重建信任与亲密",
-                new BigDecimal("159.00"), null, "intimacy_repair", false));
+                new BigDecimal("159.00"), null, "intimacy_repair", false,
+                "化解矛盾，重建信任与亲密", null, 3, false, false));
     }
 
     @Override
@@ -42,9 +45,18 @@ public class MockConsultingService implements ConsultingService {
             boolean signedUp = signups.stream()
                     .anyMatch(s -> s.courseId().equals(c.id()) && userId != null);
             result.add(new CourseView(c.id(), c.title(), c.description(), c.price(),
-                    c.coverUrl(), c.category(), signedUp));
+                    c.coverUrl(), c.category(), signedUp, c.content(), c.lecturer(),
+                    c.sortOrder(), c.priceVisible(), c.signupEnabled()));
         }
         return result;
+    }
+
+    @Override
+    public CourseView getCourse(Long userId, Long courseId) {
+        return courses.stream()
+                .filter(c -> c.id().equals(courseId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("课程不存在: " + courseId));
     }
 
     @Override

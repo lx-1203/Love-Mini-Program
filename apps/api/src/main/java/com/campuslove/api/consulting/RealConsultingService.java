@@ -41,7 +41,8 @@ public class RealConsultingService implements ConsultingService {
     @Override
     @Transactional(readOnly = true)
     public List<ConsultingService.CourseView> listCourses(Long userId) {
-        List<ConsultingCourse> courses = courseRepository.findByStatusOrderByPriceAsc(ConsultingCourse.STATUS_ONLINE);
+        List<ConsultingCourse> courses =
+                courseRepository.findByStatusOrderBySortOrderAscPriceAsc(ConsultingCourse.STATUS_ONLINE);
 
         // 批量查询当前用户已报名课程 ID，避免逐课程查库（N+1）
         List<ConsultingSignup> mySignups = userId == null
@@ -53,6 +54,20 @@ public class RealConsultingService implements ConsultingService {
         return courses.stream()
                 .map(c -> ConsultingService.CourseView.fromEntity(c, signedUpMap.getOrDefault(c.getId(), false)))
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ConsultingService.CourseView getCourse(Long userId, Long courseId) {
+        ConsultingCourse course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorMessages.CONSULTING_COURSE_NOT_FOUND_PREFIX + courseId));
+        if (course.getStatus() == null || course.getStatus() != ConsultingCourse.STATUS_ONLINE) {
+            throw new ResourceNotFoundException(ErrorMessages.CONSULTING_COURSE_OFFLINE);
+        }
+        boolean signedUp = userId != null
+                && signupRepository.findByUserIdAndCourseId(userId, courseId).isPresent();
+        return ConsultingService.CourseView.fromEntity(course, signedUp);
     }
 
     @Override

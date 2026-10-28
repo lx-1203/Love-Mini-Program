@@ -2441,7 +2441,7 @@ components:
           enum: [self, peer, system]
         kind:
           type: string
-          enum: [text, voice, emoji, system]
+          enum: [text, voice, emoji, system, image]
         body:
           type: string
         sentAt:
@@ -2482,7 +2482,7 @@ components:
           enum: [self, peer]
         kind:
           type: string
-          enum: [text, voice, emoji, system]
+          enum: [text, voice, emoji, system, image]
         body:
           type: string
           maxLength: 5000

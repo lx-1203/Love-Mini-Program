@@ -310,6 +310,21 @@ public class MockCircleService implements CircleService {
     return map;
   }
 
+  @Override
+  public CircleMetaView getCircleMeta(Long circleId) {
+    return new CircleMetaView(circleId, List.of(), null);
+  }
+
+  @Override
+  public TopicLikeView likeTopic(Long topicId, Long userId) {
+    return new TopicLikeView(topicId, true, 1);
+  }
+
+  @Override
+  public TopicLikeView unlikeTopic(Long topicId, Long userId) {
+    return new TopicLikeView(topicId, false, 0);
+  }
+
   private static String truncate(String text, int maxLen) {
     if (text == null) {
       return null;

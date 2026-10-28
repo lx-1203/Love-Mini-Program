@@ -361,6 +361,33 @@ public class RealPrivateMessageService implements PrivateMessageService {
 
         // 使用批量更新标记未读消息为已读
         messageRepository.markAsReadByConversationAndSenderNot(conversationId, userId);
+
+        // 同步清掉当前用户侧的「标为未读」标记；只在标记确实存在时写库
+        conversationRepository.findById(conversationId).ifPresent(conv -> {
+            if (conv.isMarkedUnreadBy(userId)) {
+                conv.setMarkedUnreadBy(userId, false);
+                conv.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+                conversationRepository.save(conv);
+            }
+        });
+    }
+
+    @Override
+    @Transactional
+    public void markUnread(Long conversationId, Long userId) {
+        if (conversationId == null || userId == null) {
+            throw new IllegalArgumentException("conversationId and userId are required");
+        }
+        PrivateConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found: " + conversationId));
+        if (!conversation.getUserAId().equals(userId) && !conversation.getUserBId().equals(userId)) {
+            throw new IllegalArgumentException("User is not a participant of this conversation");
+        }
+        if (!conversation.isMarkedUnreadBy(userId)) {
+            conversation.setMarkedUnreadBy(userId, true);
+            conversation.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+            conversationRepository.save(conversation);
+        }
     }
 
     // ---- Phase 2 新增：会话置顶 ----
@@ -588,6 +615,11 @@ public class RealPrivateMessageService implements PrivateMessageService {
         } else {
             Long cnt = unreadMap.get(conv.getId());
             unreadCount = cnt == null ? 0 : cnt.intValue();
+        }
+
+        // 「标为未读」是会话级持久标记；有真实未读时以真实未读为准，否则至少显示 1
+        if (conv.isMarkedUnreadBy(currentUserId)) {
+            unreadCount = Math.max(unreadCount, 1);
         }
 
         // 获取置顶状态

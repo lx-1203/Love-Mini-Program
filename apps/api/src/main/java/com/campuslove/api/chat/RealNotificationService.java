@@ -337,7 +337,7 @@ public class RealNotificationService implements NotificationService {
         }
         return switch (type) {
             case "match", "visitor", "like" -> SIGNAL_TYPE_SOCIAL;
-            case "comment", "follow" -> SIGNAL_TYPE_CONTENT;
+            case "comment", "follow", "mention" -> SIGNAL_TYPE_CONTENT;
             default -> SIGNAL_TYPE_SOCIAL;
         };
     }
@@ -350,6 +350,7 @@ public class RealNotificationService implements NotificationService {
             case "follow" -> sourceUserName + "关注了你";
             case "like" -> sourceUserName + "赞了你的帖子";
             case "comment" -> sourceUserName + "评论了你";
+            case "mention" -> sourceUserName + "在帖子中提到了你";
             case "visitor" -> sourceUserName + "访问了你的主页";
             case "match" -> "你和" + sourceUserName + "配对成功";
             default -> sourceUserName + "与你互动";

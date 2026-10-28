@@ -44,6 +44,14 @@ public class InterestCircle {
     @Column(name = "category", length = 20)
     private String category;
 
+    /** 圈标签，逗号分隔（2026-10-28） */
+    @Column(name = "tags", length = 255)
+    private String tags;
+
+    /** 置顶公告（2026-10-28；当前 UI 只展示一条） */
+    @Column(name = "announcement", length = 500)
+    private String announcement;
+
     /** 成员数 */
     @Column(name = "member_count", nullable = false)
     private Integer memberCount = 0;
@@ -113,6 +121,22 @@ public class InterestCircle {
 
     public void setCategory(String category) {
         this.category = category;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
+    }
+
+    public String getAnnouncement() {
+        return announcement;
+    }
+
+    public void setAnnouncement(String announcement) {
+        this.announcement = announcement;
     }
 
     public Integer getMemberCount() {

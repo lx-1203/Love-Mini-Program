@@ -76,6 +76,10 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 public class AdminVillagePostController {
 
+    /** 2026-10-28：帖子审核通过后补发 @提及通知；测试/旧构造器未注入时跳过。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.village.PostMentionService postMentionService;
+
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
@@ -281,6 +285,11 @@ public class AdminVillagePostController {
 
         postRepository.save(post);
         adminStatsService.invalidateStatsCache();
+
+        // 审核通过后才通知被 @ 的用户，避免待审帖指向不可见内容
+        if (newStatus == AuditStatus.approved && postMentionService != null) {
+            postMentionService.notifyMentions(post.getId(), post.getAuthorId());
+        }
 
         Map<String, Object> body = new HashMap<>();
         body.put("id", post.getId());

@@ -65,15 +65,15 @@ class RealVillageServiceTest {
         Long userId = 100L;
         // CreatePostRequest(title, content, category, tags, images, activityId, targetType, targetId)
         CreatePostRequest request = new CreatePostRequest(
-                "标题", "hello", "all", List.of("tag"), List.of("img"), null, "general", null);
+                "标题", "hello", "all", List.of("tag"), List.of("img"), null, "general", null, null);
         PostDetailView expected = buildPostDetailView(1L, userId);
-        when(postService.createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all", null, "general", null))
+        when(postService.createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all", null, "general", null, null))
                 .thenReturn(expected);
 
         PostDetailView result = realService.createPost(userId, request);
 
         assertSame(expected, result);
-        verify(postService, times(1)).createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all", null, "general", null);
+        verify(postService, times(1)).createPost(userId, "标题", "hello", List.of("img"), List.of("tag"), "all", null, "general", null, null);
     }
 
     /**

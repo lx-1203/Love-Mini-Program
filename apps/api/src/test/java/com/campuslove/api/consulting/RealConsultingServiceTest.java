@@ -49,7 +49,7 @@ class RealConsultingServiceTest {
     @Test
     void listCourses_shouldMarkSignedUp() {
         ConsultingCourse c1 = course(1L, "恋爱沟通课", new BigDecimal("99.00"));
-        when(courseRepository.findByStatusOrderByPriceAsc(ConsultingCourse.STATUS_ONLINE))
+        when(courseRepository.findByStatusOrderBySortOrderAscPriceAsc(ConsultingCourse.STATUS_ONLINE))
                 .thenReturn(List.of(c1));
 
         ConsultingSignup s = new ConsultingSignup();

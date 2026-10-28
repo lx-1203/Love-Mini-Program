@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -325,6 +326,31 @@ public class MatchController {
   }
 
   /**
+   * 批量左滑(pass)用户。单事务内逐条幂等落库，供「喜欢我的」批量跳过使用。
+   * POST /api/v1/matches/pass/batch
+   */
+  @PostMapping("/pass/batch")
+  @Operation(summary = "批量左滑跳过用户", description = "对多个目标用户批量标记 pass；逐条幂等，已 pass 的不重复写。", operationId = "passUsersBatch")
+  @PreAuthorize("hasRole('USER')")
+  public ApiResponse<java.util.Map<String, Integer>> passUsers(@Valid @RequestBody PassBatchRequest request) {
+    Long userId = SecurityUtils.getCurrentUserId();
+    java.util.LinkedHashSet<Long> ids = new java.util.LinkedHashSet<>(request.passedUserIds());
+    int passed = 0;
+    for (Long id : ids) {
+      if (id != null && !id.equals(userId)) {
+        matchService.passUser(userId, id);
+        passed++;
+      }
+    }
+    try {
+      matchMetrics.recordSwipe("dislike");
+    } catch (RuntimeException ignore) {
+      // 监控逻辑失败忽略
+    }
+    return ApiResponse.ok(java.util.Map.of("passed", passed));
+  }
+
+  /**
    * 反悔(rewind)操作，撤销最近一次 pass。
    * POST /api/matches/rewind
    */
@@ -453,4 +479,9 @@ record LikeTargetRequest(
  */
 record VisitTargetRequest(
     @NotNull @Positive Long visitedUserId
+) {}
+
+/** 批量 pass 请求体：最多 100 个目标用户，逐条幂等落库。 */
+record PassBatchRequest(
+    @NotEmpty @Size(max = 100) List<@Positive Long> passedUserIds
 ) {}

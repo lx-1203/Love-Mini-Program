@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -82,4 +83,17 @@ public interface CircleTopicRepository extends JpaRepository<CircleTopic, Long> 
             @Param("authorId") Long authorId,
             @Param("keyword") String keyword,
             Pageable pageable);
+
+    /** 点赞数原子 +1（避免读改写丢更新）。 */
+    @Modifying
+    @Query("UPDATE CircleTopic t SET t.likeCount = t.likeCount + 1 WHERE t.id = :id")
+    int incrementLikeCount(@Param("id") Long id);
+
+    /** 点赞数原子 -1（不低于 0）。 */
+    @Modifying
+    @Query("UPDATE CircleTopic t SET t.likeCount = CASE WHEN t.likeCount > 0 THEN t.likeCount - 1 ELSE 0 END WHERE t.id = :id")
+    int decrementLikeCount(@Param("id") Long id);
+
+    @Query("SELECT t.likeCount FROM CircleTopic t WHERE t.id = :id")
+    Integer findLikeCountById(@Param("id") Long id);
 }

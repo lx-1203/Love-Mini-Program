@@ -93,4 +93,30 @@ public interface CircleService {
      * @return 话题视图分页列表
      */
     Page<CircleTopicView> getFeaturedTopics(Pageable pageable);
+
+    // ---- 2026-10-28：带 viewer 的点赞状态 / 圈 meta / 话题点赞（默认兼容旧实现） ----
+
+    default Page<CircleTopicView> getTopics(Long circleId, Long viewerId, Pageable pageable) {
+        return getTopics(circleId, pageable);
+    }
+
+    default CircleTopicView getTopicDetail(Long topicId, Long viewerId) {
+        return getTopicDetail(topicId);
+    }
+
+    default Page<CircleTopicView> getFeaturedTopics(Long viewerId, Pageable pageable) {
+        return getFeaturedTopics(pageable);
+    }
+
+    default CircleMetaView getCircleMeta(Long circleId) {
+        throw new UnsupportedOperationException("getCircleMeta not implemented");
+    }
+
+    default TopicLikeView likeTopic(Long topicId, Long userId) {
+        throw new UnsupportedOperationException("likeTopic not implemented");
+    }
+
+    default TopicLikeView unlikeTopic(Long topicId, Long userId) {
+        throw new UnsupportedOperationException("unlikeTopic not implemented");
+    }
 }

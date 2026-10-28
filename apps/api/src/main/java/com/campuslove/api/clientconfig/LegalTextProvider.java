@@ -38,6 +38,9 @@ public class LegalTextProvider {
     }
 
     /** 隐私政策最后更新时间（ISO 8601，与客户端文案"最后更新：2026-07-26"一致） */
+    /** 与 AgreementConsentService / 客户端 DEFAULT_LEGAL_VERSION 同一口径 */
+    private static final String DEFAULT_LEGAL_VERSION = "v1.0.0";
+
     private static final String PRIVACY_UPDATED_AT = "2026-07-26T00:00:00";
 
     /** 用户协议最后更新时间（ISO 8601，与客户端文案"最后更新：2026-07-26"一致） */
@@ -132,10 +135,12 @@ public class LegalTextProvider {
      */
     public LegalTextView getLegalText(String type) {
         if ("privacy_policy".equals(type)) {
-            return new LegalTextView("隐私政策", privacyPolicyContent(), PRIVACY_UPDATED_AT);
+            return new LegalTextView("privacy_policy", "隐私政策", privacyPolicyContent(),
+                    DEFAULT_LEGAL_VERSION, PRIVACY_UPDATED_AT);
         }
         if ("user_agreement".equals(type)) {
-            return new LegalTextView("用户协议", userAgreementContent(), AGREEMENT_UPDATED_AT);
+            return new LegalTextView("user_agreement", "用户协议", userAgreementContent(),
+                    DEFAULT_LEGAL_VERSION, AGREEMENT_UPDATED_AT);
         }
         throw new IllegalArgumentException(
                 "type 取值非法: " + type + ", 仅支持 privacy_policy / user_agreement");

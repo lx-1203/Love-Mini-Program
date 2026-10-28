@@ -151,6 +151,16 @@ public interface VillageService {
     }
 
     /**
+     * 创建新帖子（2026-10-28：支持 @提及）。
+     * 默认实现忽略 mentions，供 mock/旧实现编译兼容；real 由 VillagePostService 覆盖。
+     */
+    default PostDetailView createPost(Long userId, String title, String content, List<String> images,
+                                      List<String> tags, String category, Long activityId,
+                                      String targetType, Long targetId, List<Long> mentionedUserIds) {
+        return createPost(userId, title, content, images, tags, category, activityId, targetType, targetId);
+    }
+
+    /**
      * 点赞帖子（切换点赞状态）。
      *
      * @param userId 当前用户 ID

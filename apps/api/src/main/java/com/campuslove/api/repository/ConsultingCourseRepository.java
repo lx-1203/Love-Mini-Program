@@ -16,4 +16,10 @@ public interface ConsultingCourseRepository extends JpaRepository<ConsultingCour
      * @return 可报名课程列表
      */
     List<ConsultingCourse> findByStatusOrderByPriceAsc(int status);
+
+    /** 内容版列表：排序优先，再按价格升序。 */
+    List<ConsultingCourse> findByStatusOrderBySortOrderAscPriceAsc(int status);
+
+    /** 管理后台列表：全部课程按排序/ID 升序。 */
+    List<ConsultingCourse> findAllByOrderBySortOrderAscIdAsc();
 }

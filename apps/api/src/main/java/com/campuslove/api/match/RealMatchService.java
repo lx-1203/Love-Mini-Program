@@ -58,6 +58,8 @@ public class RealMatchService implements MatchService {
     private final MatchEngine matchEngine;
     private final MatchPolicy matchPolicy;
     private final MatchRecorder matchRecorder;
+    /** 左滑记录：liked-me 必须排除已 pass 的用户，否则批量 skip 刷新后回弹。 */
+    private final com.campuslove.api.repository.PassRecordRepository passRecordRepository;
     /**
      * 访客记录 Repository（FIN HIGH-15 新增）。
      * 用于 {@link #markVisitorRead} 的 visitedUserId 归属校验。
@@ -89,7 +91,7 @@ public class RealMatchService implements MatchService {
             LikeRepository likeRepository,
             HeartSignalRepository heartSignalRepository,
             com.campuslove.api.repository.VisitorRepository visitorRepository,
-            @SuppressWarnings("unused") com.campuslove.api.repository.PassRecordRepository passRecordRepository,
+            com.campuslove.api.repository.PassRecordRepository passRecordRepository,
             UserRepository userRepository,
             UserCampusProfileRepository userCampusProfileRepository,
             @SuppressWarnings("unused") com.campuslove.api.repository.UserBasicProfileRepository userBasicProfileRepository,
@@ -107,6 +109,7 @@ public class RealMatchService implements MatchService {
         this.likeRepository = likeRepository;
         this.heartSignalRepository = heartSignalRepository;
         this.visitorRepository = visitorRepository;
+        this.passRecordRepository = passRecordRepository;
         this.userRepository = userRepository;
         this.matchEngine = matchEngine;
         this.matchPolicy = matchPolicy;
@@ -408,6 +411,13 @@ public class RealMatchService implements MatchService {
     public List<LikedUserView> getLikedMe(Long userId) {
         if (userId == null) throw new IllegalArgumentException("userId is required");
         List<Like> likes = likeRepository.findByTargetUserIdAndStatus(userId, LikeStatus.active);
+        // 批量 skip 必须落库并从 liked-me 排除，否则客户端刷新后已跳过的人会重新出现
+        java.util.Set<Long> passedUserIds = passRecordRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(com.campuslove.api.entity.PassRecord::getPassedUserId)
+                .collect(java.util.stream.Collectors.toSet());
+        if (!passedUserIds.isEmpty()) {
+            likes = likes.stream().filter(like -> !passedUserIds.contains(like.getUserId())).toList();
+        }
         // 2026-08-31 待办：稳定排序（喜欢时间倒序 + id 倒序兜底），避免「喜欢我的」两次进入顺序不一致
         likes = sortLikesNewestFirst(likes);
         return mapToLikedUserViews(likes, Like::getUserId, Like::getTargetUserId,

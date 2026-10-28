@@ -58,6 +58,14 @@ public class PrivateConversation {
     @Column(name = "user_b_muted", nullable = false)
     private Boolean userBMuted = false;
 
+    /** 用户 A 是否将会话标为未读（按用户侧独立；进入会话/标为已读时清零） */
+    @Column(name = "user_a_marked_unread", nullable = false)
+    private Boolean userAMarkedUnread = false;
+
+    /** 用户 B 是否将会话标为未读（按用户侧独立；进入会话/标为已读时清零） */
+    @Column(name = "user_b_marked_unread", nullable = false)
+    private Boolean userBMarkedUnread = false;
+
     /** 记录创建时间（会话创建时间，用于排序展示） */
 
     @CreatedDate
@@ -158,6 +166,48 @@ public class PrivateConversation {
 
     public void setUserBMuted(Boolean userBMuted) {
         this.userBMuted = userBMuted;
+    }
+
+    public Boolean getUserAMarkedUnread() {
+        return userAMarkedUnread;
+    }
+
+    public void setUserAMarkedUnread(Boolean userAMarkedUnread) {
+        this.userAMarkedUnread = userAMarkedUnread;
+    }
+
+    public Boolean getUserBMarkedUnread() {
+        return userBMarkedUnread;
+    }
+
+    public void setUserBMarkedUnread(Boolean userBMarkedUnread) {
+        this.userBMarkedUnread = userBMarkedUnread;
+    }
+
+    /** 当前用户是否把该会话标为未读。 */
+    public boolean isMarkedUnreadBy(Long userId) {
+        if (userId == null) {
+            return false;
+        }
+        if (userId.equals(userAId)) {
+            return Boolean.TRUE.equals(userAMarkedUnread);
+        }
+        if (userId.equals(userBId)) {
+            return Boolean.TRUE.equals(userBMarkedUnread);
+        }
+        return false;
+    }
+
+    /** 按当前用户侧写入未读标记；非参与者不做任何事。 */
+    public void setMarkedUnreadBy(Long userId, boolean marked) {
+        if (userId == null) {
+            return;
+        }
+        if (userId.equals(userAId)) {
+            this.userAMarkedUnread = marked;
+        } else if (userId.equals(userBId)) {
+            this.userBMarkedUnread = marked;
+        }
     }
 
     public LocalDateTime getCreatedAt() {

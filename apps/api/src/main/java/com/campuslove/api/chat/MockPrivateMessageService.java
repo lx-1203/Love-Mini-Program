@@ -89,6 +89,11 @@ public class MockPrivateMessageService implements PrivateMessageService {
         // Mock 实现：无操作
     }
 
+    @Override
+    public void markUnread(Long conversationId, Long userId) {
+        // Mock 实现：无操作
+    }
+
     // ---- Phase 2 新增：会话置顶 ----
 
     @Override

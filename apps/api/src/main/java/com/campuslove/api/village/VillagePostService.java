@@ -54,6 +54,9 @@ public class VillagePostService {
 
 
     private final PostRepository postRepository;
+
+    @Autowired(required = false)
+    private PostMentionService postMentionService;
     private final SensitiveWordFilter sensitiveWordFilter;
     private final VillageQueryService queryService;
 
@@ -175,7 +178,16 @@ public class VillagePostService {
      */
     @Transactional
     @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
-    public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category, Long activityId, String targetType, Long targetId) {
+    public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags,
+                                     String category, Long activityId, String targetType, Long targetId) {
+        return createPost(userId, title, content, images, tags, category, activityId, targetType, targetId, List.of());
+    }
+
+    @Transactional
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
+    public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags,
+                                     String category, Long activityId, String targetType, Long targetId,
+                                     List<Long> mentionedUserIds) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
@@ -255,6 +267,11 @@ public class VillagePostService {
         // （原 save() 在事务提交时才生成主键，实体在构建视图时 getId() 仍为 null；
         //  实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id）
         post = postRepository.saveAndFlush(post);
+
+        // 2026-10-28：@提及关系先落库；待审帖不提前发通知，审核通过后由 PostMentionService.notifyMentions 发送
+        if (postMentionService != null) {
+            postMentionService.saveMentions(post.getId(), userId, mentionedUserIds);
+        }
 
         // R4-00328：同步写入 post_tags 关联表——此前 post_tag 表无任何写入方，
         // 「按标签查帖子 / 热门话题」恒为空，标签功能断链。现发帖时按过滤后标签

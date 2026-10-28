@@ -165,7 +165,7 @@ public class VillageController {
     // 由 VillagePostService 根据 targetType 推导可见范围并校验。
     PostDetailView view = villageService.createPost(userId, request.title(), request.content(),
         request.images(), request.tags(), request.category(), request.activityId(),
-        request.targetType(), request.targetId());
+        request.targetType(), request.targetId(), request.mentionedUserIds());
     // 监控：记录帖子创建事件
     try {
       villageMetrics.recordPostCreated();

@@ -52,6 +52,17 @@ public class ConsultingController {
     }
 
     /**
+     * 课程详情。
+     * GET /api/v1/consulting/courses/{id}
+     */
+    @GetMapping("/courses/{id}")
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<ConsultingService.CourseView> getCourse(@PathVariable("id") @Positive Long id) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        return ApiResponse.ok(consultingService.getCourse(userId, id));
+    }
+
+    /**
      * 报名课程（幂等成功）。
      * POST /api/v1/consulting/courses/{id}/signup
      *

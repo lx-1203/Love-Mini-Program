@@ -116,6 +116,18 @@ public class PrivateMessageController {
         return ApiResponse.ok(null);
     }
 
+    /**
+     * 将指定会话标为未读（按当前用户侧持久化，幂等）。
+     * PUT /api/messages/conversations/{id}/unread
+     */
+    @PutMapping("/conversations/{id}/unread")
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<Void> markUnread(@PathVariable("id") @Positive Long conversationId) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        privateMessageService.markUnread(conversationId, userId);
+        return ApiResponse.ok(null);
+    }
+
     // ---- Phase 2 新增：会话置顶 ----
 
     /**

@@ -12,10 +12,12 @@
  */
 package com.campuslove.api.auth;
 
+import com.campuslove.api.clientconfig.LegalDocumentService;
 import com.campuslove.api.entity.UserAgreementConsent;
 import com.campuslove.api.repository.UserAgreementConsentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -41,8 +43,29 @@ public class AgreementConsentService {
 
     private final UserAgreementConsentRepository consentRepository;
 
+    /** 法律文本 CMS（real）；缺省/异常时回退 DEFAULT_LEGAL_VERSION */
+    @Autowired(required = false)
+    private LegalDocumentService legalDocumentService;
+
     public AgreementConsentService(UserAgreementConsentRepository consentRepository) {
         this.consentRepository = consentRepository;
+    }
+
+    /**
+     * 当前生效的用户协议版本：优先 CMS 的 published 版本，异常/缺失回退 v1.0.0。
+     */
+    private String currentLegalVersion() {
+        try {
+            if (legalDocumentService != null) {
+                String version = legalDocumentService.currentVersion(LegalDocumentService.TYPE_USER_AGREEMENT);
+                if (version != null && !version.isBlank()) {
+                    return version.trim();
+                }
+            }
+        } catch (RuntimeException e) {
+            log.warn("读取法律文本版本失败，回退 {}", DEFAULT_LEGAL_VERSION, e);
+        }
+        return DEFAULT_LEGAL_VERSION;
     }
 
     /**
@@ -69,7 +92,7 @@ public class AgreementConsentService {
             return;
         }
         String version = legalVersion != null && !legalVersion.isBlank()
-                ? legalVersion.trim() : DEFAULT_LEGAL_VERSION;
+                ? legalVersion.trim() : currentLegalVersion();
         try {
             if (consentRepository.existsByUserIdAndLegalVersionAndSource(userId, version, source)) {
                 log.debug("协议同意已留痕，幂等跳过: userId={}, version={}, source={}", userId, version, source);

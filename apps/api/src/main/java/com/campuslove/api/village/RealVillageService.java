@@ -88,7 +88,7 @@ public class RealVillageService implements VillageService {
     public PostDetailView createPost(Long userId, @Valid CreatePostRequest request) {
         return postService.createPost(userId, request.title(), request.content(), request.images(),
                 request.tags(), request.category(), request.activityId(),
-                request.targetType(), request.targetId());
+                request.targetType(), request.targetId(), request.mentionedUserIds());
     }
 
     @Override
@@ -164,6 +164,15 @@ public class RealVillageService implements VillageService {
                                      List<String> tags, String category, Long activityId,
                                      String targetType, Long targetId) {
         return postService.createPost(userId, title, content, images, tags, category, activityId, targetType, targetId);
+    }
+
+    @Override
+    @Transactional
+    public PostDetailView createPost(Long userId, String title, String content, List<String> images,
+                                     List<String> tags, String category, Long activityId,
+                                     String targetType, Long targetId, List<Long> mentionedUserIds) {
+        return postService.createPost(userId, title, content, images, tags, category, activityId,
+                targetType, targetId, mentionedUserIds);
     }
 
     @Override

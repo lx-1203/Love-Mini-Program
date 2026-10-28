@@ -95,7 +95,36 @@ public class CircleController {
       @RequestParam(name = "page", required = false, defaultValue = "0") @Min(0) int page,
       @RequestParam(name = "size", required = false, defaultValue = "20") @Min(1) @Max(100) int size) {
     Pageable pageable = PageRequest.of(page, size);
-    return ApiResponse.ok(circleService.getTopics(circleId, pageable));
+    return ApiResponse.ok(circleService.getTopics(circleId, SecurityUtils.getCurrentUserId(), pageable));
+  }
+
+  /**
+   * 获取圈子 meta（标签 + 置顶公告）。
+   * GET /api/v1/circles/{id}/meta
+   */
+  @GetMapping("/{id}/meta")
+  public ApiResponse<CircleMetaView> getCircleMeta(@PathVariable("id") @Positive Long circleId) {
+    return ApiResponse.ok(circleService.getCircleMeta(circleId));
+  }
+
+  /**
+   * 点赞话题。
+   * POST /api/v1/circles/topics/{id}/like
+   */
+  @PostMapping("/topics/{id}/like")
+  @PreAuthorize("hasRole('USER')")
+  public ApiResponse<TopicLikeView> likeTopic(@PathVariable("id") @Positive Long topicId) {
+    return ApiResponse.ok(circleService.likeTopic(topicId, SecurityUtils.getCurrentUserId()));
+  }
+
+  /**
+   * 取消点赞。
+   * DELETE /api/v1/circles/topics/{id}/like
+   */
+  @DeleteMapping("/topics/{id}/like")
+  @PreAuthorize("hasRole('USER')")
+  public ApiResponse<TopicLikeView> unlikeTopic(@PathVariable("id") @Positive Long topicId) {
+    return ApiResponse.ok(circleService.unlikeTopic(topicId, SecurityUtils.getCurrentUserId()));
   }
 
   /**
@@ -123,7 +152,7 @@ public class CircleController {
    */
   @GetMapping("/topics/{id}")
   public ApiResponse<CircleTopicView> getTopicDetail(@PathVariable("id") @Positive Long topicId) {
-    return ApiResponse.ok(circleService.getTopicDetail(topicId));
+    return ApiResponse.ok(circleService.getTopicDetail(topicId, SecurityUtils.getCurrentUserId()));
   }
 
   // ---------- 回复 ----------
@@ -170,7 +199,7 @@ public class CircleController {
       @RequestParam(name = "page", required = false, defaultValue = "0") @Min(0) int page,
       @RequestParam(name = "size", required = false, defaultValue = "20") @Min(1) @Max(100) int size) {
     Pageable pageable = PageRequest.of(page, size);
-    return ApiResponse.ok(circleService.getFeaturedTopics(pageable));
+    return ApiResponse.ok(circleService.getFeaturedTopics(SecurityUtils.getCurrentUserId(), pageable));
   }
 }
 
@@ -221,8 +250,37 @@ record CircleTopicView(
     List<String> images,
     int replyCount,
     boolean isPinned,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    /** 话题点赞数（2026-10-28） */
+    int likeCount,
+    /** 当前查看者是否已点赞 */
+    boolean likedByMe
 ) {
+    /** 兼容旧构造（无点赞状态） */
+    CircleTopicView(
+            Long id,
+            Long circleId,
+            String circleName,
+            Long authorId,
+            String authorName,
+            String authorAvatarUrl,
+            String title,
+            String contentPreview,
+            List<String> images,
+            int replyCount,
+            boolean isPinned,
+            LocalDateTime createdAt) {
+        this(id, circleId, circleName, authorId, authorName, authorAvatarUrl,
+                title, contentPreview, images, replyCount, isPinned, createdAt, 0, false);
+    }
+}
+
+/** 圈子 meta：标签 + 置顶公告。 */
+record CircleMetaView(Long circleId, List<String> tags, String announcement) {
+}
+
+/** 话题点赞结果。 */
+record TopicLikeView(Long topicId, boolean liked, int likeCount) {
 }
 
 /**
