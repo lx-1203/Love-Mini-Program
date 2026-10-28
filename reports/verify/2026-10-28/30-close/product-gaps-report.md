@@ -63,6 +63,8 @@
 - Flyway 已应用：`V2026.10.28.0001`（法律文本）、`0002`（圈子 tags/公告/点赞）、`0003`（咨询字段）、`0004`（会话未读标记）、`0005`（post_mentions）、`0006`（mention 通知类型）、`0007`（法律菜单）、`0008`（咨询菜单）。
 - 迁移修复记录：0002 首次因 `circle_topics.id` 为 `BIGINT UNSIGNED` 与 FK 类型不兼容失败；已回退部分列、删除失败历史行、把 FK 改为 UNSIGNED 后重新应用成功（不恢复整库）。
 - 接口冒烟：`30-close/api-smoke-r2.log` 12/12 PASS（法律 items、后台列表、咨询、圈 meta/点赞、消息未读、批量 skip、@提及通知）。
-- 测试：后端 **1414 tests / 0 failures / 0 errors / 7 skipped，BUILD SUCCESS**；后台 **39/39**、typecheck 0、build 通过；客户端 typecheck 0、改动区 103/103；客户端全量单测见 `client-unit-gaps-r3.log`。
-- 小程序 real 发布链：**RELEASECHAIN_RESULT=PASS steps=15**，主包 1.63MB / 总包 2.72MB，CDN 294 条，`shippable=no`（loopback 豁免）。
+- 测试：后端 **1414 tests / 0 failures / 0 errors / 7 skipped，BUILD SUCCESS**；后台 **39/39**、typecheck 0、build 通过；客户端 typecheck 0、改动区 103/103、**全量 130 files / 1439 tests passed（exit 0）**（`client-unit-gaps-r3.log`）。
+- 小程序 real 发布链：**RELEASECHAIN_RESULT=PASS steps=15**，主包 1.63MB / 总包 2.72MB，CDN 294 条，`shippable=no`（loopback 豁免）。提交后最终重建 `git=43901e73`（`release-chain-gaps-r2.log`），主包/总包/CDN 读数与上同。
+- 新增页 DevTools 巡检（提交后最终包）：`consulting`、`circle-home?circleId=8`、`publish`、`messages`、`legal/privacy` **5/5 落点正确、console 0、截图有效**（`mini-audit-gaps.log` / `results_gaps.tsv`）。
+- QA 清理：API 冒烟创建的 431/432 帖已软删；`post_mentions`、mention 通知、QA pass 记录与圈点赞残留已清理（`cleanup-gaps.sql`）；种子数据保留。
 - 回滚点：`database/backup/pre-product-gaps-20261028.sql`（功能迁移前）。
