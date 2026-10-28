@@ -49,7 +49,7 @@
   - 新增共享 `components/circle/MentionPickerSheet.vue`（候选、最多 10、确认插入 `@昵称`）。
   - `post-topic` 增加「@ 提及圈成员」入口（仅 real + 数字圈 ID），提交带 `mentionedUserIds`。
   - `topic-detail` 回复栏增加 @ 按钮，提交带 mentions，成功后清空。
-- 消息中心：`mention` 映射与 `referenceType` 字段已补齐；当前切片无独立通知列表页，摘要直接消费后端 `summary`。
+- 客户端模型：`mention` / `topic_like` 映射与 `referenceType` 字段已补齐，未读角标与 WebSocket 推送会计数；**当前切片没有独立通知列表页**，通知正文与点击跳转在 UI 上尚不可读（后端 `summary` 已生成、API 可查）。这是本轮唯一未补的展示层缺口。
 - 冒烟：话题 pending 不发 → 审核通过发；回复立即发；摘要/引用类型均判到；非圈成员请求候选返回空（实测 `count=0`）。
 
 ## 4. 临时会话图片 B 强匿名
@@ -104,6 +104,7 @@
 ## 6. 边界与未声称
 
 - **保留期物理删除未实跑 T+48h**：清理任务为每小时 cron；本轮用单测验证「到期删文件/消息、hold 跳过」（`TempChatCleanupMaterialsTest` 2 例），未等待真实 48 小时，也未在生产库触发一次真实删除。
+- **通知列表页缺失**：话题点赞/提及已生成服务端通知并计入未读角标，但小程序当前没有通知中心页，用户点首页铃铛只会跳到消息 tab，读不到通知正文；补页面属于下一轮展示层工作。
 - **@提及选择器的「确认插入」未由自动化点击**：picker 位于自定义组件内，DevTools `page.$` 选择器不可穿透（与既有 `component-boundary` 同类）；已取帧证明候选/计数/按钮上屏，并通过 API 冒烟证明提交后落库与通知。
 - **临时会话深链冷启动竞态**：直接深链打开时 `onLoad` 可能早于 `/auth/me`，页面按未解锁返回默认壳；本轮取帧采用「先首页暖启动再 reLaunch」的既有验收方式，未改这条既有链路。
 - **旧公告列**：`interest_circles.announcement` 保留一个发布周期，仅兼容读；后台不再写入。

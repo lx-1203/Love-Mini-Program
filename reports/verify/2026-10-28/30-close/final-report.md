@@ -198,5 +198,5 @@ node tmp/verify-20261028/five-ring.mjs
 - **@提及扩展**：统一 `content_mentions`，话题审核通过后通知、回复即时通知，仅同圈成员，客户端共享 `MentionPickerSheet`。
 - **临时图片 B 强匿名**：`temp/{sessionUid}` 存储（URL 不含 userId）、仅双方可读、签名 TTL 300s、T+48h 清理、举报 hold、伪名/默认头像/隐藏主页、联系交换后揭示。
 
-逐项实现、迁移、读数和边界见 [wave2-implementation.md](wave2-implementation.md)。注意：清理任务的真实 T+48h 物理删除未实跑（单测覆盖逻辑）；@提及选择器确认点击受组件边界限制，取帧 + API 冒烟替代。
+逐项实现、迁移、读数和边界见 [wave2-implementation.md](wave2-implementation.md)。注意：清理任务的真实 T+48h 物理删除未实跑（单测覆盖逻辑）；@提及选择器确认点击受组件边界限制，取帧 + API 冒烟替代；**话题点赞/提及通知当前只进未读角标，尚无通知列表页可读正文**。
 
