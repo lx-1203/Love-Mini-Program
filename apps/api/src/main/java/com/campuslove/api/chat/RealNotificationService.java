@@ -163,7 +163,9 @@ public class RealNotificationService implements NotificationService {
     private List<Notification.NotificationType> resolveSignalTypes(String signalType) {
         if (SIGNAL_TYPE_CONTENT.equalsIgnoreCase(signalType)) {
             return List.of(Notification.NotificationType.comment,
-                    Notification.NotificationType.follow);
+                    Notification.NotificationType.follow,
+                    Notification.NotificationType.mention,
+                    Notification.NotificationType.topic_like);
         }
         return List.of(Notification.NotificationType.match,
                 Notification.NotificationType.visitor,
@@ -305,7 +307,7 @@ public class RealNotificationService implements NotificationService {
         String avatar = sourceUser != null ? sourceUser.getAvatarUrl() : null;
 
         String type = notification.getType().name();
-        String summary = buildSummary(type, displayName);
+        String summary = buildSummary(type, displayName, notification.getReferenceType());
         String signalType = determineSignalType(type);
 
         return new NotificationView(
@@ -337,7 +339,7 @@ public class RealNotificationService implements NotificationService {
         }
         return switch (type) {
             case "match", "visitor", "like" -> SIGNAL_TYPE_SOCIAL;
-            case "comment", "follow", "mention" -> SIGNAL_TYPE_CONTENT;
+            case "comment", "follow", "mention", "topic_like" -> SIGNAL_TYPE_CONTENT;
             default -> SIGNAL_TYPE_SOCIAL;
         };
     }
@@ -345,12 +347,19 @@ public class RealNotificationService implements NotificationService {
     /**
      * 构建通知摘要文本。
      */
-    private String buildSummary(String type, String sourceUserName) {
+    private String buildSummary(String type, String sourceUserName, ReferenceType referenceType) {
+        String ref = referenceType != null ? referenceType.name() : null;
         return switch (type) {
             case "follow" -> sourceUserName + "关注了你";
             case "like" -> sourceUserName + "赞了你的帖子";
             case "comment" -> sourceUserName + "评论了你";
-            case "mention" -> sourceUserName + "在帖子中提到了你";
+            case "mention" -> switch (ref != null ? ref : "") {
+                case "topic" -> sourceUserName + "在话题中提到了你";
+                case "comment" -> sourceUserName + "在话题评论中提到了你";
+                case "post" -> sourceUserName + "在帖子中提到了你";
+                default -> sourceUserName + "提到了你";
+            };
+            case "topic_like" -> sourceUserName + "赞了你的话题";
             case "visitor" -> sourceUserName + "访问了你的主页";
             case "match" -> "你和" + sourceUserName + "配对成功";
             default -> sourceUserName + "与你互动";

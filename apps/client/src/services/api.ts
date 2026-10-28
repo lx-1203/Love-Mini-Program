@@ -1003,6 +1003,28 @@ export const clientApi = {
   },
 
   /**
+   * 上传临时会话图片（2026-10-28 强匿名 B）。
+   *
+   * 落盘 temp/{sessionUid}/...，URL 不含 userId；仅会话双方可读，
+   * 保留期（T+48h）后由后端清理任务删除。
+   *
+   * @param file       图片文件
+   * @param sessionUid 临时会话 UID
+   * @returns 不含 userId 的临时媒体 URL
+   */
+  async uploadTempChatImage(file: UniUploadFileLike, sessionUid: string): Promise<{ url: string }> {
+    if (useMock()) {
+      return { url: file.path ?? file.name };
+    }
+    const raw = await uploadFileViaUni<{ url?: string; data?: { url?: string } }>(
+      file,
+      "/media/temp/upload",
+      { sessionUid },
+    );
+    return { url: unwrapUploadUrl(raw, "上传响应缺少图片 URL") };
+  },
+
+  /**
    * 获取推荐列表（含 Phase B 扩展筛选字段）。
    *
    * 对应后端 GET /api/recommendations 端点，所有筛选参数均为可选 query string。

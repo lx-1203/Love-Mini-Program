@@ -117,6 +117,22 @@ public class MediaAsset {
     @Column(name = "audited_at")
     private LocalDateTime auditedAt;
 
+    /** 临时会话 ID（仅 category=TEMP_CHAT，2026-10-28） */
+    @Column(name = "temp_session_id")
+    private Long tempSessionId;
+
+    /** 临时媒体删除时刻（会话 closesAt + 宽限，2026-10-28） */
+    @Column(name = "expires_at")
+    private LocalDateTime expiresAt;
+
+    /** 物理删除登记（墓碑，2026-10-28） */
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    /** 举报取证保留截止（此时间前不自动删除，2026-10-28） */
+    @Column(name = "hold_until")
+    private LocalDateTime holdUntil;
+
     /** 创建时间（不可更新） */
 
     @CreatedDate
@@ -276,6 +292,38 @@ public class MediaAsset {
 
     public void setAuditedAt(LocalDateTime auditedAt) {
         this.auditedAt = auditedAt;
+    }
+
+    public Long getTempSessionId() {
+        return tempSessionId;
+    }
+
+    public void setTempSessionId(Long tempSessionId) {
+        this.tempSessionId = tempSessionId;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+
+    public void setExpiresAt(LocalDateTime expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public LocalDateTime getHoldUntil() {
+        return holdUntil;
+    }
+
+    public void setHoldUntil(LocalDateTime holdUntil) {
+        this.holdUntil = holdUntil;
     }
 
     public LocalDateTime getCreatedAt() {

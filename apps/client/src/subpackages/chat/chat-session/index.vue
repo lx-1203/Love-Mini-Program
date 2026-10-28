@@ -283,6 +283,8 @@ const signalNextUnlock = computed<{ field: string; remaining: number } | null>((
 
 /** 全部解锁后查看 TA 主页 */
 function goSignalProfile() {
+  // 2026-10-28：临时会话未完成联系交换前不提供主页入口（强匿名 B）
+  if (!isIdentityRevealed.value) return;
   const session = currentSession.value;
   // 2026-08-09：私信会话（MessageSession）用 partnerId；临时会话
   // （ChatSessionView）无 partnerId 字段，改用 recommendedPersonId
@@ -892,6 +894,19 @@ const isTempSession = computed(() => {
 });
 
 /**
+ * 身份是否已揭示（2026-10-28 强匿名 B）：
+ * 临时会话在双方联系交换完成前不显示主页入口/分享主页，避免绕过伪名。
+ */
+const isIdentityRevealed = computed(() => {
+  if (!isTempSession.value) return true;
+  const session = currentSession.value;
+  const status = session && "contactExchange" in session
+    ? session.contactExchange?.status
+    : "";
+  return status === "completed";
+});
+
+/**
  * 临时会话是否已到期（review #51：原实现用 tempCountdown === "已结束" 比较中文文案，
  * 依赖展示文案判断状态；现改为基于 closesAt 计算，与文案解耦）。
  */
@@ -1102,6 +1117,9 @@ function handleViewProfile() {
  * （对方昵称 + 主页路径，接收方点开即浏览对方主页）。
  */
 onShareAppMessage(() => {
+  if (!isIdentityRevealed.value) {
+    return { title: t("profile.shareVillage"), path: ROUTES.TAB.VILLAGE };
+  }
   const peerId = resolvePeerUserId();
   if (peerId === null) {
     return { title: t("profile.shareVillage"), path: ROUTES.TAB.VILLAGE };
@@ -1860,10 +1878,14 @@ async function handleImagePlaceholder() {
     for (const path of paths) {
       // 逐张上传 + 发送（保持顺序；单张失败计数后继续）
       try {
-        const { url } = await clientApi.uploadPostImage({
+        // 2026-10-28 强匿名 B：临时会话图片走 temp/upload，URL 不含 userId、仅双方可读
+        const filePayload = {
           path,
           name: `chat-${Date.now()}-${sentCount}.jpg`,
-        } as UniUploadFileLike);
+        } as UniUploadFileLike;
+        const { url } = isTempSession.value
+          ? await clientApi.uploadTempChatImage(filePayload, sessionId.value)
+          : await clientApi.uploadPostImage(filePayload);
         if (!url) {
           failedCount += 1;
           continue;
@@ -1916,6 +1938,7 @@ function openAvatarMenu() {
 }
 /** 2026-09-03：气泡内头像点击 → 直接跳对方主页（不再弹菜单） */
 function onBubbleAvatarTap() {
+  if (!isIdentityRevealed.value) return;
   const uid = resolvePeerUserId();
   if (uid != null) {
     uni.navigateTo({
@@ -1954,6 +1977,8 @@ async function handleAvatarPat() {
 }
 function handleAvatarProfile() {
   avatarMenuVisible.value = false;
+  // 2026-10-28：临时会话未揭示身份前不跳主页（强匿名 B）
+  if (!isIdentityRevealed.value) return;
   // 复用「看主页」逻辑（跳转对方个人主页）
   goSignalProfile();
 }
@@ -2487,6 +2512,7 @@ defineExpose({ noop });
         </view>
         <view class="nav-menu__list">
           <view
+            v-if="isIdentityRevealed"
             class="nav-menu__item press-feedback"
             hover-class="press-feedback--active"
             hover-stay-time="120"
@@ -2596,7 +2622,7 @@ defineExpose({ noop });
           <text class="avatar-menu-name">{{ pageTitle }}</text>
         </view>
         <view class="avatar-menu-actions">
-          <view class="avatar-menu-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleAvatarProfile" role="button">
+          <view v-if="isIdentityRevealed" class="avatar-menu-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleAvatarProfile" role="button">
             <text class="avatar-menu-item-text">{{ t("chat.viewProfile") }}</text>
           </view>
           <view class="avatar-menu-item press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="handleAvatarPat" role="button">

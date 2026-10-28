@@ -6,14 +6,21 @@ import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.CircleMembership;
 import com.campuslove.api.entity.CircleReply;
 import com.campuslove.api.chat.InteractionEventService;
+import com.campuslove.api.chat.NotificationService;
 import com.campuslove.api.config.DisplayConstants;
 import com.campuslove.api.config.ContentSecurityChecker;
 import com.campuslove.api.config.ContentSecurityVerdict;
+import com.campuslove.api.content.ContentMentionService;
+import com.campuslove.api.entity.CircleAnnouncement;
 import com.campuslove.api.entity.CircleTopic;
+import com.campuslove.api.entity.CircleTopicLikeNotice;
+import com.campuslove.api.entity.ContentMention;
 import com.campuslove.api.entity.InterestCircle;
 import com.campuslove.api.entity.User;
+import com.campuslove.api.repository.CircleAnnouncementRepository;
 import com.campuslove.api.repository.CircleMembershipRepository;
 import com.campuslove.api.repository.CircleReplyRepository;
+import com.campuslove.api.repository.CircleTopicLikeNoticeRepository;
 import com.campuslove.api.repository.CircleTopicLikeRepository;
 import com.campuslove.api.repository.CircleTopicRepository;
 import com.campuslove.api.repository.InterestCircleRepository;
@@ -85,6 +92,22 @@ public class RealCircleService implements CircleService {
     /** 话题点赞（2026-10-28）；单元测试未注入时点赞状态按未点赞处理。 */
     @Autowired(required = false)
     private CircleTopicLikeRepository circleTopicLikeRepository;
+
+    /** 话题点赞通知去重（2026-10-28）。 */
+    @Autowired(required = false)
+    private CircleTopicLikeNoticeRepository circleTopicLikeNoticeRepository;
+
+    /** 通知服务（话题点赞通知，2026-10-28）。 */
+    @Autowired(required = false)
+    private NotificationService notificationService;
+
+    /** 内容 @ 提及（话题/回复，2026-10-28）。 */
+    @Autowired(required = false)
+    private ContentMentionService contentMentionService;
+
+    /** 圈子公告（2026-10-28 表化）。 */
+    @Autowired(required = false)
+    private CircleAnnouncementRepository circleAnnouncementRepository;
 
     /**
      * JPA 实体管理器（FIN-00037/00038 修复）。
@@ -415,6 +438,13 @@ public class RealCircleService implements CircleService {
     @Override
     @Transactional
     public CircleTopicView createTopic(Long circleId, Long authorId, String title, String content, List<String> images) {
+        return createTopic(circleId, authorId, title, content, images, null);
+    }
+
+    @Override
+    @Transactional
+    public CircleTopicView createTopic(Long circleId, Long authorId, String title, String content,
+                                       List<String> images, List<Long> mentionedUserIds) {
         log.info("创建话题, circleId={}, authorId={}, title={}", circleId, authorId, title);
 
         if (authorId == null) {
@@ -469,7 +499,15 @@ public class RealCircleService implements CircleService {
         topic.setAuditStatus(CircleTopic.AuditStatus.pending);
         topic.setCreatedAt(now);
 
-        circleTopicRepository.save(topic);
+        // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
+        // 否则 mentions 落库与响应里的 topicId 都是 null（2026-10-28 实测）
+        topic = circleTopicRepository.save(topic);
+
+        // 2026-10-28：话题 @提及先落关系，后台审核通过后再发通知（与帖子同模式）
+        if (contentMentionService != null) {
+            contentMentionService.saveMentions(
+                    ContentMention.TARGET_TOPIC, topic.getId(), authorId, circleId, mentionedUserIds);
+        }
 
         log.info("话题创建成功, topicId={}, circleId={}", topic.getId(), circleId);
 
@@ -514,6 +552,13 @@ public class RealCircleService implements CircleService {
     @Override
     @Transactional
     public CircleReplyView replyToTopic(Long topicId, Long authorId, String content) {
+        return replyToTopic(topicId, authorId, content, null);
+    }
+
+    @Override
+    @Transactional
+    public CircleReplyView replyToTopic(Long topicId, Long authorId, String content,
+                                        List<Long> mentionedUserIds) {
         log.info("回复话题, topicId={}, authorId={}", topicId, authorId);
 
         if (authorId == null) {
@@ -545,11 +590,20 @@ public class RealCircleService implements CircleService {
         reply.setContent(filteredContent);
         reply.setCreatedAt(now);
 
-        circleReplyRepository.save(reply);
+        reply = circleReplyRepository.save(reply);
 
         // 更新话题回复数
         topic.setReplyCount(topic.getReplyCount() + 1);
         circleTopicRepository.save(topic);
+
+        // 2026-10-28：回复 @提及（回复无审核，创建即通知；引用 topicId 保证客户端可打开话题详情）
+        if (contentMentionService != null) {
+            contentMentionService.saveMentions(
+                    ContentMention.TARGET_REPLY, reply.getId(), authorId,
+                    topic.getCircle() != null ? topic.getCircle().getId() : null, mentionedUserIds);
+            contentMentionService.notifyMentions(
+                    ContentMention.TARGET_REPLY, reply.getId(), authorId, "comment", topicId);
+        }
 
         // 记录互动事件：通知话题作者有人回复
         if (!authorId.equals(topic.getAuthorId())) {
@@ -644,16 +698,66 @@ public class RealCircleService implements CircleService {
     @Transactional(readOnly = true)
     public CircleMetaView getCircleMeta(Long circleId) {
         InterestCircle circle = findCircleOrThrow(circleId);
-        return new CircleMetaView(circleId, splitTags(circle.getTags()), circle.getAnnouncement());
+        List<CircleAnnouncementView> announcements = loadPublishedAnnouncements(circleId, 3);
+        String pinned = announcements.stream()
+                .filter(CircleAnnouncementView::isPinned)
+                .map(CircleAnnouncementView::content)
+                .findFirst()
+                .orElseGet(() -> announcements.isEmpty() ? circle.getAnnouncement() : announcements.get(0).content());
+        return new CircleMetaView(circleId, splitTags(circle.getTags()), pinned, announcements);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CircleAnnouncementView> getAnnouncements(Long circleId, int limit) {
+        findCircleOrThrow(circleId);
+        return loadPublishedAnnouncements(circleId, Math.max(1, Math.min(20, limit)));
+    }
+
+    private List<CircleAnnouncementView> loadPublishedAnnouncements(Long circleId, int limit) {
+        if (circleAnnouncementRepository == null) {
+            return List.of();
+        }
+        return circleAnnouncementRepository
+                .findByCircleIdAndStatusOrderByIsPinnedDescPublishedAtDesc(
+                        circleId, CircleAnnouncement.Status.published, PageRequest.of(0, limit))
+                .stream()
+                .map(a -> new CircleAnnouncementView(
+                        a.getId(), a.getTitle(), a.getContent(),
+                        Boolean.TRUE.equals(a.getIsPinned()), a.getPublishedAt()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CircleMentionCandidateView> getMentionCandidates(Long circleId, Long viewerId,
+                                                                 String keyword, int limit) {
+        findCircleOrThrow(circleId);
+        int safeLimit = Math.max(1, Math.min(100, limit));
+        List<Long> memberIds = circleMembershipRepository.findUserIdsByCircleId(circleId).stream()
+                .filter(id -> viewerId == null || !viewerId.equals(id))
+                .toList();
+        if (memberIds.isEmpty()) {
+            return List.of();
+        }
+        String normalized = keyword == null ? "" : keyword.trim().toLowerCase(java.util.Locale.ROOT);
+        return userRepository.findAllById(memberIds).stream()
+                .filter(u -> normalized.isEmpty()
+                        || (u.getNickname() != null
+                        && u.getNickname().toLowerCase(java.util.Locale.ROOT).contains(normalized)))
+                .limit(safeLimit)
+                .map(u -> new CircleMentionCandidateView(u.getId(), resolveAuthorName(u), resolveAuthorAvatar(u)))
+                .toList();
     }
 
     @Override
     @Transactional
     public TopicLikeView likeTopic(Long topicId, Long userId) {
-        findTopicOrThrow(topicId);
+        CircleTopic topic = findTopicOrThrow(topicId);
         if (circleTopicLikeRepository == null) {
             throw new IllegalStateException("circle topic like repository unavailable");
         }
+        boolean created = false;
         if (!circleTopicLikeRepository.existsByTopicIdAndUserId(topicId, userId)) {
             com.campuslove.api.entity.CircleTopicLike like = new com.campuslove.api.entity.CircleTopicLike();
             like.setTopicId(topicId);
@@ -661,9 +765,41 @@ public class RealCircleService implements CircleService {
             like.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
             circleTopicLikeRepository.save(like);
             circleTopicRepository.incrementLikeCount(topicId);
+            created = true;
+        }
+        if (created) {
+            notifyTopicLike(topic, userId);
         }
         Integer count = circleTopicRepository.findLikeCountById(topicId);
         return new TopicLikeView(topicId, true, count == null ? 0 : count);
+    }
+
+    /**
+     * 话题被首次点赞时通知作者（2026-10-28）。
+     * 去重表与点赞关系解耦：取消再赞不重复通知；自己赞自己跳过；通知失败不回滚点赞。
+     */
+    private void notifyTopicLike(CircleTopic topic, Long likerId) {
+        if (notificationService == null || topic.getAuthorId() == null
+                || topic.getAuthorId().equals(likerId)) {
+            return;
+        }
+        if (circleTopicLikeNoticeRepository == null) {
+            return;
+        }
+        if (circleTopicLikeNoticeRepository.existsByTopicIdAndUserId(topic.getId(), likerId)) {
+            return;
+        }
+        try {
+            CircleTopicLikeNotice notice = new CircleTopicLikeNotice();
+            notice.setTopicId(topic.getId());
+            notice.setUserId(likerId);
+            notice.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+            circleTopicLikeNoticeRepository.save(notice);
+            notificationService.createNotification(
+                    topic.getAuthorId(), "topic_like", likerId, topic.getId(), "topic");
+        } catch (RuntimeException e) {
+            log.warn("发送话题点赞通知失败 topicId={} likerId={}: {}", topic.getId(), likerId, e.toString());
+        }
     }
 
     @Override
@@ -829,12 +965,24 @@ public class RealCircleService implements CircleService {
      * @param userId 用户 ID
      * @return 头像 URL；无则空串
      */
+    /** 单条版本：用户昵称（提及候选）。 */
+    private String resolveAuthorName(User user) {
+        if (user == null || user.getNickname() == null || user.getNickname().isBlank()) {
+            return DisplayConstants.UNKNOWN_USER;
+        }
+        return user.getNickname();
+    }
+
+    /** 单条版本：用户头像（提及候选）。 */
+    private String resolveAuthorAvatar(User user) {
+        return user != null && user.getAvatarUrl() != null ? user.getAvatarUrl() : "";
+    }
+
     private String getAuthorAvatar(Long userId) {
         if (userId == null) {
             return "";
         }
-        return userRepository.findById(userId)
-                .map(User::getAvatarUrl)
+        return userRepository.findById(userId)                .map(User::getAvatarUrl)
                 .orElse("");
     }
 

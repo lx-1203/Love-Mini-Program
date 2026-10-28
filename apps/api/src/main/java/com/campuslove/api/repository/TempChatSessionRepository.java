@@ -93,4 +93,7 @@ public interface TempChatSessionRepository extends JpaRepository<TempChatSession
      * @return 已过期但尚未标记的会话列表
      */
     List<TempChatSession> findByPhaseAndClosesAtBefore(SessionPhase phase, LocalDateTime cutoff);
+
+    /** 指定阶段集合且关闭时间早于阈值的会话（保留期到期清理，2026-10-28）。 */
+    List<TempChatSession> findByPhaseInAndClosesAtBefore(List<SessionPhase> phases, LocalDateTime cutoff);
 }

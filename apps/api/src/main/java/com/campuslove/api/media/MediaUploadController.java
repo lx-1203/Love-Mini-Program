@@ -61,6 +61,10 @@ public class MediaUploadController {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private MediaAssetService mediaAssetService;
 
+    /** 临时会话媒体访问控制（2026-10-28 强匿名 B）。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.chat.TempChatMediaService tempChatMediaService;
+
     /**
      * 构造函数注入存储服务。
      *
@@ -139,6 +143,39 @@ public class MediaUploadController {
                 result.getSize(),
                 finalDuration
         ));
+    }
+
+    /**
+     * 上传临时会话图片（2026-10-28 强匿名 B）。
+     *
+     * <p>落盘 {@code temp/{sessionUid}/{yyyyMM}/{uuid}.ext}，URL 不含 userId；
+     * 仅会话双方可上传/读取，保留期到期后由清理任务删除。</p>
+     *
+     * @param file       图片文件
+     * @param sessionUid 临时会话 UID
+     * @return 上传响应（url 为 /api/v1/media/temp/{sessionUid}/...）
+     */
+    @PostMapping("/temp/upload")
+    @PreAuthorize("hasRole('USER')")
+    @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+    @Idempotent
+    public ApiResponse<UploadResponse> uploadTemp(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("sessionUid") String sessionUid) {
+        Long userId = getCurrentUserId();
+        if (tempChatMediaService == null || mediaAssetService == null) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "临时会话媒体服务不可用");
+        }
+        com.campuslove.api.entity.TempChatSession session =
+                tempChatMediaService.requireUploadable(sessionUid, userId);
+        MediaStorageService.UploadResult result = storageService.storeTemp(sessionUid, file, "image");
+        mediaAssetService.recordTempUpload(userId, "image", result,
+                file != null ? file.getOriginalFilename() : null,
+                session.getId(), tempChatMediaService.retentionDeadline(session));
+        return ApiResponse.ok(new UploadResponse(
+                result.getUrl(), result.getWidth(), result.getHeight(),
+                result.getMime(), result.getSize(), null));
     }
 
     /**

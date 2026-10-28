@@ -66,6 +66,9 @@ public enum AuditOperation {
     UNPIN_TOPIC("取消置顶话题"),
     CREATE_CIRCLE("新增兴趣圈"),
     UPDATE_CIRCLE("编辑兴趣圈"),
+    /** 2026-10-28：圈子公告表化后的发布/编辑/下线（目标类型 CIRCLE_ANNOUNCEMENT） */
+    CREATE_CIRCLE_ANNOUNCEMENT("新增圈子公告"),
+    UPDATE_CIRCLE_ANNOUNCEMENT("编辑/发布/下线圈子公告"),
     DELETE_CIRCLE("删除兴趣圈"),
     CREATE_PROMO_CODE("生成兑换码"),
     DISABLE_PROMO_CODE("作废兑换码"),

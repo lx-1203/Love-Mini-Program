@@ -6,6 +6,7 @@ import com.campuslove.api.repository.MediaAssetRepository;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -49,6 +50,10 @@ public class MediaAssetService {
     private static final String MEDIA_URL_PREFIX = "/api/v1/media/";
 
     private final MediaAssetRepository mediaAssetRepository;
+
+    /** 临时媒体举报保留（2026-10-28）。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.repository.TempChatMediaHoldRepository tempChatMediaHoldRepository;
 
     public MediaAssetService(MediaAssetRepository mediaAssetRepository) {
         this.mediaAssetRepository = mediaAssetRepository;
@@ -156,6 +161,101 @@ public class MediaAssetService {
             // 删除失败不影响主流程（容错），仅记日志
             log.warn("[MediaAssetService] 删除媒体资产记录失败 url={}", url, ex);
         }
+    }
+
+    /**
+     * 记录一次临时会话图片上传（2026-10-28 强匿名）。
+     * 分类固定 TEMP_CHAT；不进入普通内容审核队列（可见性由会话双方绑定），
+     * 举报时由后台设置 hold 保留取证。
+     *
+     * @param userId        上传者（仅用于审计/责任追溯，URL 不含）
+     * @param result        上传结果（URL 为 /api/v1/media/temp/{sessionUid}/...）
+     * @param originalName  原始文件名
+     * @param tempSessionId 会话 ID
+     * @param expiresAt     保留期截止（closesAt + 宽限）
+     * @return 资产记录
+     */
+    @Transactional
+    public MediaAsset recordTempUpload(Long userId, String type,
+                                       MediaStorageService.UploadResult result, String originalName,
+                                       Long tempSessionId, LocalDateTime expiresAt) {
+        MediaAsset asset = new MediaAsset();
+        asset.setUserId(userId);
+        asset.setType(type);
+        asset.setUrl(result.getUrl());
+        asset.setOriginalName(originalName);
+        asset.setMime(result.getMime());
+        asset.setSize(result.getSize());
+        asset.setWidth(result.getWidth());
+        asset.setHeight(result.getHeight());
+        asset.setStatus("ready");
+        asset.setAuditStatus(AUDIT_APPROVED);
+        asset.setCategory("TEMP_CHAT");
+        asset.setTempSessionId(tempSessionId);
+        asset.setExpiresAt(expiresAt);
+        return mediaAssetRepository.save(asset);
+    }
+
+    /** 到期且未删除的临时媒体（清理任务用，hold 未到期由调用方跳过）。 */
+    @Transactional(readOnly = true)
+    public List<MediaAsset> findExpiredTempAssets(LocalDateTime cutoff) {
+        return mediaAssetRepository.findByCategoryAndExpiresAtBeforeAndDeletedAtIsNull(
+                "TEMP_CHAT", cutoff);
+    }
+
+    /** 指定会话的未删除临时媒体（会话结束批量清理/后台取证）。 */
+    @Transactional(readOnly = true)
+    public List<MediaAsset> findTempAssetsBySession(Long tempSessionId) {
+        return mediaAssetRepository.findByTempSessionIdAndDeletedAtIsNull(tempSessionId);
+    }
+
+    /** 登记物理删除（保留行做墓碑，便于审计）。 */
+    @Transactional
+    public void markTempDeleted(MediaAsset asset) {
+        if (asset == null || asset.getDeletedAt() != null) {
+            return;
+        }
+        asset.setDeletedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        mediaAssetRepository.save(asset);
+    }
+
+    /**
+     * 举报保留：在保留期之外延长 hold_until，期间清理任务不删文件。
+     *
+     * @param assetId    资产 ID
+     * @param sessionUid 会话 UID
+     * @param reason     保留原因
+     * @param days       保留天数（1–90）
+     * @param adminId    操作管理员
+     * @return 是否成功（资产不存在/非 TEMP_CHAT 返回 false）
+     */
+    @Transactional
+    public boolean holdTempAsset(Long assetId, String sessionUid, String reason, int days, Long adminId) {
+        Optional<MediaAsset> assetOpt = mediaAssetRepository.findById(assetId);
+        if (assetOpt.isEmpty()) {
+            return false;
+        }
+        MediaAsset asset = assetOpt.get();
+        if (!"TEMP_CHAT".equals(asset.getCategory()) || asset.getDeletedAt() != null) {
+            return false;
+        }
+        int safeDays = Math.max(1, Math.min(90, days));
+        LocalDateTime holdUntil = LocalDateTime.now(TimeZones.BUSINESS).plusDays(safeDays);
+        asset.setHoldUntil(holdUntil);
+        mediaAssetRepository.save(asset);
+        if (tempChatMediaHoldRepository != null) {
+            com.campuslove.api.entity.TempChatMediaHold hold = tempChatMediaHoldRepository
+                    .findByMediaAssetId(assetId)
+                    .orElseGet(com.campuslove.api.entity.TempChatMediaHold::new);
+            hold.setMediaAssetId(assetId);
+            hold.setSessionUid(sessionUid != null ? sessionUid : "");
+            hold.setReason(reason);
+            hold.setHoldUntil(holdUntil);
+            hold.setCreatedBy(adminId);
+            hold.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+            tempChatMediaHoldRepository.save(hold);
+        }
+        return true;
     }
 
     /**

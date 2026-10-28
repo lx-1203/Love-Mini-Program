@@ -116,7 +116,7 @@ export interface MessageHeartSignal {
  */
 export interface SystemNotification {
   id: string;
-  type: "system" | "match" | "like" | "activity" | "follow" | "interaction_like" | "comment" | "visitor" | "interaction_match" | "mention";
+  type: "system" | "match" | "like" | "activity" | "follow" | "interaction_like" | "comment" | "visitor" | "interaction_match" | "mention" | "topic_like";
   title: string;
   content: string;
   isRead: boolean;
@@ -126,6 +126,8 @@ export interface SystemNotification {
   triggerUserId?: string | null;
   /** 关联资源 ID（帖子等，用于跳转帖子详情） */
   resourceId?: string | null;
+  /** 关联资源类型（post/comment/user/topic；话题通知跳圈子话题详情） */
+  referenceType?: string | null;
   /** 信号分类：SOCIAL（社交信号）/ CONTENT（内容信号） */
   signalType: SignalType;
 }
@@ -464,6 +466,7 @@ function mapToSystemNotification(raw: BackendNotificationView): SystemNotificati
     actionUrl: null,
     triggerUserId: null,
     resourceId: raw.referenceId ? String(raw.referenceId) : null,
+    referenceType: raw.referenceType ? String(raw.referenceType) : null,
     signalType: mappedSignalType,
   };
 }
@@ -477,6 +480,7 @@ function mapNotificationType(backendType: string): SystemNotification["type"] {
     "visitor": "visitor",
     "match": "interaction_match",
     "mention": "mention",
+    "topic_like": "topic_like",
   } as const satisfies Record<string, SystemNotification["type"]>;
   return (typeMap as Record<string, SystemNotification["type"]>)[backendType] || "system";
 }

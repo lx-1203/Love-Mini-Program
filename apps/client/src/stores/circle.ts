@@ -32,6 +32,24 @@ export interface BackendCircleView {
 }
 
 /**
+ * 圈子公告（2026-10-28 表化）。
+ */
+export interface CircleAnnouncementItem {
+  id: number;
+  title?: string | null;
+  content: string;
+  isPinned: boolean;
+  publishedAt?: string | null;
+}
+
+/** 可 @ 的同圈成员（2026-10-28）。 */
+export interface CircleMentionCandidate {
+  userId: number;
+  nickname: string;
+  avatarUrl?: string | null;
+}
+
+/**
  * 后端 CircleTopicView 类型
  * 对应后端 record CircleTopicView(Long id, Long circleId, String circleName, Long authorId, String authorName, String authorAvatarUrl, String title, String contentPreview, List<String> images, int replyCount, boolean isPinned, LocalDateTime createdAt)
  */
@@ -483,13 +501,45 @@ export const useCircleStore = defineStore("circle", {
     },
 
     /** 圈子标签 + 置顶公告（2026-10-28 后端 meta 接口）。 */
-    async fetchCircleMeta(circleId: string): Promise<{ tags: string[]; announcement: string }> {
-      if (useMock()) return { tags: [], announcement: "" };
-      const data = await request<{ circleId: number; tags: string[] | null; announcement: string | null }>({
+    async fetchCircleMeta(circleId: string): Promise<{ tags: string[]; announcement: string; announcements: CircleAnnouncementItem[] }> {
+      if (useMock()) return { tags: [], announcement: "", announcements: [] };
+      const data = await request<{
+        circleId: number;
+        tags: string[] | null;
+        announcement: string | null;
+        announcements?: CircleAnnouncementItem[] | null;
+      }>({
         url: `/circles/${circleId}/meta`,
         method: "GET",
       });
-      return { tags: data.tags ?? [], announcement: data.announcement ?? "" };
+      return {
+        tags: data.tags ?? [],
+        announcement: data.announcement ?? "",
+        announcements: data.announcements ?? [],
+      };
+    },
+
+    /**
+     * 圈子公告列表（仅已发布，置顶优先；2026-10-28 表化）。
+     */
+    async fetchCircleAnnouncements(circleId: string, limit = 10): Promise<CircleAnnouncementItem[]> {
+      if (useMock()) return [];
+      return await request<CircleAnnouncementItem[]>({
+        url: `/circles/${circleId}/announcements?limit=${limit}`,
+        method: "GET",
+      });
+    },
+
+    /**
+     * 可 @ 的同圈成员（话题/回复提及选择器，2026-10-28）。
+     */
+    async fetchMentionCandidates(circleId: string, keyword = ""): Promise<CircleMentionCandidate[]> {
+      if (useMock()) return [];
+      const query = keyword.trim() ? `?keyword=${encodeURIComponent(keyword.trim())}` : "";
+      return await request<CircleMentionCandidate[]>({
+        url: `/circles/${circleId}/mention-candidates${query}`,
+        method: "GET",
+      });
     },
 
     /** 话题点赞/取消（乐观更新由页面负责，失败回滚）。 */
@@ -507,7 +557,7 @@ export const useCircleStore = defineStore("circle", {
      * @param circleId - 兴趣圈 ID
      * @param data - 话题数据（Task B5：可附加 tags 话题标签 / favorite 喜爱标记）
      */
-    async createTopic(circleId: string, data: { title: string; content: string; images?: string[]; tags?: string[]; favorite?: boolean }) {
+    async createTopic(circleId: string, data: { title: string; content: string; images?: string[]; tags?: string[]; favorite?: boolean; mentionedUserIds?: number[] }) {
       this.errorMessage = null;
 
       try {
@@ -551,13 +601,14 @@ export const useCircleStore = defineStore("circle", {
         // 调用后端 API: POST /api/circles/{circleId}/topics
         // 修复（P0-12）：后端 CreateTopicRequest(title, content, images) 不含
         // authorId（从 JWT 获取），删除请求体中多余的 authorId 字段
-        const result = await request<BackendCircleTopicView, { title: string; content: string; images?: string[] }>({
+        const result = await request<BackendCircleTopicView, { title: string; content: string; images?: string[]; mentionedUserIds?: number[] }>({
           url: `/circles/${circleId}/topics`,
           method: "POST",
           data: {
             title: data.title.trim(),
             content: data.content.trim(),
             images: data.images ?? [],
+            mentionedUserIds: data.mentionedUserIds ?? [],
           },
         });
 
@@ -680,7 +731,7 @@ export const useCircleStore = defineStore("circle", {
      * @param topicId - 话题 ID
      * @param content - 回复内容
      */
-    async replyToTopic(topicId: string, content: string) {
+    async replyToTopic(topicId: string, content: string, mentionedUserIds: number[] = []) {
       this.errorMessage = null;
 
       try {
@@ -725,10 +776,10 @@ export const useCircleStore = defineStore("circle", {
         // 调用后端 API: POST /api/circles/topics/{topicId}/replies
         // 修复（P0-12）：后端 CreateReplyRequest(content) 不含 authorId（从 JWT 获取），
         // 删除请求体中多余的 authorId 字段
-        const result = await request<BackendCircleReplyView, { content: string }>({
+        const result = await request<BackendCircleReplyView, { content: string; mentionedUserIds?: number[] }>({
           url: `/circles/topics/${topicId}/replies`,
           method: "POST",
-          data: { content: content.trim() },
+          data: { content: content.trim(), mentionedUserIds },
         });
 
         const mappedResult = mapToReplyItem(result);

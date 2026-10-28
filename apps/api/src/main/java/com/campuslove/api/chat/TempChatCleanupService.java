@@ -58,6 +58,20 @@ public class TempChatCleanupService {
      */
     private final RedissonClient redissonClient;
 
+    /** 保留期清理依赖（2026-10-28）：字段注入保持既有构造器兼容。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.repository.TempChatMessageRepository tempChatMessageRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.media.MediaAssetService mediaAssetService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.media.MediaStorageService mediaStorageService;
+
+    /** 会话关闭后的宽限小时数（默认 24h；会话 24h + 宽限 ⇒ T+48h 删除）。 */
+    @org.springframework.beans.factory.annotation.Value("${app.temp-chat.grace-hours:24}")
+    private long graceHours = 24;
+
     public TempChatCleanupService(TempChatContactExchangeRepository contactExchangeRepository,
                                  TempChatSessionService sessionService,
                                  TempChatSessionRepository sessionRepository,
@@ -144,6 +158,94 @@ public class TempChatCleanupService {
                     log.debug("锁已被自动释放: scheduled:tempChatCleanup");
                 }
             }
+        }
+    }
+
+    /**
+     * 临时会话材料保留期清理（2026-10-28 强匿名 B）。
+     *
+     * <p>每小时 :30 执行：删除已过保留期（closesAt + 宽限）的会话消息与 TEMP_CHAT 媒体文件；
+     * hold_until 未到期的举报取证资产跳过。会话行保留为墓碑，不保留内容。</p>
+     */
+    @Scheduled(cron = "0 30 * * * *")
+    @Transactional
+    public void cleanupRetainedMaterials() {
+        boolean locked = false;
+        org.redisson.api.RLock lock = redissonClient.getLock("scheduled:tempChatMaterialCleanup");
+        try {
+            locked = lock.tryLock(0, 30, TimeUnit.SECONDS);
+            if (!locked) {
+                return;
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+        }
+        try {
+            LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
+            int assetsDeleted = 0;
+            if (mediaAssetService != null) {
+                for (com.campuslove.api.entity.MediaAsset asset : mediaAssetService.findExpiredTempAssets(now)) {
+                    if (asset.getHoldUntil() != null && asset.getHoldUntil().isAfter(now)) {
+                        continue;
+                    }
+                    if (deleteTempAsset(asset)) {
+                        assetsDeleted++;
+                    }
+                }
+            }
+            int messagesDeleted = 0;
+            if (tempChatMessageRepository != null) {
+                List<TempChatSession> sessions = sessionRepository.findByPhaseInAndClosesAtBefore(
+                        List.of(SessionPhase.closed, SessionPhase.expired),
+                        now.minusHours(graceHours));
+                for (TempChatSession session : sessions) {
+                    try {
+                        messagesDeleted += (int) tempChatMessageRepository.deleteBySessionId(session.getId());
+                        if (mediaAssetService != null) {
+                            for (com.campuslove.api.entity.MediaAsset asset
+                                    : mediaAssetService.findTempAssetsBySession(session.getId())) {
+                                if (asset.getHoldUntil() != null && asset.getHoldUntil().isAfter(now)) {
+                                    continue;
+                                }
+                                if (deleteTempAsset(asset)) {
+                                    assetsDeleted++;
+                                }
+                            }
+                        }
+                    } catch (RuntimeException e) {
+                        log.warn("清理临时会话材料失败: sessionUid={}, error={}",
+                                session.getSessionUid(), e.getMessage());
+                    }
+                }
+            }
+            if (assetsDeleted > 0 || messagesDeleted > 0) {
+                log.info("临时会话材料保留期清理完成: assets={}, messages={}",
+                        assetsDeleted, messagesDeleted);
+            }
+        } finally {
+            if (locked && lock.isHeldByCurrentThread()) {
+                try {
+                    lock.unlock();
+                } catch (IllegalMonitorStateException ignored) {
+                    log.debug("锁已被自动释放: scheduled:tempChatMaterialCleanup");
+                }
+            }
+        }
+    }
+
+    private boolean deleteTempAsset(com.campuslove.api.entity.MediaAsset asset) {
+        try {
+            if (mediaStorageService != null) {
+                mediaStorageService.delete(asset.getUrl());
+            }
+            if (mediaAssetService != null) {
+                mediaAssetService.markTempDeleted(asset);
+            }
+            return true;
+        } catch (RuntimeException e) {
+            log.warn("删除临时会话媒体失败: assetId={}, error={}", asset.getId(), e.getMessage());
+            return false;
         }
     }
 

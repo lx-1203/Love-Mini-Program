@@ -31,6 +31,19 @@ public interface MediaStorageService {
     UploadResult store(Long userId, MultipartFile file, String type);
 
     /**
+     * 存储临时会话媒体（2026-10-28 强匿名）：
+     * 落盘 {@code temp/{sessionUid}/...}，URL 不含 userId。
+     *
+     * @param sessionUid 临时会话 UID
+     * @param file       文件
+     * @param type       媒体类型
+     * @return 上传结果
+     */
+    default UploadResult storeTemp(String sessionUid, MultipartFile file, String type) {
+        throw new UnsupportedOperationException("temp storage not supported");
+    }
+
+    /**
      * 删除已存储的媒体文件。
      *
      * <p>用于用户删除照片墙、个人视频、背景图等场景。

@@ -293,10 +293,16 @@ function formatTopicTime(iso: string): string {
  * 按 §12.4 的合法形态之二处置：没有真相源的内容 real 档整条撤下、降级为不承诺，
  * 只在 mock 演示档保留；等后端补列后把 useMock() 分支换成读字段。
  */
-const circleMeta = ref<{ tags: string[]; announcement: string }>({ tags: [], announcement: "" });
-const pinnedNotice = computed<string>(() =>
-  useMock() ? t("circle.home.pinnedNotice") : circleMeta.value.announcement
-);
+const circleMeta = ref<{ tags: string[]; announcement: string; announcements: { id: number; content: string; isPinned: boolean }[] }>({
+  tags: [],
+  announcement: "",
+  announcements: [],
+});
+const pinnedNotice = computed<string>(() => {
+  if (useMock()) return t("circle.home.pinnedNotice");
+  if (circleMeta.value.announcement) return circleMeta.value.announcement;
+  return circleMeta.value.announcements[0]?.content ?? "";
+});
 
 /**
  * R11-L04-D05（P2 · 位置）：页签行吸顶态。

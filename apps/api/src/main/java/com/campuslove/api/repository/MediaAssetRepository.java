@@ -95,4 +95,11 @@ public interface MediaAssetRepository extends JpaRepository<MediaAsset, Long> {
                                     @Param("type") String type,
                                     @Param("campusName") String campusName,
                                     Pageable pageable);
+
+    /** 到期且未删除的临时会话媒体（清理任务扫描，2026-10-28）。 */
+    List<MediaAsset> findByCategoryAndExpiresAtBeforeAndDeletedAtIsNull(
+            String category, java.time.LocalDateTime cutoff);
+
+    /** 指定临时会话的未删除媒体（会话结束时批量清理）。 */
+    List<MediaAsset> findByTempSessionIdAndDeletedAtIsNull(Long tempSessionId);
 }

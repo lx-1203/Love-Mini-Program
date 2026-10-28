@@ -175,9 +175,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         Long subjectUserId;
         try {
             expiresAt = Long.parseLong(expiresRaw.trim());
-            subjectUserId = mediaSubjectUserIdFromPath(requestPath);
         } catch (NumberFormatException notNumeric) {
             return false;
+        }
+        try {
+            subjectUserId = mediaSubjectUserIdFromPath(requestPath);
+        } catch (NumberFormatException tempOrOther) {
+            subjectUserId = null;
+        }
+        // 临时会话图片（2026-10-28）：路径为 /api/v1/media/temp/{sessionUid}/...，
+        // 不含 userId；签名本身即能力凭据（签发时已校验会话双方），
+        // 认证主体用哨兵 0 区分「签名直读」与「媒体令牌读取」。
+        if (subjectUserId == null && requestPath.startsWith("/api/v1/media/temp/")) {
+            String remainder = requestPath.substring("/api/v1/media/temp/".length());
+            int slash = remainder.indexOf('/');
+            String sessionUid = slash > 0 ? remainder.substring(0, slash) : "";
+            if (sessionUid.matches("[A-Za-z0-9_-]{1,64}") && slash > 0
+                    && slash + 1 < remainder.length()) {
+                subjectUserId = 0L;
+            }
         }
         if (subjectUserId == null
                 || !mediaUrlSigner.verify(requestPath, expiresAt, signature)

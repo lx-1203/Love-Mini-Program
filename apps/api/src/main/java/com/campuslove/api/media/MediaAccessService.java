@@ -252,6 +252,41 @@ public class MediaAccessService {
     }
 
     /**
+     * 加载临时会话媒体（2026-10-28 强匿名）。
+     *
+     * <p>磁盘路径：{@code {storageRoot}/temp/{sessionUid}/{subPath}}；
+     * 不含 userId。授权（会话双方/过期判定）由调用方
+     * {@code TempChatMediaService} 在加载前完成，本方法只做路径安全与存在性校验。</p>
+     *
+     * @param sessionUid 临时会话 UID（仅允许字母数字下划线短横线）
+     * @param subPath    会话目录下的相对路径（{@code yyyyMM/uuid.ext}）
+     * @return 媒体文件
+     */
+    public MediaFile loadTempMedia(String sessionUid, String subPath) {
+        if (sessionUid == null || !sessionUid.matches("[A-Za-z0-9_-]{1,64}")) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "非法的临时会话标识");
+        }
+        validateSubPath(subPath);
+        Path root = Paths.get(storageRoot).toAbsolutePath().normalize();
+        Path target = root.resolve(Paths.get(TEMP_DIR, sessionUid, subPath))
+                .toAbsolutePath().normalize();
+        if (!target.startsWith(root)) {
+            LOGGER.error("临时媒体路径越界，拒绝访问: target={}, root={}", target, root);
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN,
+                    "路径越界，拒绝访问");
+        }
+        if (!Files.exists(target) || !Files.isRegularFile(target)) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND,
+                    "文件不存在");
+        }
+        return new MediaFile(new FileSystemResource(target), probeMediaType(target));
+    }
+
+    /** 临时会话媒体目录名（与 LocalMediaStorageService.storeTemp 落盘路径一致）。 */
+    private static final String TEMP_DIR = "temp";
+
+    /**
      * 媒体访问档案：一次解析同时给出「访问分类」与「读取档位」。
      *
      * <p>Controller 与 Service 共用同一实例，保证前置审计与强制校验口径一致，

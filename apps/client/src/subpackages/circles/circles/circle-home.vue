@@ -29,7 +29,7 @@ import { computed, getCurrentInstance, nextTick, ref, watch } from "vue";
 import { onLoad, onPageScroll, onReady, onShareAppMessage } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-import { useCircleStore, type CircleItem } from "../../../stores/circle";
+import { useCircleStore, type CircleItem, type CircleAnnouncementItem } from "../../../stores/circle";
 import { openAppPath } from "../../../utils/navigation";
 import { ROUTES } from "../../../constants/routes";
 import { IMAGE_PATHS } from "../../../config/images";
@@ -141,7 +141,11 @@ const coverImage = computed<string>(() => circleCoverFor(circle.value.name));
 const joined = computed(() => circle.value.isJoined);
 
 /** 圈子 meta（标签 + 公告），2026-10-28 起由后端 /circles/{id}/meta 下发。 */
-const circleMeta = ref<{ tags: string[]; announcement: string }>({ tags: [], announcement: "" });
+const circleMeta = ref<{ tags: string[]; announcement: string; announcements: CircleAnnouncementItem[] }>({
+  tags: [],
+  announcement: "",
+  announcements: [],
+});
 
 /** 圈标签：mock 保留演示标签，real 用后端 meta。 */
 const circleTags = computed<string[]>(() =>
@@ -153,9 +157,22 @@ const circleTags = computed<string[]>(() =>
  *  MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002（2026-09-27）：演示文案不再
  *  写死中文字面量，改走本页其余文案同一套 useI18n().t()（circle.home.* 命名，
  *  与相邻 circle.home.pinnedBadge 成对）；文案内容原样入词条，视觉零变化。 */
-const pinnedNotice = computed<string>(() =>
-  useMock() ? t("circle.home.pinnedNotice") : circleMeta.value.announcement
-);
+const pinnedNotice = computed<string>(() => {
+  if (useMock()) return t("circle.home.pinnedNotice");
+  if (circleMeta.value.announcement) return circleMeta.value.announcement;
+  const first = circleMeta.value.announcements[0];
+  return first ? first.content : "";
+});
+
+/** 全部已发布公告（2026-10-28 表化；超过 1 条时置顶卡可展开）。 */
+const announcements = computed(() => circleMeta.value.announcements);
+const announcementSheetOpen = ref(false);
+
+function openAnnouncementSheet(): void {
+  if (announcements.value.length > 1) {
+    announcementSheetOpen.value = true;
+  }
+}
 
 /** 动态 feed 项（2026-09-12：真实数据来自 circleStore.fetchTopics，mock 仅兜底） */
 interface FeedItem {
@@ -622,9 +639,10 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
     </view>
 
     <!-- 5. 置顶公告（real 模式无公告数据时整条不渲染，避免只剩空绿带） -->
-    <view v-if="pinnedNotice" class="pinned-card">
+    <view v-if="pinnedNotice" class="pinned-card" @tap="openAnnouncementSheet">
       <text class="pinned-badge">{{ t("circle.home.pinnedBadge") }}</text>
       <text class="pinned-text">{{ pinnedNotice }}</text>
+      <text v-if="announcements.length > 1" class="pinned-more">{{ t("circle.home.viewAllAnnouncements") }}</text>
       <image class="pinned-arrow" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.ARROW_RIGHT)" mode="aspectFit" />
     </view>
 
@@ -720,6 +738,22 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
     <!-- 加载态（store 拉取中且无数据） -->
     <view v-if="loading && circles.length === 0" class="loading-tip">
       <SkeletonBlock variant="list" :rows="3" :label="t('common.loading')" />
+    </view>
+
+    <!-- 全部公告（2026-10-28 表化；超过 1 条时置顶卡可展开） -->
+    <view v-if="announcementSheetOpen" class="announcement-mask" @tap="announcementSheetOpen = false">
+      <view class="announcement-sheet" @tap.stop>
+        <text class="announcement-sheet__title">{{ t("circle.home.announcementsTitle") }}</text>
+        <scroll-view scroll-y class="announcement-sheet__list">
+          <view v-for="item in announcements" :key="item.id" class="announcement-item">
+            <text v-if="item.title" class="announcement-item__title">{{ item.title }}</text>
+            <text class="announcement-item__content">{{ item.content }}</text>
+          </view>
+        </scroll-view>
+        <view class="announcement-sheet__close" @tap="announcementSheetOpen = false">
+          <text class="announcement-sheet__close-text">{{ t("common.close") }}</text>
+        </view>
+      </view>
     </view>
   </view>
 </template>
@@ -1179,6 +1213,73 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   width: 28rpx;
   height: 28rpx;
   flex-shrink: 0;
+}
+
+.pinned-more {
+  flex-shrink: 0;
+  font-size: 22rpx;
+  color: var(--c-brand-600);
+}
+
+.announcement-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+}
+
+.announcement-sheet {
+  width: 100%;
+  max-height: 70vh;
+  background: #ffffff;
+  border-radius: 28rpx 28rpx 0 0;
+  padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+}
+
+.announcement-sheet__title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--c-text-primary);
+  margin-bottom: 20rpx;
+}
+
+.announcement-sheet__list {
+  flex: 1;
+  max-height: 52vh;
+}
+
+.announcement-item {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--c-border-light);
+}
+
+.announcement-item__title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--c-text-primary);
+  margin-bottom: 8rpx;
+}
+
+.announcement-item__content {
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: var(--c-text-secondary);
+}
+
+.announcement-sheet__close {
+  margin-top: 24rpx;
+  padding: 20rpx;
+  text-align: center;
+}
+
+.announcement-sheet__close-text {
+  font-size: 28rpx;
+  color: var(--c-brand-600);
 }
 
 /* ===== 6. 动态 feed ===== */

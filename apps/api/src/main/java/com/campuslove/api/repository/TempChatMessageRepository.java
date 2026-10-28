@@ -51,4 +51,7 @@ public interface TempChatMessageRepository extends JpaRepository<TempChatMessage
      * @return 消息数量
      */
     long countBySessionId(Long sessionId);
+
+    /** 删除指定会话的全部消息（保留期到期清理，2026-10-28）。 */
+    long deleteBySessionId(Long sessionId);
 }

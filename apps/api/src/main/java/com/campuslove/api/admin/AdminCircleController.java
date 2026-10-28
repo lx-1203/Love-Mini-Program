@@ -71,6 +71,10 @@ public class AdminCircleController {
     private final UserRepository userRepository;
     private final AdminDataScope adminDataScope;
 
+    /** 话题审核通过后发送 @提及通知（2026-10-28）。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.content.ContentMentionService contentMentionService;
+
     public AdminCircleController(
             InterestCircleRepository interestCircleRepository,
             CircleTopicRepository circleTopicRepository,
@@ -427,6 +431,13 @@ public class AdminCircleController {
         topic.setAuditedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         circleTopicRepository.save(topic);
+
+        // 审核通过后才通知被 @ 的圈成员（与帖子审核钩子同模式）
+        if (newStatus == AuditStatus.approved && contentMentionService != null) {
+            contentMentionService.notifyMentions(
+                    com.campuslove.api.entity.ContentMention.TARGET_TOPIC,
+                    topic.getId(), topic.getAuthorId(), "topic", topic.getId());
+        }
 
         Map<String, Object> body = new HashMap<>();
         body.put("id", topic.getId());

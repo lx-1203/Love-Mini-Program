@@ -60,4 +60,8 @@ public interface CircleMembershipRepository extends JpaRepository<CircleMembersh
      * @return 成员关系列表
      */
     List<CircleMembership> findByUserIdAndCircleId(Long userId, Long circleId);
+
+    /** 指定圈子的全部成员用户 ID（提及候选/同圈校验，2026-10-28）。 */
+    @Query("SELECT m.userId FROM CircleMembership m WHERE m.circle.id = :circleId")
+    List<Long> findUserIdsByCircleId(@Param("circleId") Long circleId);
 }

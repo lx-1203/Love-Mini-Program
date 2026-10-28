@@ -43,6 +43,9 @@ public class MediaUrlSigner {
     /** 签名有效期（秒）：15 分钟。够覆盖一次会话内的图片浏览，又限制 URL 外泄后的可用窗口。 */
     public static final long TTL_SECONDS = 15L * 60;
 
+    /** 临时会话图片签名有效期（秒）：5 分钟（2026-10-28 强匿名，缩短泄露窗口）。 */
+    public static final long TEMP_TTL_SECONDS = 5L * 60;
+
     /** 域分隔标签：防止同一底层密钥被当成其他用途的 HMAC 密钥复用。 */
     private static final String DOMAIN_TAG = "campus-love:media-url:v1|";
 
@@ -104,6 +107,11 @@ public class MediaUrlSigner {
     /** 该路径此刻的过期时刻（now + {@link #TTL_SECONDS}，epoch 秒）。 */
     public long expiresAtNow() {
         return Instant.now().getEpochSecond() + TTL_SECONDS;
+    }
+
+    /** 指定 TTL 的过期时刻（临时会话图片用 {@link #TEMP_TTL_SECONDS}）。 */
+    public long expiresAtNowWithTtl(long ttlSeconds) {
+        return Instant.now().getEpochSecond() + ttlSeconds;
     }
 
     /** 拼出带签名的媒体 URL（不含站点前缀，供客户端直接当 src 用）。 */

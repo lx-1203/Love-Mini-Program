@@ -59,6 +59,12 @@ public interface CircleService {
      */
     CircleTopicView createTopic(Long circleId, Long authorId, String title, String content, List<String> images);
 
+    /** 带 @提及的发布话题（默认忽略 mentions，兼容既有实现）。 */
+    default CircleTopicView createTopic(Long circleId, Long authorId, String title, String content,
+                                        List<String> images, List<Long> mentionedUserIds) {
+        return createTopic(circleId, authorId, title, content, images);
+    }
+
     /**
      * 获取话题详情（含作者信息）。
      *
@@ -76,6 +82,12 @@ public interface CircleService {
      * @return 回复视图
      */
     CircleReplyView replyToTopic(Long topicId, Long authorId, String content);
+
+    /** 带 @提及的回复话题（默认忽略 mentions，兼容既有实现）。 */
+    default CircleReplyView replyToTopic(Long topicId, Long authorId, String content,
+                                         List<Long> mentionedUserIds) {
+        return replyToTopic(topicId, authorId, content);
+    }
 
     /**
      * 获取指定话题的回复列表（分页）。
@@ -110,6 +122,17 @@ public interface CircleService {
 
     default CircleMetaView getCircleMeta(Long circleId) {
         throw new UnsupportedOperationException("getCircleMeta not implemented");
+    }
+
+    /** 圈子公告列表（仅已发布；置顶优先、发布时间倒序）。 */
+    default List<CircleAnnouncementView> getAnnouncements(Long circleId, int limit) {
+        return List.of();
+    }
+
+    /** 可 @ 的圈成员（用于话题/回复的提及选择器；排除自己），默认空。 */
+    default List<CircleMentionCandidateView> getMentionCandidates(Long circleId, Long viewerId,
+                                                                 String keyword, int limit) {
+        return List.of();
     }
 
     default TopicLikeView likeTopic(Long topicId, Long userId) {

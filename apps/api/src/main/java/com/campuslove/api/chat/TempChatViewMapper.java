@@ -70,7 +70,9 @@ public class TempChatViewMapper {
                                              boolean sessionExpired) {
         Long partnerId = session.getUserAId().equals(currentUserId)
                 ? session.getUserBId() : session.getUserAId();
-        PartnerInfo partnerInfo = getPartnerInfo(partnerId);
+        ContactExchangeStateView contactExchange = getContactExchangeView(session);
+        boolean revealed = "completed".equals(contactExchange.status());
+        PartnerInfo partnerInfo = getPartnerInfo(partnerId, revealed);
 
         List<ChatMessageView> messages;
         if (session.getPhase() == SessionPhase.expired || sessionExpired) {
@@ -83,11 +85,9 @@ public class TempChatViewMapper {
             messages = messageList.stream().map(m -> toMessageView(m, viewerIsUserB)).toList();
         }
 
-        ContactExchangeStateView contactExchange = getContactExchangeView(session);
-
         return new TempChatSessionView(
                 session.getSessionUid(),
-                String.valueOf(partnerId),
+                displayPartnerId(session, partnerId, revealed),
                 partnerInfo.name(),
                 partnerInfo.headline(),
                 partnerInfo.availability(),
@@ -105,17 +105,17 @@ public class TempChatViewMapper {
     public ChatSessionSummaryView toSummary(TempChatSession session, Long currentUserId) {
         Long partnerId = session.getUserAId().equals(currentUserId)
                 ? session.getUserBId() : session.getUserAId();
-        PartnerInfo partnerInfo = getPartnerInfo(partnerId);
+        String contactExchangeStatus = getContactExchangeStatus(session);
+        boolean revealed = "completed".equals(contactExchangeStatus);
+        PartnerInfo partnerInfo = getPartnerInfo(partnerId, revealed);
 
         int unreadCount = session.getUserAId().equals(currentUserId)
                 ? session.getUserAUnreadCount()
                 : session.getUserBUnreadCount();
 
-        String contactExchangeStatus = getContactExchangeStatus(session);
-
         return new ChatSessionSummaryView(
                 session.getSessionUid(),
-                String.valueOf(partnerId),
+                displayPartnerId(session, partnerId, revealed),
                 partnerInfo.name(),
                 partnerInfo.headline(),
                 partnerInfo.availability(),
@@ -214,21 +214,23 @@ public class TempChatViewMapper {
                                             Map<Long, PartnerInfo> partnerInfoMap) {
         Long partnerId = session.getUserAId().equals(currentUserId)
                 ? session.getUserBId() : session.getUserAId();
+        String contactExchangeStatus = getContactExchangeStatus(session);
+        boolean revealed = "completed".equals(contactExchangeStatus);
         PartnerInfo partnerInfo = partnerInfoMap.get(partnerId);
         if (partnerInfo == null) {
             // 兜底：Map 缺失时单查（理论不发生）
-            partnerInfo = getPartnerInfo(partnerId);
+            partnerInfo = getPartnerInfo(partnerId, revealed);
+        } else if (!revealed) {
+            partnerInfo = anonymousPartnerInfo(partnerId);
         }
 
         int unreadCount = session.getUserAId().equals(currentUserId)
                 ? session.getUserAUnreadCount()
                 : session.getUserBUnreadCount();
 
-        String contactExchangeStatus = getContactExchangeStatus(session);
-
         return new ChatSessionSummaryView(
                 session.getSessionUid(),
-                String.valueOf(partnerId),
+                displayPartnerId(session, partnerId, revealed),
                 partnerInfo.name(),
                 partnerInfo.headline(),
                 partnerInfo.availability(),
@@ -243,8 +245,11 @@ public class TempChatViewMapper {
         );
     }
 
-    /** 获取对方用户信息（昵称、简介、可用时间）。 */
-    private PartnerInfo getPartnerInfo(Long partnerId) {
+    /** 获取对方用户信息（昵称、简介、可用时间）；未揭示身份时返回伪名。 */
+    private PartnerInfo getPartnerInfo(Long partnerId, boolean revealed) {
+        if (!revealed) {
+            return anonymousPartnerInfo(partnerId);
+        }
         User partner = userRepository.findById(partnerId).orElse(null);
         UserBasicProfile basicProfile = userBasicProfileRepository.findByUserId(partnerId).orElse(null);
         UserCampusProfile campusProfile = userCampusProfileRepository.findByUserId(partnerId).orElse(null);
@@ -254,6 +259,18 @@ public class TempChatViewMapper {
         String headline = buildHeadline(basicProfile, campusProfile);
         String availability = buildAvailability(scheduleProfile);
         return new PartnerInfo(name, headline, availability);
+    }
+
+    /** 会话内对方标识：未完成联系交换前不暴露真实 userId（强匿名 B）。 */
+    private String displayPartnerId(TempChatSession session, Long partnerId, boolean revealed) {
+        return revealed ? String.valueOf(partnerId) : "anon-" + session.getSessionUid();
+    }
+
+    /** 稳定伪名 + 空简介/空可用时间：不暴露真名、学校专业与作息。 */
+    private PartnerInfo anonymousPartnerInfo(Long partnerId) {
+        String[] pool = {"海盐", "松果", "青柠", "晚风", "星野", "山茶", "云朵", "小岛", "月见", "橘子"};
+        int index = partnerId == null ? 0 : Math.floorMod(partnerId.hashCode(), pool.length);
+        return new PartnerInfo("匿名·" + pool[index], "", "");
     }
 
     /** 构建对方简介文本。 */

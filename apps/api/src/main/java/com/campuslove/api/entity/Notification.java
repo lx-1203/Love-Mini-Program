@@ -56,12 +56,14 @@ public class Notification {
         /** R4-00375：取消匹配通知，与 match（互相喜欢）区分语义 */
         unmatch,
         /** 2026-10-28：帖子 @提及 */
-        mention
+        mention,
+        /** 2026-10-28：话题被点赞（与帖子 like 区分文案/路由） */
+        topic_like
     }
 
     /** 关联实体类型枚举 */
     public enum ReferenceType {
-        post, comment, user
+        post, comment, user, topic
     }
 
     @Id

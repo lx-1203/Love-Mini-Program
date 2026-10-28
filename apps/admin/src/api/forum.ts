@@ -645,3 +645,73 @@ export function listComments(query: CommentListQuery = {}): Promise<AdminPageVie
 export function deleteComment(id: number): Promise<IdSuccessResponse> {
   return del<IdSuccessResponse>(`/v1/admin/comments/${id}`);
 }
+
+/* ===== 圈子公告（2026-10-28 表化） ===== */
+
+/** 后台圈子公告视图（含草稿/下线）。 */
+export interface CircleAnnouncementView {
+  id: number;
+  circleId: number;
+  title: string | null;
+  content: string;
+  isPinned: boolean;
+  status: "draft" | "published" | "offline";
+  authorId: number | null;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 公告新增/编辑请求体（编辑时字段可空表示不修改）。 */
+export interface CircleAnnouncementForm {
+  title?: string;
+  content?: string;
+  pinned?: boolean;
+}
+
+/** 公告列表（含草稿/下线；GET /v1/admin/forum/circles/{circleId}/announcements）。 */
+export function listCircleAnnouncements(
+  circleId: number,
+  page = 1,
+  pageSize = 20
+): Promise<AdminPageView<CircleAnnouncementView>> {
+  return get<AdminPageView<CircleAnnouncementView>>(
+    `/v1/admin/forum/circles/${circleId}/announcements`,
+    { page, pageSize }
+  );
+}
+
+export function createCircleAnnouncement(
+  circleId: number,
+  req: CircleAnnouncementForm
+): Promise<CircleAnnouncementView> {
+  return post<CircleAnnouncementView>(`/v1/admin/forum/circles/${circleId}/announcements`, req);
+}
+
+export function updateCircleAnnouncement(
+  circleId: number,
+  id: number,
+  req: CircleAnnouncementForm
+): Promise<CircleAnnouncementView> {
+  return put<CircleAnnouncementView>(`/v1/admin/forum/circles/${circleId}/announcements/${id}`, req);
+}
+
+export function publishCircleAnnouncement(circleId: number, id: number): Promise<CircleAnnouncementView> {
+  return post<CircleAnnouncementView>(`/v1/admin/forum/circles/${circleId}/announcements/${id}/publish`);
+}
+
+export function offlineCircleAnnouncement(circleId: number, id: number): Promise<CircleAnnouncementView> {
+  return post<CircleAnnouncementView>(`/v1/admin/forum/circles/${circleId}/announcements/${id}/offline`);
+}
+
+export function pinCircleAnnouncement(circleId: number, id: number): Promise<CircleAnnouncementView> {
+  return post<CircleAnnouncementView>(`/v1/admin/forum/circles/${circleId}/announcements/${id}/pin`);
+}
+
+export function unpinCircleAnnouncement(circleId: number, id: number): Promise<CircleAnnouncementView> {
+  return post<CircleAnnouncementView>(`/v1/admin/forum/circles/${circleId}/announcements/${id}/unpin`);
+}
+
+export function deleteCircleAnnouncement(circleId: number, id: number): Promise<void> {
+  return del<void>(`/v1/admin/forum/circles/${circleId}/announcements/${id}`);
+}

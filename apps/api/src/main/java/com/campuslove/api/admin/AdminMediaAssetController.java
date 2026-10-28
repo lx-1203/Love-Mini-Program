@@ -64,6 +64,13 @@ public class AdminMediaAssetController {
     private final AdminDataScope adminDataScope;
     private final MediaAssetService mediaAssetService;
 
+    /** 临时会话媒体取证（2026-10-28）：字段注入保持既有构造器兼容。 */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.repository.TempChatSessionRepository tempChatSessionRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.media.MediaAccessService mediaAccessService;
+
     public AdminMediaAssetController(
             MediaAssetRepository mediaAssetRepository,
             UserRepository userRepository,
@@ -194,6 +201,81 @@ public class AdminMediaAssetController {
         body.put("auditStatus", updated.getAuditStatus());
         body.put("auditRemark", updated.getAuditRemark());
         return ResponseEntity.ok(body);
+    }
+
+    /**
+     * 举报保留临时会话媒体（2026-10-28）：hold_until 之前清理任务不删文件。
+     * 写权限收紧到 ADMIN/SUPER_ADMIN（类级含 AUDITOR）。
+     */
+    @PostMapping("/{id}/hold")
+    @Transactional
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    @Auditable(value = AuditOperation.HANDLE_REPORT, targetType = "MEDIA_ASSET",
+            description = "管理员举报保留临时会话媒体")
+    public ResponseEntity<Map<String, Object>> holdTempMedia(
+            @PathVariable("id") @Positive Long id,
+            @Valid @RequestBody AdminTempMediaHoldRequest req) {
+        Long operatorId = SecurityUtils.getCurrentUserId();
+        Optional<MediaAsset> assetOpt = mediaAssetRepository.findById(id);
+        if (assetOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        MediaAsset asset = assetOpt.get();
+        assertCampusAccess(asset);
+        String sessionUid = resolveTempSessionUid(asset);
+        if (sessionUid == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "仅 TEMP_CHAT 媒体可举报保留"));
+        }
+        boolean held = mediaAssetService.holdTempAsset(
+                id, sessionUid, req.reason(), req.days() == null ? 30 : req.days(), operatorId);
+        if (!held) {
+            return ResponseEntity.badRequest().body(Map.of("error", "资产不存在或已删除"));
+        }
+        return ResponseEntity.ok(Map.of(
+                "id", id,
+                "held", true,
+                "holdUntil", mediaAssetRepository.findById(id)
+                        .map(MediaAsset::getHoldUntil).map(Object::toString).orElse("")));
+    }
+
+    /**
+     * 后台取证读取被举报保留的临时会话图片（仅 ADMIN/SUPER_ADMIN，no-store）。
+     */
+    @GetMapping("/{id}/content")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<org.springframework.core.io.Resource> readHeldTempMedia(
+            @PathVariable("id") @Positive Long id) {
+        SecurityUtils.getCurrentUserId();
+        Optional<MediaAsset> assetOpt = mediaAssetRepository.findById(id);
+        if (assetOpt.isEmpty() || mediaAccessService == null) {
+            return ResponseEntity.notFound().build();
+        }
+        MediaAsset asset = assetOpt.get();
+        assertCampusAccess(asset);
+        if (!"TEMP_CHAT".equals(asset.getCategory()) || asset.getHoldUntil() == null
+                || asset.getDeletedAt() != null) {
+            return ResponseEntity.notFound().build();
+        }
+        String sessionUid = resolveTempSessionUid(asset);
+        if (sessionUid == null) {
+            return ResponseEntity.notFound().build();
+        }
+        String subPath = asset.getUrl().substring(("/api/v1/media/temp/" + sessionUid + "/").length());
+        com.campuslove.api.media.MediaAccessService.MediaFile file =
+                mediaAccessService.loadTempMedia(sessionUid, subPath);
+        return ResponseEntity.ok()
+                .contentType(file.getMediaType())
+                .header("Cache-Control", "private, no-store, no-cache, must-revalidate")
+                .body(file.getResource());
+    }
+
+    private String resolveTempSessionUid(MediaAsset asset) {
+        if (tempChatSessionRepository == null || asset.getTempSessionId() == null) {
+            return null;
+        }
+        return tempChatSessionRepository.findById(asset.getTempSessionId())
+                .map(com.campuslove.api.entity.TempChatSession::getSessionUid)
+                .orElse(null);
     }
 
     // ---- 视图转换 ----
@@ -355,5 +437,12 @@ record AdminMediaAssetDetailView(
         LocalDateTime auditedAt,
         LocalDateTime createdAt,
         String campusName
+) {
+}
+
+/** 临时会话媒体举报保留请求（2026-10-28）。 */
+record AdminTempMediaHoldRequest(
+        @jakarta.validation.constraints.Size(max = 255) String reason,
+        @jakarta.validation.constraints.Min(1) @jakarta.validation.constraints.Max(90) Integer days
 ) {
 }

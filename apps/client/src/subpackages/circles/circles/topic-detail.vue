@@ -10,16 +10,18 @@ import { ref, computed } from "vue";
 import { onLoad, onShareAppMessage } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-import { useCircleStore, formatCircleTime, type ReplyItem } from "../../../stores/circle";
+import { useCircleStore, formatCircleTime, type ReplyItem, type CircleMentionCandidate } from "../../../stores/circle";
 import { ROUTES } from "../../../constants/routes";
 import { useSessionStore } from "../../../stores/session";
 import { useReportStore } from "../../../stores/report";
 import { openAppPath } from "../../../utils/navigation";
+import { useMock } from "../../../stores/helpers/use-mock";
 // B4 认证门控：打招呼（发起私信）为互动操作，需已通过实名认证
 import { ensureCertified } from "../../../guards/campus-gate";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../../utils/media";
 import EmptyState from "../../../components/common/EmptyState.vue";
+import MentionPickerSheet from "../../../components/circle/MentionPickerSheet.vue";
 // R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 const { styleVars: menuStyleVars } = useMenuButtonRect();
@@ -37,6 +39,42 @@ const replyContent = ref("");
 const isSubmitting = ref(false);
 /** 话题 ID */
 const topicId = ref("");
+
+/* ===== 2026-10-28：回复 @提及同圈成员 ===== */
+const mentionPickerOpen = ref(false);
+const mentionLoading = ref(false);
+const mentionCandidates = ref<CircleMentionCandidate[]>([]);
+const mentionedUsers = ref<CircleMentionCandidate[]>([]);
+const canMention = computed(() => {
+  const circleId = currentTopic.value?.circleId;
+  return !useMock() && !!circleId && /^\d+$/.test(String(circleId));
+});
+
+async function openMentionPicker(): Promise<void> {
+  const circleId = currentTopic.value?.circleId;
+  if (!canMention.value || !circleId || mentionLoading.value) return;
+  mentionPickerOpen.value = true;
+  mentionLoading.value = true;
+  try {
+    mentionCandidates.value = await circleStore.fetchMentionCandidates(String(circleId));
+  } catch (_e) {
+    uni.showToast({ title: t("circle.mentionLoadFailed"), icon: "none" });
+  } finally {
+    mentionLoading.value = false;
+  }
+}
+
+function confirmMentions(ids: number[]): void {
+  mentionedUsers.value = mentionCandidates.value.filter((c) => ids.includes(c.userId));
+  mentionPickerOpen.value = false;
+  for (const user of mentionedUsers.value) {
+    const token = `@${user.nickname}`;
+    if (!replyContent.value.includes(token)) {
+      const separator = replyContent.value.trim().length > 0 ? " " : "";
+      replyContent.value = `${replyContent.value}${separator}${token} `;
+    }
+  }
+}
 
 /* ========== R4-00102：回复分页加载更多 ========== */
 /** 当前已加载的回复页码（从第 1 页开始，store.fetchReplies 支持 page 追加） */
@@ -87,8 +125,13 @@ async function submitReply() {
 
   isSubmitting.value = true;
   try {
-    await circleStore.replyToTopic(topicId.value, replyContent.value.trim());
+    await circleStore.replyToTopic(
+      topicId.value,
+      replyContent.value.trim(),
+      mentionedUsers.value.map((u) => u.userId)
+    );
     replyContent.value = "";
+    mentionedUsers.value = [];
     uni.showToast({ title: t("circle.topicDetailReplySuccess"), icon: "success" });
   } catch (_e) {
     uni.showToast({
@@ -438,6 +481,9 @@ onShareAppMessage(() => {
 
     <!-- 底部回复栏 -->
     <view v-if="currentTopic" class="detail-footer">
+      <view v-if="canMention" class="reply-mention press-feedback" hover-class="press-feedback--active" hover-stay-time="120" @tap="openMentionPicker">
+        <text class="reply-mention__icon">@</text>
+      </view>
       <view class="reply-input-wrap">
         <input
   cursor-spacing="20"
@@ -458,6 +504,15 @@ onShareAppMessage(() => {
         <text class="reply-btn__text">{{ isSubmitting ? t("circle.topicDetailReplySending") : t("circle.topicDetailReplySend") }}</text>
       </view>
     </view>
+
+    <MentionPickerSheet
+      :visible="mentionPickerOpen"
+      :candidates="mentionCandidates"
+      :loading="mentionLoading"
+      :selected-ids="mentionedUsers.map((u) => u.userId)"
+      @close="mentionPickerOpen = false"
+      @confirm="confirmMentions"
+    />
   </view>
 </template>
 
@@ -910,6 +965,23 @@ onShareAppMessage(() => {
 
 .reply-input-wrap {
   flex: 1;
+}
+
+.reply-mention {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-brand-50);
+  flex-shrink: 0;
+}
+
+.reply-mention__icon {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--c-brand-700);
 }
 
 .reply-input {

@@ -10,7 +10,7 @@ import { useI18n } from "vue-i18n";
 // （mock 档留包内 /static、real 档按 cdn-buckets 出后端 app-assets URL、/uploads/** 补鉴权 token）
 // MP-R7-REALNAME-001：本地临时路径判定统一走 isUploadedMediaUrl（DevTools http://tmp/ 误判修复）
 import { resolveMediaUrl, isUploadedMediaUrl } from "../../../utils/media";
-import { useCircleStore } from "../../../stores/circle";
+import { useCircleStore, type CircleMentionCandidate } from "../../../stores/circle";
 import { useVillageStore } from "../../../stores/village";
 import { useActivityStore, type ActivityItem } from "../../../stores/activity";
 // 图片上传链路（review #2 / R4-00071）：真实模式下需先上传拿 URL 再提交，mock 模式保留本地路径
@@ -28,6 +28,7 @@ import { ROUTES } from "../../../constants/routes";
 import { openAppPath } from "../../../utils/navigation";
 import { IMAGE_PATHS } from "../../../config/images";
 import ActivityCard from "../../../components/village/ActivityCard.vue";
+import MentionPickerSheet from "../../../components/circle/MentionPickerSheet.vue";
 import { designTokens } from "../../../theme/tokens";
 // R4-00105：标题长度对齐后端校验（帖子模式 5-30 字），不再用 50 导致后端拒绝
 import { POST_TITLE_MAX_LENGTH, POST_MAX_LENGTH } from "../../../constants/village";
@@ -58,6 +59,40 @@ const content = ref("");
 const images = ref<string[]>([]);
 /** 当前兴趣圈 ID */
 const circleId = ref("");
+
+/* ===== 2026-10-28：@提及同圈成员（话题） ===== */
+const mentionPickerOpen = ref(false);
+const mentionLoading = ref(false);
+const mentionCandidates = ref<CircleMentionCandidate[]>([]);
+const mentionedUsers = ref<CircleMentionCandidate[]>([]);
+/** 仅 real 档且从圈内入口进入（数字圈 ID）时可用；后端只接受同圈成员 */
+const canMention = computed(() => !useMock() && /^\d+$/.test(circleId.value));
+
+async function openMentionPicker(): Promise<void> {
+  if (!canMention.value || mentionLoading.value) return;
+  mentionPickerOpen.value = true;
+  mentionLoading.value = true;
+  try {
+    mentionCandidates.value = await circleStore.fetchMentionCandidates(circleId.value);
+  } catch (_e) {
+    uni.showToast({ title: t("circle.mentionLoadFailed"), icon: "none" });
+  } finally {
+    mentionLoading.value = false;
+  }
+}
+
+/** 确认选择：记录被提及人，并把 @昵称 插入正文（纯文本展示）。 */
+function confirmMentions(ids: number[]): void {
+  mentionedUsers.value = mentionCandidates.value.filter((c) => ids.includes(c.userId));
+  mentionPickerOpen.value = false;
+  for (const user of mentionedUsers.value) {
+    const token = `@${user.nickname}`;
+    if (!content.value.includes(token)) {
+      const separator = content.value.trim().length > 0 ? " " : "";
+      content.value = `${content.value}${separator}${token} `;
+    }
+  }
+}
 
 /* ========== Task B5：发帖编辑页增强 ========== */
 /** 发布目标（校园圈 / 兴趣圈） */
@@ -431,6 +466,7 @@ async function submitTopic() {
       images: submitImages,
       tags: tagTexts,
       favorite: favoriteEnabled.value,
+      mentionedUserIds: mentionedUsers.value.map((u) => u.userId),
     });
 
     uni.showToast({ title: t("circle.postTopicPublishSuccess"), icon: "success" });
@@ -547,6 +583,13 @@ onLoad((query) => {
         <view class="content-count" :class="{ 'content-count--over': isOverLimit }">
           <text>{{ currentLength }}/{{ MAX_LENGTH }}</text>
         </view>
+      </view>
+
+      <!-- 2026-10-28：@提及同圈成员（仅 real 档圈内入口可用；后端审核通过后通知） -->
+      <view v-if="canMention" class="mention-entry" @tap="openMentionPicker">
+        <text class="mention-entry__icon">@</text>
+        <text class="mention-entry__text">{{ t("circle.mentionEntry") }}</text>
+        <text v-if="mentionedUsers.length > 0" class="mention-entry__count">{{ mentionedUsers.length }}</text>
       </view>
 
       <!-- ===== 发布到圈子选择器（Task B5） =====
@@ -765,6 +808,15 @@ onLoad((query) => {
         </scroll-view>
       </view>
     </view>
+
+    <MentionPickerSheet
+      :visible="mentionPickerOpen"
+      :candidates="mentionCandidates"
+      :loading="mentionLoading"
+      :selected-ids="mentionedUsers.map((u) => u.userId)"
+      @close="mentionPickerOpen = false"
+      @confirm="confirmMentions"
+    />
   </view>
 </template>
 
@@ -945,6 +997,38 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .content-count--over {
   color: $error;
+}
+
+/* ===== 2026-10-28：@提及入口 ===== */
+.mention-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  margin: 0 0 20rpx;
+  padding: 10rpx 20rpx;
+  border-radius: 999rpx;
+  background: var(--c-brand-50);
+}
+
+.mention-entry__icon {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--c-brand-700);
+}
+
+.mention-entry__text {
+  font-size: 24rpx;
+  color: var(--c-brand-700);
+}
+
+.mention-entry__count {
+  min-width: 32rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #ffffff;
+  background: var(--c-brand-600);
+  border-radius: 999rpx;
+  padding: 0 8rpx;
 }
 
 /* ========== Task B5：发布到圈子选择器 ========== */

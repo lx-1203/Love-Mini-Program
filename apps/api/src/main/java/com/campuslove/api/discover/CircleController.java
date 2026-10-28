@@ -108,6 +108,32 @@ public class CircleController {
   }
 
   /**
+   * 获取圈子公告（已发布，置顶优先）。
+   * GET /api/v1/circles/{id}/announcements?limit=5
+   */
+  @GetMapping("/{id}/announcements")
+  public ApiResponse<List<CircleAnnouncementView>> getAnnouncements(
+      @PathVariable("id") @Positive Long circleId,
+      @RequestParam(name = "limit", required = false, defaultValue = "5")
+      @Min(1) @Max(20) int limit) {
+    return ApiResponse.ok(circleService.getAnnouncements(circleId, limit));
+  }
+
+  /**
+   * 获取可 @ 的同圈成员（话题/回复提及选择器）。
+   * GET /api/v1/circles/{id}/mention-candidates?keyword=&limit=50
+   */
+  @GetMapping("/{id}/mention-candidates")
+  public ApiResponse<List<CircleMentionCandidateView>> getMentionCandidates(
+      @PathVariable("id") @Positive Long circleId,
+      @RequestParam(name = "keyword", required = false) String keyword,
+      @RequestParam(name = "limit", required = false, defaultValue = "50")
+      @Min(1) @Max(100) int limit) {
+    return ApiResponse.ok(circleService.getMentionCandidates(
+        circleId, SecurityUtils.getCurrentUserId(), keyword, limit));
+  }
+
+  /**
    * 点赞话题。
    * POST /api/v1/circles/topics/{id}/like
    */
@@ -143,7 +169,7 @@ public class CircleController {
       @Valid @RequestBody CreateTopicRequest request) {
     Long authorId = SecurityUtils.getCurrentUserId();
     return ApiResponse.ok(circleService.createTopic(circleId, authorId, request.title(),
-        request.content(), request.images()));
+        request.content(), request.images(), request.mentionedUserIds()));
   }
 
   /**
@@ -185,7 +211,8 @@ public class CircleController {
       @PathVariable("id") @Positive Long topicId,
       @Valid @RequestBody CreateReplyRequest request) {
     Long authorId = SecurityUtils.getCurrentUserId();
-    return ApiResponse.ok(circleService.replyToTopic(topicId, authorId, request.content()));
+    return ApiResponse.ok(circleService.replyToTopic(topicId, authorId, request.content(),
+        request.mentionedUserIds()));
   }
 
   // ---------- 精选话题 ----------
@@ -275,8 +302,31 @@ record CircleTopicView(
     }
 }
 
-/** 圈子 meta：标签 + 置顶公告。 */
-record CircleMetaView(Long circleId, List<String> tags, String announcement) {
+/** 圈子 meta：标签 + 置顶公告（兼容旧字段）+ 公告列表。 */
+record CircleMetaView(Long circleId, List<String> tags, String announcement,
+                      List<CircleAnnouncementView> announcements) {
+    /** 兼容旧调用（无公告列表）。 */
+    CircleMetaView(Long circleId, List<String> tags, String announcement) {
+        this(circleId, tags, announcement, List.of());
+    }
+}
+
+/** 圈子公告视图（客户端仅见 published）。 */
+record CircleAnnouncementView(
+    Long id,
+    String title,
+    String content,
+    boolean isPinned,
+    LocalDateTime publishedAt
+) {
+}
+
+/** 可 @ 的圈成员（提及选择器）。 */
+record CircleMentionCandidateView(
+    Long userId,
+    String nickname,
+    String avatarUrl
+) {
 }
 
 /** 话题点赞结果。 */
@@ -304,7 +354,9 @@ record CircleReplyView(
 record CreateTopicRequest(
     @NotBlank @Size(max = 200) String title,
     @NotBlank @Size(max = 5000) String content,
-    @Size(max = 9) List<String> images
+    @Size(max = 9) List<String> images,
+    /** 2026-10-28：@提及的同圈成员（最多 10 人） */
+    @Size(max = 10) List<Long> mentionedUserIds
 ) {
 }
 
@@ -313,6 +365,8 @@ record CreateTopicRequest(
  * authorId 由 SecurityUtils 自动获取，不再从请求体传入。
  */
 record CreateReplyRequest(
-    @NotBlank @Size(max = 1000) String content
+    @NotBlank @Size(max = 1000) String content,
+    /** 2026-10-28：@提及的同圈成员（最多 10 人） */
+    @Size(max = 10) List<Long> mentionedUserIds
 ) {
 }

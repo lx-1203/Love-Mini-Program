@@ -240,6 +240,29 @@ public class LocalMediaStorageService implements MediaStorageService {
         if (userId == null) {
             throw new IllegalArgumentException(ErrorMessages.USER_ID_REQUIRED);
         }
+        return storeInternal(file, type, String.valueOf(userId),
+                URL_PREFIX + userId + "/", "userId=" + userId);
+    }
+
+    /**
+     * 临时会话媒体：落盘 {@code {storageRoot}/temp/{sessionUid}/{yyyyMM}/{uuid}.{ext}}，
+     * URL 不含 userId（2026-10-28 强匿名）。
+     */
+    @Override
+    @CircuitBreaker(name = Resilience4jConfig.OBJECT_STORAGE_BACKEND,
+            fallbackMethod = "storeTempFallback")
+    @Retry(name = Resilience4jConfig.OBJECT_STORAGE_BACKEND)
+    public UploadResult storeTemp(String sessionUid, MultipartFile file, String type) {
+        if (sessionUid == null || sessionUid.isBlank()
+                || !sessionUid.matches("[A-Za-z0-9_-]{1,64}")) {
+            throw new IllegalArgumentException("非法的临时会话标识");
+        }
+        return storeInternal(file, type, "temp/" + sessionUid,
+                URL_PREFIX + "temp/" + sessionUid + "/", "sessionUid=" + sessionUid);
+    }
+
+    private UploadResult storeInternal(MultipartFile file, String type, String relativeDir,
+                                       String urlBase, String ownerLabel) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException(ErrorMessages.UPLOAD_FILE_REQUIRED);
         }
@@ -249,7 +272,7 @@ public class LocalMediaStorageService implements MediaStorageService {
         // 先校验后落盘：在扩展名/MIME/magic bytes 校验与任何文件写入之前拒绝，
         // 保证磁盘无残留；错误码 VIDEO_UPLOAD_DISABLED 供前端静默提示。
         if ("video".equals(normalizedType) && !featureSwitchService.isVideoUploadEnabled()) {
-            LOGGER.info("视频上传被拒绝（upload.video.enabled=false 封存态）: userId={}", userId);
+            LOGGER.info("视频上传被拒绝（upload.video.enabled=false 封存态）: {}", ownerLabel);
             throw new VideoUploadDisabledException("暂不支持视频上传");
         }
 
@@ -287,8 +310,8 @@ public class LocalMediaStorageService implements MediaStorageService {
         if ("image".equals(normalizedType) && imgSecCheckService != null) {
             ContentSecurityVerdict verdict = imgSecCheckService.checkImage(file);
             if (!verdict.isPass()) {
-                LOGGER.warn("图片内容安全检测未通过: userId={}, verdict={}, label={}",
-                        userId, verdict.suggest(), verdict.label());
+                LOGGER.warn("图片内容安全检测未通过: {}, verdict={}, label={}",
+                        ownerLabel, verdict.suggest(), verdict.label());
                 throw new ContentSecurityException("图片内容不合规，拒绝上传");
             }
         }
@@ -297,7 +320,7 @@ public class LocalMediaStorageService implements MediaStorageService {
         String monthSegment = LocalDate.now(TimeZones.BUSINESS).format(MONTH_FMT);
         // 存储文件名使用 UUID，不依赖原始文件名，进一步消除路径遍历风险
         String fileName = UUID.randomUUID().toString() + "." + lowerExt;
-        Path relativePath = Paths.get(String.valueOf(userId), monthSegment, fileName);
+        Path relativePath = Paths.get(relativeDir).resolve(monthSegment).resolve(fileName);
         Path absolutePath = Paths.get(storageRoot).resolve(relativePath).toAbsolutePath().normalize();
         // 修复：二次校验最终绝对路径仍在 storageRoot 之下，防止路径穿越
         Path root = Paths.get(storageRoot).toAbsolutePath().normalize();
@@ -305,7 +328,7 @@ public class LocalMediaStorageService implements MediaStorageService {
             LOGGER.error("计算存储路径越界，拒绝上传: absolutePath={}, root={}", absolutePath, root);
             throw new IllegalStateException(ErrorMessages.UPLOAD_PATH_INVALID);
         }
-        String url = URL_PREFIX + relativePath.toString().replace('\\', '/');
+        String url = urlBase + monthSegment + "/" + fileName;
 
         // 创建目录（如不存在）
         try {
@@ -348,7 +371,7 @@ public class LocalMediaStorageService implements MediaStorageService {
             }
         }
 
-        LOGGER.info("媒体上传成功: userId={} type={} url={} size={} ", userId, normalizedType,
+        LOGGER.info("媒体上传成功: {} type={} url={} size={} ", ownerLabel, normalizedType,
                 url, fileSize);
 
         return new UploadResult(url, width, height, finalContentType, fileSize, null);
@@ -375,6 +398,15 @@ public class LocalMediaStorageService implements MediaStorageService {
     private UploadResult storeFallback(Long userId, MultipartFile file, String type, Throwable ex) {
         LOGGER.error("媒体上传降级: userId={}, type={}, errorType={}, message={}",
                 userId, type, ex.getClass().getSimpleName(), ex.getMessage());
+        throw new IllegalStateException(
+                "媒体存储服务暂时不可用，请稍后重试: " + ex.getMessage(), ex);
+    }
+
+    /** 临时会话媒体上传的熔断降级（与 {@link #storeFallback} 同语义）。 */
+    @SuppressWarnings("unused")
+    private UploadResult storeTempFallback(String sessionUid, MultipartFile file, String type, Throwable ex) {
+        LOGGER.error("临时会话媒体上传降级: sessionUid={}, type={}, errorType={}, message={}",
+                sessionUid, type, ex.getClass().getSimpleName(), ex.getMessage());
         throw new IllegalStateException(
                 "媒体存储服务暂时不可用，请稍后重试: " + ex.getMessage(), ex);
     }

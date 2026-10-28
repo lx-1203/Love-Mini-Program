@@ -22,8 +22,17 @@ import {
   createCircle,
   updateCircle,
   deleteCircle,
+  listCircleAnnouncements,
+  createCircleAnnouncement,
+  updateCircleAnnouncement,
+  publishCircleAnnouncement,
+  offlineCircleAnnouncement,
+  pinCircleAnnouncement,
+  unpinCircleAnnouncement,
+  deleteCircleAnnouncement,
   type CircleForm,
   type CircleView,
+  type CircleAnnouncementView,
 } from "../../api/forum";
 import { ApiError } from "../../api/http";
 import Pagination from "../../components/Pagination.vue";
@@ -102,19 +111,18 @@ interface CircleFormState {
   description: string;
   sortOrder: string;
   tags: string;
-  announcement: string;
 }
 
 const formVisible = ref(false);
 /** 当前编辑的圈子 ID；null 表示新增 */
 const editingId = ref<number | null>(null);
-const form = ref<CircleFormState>({ name: "", icon: "", description: "", sortOrder: "0", tags: "", announcement: "" });
+const form = ref<CircleFormState>({ name: "", icon: "", description: "", sortOrder: "0", tags: "" });
 const saving = ref(false);
 const modalError = ref("");
 
 /** 重置表单为初始状态 */
 function resetForm(): void {
-  form.value = { name: "", icon: "", description: "", sortOrder: "0", tags: "", announcement: "" };
+  form.value = { name: "", icon: "", description: "", sortOrder: "0", tags: "" };
 }
 
 /** 打开新增弹窗 */
@@ -134,7 +142,6 @@ function openEdit(circle: CircleView): void {
     description: circle.description ?? "",
     sortOrder: String(circle.sortOrder),
     tags: circle.tags ?? "",
-    announcement: circle.announcement ?? "",
   };
   modalError.value = "";
   formVisible.value = true;
@@ -172,7 +179,6 @@ async function handleSave(): Promise<void> {
     description: f.description.trim() || undefined,
     sortOrder,
     tags: f.tags.trim(),
-    announcement: f.announcement.trim(),
   };
   saving.value = true;
   modalError.value = "";
@@ -189,6 +195,115 @@ async function handleSave(): Promise<void> {
   } finally {
     saving.value = false;
   }
+}
+
+// ===== 圈子公告（2026-10-28 表化） =====
+const announcementDrawerVisible = ref(false);
+const announcementCircle = ref<CircleView | null>(null);
+const announcements = ref<CircleAnnouncementView[]>([]);
+const announcementsLoading = ref(false);
+const announcementError = ref("");
+const announcementFormVisible = ref(false);
+const announcementEditingId = ref<number | null>(null);
+const announcementForm = ref({ title: "", content: "" });
+const announcementSaving = ref(false);
+
+async function openAnnouncements(circle: CircleView): Promise<void> {
+  announcementCircle.value = circle;
+  announcementDrawerVisible.value = true;
+  announcementFormVisible.value = false;
+  announcementEditingId.value = null;
+  await loadAnnouncements();
+}
+
+function closeAnnouncements(): void {
+  announcementDrawerVisible.value = false;
+  announcementCircle.value = null;
+  announcements.value = [];
+  announcementError.value = "";
+}
+
+async function loadAnnouncements(): Promise<void> {
+  const circle = announcementCircle.value;
+  if (!circle) return;
+  announcementsLoading.value = true;
+  announcementError.value = "";
+  try {
+    const result = await listCircleAnnouncements(circle.id, 1, 100);
+    announcements.value = result.items;
+  } catch (err: unknown) {
+    announcementError.value = err instanceof ApiError
+      ? err.message
+      : t("interestCircles.announcementLoadFailed");
+    announcements.value = [];
+  } finally {
+    announcementsLoading.value = false;
+  }
+}
+
+function openAnnouncementCreate(): void {
+  announcementEditingId.value = null;
+  announcementForm.value = { title: "", content: "" };
+  announcementFormVisible.value = true;
+}
+
+function openAnnouncementEdit(item: CircleAnnouncementView): void {
+  announcementEditingId.value = item.id;
+  announcementForm.value = { title: item.title ?? "", content: item.content };
+  announcementFormVisible.value = true;
+}
+
+function closeAnnouncementForm(): void {
+  if (announcementSaving.value) return;
+  announcementFormVisible.value = false;
+}
+
+async function saveAnnouncement(): Promise<void> {
+  const circle = announcementCircle.value;
+  if (!circle || !sessionStore.canWrite || announcementSaving.value) return;
+  if (!announcementForm.value.content.trim()) {
+    announcementError.value = t("interestCircles.announcementContentRequired");
+    return;
+  }
+  announcementSaving.value = true;
+  announcementError.value = "";
+  try {
+    const payload = {
+      title: announcementForm.value.title.trim() || undefined,
+      content: announcementForm.value.content.trim(),
+    };
+    if (announcementEditingId.value === null) {
+      await createCircleAnnouncement(circle.id, payload);
+    } else {
+      await updateCircleAnnouncement(circle.id, announcementEditingId.value, payload);
+    }
+    announcementFormVisible.value = false;
+    await loadAnnouncements();
+  } catch (err: unknown) {
+    announcementError.value = err instanceof ApiError
+      ? err.message
+      : t("interestCircles.announcementSaveFailed");
+  } finally {
+    announcementSaving.value = false;
+  }
+}
+
+async function runAnnouncementAction(action: () => Promise<unknown>): Promise<void> {
+  announcementError.value = "";
+  try {
+    await action();
+    await loadAnnouncements();
+  } catch (err: unknown) {
+    announcementError.value = err instanceof ApiError
+      ? err.message
+      : t("interestCircles.announcementActionFailed");
+  }
+}
+
+function announcementStatusLabel(status: CircleAnnouncementView["status"]): string {
+  if (status === "published") return t("interestCircles.announcementStatusPublished");
+  if (status === "offline") return t("interestCircles.announcementStatusOffline");
+  return t("interestCircles.announcementStatusDraft");
 }
 
 // ===== 删除确认（圈下存在话题时后端 409） =====
@@ -292,6 +407,7 @@ onMounted(() => {
             <td class="time-cell">{{ formatDateTime(circle.createdAt) }}</td>
             <td class="action-cell">
               <button v-if="sessionStore.canWrite" class="action-button edit" @click="openEdit(circle)">{{ t("common.edit") }}</button>
+              <button class="action-button handle" @click="openAnnouncements(circle)">{{ t("interestCircles.actionAnnouncements") }}</button>
               <button class="action-button handle" @click="viewTopics(circle)">{{ t("interestCircles.actionViewTopics") }}</button>
               <button v-if="sessionStore.canWrite" class="action-button delete" @click="askDelete(circle)">{{ t("common.delete") }}</button>
             </td>
@@ -332,10 +448,6 @@ onMounted(() => {
           <input v-model="form.tags" class="form-input" type="text" maxlength="255" :placeholder="t('interestCircles.tagsPlaceholder')" />
         </view>
         <view class="form-row">
-          <text class="form-label">{{ t("interestCircles.announcementLabel") }}</text>
-          <textarea v-model="form.announcement" class="form-textarea" rows="3" maxlength="500" :placeholder="t('interestCircles.announcementPlaceholder')" />
-        </view>
-        <view class="form-row">
           <text class="form-label">{{ t("interestCircles.sortLabel") }}</text>
           <input v-model="form.sortOrder" class="form-input" type="number" :placeholder="t('interestCircles.sortPlaceholder')" />
         </view>
@@ -347,6 +459,72 @@ onMounted(() => {
           <button class="primary-button" :disabled="saving" @click="handleSave">
             {{ saving ? t("common.saving") : t("common.save") }}
           </button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 圈子公告抽屉（2026-10-28 表化；同圈 published 至多一条置顶） -->
+    <view v-if="announcementDrawerVisible" class="modal-mask" @click.self="closeAnnouncements">
+      <view class="modal announcement-modal">
+        <text class="modal-title">
+          {{ t("interestCircles.announcementTitle") }}{{ announcementCircle ? ` · ${announcementCircle.name}` : "" }}
+        </text>
+        <text class="announcement-subtitle">{{ t("interestCircles.announcementSubtitle") }}</text>
+
+        <view class="announcement-toolbar">
+          <button v-if="sessionStore.canWrite" class="primary-button" :disabled="announcementSaving" @click="openAnnouncementCreate">
+            {{ t("interestCircles.announcementNew") }}
+          </button>
+          <button class="ghost-button" :disabled="announcementsLoading" @click="loadAnnouncements">
+            {{ t("common.refresh") }}
+          </button>
+        </view>
+
+        <text v-if="announcementError" class="modal-error">{{ announcementError }}</text>
+        <text v-if="announcementsLoading" class="announcement-empty">{{ t("common.loading") }}</text>
+        <text v-else-if="announcements.length === 0" class="announcement-empty">{{ t("interestCircles.announcementEmpty") }}</text>
+
+        <view v-else class="announcement-list">
+          <view v-for="item in announcements" :key="item.id" class="announcement-row">
+            <view class="announcement-row__main">
+              <view class="announcement-row__meta">
+                <text v-if="item.isPinned" class="announcement-pill announcement-pill--pin">{{ t("interestCircles.announcementPinnedBadge") }}</text>
+                <text class="announcement-pill">{{ announcementStatusLabel(item.status) }}</text>
+                <text v-if="item.title" class="announcement-row__title">{{ item.title }}</text>
+              </view>
+              <text class="announcement-row__content">{{ item.content }}</text>
+              <text class="announcement-row__time">{{ formatDateTime(item.publishedAt || item.createdAt) }}</text>
+            </view>
+            <view v-if="sessionStore.canWrite" class="announcement-row__actions">
+              <button class="action-button edit" @click="openAnnouncementEdit(item)">{{ t("interestCircles.announcementEdit") }}</button>
+              <button v-if="item.status !== 'published'" class="action-button handle" @click="runAnnouncementAction(() => publishCircleAnnouncement(announcementCircle!.id, item.id))">{{ t("interestCircles.announcementPublish") }}</button>
+              <button v-else class="action-button delete" @click="runAnnouncementAction(() => offlineCircleAnnouncement(announcementCircle!.id, item.id))">{{ t("interestCircles.announcementOffline") }}</button>
+              <button v-if="item.status === 'published' && !item.isPinned" class="action-button handle" @click="runAnnouncementAction(() => pinCircleAnnouncement(announcementCircle!.id, item.id))">{{ t("interestCircles.announcementPin") }}</button>
+              <button v-if="item.isPinned" class="action-button handle" @click="runAnnouncementAction(() => unpinCircleAnnouncement(announcementCircle!.id, item.id))">{{ t("interestCircles.announcementUnpin") }}</button>
+              <button class="action-button delete" @click="runAnnouncementAction(() => deleteCircleAnnouncement(announcementCircle!.id, item.id))">{{ t("common.delete") }}</button>
+            </view>
+          </view>
+        </view>
+
+        <view v-if="announcementFormVisible" class="announcement-form">
+          <view class="form-row">
+            <text class="form-label">{{ t("interestCircles.announcementTitleLabel") }}</text>
+            <input v-model="announcementForm.title" class="form-input" type="text" maxlength="80" />
+          </view>
+          <view class="form-row">
+            <text class="form-label">{{ t("interestCircles.announcementContentLabel") }}</text>
+            <textarea v-model="announcementForm.content" class="form-textarea" rows="4" maxlength="1000" />
+          </view>
+          <view class="modal-actions">
+            <button class="ghost-button" :disabled="announcementSaving" @click="closeAnnouncementForm">{{ t("common.cancel") }}</button>
+            <button class="primary-button" :disabled="announcementSaving" @click="saveAnnouncement">
+              {{ announcementSaving ? t("common.saving") : t("common.save") }}
+            </button>
+          </view>
+        </view>
+
+        <view class="modal-actions">
+          <button class="ghost-button" @click="closeAnnouncements">{{ t("common.close") }}</button>
         </view>
       </view>
     </view>
@@ -396,5 +574,105 @@ onMounted(() => {
   margin-bottom: var(--admin-space-lg);
   font-size: var(--admin-font-md);
   color: var(--admin-color-danger);
+}
+
+.announcement-modal {
+  width: 720px;
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+.announcement-subtitle {
+  display: block;
+  margin-bottom: var(--admin-space-lg);
+  font-size: var(--admin-font-sm);
+  color: var(--admin-color-text-tertiary);
+}
+
+.announcement-toolbar {
+  display: flex;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-lg);
+}
+
+.announcement-empty {
+  display: block;
+  padding: var(--admin-space-xl) 0;
+  text-align: center;
+  color: var(--admin-color-text-tertiary);
+}
+
+.announcement-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-lg);
+}
+
+.announcement-row {
+  display: flex;
+  gap: var(--admin-space-lg);
+  justify-content: space-between;
+  padding: var(--admin-space-lg);
+  border: 1px solid var(--admin-color-border-light);
+  border-radius: var(--admin-radius-md);
+}
+
+.announcement-row__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.announcement-row__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  margin-bottom: 6px;
+}
+
+.announcement-pill {
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: var(--admin-color-bg-page);
+  font-size: var(--admin-font-xs);
+  color: var(--admin-color-text-tertiary);
+}
+
+.announcement-pill--pin {
+  background: var(--admin-color-primary-soft);
+  color: var(--admin-color-primary);
+}
+
+.announcement-row__title {
+  font-weight: 600;
+}
+
+.announcement-row__content {
+  display: block;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.announcement-row__time {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--admin-font-xs);
+  color: var(--admin-color-text-quaternary);
+}
+
+.announcement-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: var(--admin-space-sm);
+  width: 220px;
+  flex-shrink: 0;
+}
+
+.announcement-form {
+  padding: var(--admin-space-lg);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-color-bg-page);
+  margin-bottom: var(--admin-space-lg);
 }
 </style>

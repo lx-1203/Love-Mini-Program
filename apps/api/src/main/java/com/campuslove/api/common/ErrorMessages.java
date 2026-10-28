@@ -796,7 +796,8 @@ public final class ErrorMessages {
 
     /** 2026-08-31 圈子发帖成员校验：未加入圈子不允许在圈内发帖（前端选项过滤之外的越权兜底） */
     public static final String CIRCLE_JOIN_REQUIRED = "请先加入该圈子，再在圈内发帖";
-
+    /** 2026-10-28：话题/回复 @提及仅限同圈成员（被提及人若无圈内可见权，通知打开会 404）。 */
+    public static final String CIRCLE_MENTION_MEMBER_ONLY = "只能 @ 同圈成员";
     /** Batch B：未通过校园认证不允许发布校园可见帖子 */
     public static final String SCHOOL_CERT_REQUIRED_FOR_CAMPUS_POST = "请先完成校园认证，再发布校园可见帖子";
 

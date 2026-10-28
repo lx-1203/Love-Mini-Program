@@ -127,6 +127,10 @@ public class MediaAccessController {
     /** P0-2：能力型签名 URL 签发器（把会话凭据从图片 URL 里彻底拿掉） */
     private final MediaUrlSigner mediaUrlSigner;
 
+    /** 临时会话媒体访问控制（2026-10-28 强匿名 B）。 */
+    @Autowired(required = false)
+    private com.campuslove.api.chat.TempChatMediaService tempChatMediaService;
+
     /**
      * 应用资产注册校验用的资产仓库（2026-08-10，可选注入）。
      *
@@ -158,6 +162,10 @@ public class MediaAccessController {
     /** 媒体读取 URL 的形态：{@code /api/v1/media/{userId}/{子路径}}。 */
     private static final Pattern SIGNABLE_PATH_PATTERN =
             Pattern.compile("^/api/v1/media/(\\d+)/(.+)$");
+
+    /** 临时会话媒体形态：{@code /api/v1/media/temp/{sessionUid}/{子路径}}（不含 userId）。 */
+    private static final Pattern TEMP_SIGNABLE_PATH_PATTERN =
+            Pattern.compile("^/api/v1/media/temp/([A-Za-z0-9_-]{1,64})/(.+)$");
 
     /**
      * 批量签发能力型媒体 URL（P0-2 收口最后一寸）。
@@ -202,6 +210,26 @@ public class MediaAccessController {
 
         List<MediaSignView.SignedPath> signed = new java.util.ArrayList<>(paths.size());
         for (String path : paths) {
+            // 临时会话媒体：路径不含 userId；签发前校验当前用户是会话双方（2026-10-28）
+            java.util.regex.Matcher tempMatcher = TEMP_SIGNABLE_PATH_PATTERN.matcher(path);
+            if (tempMatcher.matches()) {
+                String sessionUid = tempMatcher.group(1);
+                String tempSubPath = tempMatcher.group(2);
+                if (tempSubPath.contains("..") || tempSubPath.contains("//")) {
+                    continue;
+                }
+                if (tempChatMediaService == null
+                        || !tempChatMediaService.canRead(sessionUid, requesterId)) {
+                    AUDIT_LOG.warn("media.sign.denied.temp sessionUid={} requesterId={}",
+                            sessionUid, requesterId);
+                    continue;
+                }
+                long expiresAt = mediaUrlSigner.expiresAtNowWithTtl(
+                        MediaUrlSigner.TEMP_TTL_SECONDS);
+                signed.add(new MediaSignView.SignedPath(
+                        path, mediaUrlSigner.signedUrl(path, expiresAt), expiresAt));
+                continue;
+            }
             java.util.regex.Matcher matcher = SIGNABLE_PATH_PATTERN.matcher(path);
             if (!matcher.matches()) {
                 // 非本人可读形态（含 app-assets 这类本就 permitAll 的公开资产）直接跳过
@@ -352,6 +380,36 @@ public class MediaAccessController {
             }
             return IMAGE;
         }
+    }
+
+    /**
+     * 临时会话图片读取（2026-10-28 强匿名 B）。
+     *
+     * <p>URL：{@code GET /api/v1/media/temp/{sessionUid}/{yyyyMM}/{uuid}.ext}，
+     * 不含上传者 userId。授权：会话双方；签名 URL（无会话凭据）由签名本身作为能力凭据，
+     * 过滤链已验证签名，因此不再要求参与者身份。</p>
+     */
+    @GetMapping("/temp/{sessionUid}/**")
+    public ResponseEntity<Resource> getTempMedia(
+            @Parameter(description = "临时会话 UID", required = true, example = "session-1-2-abc12345")
+            @PathVariable("sessionUid") String sessionUid,
+            HttpServletRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long currentUserId = extractCurrentUserId(authentication);
+        boolean signatureCapability = Long.valueOf(0L).equals(currentUserId)
+                && com.campuslove.api.media.MediaTokenPolicy.isMediaOnlyAuthentication(authentication);
+        if (!signatureCapability) {
+            if (tempChatMediaService == null || !tempChatMediaService.canRead(sessionUid, currentUserId)) {
+                AUDIT_LOG.warn("media.temp.denied sessionUid={} requesterId={}", sessionUid, currentUserId);
+                throw new AccessDeniedException("无权访问该临时会话图片");
+            }
+        }
+        String subPath = extractTempSubPath(request, sessionUid);
+        MediaAccessService.MediaFile mediaFile = mediaAccessService.loadTempMedia(sessionUid, subPath);
+        return ResponseEntity.ok()
+                .contentType(mediaFile.getMediaType())
+                .header(HttpHeaders.CACHE_CONTROL, "private, no-store, no-cache, must-revalidate")
+                .body(mediaFile.getResource());
     }
 
     /**
@@ -704,5 +762,21 @@ public class MediaAccessController {
     private String pathWithinOrNull(HttpServletRequest request) {
         Object pathAttr = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
         return pathAttr instanceof String s ? s : null;
+    }
+
+    /** 从请求 URI 中提取临时会话媒体子路径。 */
+    private String extractTempSubPath(HttpServletRequest request, String sessionUid) {
+        String marker = "/api/v1/media/temp/" + sessionUid + "/";
+        for (String candidate : new String[] {
+                pathWithinOrNull(request), request.getRequestURI()}) {
+            if (candidate == null) {
+                continue;
+            }
+            int idx = candidate.indexOf(marker);
+            if (idx >= 0 && idx + marker.length() < candidate.length()) {
+                return candidate.substring(idx + marker.length());
+            }
+        }
+        return "";
     }
 }
