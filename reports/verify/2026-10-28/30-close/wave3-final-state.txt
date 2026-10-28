@@ -1,0 +1,13 @@
+# Wave-3 最终状态（2026-10-28 晚）
+
+- 实现提交：`e9e3fd07`（通知中心 + 五项边界收口）
+- Flyway：`2026.10.28.0012`
+- API：`http://127.0.0.1:8080/api/v1` real profile，健康检查 200
+- 数据库：posts=206、topics=39、announcements=0、temp_chat_session=1（既有非 QA）、
+  TEMP_CHAT 资产=0、topic/reply mentions=0、话题点赞去重=0
+- 小程序产物：`apps/client/dist/build/mp-weixin-real`，`RELEASECHAIN_RESULT=PASS steps=15`，
+  主包 1.64MB / 总包 2.75MB，`shippable=no`
+- `src/static`：1354 文件（开发态）
+- 报告：`wave3-close.md`、`wave2-implementation.md`、`release-external-inputs.md`
+- 外部阻断：HTTPS 域名、真实 AppID、`WECHAT_SECRET`、CORS 域名未提供；提供后按
+  `release-external-inputs.md` 重新跑 `verify-env-release` 与不带 `--allow-loopback` 的发布链。
