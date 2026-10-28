@@ -1,0 +1,61 @@
+{
+  "tag": "QA-20261028-1793160007214",
+  "title": "QA五环同步 007214",
+  "steps": [
+    {
+      "name": "guest-login",
+      "ok": true,
+      "detail": "http=200 userId=100253"
+    },
+    {
+      "name": "feed-before",
+      "ok": true,
+      "detail": "http=200 total=194"
+    },
+    {
+      "name": "client-create",
+      "ok": true,
+      "detail": "http=200 id=429 auditStatus=?"
+    },
+    {
+      "name": "client-author-read",
+      "ok": true,
+      "detail": "http=200"
+    },
+    {
+      "name": "admin-login",
+      "ok": true,
+      "detail": "http=200"
+    },
+    {
+      "name": "admin-read-by-id",
+      "ok": true,
+      "detail": "http=200 title=QA五环同步 007214"
+    },
+    {
+      "name": "admin-approve",
+      "ok": true,
+      "detail": "http=200 auditStatus=approved"
+    },
+    {
+      "name": "client-feed-after",
+      "ok": true,
+      "detail": "total 194→195 present=true"
+    },
+    {
+      "name": "client-detail-after",
+      "ok": true,
+      "detail": "http=200"
+    },
+    {
+      "name": "idempotent-replay",
+      "ok": true,
+      "detail": "http=409 code=IDEMPOTENT_CONFLICT"
+    }
+  ],
+  "postId": 429,
+  "guestUserId": "100253",
+  "totalBefore": 194,
+  "totalAfter": 195,
+  "verdict": "PASS"
+}
