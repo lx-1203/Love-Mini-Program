@@ -373,6 +373,10 @@ export interface CircleView {
   memberCount: number;
   /** 排序权重（升序） */
   sortOrder: number;
+  /** 圈标签（逗号分隔，2026-10-28） */
+  tags: string | null;
+  /** 置顶公告（2026-10-28） */
+  announcement: string | null;
   /** 创建时间 */
   createdAt: string;
 }
@@ -390,6 +394,10 @@ export interface CircleForm {
   description?: string;
   /** 排序权重（可选，升序；新增缺省 0） */
   sortOrder?: number;
+  /** 圈标签（可选，逗号分隔，≤255 字） */
+  tags?: string;
+  /** 置顶公告（可选，≤500 字） */
+  announcement?: string;
 }
 
 /** 兴趣圈列表查询参数 */

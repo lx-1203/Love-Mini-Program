@@ -101,18 +101,20 @@ interface CircleFormState {
   icon: string;
   description: string;
   sortOrder: string;
+  tags: string;
+  announcement: string;
 }
 
 const formVisible = ref(false);
 /** 当前编辑的圈子 ID；null 表示新增 */
 const editingId = ref<number | null>(null);
-const form = ref<CircleFormState>({ name: "", icon: "", description: "", sortOrder: "0" });
+const form = ref<CircleFormState>({ name: "", icon: "", description: "", sortOrder: "0", tags: "", announcement: "" });
 const saving = ref(false);
 const modalError = ref("");
 
 /** 重置表单为初始状态 */
 function resetForm(): void {
-  form.value = { name: "", icon: "", description: "", sortOrder: "0" };
+  form.value = { name: "", icon: "", description: "", sortOrder: "0", tags: "", announcement: "" };
 }
 
 /** 打开新增弹窗 */
@@ -131,6 +133,8 @@ function openEdit(circle: CircleView): void {
     icon: circle.icon,
     description: circle.description ?? "",
     sortOrder: String(circle.sortOrder),
+    tags: circle.tags ?? "",
+    announcement: circle.announcement ?? "",
   };
   modalError.value = "";
   formVisible.value = true;
@@ -167,6 +171,8 @@ async function handleSave(): Promise<void> {
     icon: f.icon.trim() || undefined,
     description: f.description.trim() || undefined,
     sortOrder,
+    tags: f.tags.trim(),
+    announcement: f.announcement.trim(),
   };
   saving.value = true;
   modalError.value = "";
@@ -320,6 +326,14 @@ onMounted(() => {
         <view class="form-row">
           <text class="form-label">{{ t("interestCircles.descriptionLabel") }}</text>
           <textarea v-model="form.description" class="form-textarea" rows="3" maxlength="256" :placeholder="t('interestCircles.descriptionPlaceholder')" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">{{ t("interestCircles.tagsLabel") }}</text>
+          <input v-model="form.tags" class="form-input" type="text" maxlength="255" :placeholder="t('interestCircles.tagsPlaceholder')" />
+        </view>
+        <view class="form-row">
+          <text class="form-label">{{ t("interestCircles.announcementLabel") }}</text>
+          <textarea v-model="form.announcement" class="form-textarea" rows="3" maxlength="500" :placeholder="t('interestCircles.announcementPlaceholder')" />
         </view>
         <view class="form-row">
           <text class="form-label">{{ t("interestCircles.sortLabel") }}</text>

@@ -70,11 +70,13 @@ const componentMap: Record<string, ComponentLoader> = {
   "views/business/Wallets.vue": () => import("../views/business/Wallets.vue"),
   "views/business/Coins.vue": () => import("../views/business/Coins.vue"),
   "views/business/Shop.vue": () => import("../views/business/Shop.vue"),
+  "views/business/Consulting.vue": () => import("../views/business/Consulting.vue"),
   /* —— 配置中心（config） —— */
   "views/config/NotifyConfig.vue": () => import("../views/config/NotifyConfig.vue"),
   "views/config/MatchConfig.vue": () => import("../views/config/MatchConfig.vue"),
   "views/config/ProfileConfig.vue": () => import("../views/config/ProfileConfig.vue"),
   "views/config/Config.vue": () => import("../views/config/Config.vue"),
+  "views/config/LegalTexts.vue": () => import("../views/config/LegalTexts.vue"),
   "views/config/OfficialAccounts.vue": () => import("../views/config/OfficialAccounts.vue"),
 };
 

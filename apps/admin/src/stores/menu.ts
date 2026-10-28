@@ -271,6 +271,7 @@ export const useMenuStore = defineStore("menu", () => {
         // 库里 605 的 path 已由相对 'circle-layers' 归一为绝对 '/system/circle-layers'（URL 不变）
         { id: 605, parentId: 400, title: "layout.navCircleLayers", name: "CircleLayers", path: "/system/circle-layers", component: "views/system/CircleLayers.vue", menuType: "MENU", type: "MENU", order: 4, superAdminOnly: true },
         { id: 401, parentId: 400, title: "layout.navActivities", name: "Activities", path: "/activity/activities", component: "views/activity/Activities.vue", menuType: "MENU", type: "MENU", order: 5 },
+        { id: 404, parentId: 400, title: "layout.navConsulting", name: "Consulting", path: "/business/consulting", component: "views/business/Consulting.vue", menuType: "MENU", type: "MENU", order: 6 },
         { id: 402, parentId: 400, title: "layout.navEnrollments", name: "Enrollments", path: "/activity/enrollments", component: "views/activity/Enrollments.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true },
       ],
     },
@@ -284,6 +285,7 @@ export const useMenuStore = defineStore("menu", () => {
         { id: 102, parentId: 100, title: "layout.navMenus", name: "Menus", path: "/system/menus", component: "views/system/Menus.vue", menuType: "MENU", type: "MENU", order: 3, superAdminOnly: true },
         { id: 107, parentId: 100, title: "layout.navAuditLogs", name: "AuditLogs", path: "/system/audit-logs", component: "views/system/AuditLogs.vue", menuType: "MENU", type: "MENU", order: 4, superAdminOnly: true },
         { id: 603, parentId: 100, title: "layout.navConfig", name: "Config", path: "/configs/global", component: "views/config/Config.vue", menuType: "MENU", type: "MENU", order: 5 },
+        { id: 701, parentId: 100, title: "layout.navLegal", name: "LegalTexts", path: "/configs/legal", component: "views/config/LegalTexts.vue", menuType: "MENU", type: "MENU", order: 7, superAdminOnly: true },
         { id: 700, parentId: 100, title: "layout.navCapability", name: "CapabilityOverview", path: "/system/capability", component: "views/system/CapabilityOverview.vue", menuType: "MENU", type: "MENU", order: 6, superAdminOnly: true },
         { id: 104, parentId: 100, title: "layout.navSchools", name: "Schools", path: "/system/schools", component: "views/system/Schools.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true, superAdminOnly: true },
         { id: 105, parentId: 100, title: "layout.navDicts", name: "Dicts", path: "/system/dicts", component: "views/system/Dicts.vue", menuType: "MENU", type: "MENU", order: 90, hidden: true, superAdminOnly: true },
