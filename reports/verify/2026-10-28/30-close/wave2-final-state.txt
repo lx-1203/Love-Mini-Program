@@ -1,6 +1,6 @@
 # Wave-2 最终状态（2026-10-28）
 
-- HEAD: `eb3406e5`（docs(audit): wave-2 acceptance and admin read-only write gates）
+- HEAD: `bf1a7183`（docs(readme): describe anonymous temp images and circle announcements/mentions）
 - Flyway: `2026.10.28.0012`（0009–0012 已应用）
 - API: `http://127.0.0.1:8080/api/v1`，real profile，最终 jar 于 19:58 启动
 - 数据库：
