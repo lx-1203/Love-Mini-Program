@@ -94,6 +94,10 @@ function confirmMentions(ids: number[]): void {
   }
 }
 
+// QA hook（2026-10-28）：DevTools 无法穿透自定义组件点击内部「插入 @」按钮，
+// 暴露与组件 confirm 事件同一个处理器，供 automation_page_action callMethod 验证插入链路。
+defineExpose({ noop, confirmMentions });
+
 /* ========== Task B5：发帖编辑页增强 ========== */
 /** 发布目标（校园圈 / 兴趣圈） */
 const publishTarget = ref<"campus" | "interest">("campus");

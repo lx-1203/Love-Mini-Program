@@ -53,6 +53,7 @@ export const ROUTES: string[] = [
   "/subpackages/profile-extra/profile/favorites",
   "/subpackages/profile-extra/profile/tasks",
   "/subpackages/profile-extra/settings/dnd",
+  "/subpackages/profile-extra/notifications/index",
   "/subpackages/profile-extra/feedback/history",
   "/subpackages/chat/chat-session/index",
   "/subpackages/chat/official-chat/index",
@@ -714,6 +715,16 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/profile/index"
     ],
+    "devOnly": false
+  },
+  {
+    "route": "/subpackages/profile-extra/notifications/index",
+    "expectedLanding": "/subpackages/profile-extra/notifications/index",
+    "family": null,
+    "landingMarker": null,
+    "registerEntryMarker": null,
+    "loggedInLanding": null,
+    "selfRedirects": [],
     "devOnly": false
   },
   {

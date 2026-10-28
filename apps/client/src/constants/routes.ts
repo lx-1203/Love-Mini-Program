@@ -124,6 +124,8 @@ export const ROUTES = {
     FAVORITES: "/subpackages/profile-extra/profile/favorites",
     /** 2026-08-31：兴趣标签设置页（第六轮全面审查：补登记） */
     SETUP_INTEREST: "/subpackages/setup/interest/index",
+    /** 2026-10-28：通知中心页（点赞/提及/系统通知） */
+    NOTIFICATIONS: "/subpackages/profile-extra/notifications/index",
   },
 
   /** 圈子模块 */

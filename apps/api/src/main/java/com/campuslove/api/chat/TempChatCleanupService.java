@@ -170,16 +170,29 @@ public class TempChatCleanupService {
     @Scheduled(cron = "0 30 * * * *")
     @Transactional
     public void cleanupRetainedMaterials() {
+        doCleanupRetainedMaterials();
+    }
+
+    /**
+     * 受控触发一次保留期清理（后台维护端点调用，2026-10-28）。
+     * 与定时任务同一条实现，返回实际删除计数，供验收/运维确认。
+     */
+    @Transactional
+    public CleanupResult runRetainedMaterialsCleanup() {
+        return doCleanupRetainedMaterials();
+    }
+
+    private CleanupResult doCleanupRetainedMaterials() {
         boolean locked = false;
         org.redisson.api.RLock lock = redissonClient.getLock("scheduled:tempChatMaterialCleanup");
         try {
             locked = lock.tryLock(0, 30, TimeUnit.SECONDS);
             if (!locked) {
-                return;
+                return new CleanupResult(0, 0, false);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return;
+            return new CleanupResult(0, 0, false);
         }
         try {
             LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
@@ -223,6 +236,7 @@ public class TempChatCleanupService {
                 log.info("临时会话材料保留期清理完成: assets={}, messages={}",
                         assetsDeleted, messagesDeleted);
             }
+            return new CleanupResult(assetsDeleted, messagesDeleted, true);
         } finally {
             if (locked && lock.isHeldByCurrentThread()) {
                 try {
@@ -232,6 +246,10 @@ public class TempChatCleanupService {
                 }
             }
         }
+    }
+
+    /** 清理结果：删除资产数、删除消息数、是否取得分布式锁。 */
+    public record CleanupResult(int assetsDeleted, int messagesDeleted, boolean lockAcquired) {
     }
 
     private boolean deleteTempAsset(com.campuslove.api.entity.MediaAsset asset) {

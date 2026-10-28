@@ -2737,6 +2737,29 @@ export default {
     "emptyVisitors": "暂无访客",
     "membershipDisabled": "会员功能暂未开放"
   },
+  "notifications": {
+    "title": "通知中心",
+    "all": "全部",
+    "social": "社交",
+    "content": "内容",
+    "markAll": "全部已读",
+    "markAllDone": "已全部标记为已读",
+    "markAllFailed": "标记失败，请稍后重试",
+    "loadFailed": "加载通知失败，点击重试",
+    "openFailed": "打开通知失败，请稍后重试",
+    "empty": "暂无通知",
+    "emptySub": "新的点赞、提及和互动会出现在这里",
+    "type": {
+      "mention": "提及",
+      "topicLike": "话题点赞",
+      "like": "赞",
+      "comment": "评论",
+      "visitor": "访客",
+      "match": "匹配",
+      "follow": "关注",
+      "system": "系统"
+    }
+  },
   "messages": {
     "title": "消息",
     "unreadSyncFailed": "标记未读失败，请重试",

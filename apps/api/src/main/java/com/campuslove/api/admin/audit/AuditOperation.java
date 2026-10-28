@@ -69,6 +69,8 @@ public enum AuditOperation {
     /** 2026-10-28：圈子公告表化后的发布/编辑/下线（目标类型 CIRCLE_ANNOUNCEMENT） */
     CREATE_CIRCLE_ANNOUNCEMENT("新增圈子公告"),
     UPDATE_CIRCLE_ANNOUNCEMENT("编辑/发布/下线圈子公告"),
+    /** 2026-10-28：手动触发临时会话材料保留期清理（验收/运维） */
+    CLEANUP_TEMP_CHAT("清理临时会话材料"),
     DELETE_CIRCLE("删除兴趣圈"),
     CREATE_PROMO_CODE("生成兑换码"),
     DISABLE_PROMO_CODE("作废兑换码"),

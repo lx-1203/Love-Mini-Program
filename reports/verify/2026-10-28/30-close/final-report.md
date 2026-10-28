@@ -198,5 +198,5 @@ node tmp/verify-20261028/five-ring.mjs
 - **@提及扩展**：统一 `content_mentions`，话题审核通过后通知、回复即时通知，仅同圈成员，客户端共享 `MentionPickerSheet`。
 - **临时图片 B 强匿名**：`temp/{sessionUid}` 存储（URL 不含 userId）、仅双方可读、签名 TTL 300s、T+48h 清理、举报 hold、伪名/默认头像/隐藏主页、联系交换后揭示。
 
-逐项实现、迁移、读数和边界见 [wave2-implementation.md](wave2-implementation.md)。注意：清理任务的真实 T+48h 物理删除未实跑（单测覆盖逻辑）；@提及选择器确认点击受组件边界限制，取帧 + API 冒烟替代；**话题点赞/提及通知当前只进未读角标，尚无通知列表页可读正文**。
+逐项实现、迁移、读数和边界见 [wave2-implementation.md](wave2-implementation.md)。补充收口（2026-10-28 晚）：通知中心页已上线（铃铛进入，点击跳话题/帖子）；清理已用后台维护端点真实触发并验证文件删除/墓碑/消息删除/hold 跳过；临时会话深链冷启动已修；@提及确认已通过页面 VM 调用组件 confirm 同一处理器自动验证。仍未闭合：组件内部按钮的物理点击受 DevTools 边界限制；真实 48h 墙钟未等待；发布所需 HTTPS 域名/AppID/`WECHAT_SECRET` 未提供（见 [release-external-inputs.md](release-external-inputs.md)）。
 

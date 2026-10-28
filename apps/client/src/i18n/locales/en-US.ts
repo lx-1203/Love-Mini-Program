@@ -2563,6 +2563,30 @@ export default {
     membershipDisabled: "Membership is not available yet",
   },
 
+  /* ========== Notifications ========== */
+  notifications: {
+    title: "Notifications",
+    all: "All",
+    social: "Social",
+    content: "Content",
+    markAll: "Mark all read",
+    markAllDone: "All notifications marked as read",
+    markAllFailed: "Failed to mark all. Please try again.",
+    loadFailed: "Failed to load notifications. Tap to retry.",
+    openFailed: "Failed to open notification. Please try again.",
+    empty: "No notifications",
+    emptySub: "New likes, mentions and interactions will appear here",
+    type: {
+      mention: "Mention",
+      topicLike: "Topic like",
+      like: "Like",
+      comment: "Comment",
+      visitor: "Visitor",
+      match: "Match",
+      follow: "Follow",
+      system: "System"
+    }
+  },
   /* ========== Messages ========== */
   messages: {
     title: "Messages",

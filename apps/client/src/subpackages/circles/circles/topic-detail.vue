@@ -288,7 +288,7 @@ function retryLoad() {
 
 // 修复（严格模式 noUnusedLocals）：sayHello/goToAuthorProfile 通过 catchtap 绑定到模板，
 // vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
-defineExpose({ sayHello, goToAuthorProfile });
+defineExpose({ sayHello, goToAuthorProfile, confirmMentions });
 
 /**
  * 圈子话题分享（2026-08-10 A3 补齐）：分享卡片指向圈子话题详情

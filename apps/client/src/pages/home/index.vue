@@ -137,6 +137,11 @@ function goMessages() {
   uni.switchTab({ url: ROUTES.TAB.CHAT });
 }
 
+/** 2026-10-28：铃铛进入通知中心，不再只跳消息 tab */
+function goNotifications() {
+  openAppPath(ROUTES.PROFILE.NOTIFICATIONS);
+}
+
 let todayNavLock = false;
 /** 2026-09-02 R8：今日推荐整卡点击防抖（连续点 / 点住拖动不再重复 navigateTo 卡顿） */
 function goTodayProfile() {
@@ -334,7 +339,7 @@ function openInvite() {
         :location-text="locationText"
         @schoolTap="openLocationSheet"
         @searchTap="openNearbyList"
-        @notifyTap="goMessages"
+        @notifyTap="goNotifications"
       />
 
       <TodayRecommendationCard

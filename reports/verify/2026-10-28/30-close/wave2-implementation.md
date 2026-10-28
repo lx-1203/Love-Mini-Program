@@ -8,9 +8,9 @@
 
 - **四项全部落地并通过真实栈验收**：Flyway `V2026.10.28.0009–0012` 已应用，API/小程序/后台均以真实 MySQL/Redis/API 运行。
 - **临时图片按 B 强匿名执行**：会话绑定存储、URL 不含 userId、仅会话双方可读、签名 TTL 300s、伪名/默认头像/隐藏主页、联系交换完成后揭示身份、T+48h 保留期与举报 hold。
-- **静态门**：后端 `Tests=1433 Failures=0 Errors=0 Skipped=7`；客户端 `130 files / 1439 tests`；后台 `39 tests`；根契约链 exit 0；client/admin typecheck exit 0。
-- **构建**：`RELEASECHAIN_RESULT=PASS steps=15`，主包 `1.64MB` / 总包 `2.74MB`，CDN 294 条，`shippable=no`（loopback 豁免未变）。
-- **运行时**：3 个新增/改动页 DevTools 巡检 console 0；临时会话页人工取帧验证匿名横幅与消息；API 冒烟 21 项全 PASS。
+- **静态门**：后端 `Tests=1433 Failures=0 Errors=0 Skipped=7`；客户端 `132 files / 1449 tests`；后台 `39 tests`；根契约链 exit 0；client/admin typecheck exit 0。
+- **构建**：`RELEASECHAIN_RESULT=PASS steps=15`，主包 `1.64MB` / 总包 `2.75MB`，CDN 294 条，`shippable=no`（loopback 豁免未变）。
+- **运行时**：通知中心、公告、@入口、话题详情、临时会话冷启动均已取帧；临时会话页验证匿名横幅与消息；API 冒烟 21 项全 PASS。
 
 ## 1. 圈子公告表化
 
@@ -49,7 +49,7 @@
   - 新增共享 `components/circle/MentionPickerSheet.vue`（候选、最多 10、确认插入 `@昵称`）。
   - `post-topic` 增加「@ 提及圈成员」入口（仅 real + 数字圈 ID），提交带 `mentionedUserIds`。
   - `topic-detail` 回复栏增加 @ 按钮，提交带 mentions，成功后清空。
-- 客户端模型：`mention` / `topic_like` 映射与 `referenceType` 字段已补齐，未读角标与 WebSocket 推送会计数；**当前切片没有独立通知列表页**，通知正文与点击跳转在 UI 上尚不可读（后端 `summary` 已生成、API 可查）。这是本轮唯一未补的展示层缺口。
+- 通知中心（2026-10-28 补）：新增 `subpackages/profile-extra/notifications/index`，读 `GET /notifications/list`，支持全部/社交/内容筛选、全部已读、未读点；点击先跳转再标已读，按 `referenceType` 跳话题详情/帖子详情/喜欢与访客，匹配回消息 tab。首页铃铛改为进入通知中心。
 - 冒烟：话题 pending 不发 → 审核通过发；回复立即发；摘要/引用类型均判到；非圈成员请求候选返回空（实测 `count=0`）。
 
 ## 4. 临时会话图片 B 强匿名
@@ -90,6 +90,10 @@
 | MP 构建 | `RELEASECHAIN_RESULT=PASS steps=15`；主包 1.64MB；总包 2.74MB；CDN 294；`shippable=no` |
 | API 冒烟 | 21 项全 PASS（公告 8、提及/点赞 9、临时图片 4） |
 | DevTools 巡检 | circle-home / post-topic / topic-detail：console 0，帧 55KB/16KB/22KB |
+| 通知中心 | 取帧 `notifications-center-2.png`；点击首条后页面栈落到 `topic-detail?topicId=51`（`notifications-click-detail-3.png`） |
+| 真实清理 | `POST /admin/maintenance/temp-chat-cleanup`：`assets=1 messages=1 lock=true`；文件已删、资产 `deleted_at` 已写；hold 资产文件保留（`CLEANUP_VERIFY_DONE`） |
+| 深链冷启动 | 清编译缓存后直接打开 `chat-session?sessionId=qa-wave3-temp-...`，无需暖启动即渲染匿名会话（`chat-cold-final.png`） |
+| 提及确认 | 通过页面 VM 调用组件 confirm 同一处理器，正文插入 `@阿宸`、计数 1（`mention-confirm-final.png`） |
 | 临时会话帧 | `chat-temp-final.png`（匿名横幅 + 消息 + 交换/结束按钮） |
 
 证据日志：
@@ -103,12 +107,11 @@
 
 ## 6. 边界与未声称
 
-- **保留期物理删除未实跑 T+48h**：清理任务为每小时 cron；本轮用单测验证「到期删文件/消息、hold 跳过」（`TempChatCleanupMaterialsTest` 2 例），未等待真实 48 小时，也未在生产库触发一次真实删除。
-- **通知列表页缺失**：话题点赞/提及已生成服务端通知并计入未读角标，但小程序当前没有通知中心页，用户点首页铃铛只会跳到消息 tab，读不到通知正文；补页面属于下一轮展示层工作。
-- **@提及选择器的「确认插入」未由自动化点击**：picker 位于自定义组件内，DevTools `page.$` 选择器不可穿透（与既有 `component-boundary` 同类）；已取帧证明候选/计数/按钮上屏，并通过 API 冒烟证明提交后落库与通知。
-- **临时会话深链冷启动竞态**：直接深链打开时 `onLoad` 可能早于 `/auth/me`，页面按未解锁返回默认壳；本轮取帧采用「先首页暖启动再 reLaunch」的既有验收方式，未改这条既有链路。
+- **保留期未等待真实 48 小时**：已用受控后台端点对过期会话真实触发一次清理（文件删除、墓碑、消息删除、hold 跳过均实测），但仍未按墙钟等待 48h；定时 cron 与手动端点同一条实现。
+- **@提及确认不是「点内部按钮」**：组件内部按钮仍受 DevTools 选择器边界限制；本轮通过页面 VM 调用组件 confirm 的同一处理器，自动验证「确认→插入 @昵称→计数」链路。物理点击仍记仪器边界。
+- **通知中心深链冷启动**：通知页依赖登录态；清缓存后直接深链可能先落 discover，暖启动后正常。通知中心不是登录守卫的改造对象。
+- **发布外部输入未提供**：真实 HTTPS 域名、真实 AppID、`WECHAT_SECRET`、CORS 域名仍未提供；`verify-env-release` 实测 FAIL 2 条，产物 `shippable=no`。清单见 [release-external-inputs.md](release-external-inputs.md)，不伪造凭证、不声称可提审。
 - **旧公告列**：`interest_circles.announcement` 保留一个发布周期，仅兼容读；后台不再写入。
-- **外部阻断未变**：真实 HTTPS 域名/AppID/`WECHAT_SECRET` 未提供；真机/提审/发布仍不可声称；`shippable=no`。
 - **既有红账未变**：截图不入库、corpus、real-coverage 10 条等按既有裁定保留。
 
 ## 7. 数据清理与最终状态
@@ -120,8 +123,8 @@
 ## 8. 变更索引
 
 - 迁移：`database/flyway/sql/V2026.10.28.0009–0012`。
-- 后端：`CircleAnnouncement*`、`ContentMention*`、`CircleTopicLikeNotice*`、`ContentMentionService`、`TempChatMediaService`、`TempChatCleanupService`、`Media*`（temp 路由/签名/存储）、`RealCircleService`、`AdminCircleAnnouncementController`、`AdminMediaAssetController`、`JwtAuthenticationFilter`、`Notification`/`RealNotificationService`。
-- 客户端：`MentionPickerSheet.vue`、`circle-home/topics/post-topic/topic-detail`、`stores/circle.ts`、`stores/messages.ts`、`chat-session/index.vue`、`services/api.ts`、i18n。
+- 后端：`CircleAnnouncement*`、`ContentMention*`、`CircleTopicLikeNotice*`、`ContentMentionService`、`TempChatMediaService`、`TempChatCleanupService`、`Media*`（temp 路由/签名/存储）、`RealCircleService`、`AdminCircleAnnouncementController`、`AdminMediaAssetController`、`AdminMaintenanceController`、`JwtAuthenticationFilter`、`Notification`/`RealNotificationService`。
+- 客户端：`MentionPickerSheet.vue`、`circle-home/topics/post-topic/topic-detail`、`notifications/index.vue`、`utils/notification-target.ts`、`stores/circle.ts`、`stores/messages.ts`、`chat-session/index.vue`、`services/api.ts`、i18n。
 - 后台：`InterestCircles.vue`、`api/forum.ts`、`Consulting.vue`/`LegalTexts.vue` 写入口按 `sessionStore.canWrite` 收敛。
 - 测试：`ContentMentionServiceTest`（4）、`TempChatMediaServiceTest`（5）、`TempChatCleanupMaterialsTest`（2）。
 - 工具/契约：`tests/e2e/routes.generated.ts` 按生成器刷新（`help` 页 selfRedirect 漂移）。

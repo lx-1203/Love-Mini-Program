@@ -800,6 +800,25 @@ onLoad(async (query) => {
   pageErrorMessage.value = t("chat.missingSessionId");
 });
 
+/**
+ * 2026-10-28 深链冷启动修复：onLoad 可能早于 /auth/me 完成而提前 return，
+ * 登录态恢复后补一次会话加载（只补一次），不再要求先暖启动再进页。
+ */
+let deepLinkAuthResumeDone = false;
+watch(
+  isUnlocked,
+  (unlocked) => {
+    if (!unlocked || deepLinkAuthResumeDone) return;
+    if (!sessionId.value || sessionId.value === "undefined" || sessionId.value === "null") return;
+    deepLinkAuthResumeDone = true;
+    if (!profileStore.avatarUrl) {
+      profileStore.load().catch(() => { /* 静默 */ });
+    }
+    void loadSessionData();
+  },
+  { flush: "post" }
+);
+
 onShow(() => {
   // 2026-08-09 免踢登录：未登录展示 LockScreen 引导，不加载会话/消息/破冰话题（避免 401）
   if (!isUnlocked.value) return;

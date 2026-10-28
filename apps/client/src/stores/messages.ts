@@ -124,6 +124,8 @@ export interface SystemNotification {
   actionUrl?: string | null;
   /** 触发用户 ID（互动类型通知用于跳转用户资料） */
   triggerUserId?: string | null;
+  /** 触发用户头像（通知中心列表展示，2026-10-28） */
+  sourceAvatar?: string | null;
   /** 关联资源 ID（帖子等，用于跳转帖子详情） */
   resourceId?: string | null;
   /** 关联资源类型（post/comment/user/topic；话题通知跳圈子话题详情） */
@@ -465,6 +467,7 @@ function mapToSystemNotification(raw: BackendNotificationView): SystemNotificati
     createdAt: raw.createdAt,
     actionUrl: null,
     triggerUserId: null,
+    sourceAvatar: raw.sourceUser?.avatar ?? null,
     resourceId: raw.referenceId ? String(raw.referenceId) : null,
     referenceType: raw.referenceType ? String(raw.referenceType) : null,
     signalType: mappedSignalType,
