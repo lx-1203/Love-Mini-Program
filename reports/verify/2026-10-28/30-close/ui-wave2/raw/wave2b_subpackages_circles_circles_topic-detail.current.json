@@ -1,0 +1,18 @@
+[wechatide] skill-call: client=Qoder tool=automation_runtime_info
+{
+  "ok": true,
+  "tool": "automation_runtime_info",
+  "clientName": "Qoder",
+  "result": {
+    "success": true,
+    "currentPage": {
+      "pageId": 74,
+      "path": "subpackages/circles/circles/topic-detail",
+      "query": {
+        "topicId": "49"
+      },
+      "route": "/subpackages/circles/circles/topic-detail?topicId=49",
+      "title": ""
+    }
+  }
+}

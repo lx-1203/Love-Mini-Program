@@ -1,0 +1,4 @@
+page	query	open_exit	current_page	settle_reads	shot_exit	console	bytes	magic	shot	at
+subpackages/circles/circles/circle-home	circleId=8	0	/subpackages/circles/circles/circle-home?circleId=8	3	0	0	55311	89504e47	tmp/verify-20261028/shots-wave2/subpackages_circles_circles_circle-home.png	19:34:12
+subpackages/circles/circles/post-topic	circleId=8	0	/subpackages/circles/circles/post-topic?circleId=8	3	0	0	16640	89504e47	tmp/verify-20261028/shots-wave2/subpackages_circles_circles_post-topic.png	19:34:41
+subpackages/circles/circles/topic-detail	topicId=49	0	/subpackages/circles/circles/topic-detail?topicId=49	3	0	0	22193	89504e47	tmp/verify-20261028/shots-wave2/subpackages_circles_circles_topic-detail.png	19:35:10

@@ -189,3 +189,14 @@ node tmp/verify-20261028/five-ring.mjs
 - 圈子公告为单列（一条置顶），标签为逗号分隔；话题点赞不发通知。
 - @提及仅覆盖帖子（圈子话题暂不支持），通知在后台审核通过后发送。
 
+### 10.1 Wave-2 追加（2026-10-28 晚）
+
+用户裁定「临时图片选 B 强匿名，其他三项立即开工」后，上述四条边界已落地并被本轮实现取代：
+
+- **圈子公告表化**：`circle_announcements` + 后台发布/下线/置顶互斥 + 客户端公告列表（旧列 `interest_circles.announcement` 仅兼容读）。
+- **话题点赞通知**：`topic_like` + `referenceType=topic` + 去重表，取消再赞不重复。
+- **@提及扩展**：统一 `content_mentions`，话题审核通过后通知、回复即时通知，仅同圈成员，客户端共享 `MentionPickerSheet`。
+- **临时图片 B 强匿名**：`temp/{sessionUid}` 存储（URL 不含 userId）、仅双方可读、签名 TTL 300s、T+48h 清理、举报 hold、伪名/默认头像/隐藏主页、联系交换后揭示。
+
+逐项实现、迁移、读数和边界见 [wave2-implementation.md](wave2-implementation.md)。注意：清理任务的真实 T+48h 物理删除未实跑（单测覆盖逻辑）；@提及选择器确认点击受组件边界限制，取帧 + API 冒烟替代。
+

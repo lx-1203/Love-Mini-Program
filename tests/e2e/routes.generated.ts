@@ -576,9 +576,7 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "landingMarker": null,
     "registerEntryMarker": null,
     "loggedInLanding": null,
-    "selfRedirects": [
-      "/subpackages/tools/help/index"
-    ],
+    "selfRedirects": [],
     "devOnly": false
   },
   {

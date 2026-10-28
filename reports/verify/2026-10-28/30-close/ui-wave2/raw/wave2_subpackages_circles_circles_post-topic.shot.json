@@ -1,0 +1,12 @@
+[wechatide] skill-call: client=Qoder tool=simulator_screenshot
+{
+  "ok": true,
+  "tool": "simulator_screenshot",
+  "clientName": "Qoder",
+  "result": {
+    "success": true,
+    "path": "D:\\6\\恋爱小程序\\tmp\\verify-20261028\\shots-wave2\\subpackages_circles_circles_post-topic.png",
+    "imageWidth": 192,
+    "imageHeight": 413
+  }
+}

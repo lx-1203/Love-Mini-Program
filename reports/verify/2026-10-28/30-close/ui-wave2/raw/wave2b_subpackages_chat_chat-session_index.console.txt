@@ -1,0 +1,7 @@
+[wechatide] skill-call: client=Qoder tool=get_simulator_console
+{
+  "ok": true,
+  "tool": "get_simulator_console",
+  "clientName": "Qoder",
+  "result": ""
+}

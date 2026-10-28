@@ -1,0 +1,12 @@
+[wechatide] skill-call: client=Qoder tool=simulator_open_page
+{
+  "ok": true,
+  "tool": "simulator_open_page",
+  "clientName": "Qoder",
+  "result": {
+    "success": true,
+    "page": "subpackages/chat/chat-session/index",
+    "query": "sessionId=qa-ui-wave2-temp-1793186165025",
+    "scene": 1001
+  }
+}

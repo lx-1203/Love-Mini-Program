@@ -733,6 +733,11 @@ public class RealCircleService implements CircleService {
     public List<CircleMentionCandidateView> getMentionCandidates(Long circleId, Long viewerId,
                                                                  String keyword, int limit) {
         findCircleOrThrow(circleId);
+        // 仅圈成员可取候选，避免把圈成员名单暴露给任意登录用户（2026-10-28）
+        if (viewerId == null
+                || circleMembershipRepository.findByUserIdAndCircleId(viewerId, circleId).isEmpty()) {
+            return List.of();
+        }
         int safeLimit = Math.max(1, Math.min(100, limit));
         List<Long> memberIds = circleMembershipRepository.findUserIdsByCircleId(circleId).stream()
                 .filter(id -> viewerId == null || !viewerId.equals(id))

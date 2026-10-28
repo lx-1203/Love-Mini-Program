@@ -15,6 +15,9 @@ import {
 } from "@/api/legal";
 import { ApiError } from "@/api/http";
 import ErrorState from "@/components/ErrorState.vue";
+import { useSessionStore } from "@/stores/session";
+
+const sessionStore = useSessionStore();
 
 const docs = ref<AdminLegalDocument[]>([]);
 const loading = ref(false);
@@ -47,6 +50,7 @@ async function load() {
 }
 
 async function save(doc: AdminLegalDocument) {
+  if (!sessionStore.canWrite) return;
   savingId.value = doc.id;
   error.value = "";
   try {
@@ -65,6 +69,7 @@ async function save(doc: AdminLegalDocument) {
 }
 
 async function publish(doc: AdminLegalDocument) {
+  if (!sessionStore.canWrite) return;
   savingId.value = doc.id;
   error.value = "";
   try {
@@ -79,6 +84,7 @@ async function publish(doc: AdminLegalDocument) {
 }
 
 async function offline(doc: AdminLegalDocument) {
+  if (!sessionStore.canWrite) return;
   savingId.value = doc.id;
   error.value = "";
   try {
@@ -136,13 +142,13 @@ onMounted(load);
       </div>
 
       <div class="legal-actions">
-        <button type="button" class="legal-btn legal-btn--primary" :disabled="savingId === doc.id" @click="save(doc)">
+        <button type="button" class="legal-btn legal-btn--primary" :disabled="!sessionStore.canWrite || savingId === doc.id" @click="save(doc)">
           保存
         </button>
-        <button type="button" class="legal-btn" :disabled="savingId === doc.id" @click="publish(doc)">
+        <button type="button" class="legal-btn" :disabled="!sessionStore.canWrite || savingId === doc.id" @click="publish(doc)">
           发布
         </button>
-        <button type="button" class="legal-btn" :disabled="savingId === doc.id" @click="offline(doc)">
+        <button type="button" class="legal-btn" :disabled="!sessionStore.canWrite || savingId === doc.id" @click="offline(doc)">
           下线
         </button>
       </div>
