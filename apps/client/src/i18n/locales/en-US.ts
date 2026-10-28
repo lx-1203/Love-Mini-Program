@@ -3666,6 +3666,13 @@ export default {
     joinedBtn: "Joined",
     friendsJoined: "{count} friends joined",
     joinBtn: "+ Join",
+    /* 2026-10-28: circle topic/reply mentions */
+    mentionEntry: "@ Mention a member",
+    mentionTitle: "Mention a member",
+    mentionEmpty: "No members to mention",
+    mentionConfirm: "Insert @",
+    mentionLimit: "Up to 10 members",
+    mentionLoadFailed: "Failed to load members",
     /* 2026-09-02 W2 skeleton: circle home (circle-home.vue) */
     home: {
       joinCta: "Join Circle",
@@ -3674,12 +3681,6 @@ export default {
       viewAllTopics: "View all topics",
       viewAllAnnouncements: "All announcements",
       announcementsTitle: "Circle announcements",
-      mentionEntry: "@ Mention a member",
-      mentionTitle: "Mention a member",
-      mentionEmpty: "No members to mention",
-      mentionConfirm: "Insert @",
-      mentionLimit: "Up to 10 members",
-      mentionLoadFailed: "Failed to load members",
       postInCircle: "Post in circle",
       emptyTab: "Nothing here yet, stay tuned",
     },

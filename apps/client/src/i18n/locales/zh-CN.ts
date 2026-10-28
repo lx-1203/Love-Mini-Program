@@ -3741,6 +3741,13 @@ export default {
     "detailActivitiesEmpty": "该圈子暂时没有关联活动",
     "meetAuthor": "认识 TA",
     "joinBtn": "+ 加入",
+    /* 2026-10-28：圈子话题/回复 @提及 */
+    "mentionEntry": "@ 提及圈成员",
+    "mentionTitle": "提及圈成员",
+    "mentionEmpty": "暂无可提及的圈成员",
+    "mentionConfirm": "插入 @",
+    "mentionLimit": "最多提及 10 位圈成员",
+    "mentionLoadFailed": "加载圈成员失败",
     /* 2026-09-02 W2 骨架补齐：圈子主页（circle-home.vue） */
     "home": {
       "joinCta": "加入圈子",
@@ -3749,12 +3756,6 @@ export default {
       "viewAllTopics": "查看全部话题",
       "viewAllAnnouncements": "全部公告",
       "announcementsTitle": "圈子公告",
-      "mentionEntry": "@ 提及圈成员",
-      "mentionTitle": "提及圈成员",
-      "mentionEmpty": "暂无可提及的圈成员",
-      "mentionConfirm": "插入 @",
-      "mentionLimit": "最多提及 10 位圈成员",
-      "mentionLoadFailed": "加载圈成员失败",
       "postInCircle": "在圈内发帖",
       "emptyTab": "该板块暂无内容，敬请期待"
     },
