@@ -1,11 +1,11 @@
 /**
- * strip-mock-for-mp.mjs — 生产构建（mp-weixin real）前的 mock 数据与英文语言包桩化。
+ * strip-mock-for-mp.mjs — 生产构建（mp-weixin / h5 的 real 档）前的 mock 数据桩化。
  *
  * 背景（2026-08-10 包体积优化）：
  * - mock 数据由运行时 useMock() 判定，Rollup 无法摇树，real 包中白白携带
  *   services/mocks/fixtures.ts(60K)、各 store 目录下的 mock-data.ts(20-40K) 等死代码；
- * - en-US 语言包 181KB 静态打包，中文应用生产包不需要英文文案
- *   （zh-CN 为 fallbackLocale，en 缺失 key 自动回退中文，无运行风险）。
+ * - 原列表里还有 i18n/locales/en-US.ts(181KB)，2026-10-29 英文版不上线后该文件已删除，
+ *   桩化目标随之移除（脚本对缺失文件本来就是跳过，此处只是不再留下过期条目）。
  *
  * 机制：构建前备份 → 写桩（保留导出名、值置空）→ 运行构建 → finally 强制恢复。
  * 恢复后校验 git diff 不含桩文件内容，防止桩文件被提交。
@@ -21,7 +21,11 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SRC = resolve(__dirname, "../src");
 
-/** 需要桩化的文件（相对 src） */
+/**
+ * 需要桩化的文件（相对 src）。
+ * ⚠ 若将来重新引入 en-US 或其它整包语言资源，必须把它加回本列表，
+ *   否则该资源会原样进 real 包（本脚本对缺失文件是跳过，不会替你报警）。
+ */
 const STUB_TARGETS = [
   "services/mocks/fixtures.ts",
   "stores/village/mock-data.ts",
@@ -30,7 +34,6 @@ const STUB_TARGETS = [
   "stores/likes/mock-data.ts",
   "stores/messages/mock-data.ts",
   "stores/circle/mock-data.ts",
-  "i18n/locales/en-US.ts",
 ];
 
 const BACKUP_DIR = join(__dirname, ".strip-mock-backup");

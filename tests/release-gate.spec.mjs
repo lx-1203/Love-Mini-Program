@@ -109,4 +109,44 @@ assert.doesNotMatch(
   "回退路径不得再出现未经守卫的 uni build --mode real",
 );
 
+/**
+ * 非发布档必须给产物盖章（2026-10-29 全量排查）。
+ *
+ * 判点：build:h5 / build:mp-weixin(:mock/:showcase) 读的是 .env.production /
+ * .env.mp-weixin，里面是 127.0.0.1 或 example.com 占位域名。这些产物一旦被直接
+ * 拖进微信开发者工具上传，线上就是「所有请求打本机」的包。盖章脚本会把
+ * 「本产物不可发布 + 原因」写进 dist，所以它必须挂在每一条非发布构建上，
+ * 且自测必须被 test:contracts 接线（建了没人跑＝没有门）。
+ */
+const rootPkg = JSON.parse(
+  readFileSync(new URL("package.json", repoRoot), "utf8"),
+);
+const NON_SHIPPING_BANDS = [
+  "build:h5",
+  "build:mp-weixin",
+  "build:mp-weixin:mock",
+  "build:mp-weixin:showcase",
+];
+for (const key of NON_SHIPPING_BANDS) {
+  const script = clientPkg.scripts?.[key] ?? "";
+  assert.match(script, /mark-build-band\.mjs/u, `${key} 必须调用 mark-build-band 给产物盖章`);
+  assert.match(script, /--band\s+[a-z0-9-]+/u, `${key} 的盖章必须具名档位`);
+  assert.match(script, /--dist\s+\S+/u, `${key} 的盖章必须指明产物目录`);
+  assert.doesNotMatch(
+    script,
+    /--allow-loopback|--ci-placeholder/u,
+    `${key} 属非发布档，不得借用发布守卫的豁免旗标冒充可发布`,
+  );
+}
+assert.equal(
+  rootPkg.scripts?.["test:build-band"],
+  "node apps/client/scripts/mark-build-band.mjs --self-test",
+  "mark-build-band 必须有可执行的自测脚本",
+);
+assert.match(
+  rootPkg.scripts?.["test:contracts"] ?? "",
+  /npm run test:build-band/u,
+  "test:contracts 必须执行 mark-build-band 自测（漏接线）",
+);
+
 console.log("release gate contract ok");

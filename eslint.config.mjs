@@ -66,8 +66,12 @@ export default tseslint.config(
   // TypeScript 推荐规则
   ...tseslint.configs.recommended,
 
-  // Vue 推荐规则（Vue 3）
-  ...vuePlugin.configs['flat/recommended'],
+  // Vue 规则：只用 essential（正确性），不引入 recommended 的排版类规则。
+  // 原因：flat/recommended 会带进 vue/max-attributes-per-line、
+  // vue/singleline-html-element-content-newline、vue/html-indent 等格式规则，
+  // 与 .prettierrc 的格式化职责重叠，实测产生 14,820 条 warning（其中 12,437 条
+  // 可 --fix），真实信号被噪音淹没。格式化统一交给 Prettier，ESLint 只报正确性问题。
+  ...vuePlugin.configs['flat/essential'],
 
   // 项目通用规则
   {
@@ -179,6 +183,23 @@ export default tseslint.config(
   // 均为 Node 环境脚本（CommonJS 为主），补充 Node 全局变量与 require 支持，
   // 并允许 console（诊断工具以 console 输出为唯一交互方式）。
   // 产品代码（apps/admin/src、apps/client/src）不在此豁免范围内。
+  // 客户端请求收口闸（2026-10-29 全量排查后新增）
+  // 直连 uni.request 会绕过 services/http.ts 的 token 注入、401 静默刷新与错误码归一。
+  // 现存绕过点 2 处（services/sentry.ts、utils/location.ts），故先 warn；清零后升 error。
+  {
+    files: ['apps/client/src/**/*.{ts,vue}'],
+    ignores: ['apps/client/src/services/http.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'MemberExpression[object.name="uni"][property.name="request"]',
+          message: '请通过 services/http.ts 发请求：鉴权注入、401 刷新、错误码归一都在那里。',
+        },
+      ],
+    },
+  },
+
   {
     files: [
       'scripts/**/*.{cjs,js,mjs}',

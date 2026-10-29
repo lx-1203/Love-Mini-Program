@@ -207,8 +207,11 @@ export default defineConfig(({ mode }) => ({
     minify: "esbuild",
     // Sourcemap 配置：
     // - 开发模式（mode=development）：生成 sourcemap 便于调试
-    // - 生产模式：'hidden' 生成 sourcemap 但不在产物中引用（用于 Sentry 上传，不暴露给终端用户）
-    sourcemap: mode === "development" ? true : "hidden",
+    // - 生产模式：默认关闭。原先的 'hidden' 会照常把 .map 写进产物目录，
+    //   而部署用 nginx 并不拦截 .map（docker/client-nginx.conf），等于源码全文可下载；
+    //   需要给 Sentry 上传源码时显式 BUILD_SOURCEMAP=true，产物用后即删。
+    sourcemap:
+      mode === "development" ? true : process.env.BUILD_SOURCEMAP === "true" ? "hidden" : false,
     // 关闭 gzip 压缩大小报告，加速构建（避免每次构建都计算 gzip 大小）
     reportCompressedSize: false,
     // H5 构建启用 manualChunks 分包，mp-weixin 不启用（由 uni-app 自动处理）
