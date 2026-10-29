@@ -6,7 +6,8 @@
  *   - src/pages.json (uni-app 原生配置，JSON 格式，需手动同步)
  *   - src/custom-tab-bar/index.js (微信小程序自定义 TabBar，JS 文件，需手动同步)
  *   - src/components/layout/TabBar.vue (H5 端 TabBar 组件，从此文件导入)
- *   - src/i18n/locales/{zh-CN,en-US}.ts 的 tabs.<id>（走 t() 的渲染读它）
+ *   - src/i18n/locales/zh-CN.ts 的 tabs.<id>（走 t() 的渲染读它；
+ *     2026-10-29 英文版不上线，en-US.ts 已删除，唯一语言资源是 zh-CN.ts）
  *
  * 修改 Tab 配置时，请先修改此文件，再同步更新上述文件。
  *

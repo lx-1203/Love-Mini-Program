@@ -394,6 +394,9 @@ function formatTime(dateStr?: string | null): string {
   if (Number.isNaN(ts)) return "";
   // MP-R2-PAGES-MESSAGES-INDEX-004：收敛到 utils/time 单一实现
   // （当天/昨天/本周/更早 + i18n；原页面私有副本与全仓 6 处近似实现行为漂移）
+  // 2026-10-29 英文版不上线：i18n 只剩 zh-CN 一档资源，locale 恒为 "zh-CN"，
+  // 这里的 en-US 只是 formatChatListTime 的 **Intl 格式化档位**（12 小时制/英文星期缩写），
+  // 不依赖任何语言包；保留分支是为了历史遗留的 locale 值不会把格式打回中文以外再报错。
   const locale = (locale_.value === "en-US" ? "en-US" : "zh-CN") as "zh-CN" | "en-US";
   return formatChatListTime(ts, locale);
 }

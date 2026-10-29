@@ -7,8 +7,8 @@
  *   3. 提供 5 分钟内存缓存 + 强制刷新接口，平衡流量与时效性
  *
  * 与 i18n 的关系：
- *   - 本地 fallback 文本使用 i18n key（legal.userAgreement / legal.privacyPolicy），
- *     支持 zh-CN / en-US 双语
+ *   - 本地 fallback 文本使用 i18n key（legal.userAgreement / legal.privacyPolicy）；
+ *     2026-10-29 英文版不上线，唯一语言资源为 zh-CN，非中文 locale 经 fallbackLocale 取中文
  *   - 后端 CMS 返回的文本优先级高于 i18n fallback，便于法务在 CMS 中维护正式条款
  *
  * 与 services/http.ts 的关系：

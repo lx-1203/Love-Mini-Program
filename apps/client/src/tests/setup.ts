@@ -28,10 +28,13 @@
 // global.plugins 中传入 i18n，组件内 useI18n() 会抛出：
 //   SyntaxError: Need to install with 'app.use' function.
 // 这里通过 @vue/test-utils 的 config.global.plugins 默认注入 i18n，使所有 mount 自动带上。
+//
+// 语言资源口径（2026-10-29 产品决定：英文版不上线）：与 src/i18n/index.ts 保持一致，
+// 只注册 zh-CN 一档。测试若把 locale 切到非 zh-CN（如历史遗留的 "en-US"），
+// vue-i18n 会走 fallbackLocale 回退到中文文案——这正是被测的真实行为。
 import { config } from "@vue/test-utils";
 import { createI18n } from "vue-i18n";
 import zhCN from "../i18n/locales/zh-CN";
-import enUS from "../i18n/locales/en-US";
 
 const i18n = createI18n({
   legacy: false,
@@ -39,7 +42,6 @@ const i18n = createI18n({
   fallbackLocale: "zh-CN",
   messages: {
     "zh-CN": zhCN,
-    "en-US": enUS,
   },
 });
 

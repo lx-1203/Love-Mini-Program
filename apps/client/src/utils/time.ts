@@ -3,10 +3,18 @@
  *
  * 设计说明：
  * - 使用原生 Intl.DateTimeFormat 实现本地化时间格式化，避免引入 dayjs 等额外依赖；
- * - 根据当前 i18n locale（zh-CN / en-US）切换输出格式；
+ * - 根据传入的 locale（zh-CN / en-US）切换输出格式；
  * - mp-weixin 兼容：Intl.DateTimeFormat 在 mp-weixin 与 H5 端均原生支持，
  *   无需 polyfill；
  * - 不使用 optional catch binding（catch 必须带参数），与项目硬约束一致。
+ *
+ * 与语言包的关系（2026-10-29 英文版不上线，i18n 只有 zh-CN 一档资源）：
+ * - 本模块的 locale 参数是 **Intl 语言标签**，驱动的只是日期分隔符、12/24 小时制
+ *   与「刚刚 / N 分钟前 / 昨天 / 周三」这套自带常量表（RELATIVE_TIME_TEXT、
+ *   CHAT_LIST_YESTERDAY_TEXT、CHAT_LIST_WEEKDAYS_TEXT），不读 i18n 的 messages；
+ * - 因此删除 en-US.ts 不影响本模块任何输出，英文档位的格式化能力与对应用例保留；
+ * - 反过来，走 t() 取文案的调用方（如 stores、页面标题）在非中文 locale 下
+ *   会回退成中文，那是 i18n 回退链的行为，不是本模块的职责。
  *
  * 引用关系：
  * - 通过 i18n 模块的 getLocale() 获取当前 locale，避免重复维护 locale 状态；
@@ -14,11 +22,12 @@
  */
 
 /**
- * 支持的 locale 类型。
+ * 支持的 locale 类型（Intl 语言标签档位，非 i18n 语言资源清单）。
  *
- * 与 apps/client/src/i18n/index.ts 中 createI18n 的 locale 一致：
  * - 'zh-CN'：简体中文
- * - 'en-US'：美式英文
+ * - 'en-US'：美式英文（**格式化档位**，保留给 12 小时制/英文月份等 Intl 输出；
+ *   2026-10-29 英文版不上线后，i18n/index.ts 已不再注册 en-US 语言资源，
+ *   两者的差异见文件头「与语言包的关系」）
  */
 export type SupportedLocale = "zh-CN" | "en-US";
 

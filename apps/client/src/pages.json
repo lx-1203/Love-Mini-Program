@@ -15,7 +15,8 @@
    *  1. 先修改 src/config/navigation.ts 中的 appTabs
    *  2. 再同步更新此文件中的 tabBar.list
    *  3. 同时更新 src/custom-tab-bar/index.js 中的 tabs
-   *  4. 同时更新 src/i18n/locales/{zh-CN,en-US}.ts 的 tabs.<id>
+   *  4. 同时更新 src/i18n/locales/zh-CN.ts 的 tabs.<id>
+   *     （2026-10-29 英文版不上线：en-US.ts 已删除，唯一语言资源是 zh-CN.ts）
    *
    *  R6-L08（2026-10-19）实测：四处 list[].text / label / tabs.* 已同值
    *  （首页 / 附近 / 匹配 / 消息 / 我的）。本文件的 tabBar.list 在 mp-weixin 侧不参与绘制

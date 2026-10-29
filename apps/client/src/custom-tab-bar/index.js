@@ -13,7 +13,8 @@
  *  1. 先修改 src/config/navigation.ts 中的 appTabs
  *  2. 再同步更新此文件中的 tabs 配置
  *  3. 同时更新 src/pages.json 中的 tabBar.list
- *  4. 同时更新 i18n/locales/{zh-CN,en-US}.ts 的 tabs.<id>（H5 端与任何走 t() 的渲染读它）
+ *  4. 同时更新 i18n/locales/zh-CN.ts 的 tabs.<id>（H5 端与任何走 t() 的渲染读它；
+ *     2026-10-29 英文版不上线，en-US.ts 已删除，唯一语言资源是 zh-CN.ts）
  *
  *  「四处单一来源」＝ navigation.ts + 本文件 + pages.json + i18n tabs.*。四处只要有一个值不同，
  *  真机上就等于没修：tabBar.custom:true ⇒ mp-weixin 只渲染本组件的 label，

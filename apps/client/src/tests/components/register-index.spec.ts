@@ -5,7 +5,6 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { i18n, t } from "../../i18n";
 import zhCN from "../../i18n/locales/zh-CN";
-import enUS from "../../i18n/locales/en-US";
 
 /**
  * 注册页（pages/register/index.vue）两行台账的回归测试：
@@ -15,8 +14,10 @@ import enUS from "../../i18n/locales/en-US";
  * 原实现在 @input 里即时比对置错，用户还没打完第二遍密码就被判红框。
  *
  * MP-R2-PAGES-REGISTER-INDEX-013：校验/toast 文案走 t("register.*")，
- * 键在 zh-CN.ts / en-US.ts 的 register 命名空间成对维护（zh 值逐字取自
- * 设计规范 §7 错误文案表，en 为真实英文）。
+ * 键位在 zh-CN.ts 的 register 命名空间维护（zh 值逐字取自设计规范 §7 错误文案表）。
+ * 2026-10-29 英文版不上线：en-US.ts 已从仓库删除，原「zh/en 成对 + 英文为真实英文」
+ * 两侧断言收敛为「页面引用的每个键在 zh-CN 都存在且为中文文案」，
+ * 并保留 register.* 引用键数量下限。
  */
 
 vi.mock("@dcloudio/uni-app", () => ({
@@ -188,7 +189,8 @@ describe("确认密码比对时机（MP-R2-PAGES-REGISTER-INDEX-012）", () => {
 
 /**
  * MP-R2-PAGES-REGISTER-INDEX-013：判据是「toast() 收到的是 t() 而不是中文字面量」。
- * 挂载态只能看到中文（默认 locale），故按源码扫描 + 双语键位配对两侧验。
+ * 挂载态只有 zh-CN 一档语言资源（英文版不上线），故按源码扫描 + 键位在 zh-CN 存在性验，
+ * 另加一条「非中文 locale 回退中文」的取值验，证明接线的是键而非硬编码字面量。
  */
 describe("校验/toast 文案的 i18n 接线（MP-R2-PAGES-REGISTER-INDEX-013）", () => {
   const source = readFileSync(resolve(__dirname, "../../pages/register/index.vue"), "utf-8");
@@ -209,18 +211,17 @@ describe("校验/toast 文案的 i18n 接线（MP-R2-PAGES-REGISTER-INDEX-013）
     expect(hardcoded.map((m) => m[0])).toEqual([]);
   });
 
-  it("页面引用的每个 register.* 键在 zh-CN/en-US 都存在，且英文为真实英文", () => {
+  it("页面引用的每个 register.* 键在 zh-CN 都存在且为中文文案", () => {
     const keys = [...scriptBlock.matchAll(/t\(\s*"register\.([A-Za-z0-9_]+)"/g)].map((m) => m[1]);
     expect(keys.length).toBeGreaterThanOrEqual(20);
     const zh = (zhCN as unknown as { register: Record<string, string> }).register;
-    const en = (enUS as unknown as { register: Record<string, string> }).register;
-    for (const key of new Set(keys)) {
+    const referenced = [...new Set(keys)];
+    expect(referenced.length).toBeGreaterThanOrEqual(20);
+    for (const key of referenced) {
       expect(typeof zh[key], `zh-CN register.${key}`).toBe("string");
       expect(zh[key]).not.toBe("");
-      expect(typeof en[key], `en-US register.${key}`).toBe("string");
-      expect(en[key]).not.toBe("");
-      // 缺失的英文键会回退中文：en 侧不得含汉字
-      expect(en[key]).not.toMatch(CJK);
+      // 接线文案必须是中文：登记成英文/占位空串属资源缺陷（原 en 侧的对称检查）
+      expect(zh[key]).toMatch(CJK);
     }
   });
 
@@ -234,17 +235,20 @@ describe("校验/toast 文案的 i18n 接线（MP-R2-PAGES-REGISTER-INDEX-013）
     expect(zh.errMinorBlocked).toBe("未满 18 岁暂无法注册");
   });
 
-  it("空表单提交的首个提示取自 register.errPhoneRequired（已接线键，非硬编码）", async () => {
+  it("空表单提交的首个提示取自 register.errPhoneRequired（非中文 locale 回退 zh-CN 文案）", async () => {
     const toastSpy = vi.spyOn(uni, "showToast");
+    // 英文版不上线：locale 切到未注册的 en-US 时，t() 经 fallbackLocale 取中文，
+    // 这条断言验的是「toast 的 title 来自 i18n 键」而不是硬编码英文字面量。
     i18n.global.locale.value = "en-US";
     const wrapper = mountRegister();
     await wrapper.find(".submit-btn").trigger("tap");
 
     expect(toastSpy).toHaveBeenCalledWith({
-      title: "Enter your phone number",
+      title: "请输入手机号",
       icon: "none",
       duration: 2000,
     });
+    expect(t("register.errPhoneRequired")).toBe("请输入手机号");
     i18n.global.locale.value = "zh-CN";
     toastSpy.mockRestore();
   });

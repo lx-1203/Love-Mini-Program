@@ -15,18 +15,16 @@
  *    import { t } from '@/i18n';
  *    t('common.networkError');
  *
- * 包体积优化（2026-08-10）：
- * - en-US 语言包（约 135KB 编译产物）仅保留给 H5/APP 端；
- * - mp-weixin 构建通过条件编译（#ifndef MP-WEIXIN）将 en-US 静态导入与注册
- *   整体剔除，主包因此减负约 135KB（主包 2MB 门禁，见 scripts/verify-package-size.mjs）。
- *   依据：全代码库无 setLocale/locale 运行时切换调用，小程序端默认且始终为 zh-CN；
- *   若未来需要小程序多语言，应改为分包按需加载 en-US，而非恢复静态全量导入。
+ * 语言资源口径（2026-10-29 产品决定：英文版不上线）：
+ * - 唯一语言资源为 locales/zh-CN.ts，en-US 语言包已从仓库移除，
+ *   不再静态导入、不再注册到 messages；
+ * - i18n 机制本身保留（vue-i18n 实例 / t() / 回退链 / 小程序插值兜底不变），
+ *   后续若重新上线多语言，按分包按需加载新语言包，而不是恢复静态全量导入；
+ * - locale / fallbackLocale 均为 zh-CN，故任何非 zh-CN locale（如历史遗留的
+ *   "en-US" 偏好值）下的 t() 取值都会回退到中文文案，不会露出 raw key。
  */
 import { createI18n } from "vue-i18n";
 import zhCN from "./locales/zh-CN";
-// #ifndef MP-WEIXIN
-import enUS from "./locales/en-US";
-// #endif
 
 /**
  * 创建 vue-i18n 实例。
@@ -35,7 +33,7 @@ import enUS from "./locales/en-US";
  * - legacy: false —— 启用 Composition API 模式（vue-i18n@9 推荐）；
  * - locale: 'zh-CN' —— 默认语言为简体中文；
  * - fallbackLocale: 'zh-CN' —— 找不到翻译时回退到简体中文；
- * - messages —— 语言资源映射，结构与 locales/zh-CN.ts、locales/en-US.ts 一致。
+ * - messages —— 语言资源映射，2026-10-29 起只有 zh-CN 一档（结构与 locales/zh-CN.ts 一致）。
  */
 export const i18n = createI18n({
   legacy: false,
@@ -50,9 +48,6 @@ export const i18n = createI18n({
   fallbackLocale: "zh-CN",
   messages: {
     "zh-CN": zhCN,
-    // #ifndef MP-WEIXIN
-    "en-US": enUS,
-    // #endif
   },
 });
 

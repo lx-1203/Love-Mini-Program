@@ -4,7 +4,8 @@
  * 设计说明：
  * - 按「页面/模块」分组，key 使用点号分隔命名空间（如 home.welcome）；
  * - 所有页面中文文案统一在此维护，便于后续国际化扩展与运营文案调整；
- * - 与 en-US.ts 保持结构完全一致，新增文案时需同步更新两端。
+ * - 2026-10-29 产品决定英文版不上线：en-US.ts 已删除，本文件是唯一语言资源，
+ *   新增文案只需在这里登记（fallbackLocale 亦为 zh-CN，缺失键会直接露出 raw key）。
  */
 export default {
   "common": {
@@ -2237,7 +2238,8 @@ export default {
     "closedDesc": "登录通道正在维护升级，请稍后再试。"
   },
   /* 独立注册页 pages/register/index.vue 校验/toast 文案（MP-R2-PAGES-REGISTER-INDEX-013，
-     键值逐字取自接线前的中文字面量，改值即改可见文案；en-US.ts 同键位成对维护） */
+     键值逐字取自接线前的中文字面量，改值即改可见文案；2026-10-29 英文版不上线，
+     原 en-US.ts 同键位成对维护随该资源删除，本文件即唯一口径） */
   "register": {
     "errPhoneFormat": "手机号格式不正确，请输入 11 位手机号",
     "errPhoneRegistered": "该手机号已注册，试试直接登录",

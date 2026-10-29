@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
@@ -14,7 +14,6 @@ describe("通知中心页契约", () => {
   const homeSource = readFileSync(resolve(__dirname, "../../pages/home/index.vue"), "utf-8");
   const storeSource = readFileSync(resolve(__dirname, "../../stores/messages.ts"), "utf-8");
   const zhSource = readFileSync(resolve(__dirname, "../../i18n/locales/zh-CN.ts"), "utf-8");
-  const enSource = readFileSync(resolve(__dirname, "../../i18n/locales/en-US.ts"), "utf-8");
 
   it("首页铃铛进入通知中心而非消息 tab", () => {
     expect(homeSource).toContain('@notifyTap="goNotifications"');
@@ -34,10 +33,11 @@ describe("通知中心页契约", () => {
     expect(storeSource).toContain('"topic_like": "topic_like"');
   });
 
-  it("中英文案成对存在", () => {
+  it("通知中心文案在 zh-CN 存在（英文版不上线，唯一语言资源）", () => {
     expect(zhSource).toContain('"title": "通知中心"');
     expect(zhSource).toContain('"empty": "暂无通知"');
-    expect(enSource).toContain('title: "Notifications"');
-    expect(enSource).toContain('empty: "No notifications"');
+    // 2026-10-29 产品决定：en-US.ts 已删除且 i18n 不再注册英文档位；
+    // 原「中英成对」比对失去对象，改成正向断言英文包不在仓库里，防止没人注册的语言包回流。
+    expect(existsSync(resolve(__dirname, "../../i18n/locales/en-US.ts"))).toBe(false);
   });
 });

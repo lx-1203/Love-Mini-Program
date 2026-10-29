@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
@@ -14,7 +14,6 @@ describe("messages 页「标为未读」服务端同步", () => {
   );
   const storeSource = readFileSync(resolve(__dirname, "../../stores/messages.ts"), "utf-8");
   const zhSource = readFileSync(resolve(__dirname, "../../i18n/locales/zh-CN.ts"), "utf-8");
-  const enSource = readFileSync(resolve(__dirname, "../../i18n/locales/en-US.ts"), "utf-8");
 
   const unreadBranch = pageSource.slice(
     pageSource.indexOf("if (tapIndex === 1) {"),
@@ -31,11 +30,12 @@ describe("messages 页「标为未读」服务端同步", () => {
     expect(unreadBranch).toContain("messages.unreadSyncFailed");
   });
 
-  it("成功/失败文案中英成对存在", () => {
+  it("成功/失败文案在 zh-CN 存在（英文版不上线，唯一语言资源）", () => {
     expect(zhSource).toContain('"markedUnread": "已标为未读"');
     expect(zhSource).toContain('"unreadSyncFailed": "标记未读失败，请重试"');
-    expect(enSource).toContain('markedUnread: "Marked as unread"');
-    expect(enSource).toContain('unreadSyncFailed: "Failed to mark unread. Please try again."');
+    // 2026-10-29 产品决定：en-US.ts 已删除且 i18n 不再注册英文档位。
+    // 恢复一份没人注册的语言包属缺陷，这里正向断言它不在仓库里。
+    expect(existsSync(resolve(__dirname, "../../i18n/locales/en-US.ts"))).toBe(false);
   });
 
   it("store 调 PUT /unread，失败时回滚本地未读数", () => {

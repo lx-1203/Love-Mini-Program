@@ -24,7 +24,8 @@ import { t } from "../i18n";
  *
  * ⚠️ 键位：`locationPage.locationEmpty` 需 i18n 车道在
  *   src/i18n/locales/zh-CN.ts 的 locationPage 节（现只有 serverCityTag / addressUnavailable）
- *   加 `"locationEmpty": "暂无位置信息"`、en-US.ts 同节加 `"locationEmpty": "No location yet"`。
+ *   加 `"locationEmpty": "暂无位置信息"`（2026-10-29 英文版不上线，en-US.ts 已删除，
+ *   语言包只剩 zh-CN 一份，键位只需登记这一处）。
  *   该目录不在本车道可写集 ⇒ 见交件「需别的车道接手」。键未登记期间由下面的兜底 literal
  *   顶上（vue-i18n 对缺失键返回**键名本身**，不拦就会把 "locationPage.locationEmpty" 铺到页头，
  *   比原技术串更糟），所以这里必须按「取到没取到」判一次。

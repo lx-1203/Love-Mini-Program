@@ -3,7 +3,6 @@ import { mount } from "@vue/test-utils";
 import { reactive, ref } from "vue";
 import { i18n, t } from "../../i18n";
 import zhCN from "../../i18n/locales/zh-CN";
-import enUS from "../../i18n/locales/en-US";
 
 /**
  * 登录页协议可见性回归测试（2026-08-14 缺陷修复）：
@@ -158,26 +157,28 @@ describe("登录页协议可见性（2026-08-14）", () => {
 /**
  * MP-R2VIS-PAGES-LOGIN-INDEX-007：快捷授权按钮与「验证码/密码」兜底入口曾取同值文案
  * （两键值都是「手机号登录」/ "Phone Login"），同屏两枚按钮无法区分。
- * 修法 = 两键分开命名（zh-CN / en-US 同批）+ 兜底入口样式弱化，不再复用快捷按钮样式。
+ * 修法 = 两键分开命名 + 兜底入口样式弱化，不再复用快捷按钮样式。
+ * 2026-10-29 英文版不上线：en-US 侧的「配对同批」断言随资源一并删除，
+ * 分开命名这条约束收敛到唯一语言资源 zh-CN 上验。
  */
 describe("手机号快捷登录与兜底入口的文案/样式区分（MP-R2VIS-PAGES-LOGIN-INDEX-007）", () => {
   function loginLocale(messages: unknown) {
     return (messages as { login: Record<string, string> }).login;
   }
 
-  it("zh-CN 与 en-US 两键文案分开命名（配对同批）", () => {
+  it("zh-CN 两键文案分开命名（唯一语言资源侧）", () => {
     const zh = loginLocale(zhCN);
-    const en = loginLocale(enUS);
+
+    expect(typeof zh.phoneQuickLogin).toBe("string");
+    expect(typeof zh.phoneLogin).toBe("string");
+    // 非空守卫：空串会让下面的 not.toBe 与 toContain 双双失去意义
+    expect(zh.phoneQuickLogin.length).toBeGreaterThan(0);
+    expect(zh.phoneLogin.length).toBeGreaterThan(0);
 
     expect(zh.phoneQuickLogin).toContain("快捷");
     expect(zh.phoneLogin).toContain("验证码");
     expect(zh.phoneLogin).toContain("密码");
     expect(zh.phoneQuickLogin).not.toBe(zh.phoneLogin);
-
-    expect(en.phoneQuickLogin.toLowerCase()).toContain("quick");
-    expect(en.phoneLogin.toLowerCase()).toContain("code");
-    expect(en.phoneLogin.toLowerCase()).toContain("password");
-    expect(en.phoneQuickLogin).not.toBe(en.phoneLogin);
   });
 
   it("两枚按钮渲染不同文案，且 aria-label 与可见文本同键", () => {

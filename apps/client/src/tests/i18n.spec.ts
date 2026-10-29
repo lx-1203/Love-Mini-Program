@@ -1,7 +1,6 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { i18n, t } from "../i18n";
 import zhCN from "../i18n/locales/zh-CN";
-import enUS from "../i18n/locales/en-US";
 import {
   formatDateTime,
   formatRelativeTime,
@@ -13,13 +12,20 @@ import {
 /**
  * Task 3.2.1 / 3.2.4 - i18n 与时间格式化单元测试
  *
+ * 语言口径（2026-10-29 产品决定：英文版不上线）：
+ * - en-US 语言包已从 apps/client/src/i18n/locales 移除，唯一语言资源为 zh-CN；
+ * - 因此「英文译文」类断言全部改写为「非中文 locale 回退到 zh-CN 文案」，
+ *   验的是 vue-i18n fallbackLocale 的真实行为，不是被删掉的资源；
+ * - utils/time.ts 的 locale 参数走 Intl.DateTimeFormat 与本模块自带的
+ *   星期/昨天/相对时间常量表，与语言包无关，故 en-US 档位格式化用例保留。
+ *
  * 测试范围：
  * 1. i18n 实例默认配置（locale / fallbackLocale / messages 结构）
- * 2. locale 切换：setLocale 后 t() 返回对应语言的翻译
- * 3. 翻译完整性：zh-CN 与 en-US 的 key 集合一致，避免缺失翻译
+ * 2. locale 取值：非 zh-CN locale 回退到 zh-CN 文案
+ * 3. 翻译完整性：zh-CN 叶子 key 数量下限 + 核心命名空间存在 + 无空值
  * 4. 占位符插值：t('likes.minutesAgo', { n: 5 }) 正确替换
  * 5. 时间格式化工具（utils/time.ts）：
- *    - formatDateTime 在不同 locale 下输出符合预期格式
+ *    - formatDateTime 在不同 locale 下输出符合预期格式（Intl 能力，与语言包无关）
  *    - formatRelativeTime 输出相对时间文案
  *    - normalizeLocale 容错处理
  *    - formatChatListTime 在不同场景下输出正确格式
@@ -46,9 +52,11 @@ describe("i18n - vue-i18n 实例配置", () => {
     expect(i18n.global.fallbackLocale.value).toBe("zh-CN");
   });
 
-  it("应加载 zh-CN 与 en-US 两种语言资源", () => {
+  it("应只加载 zh-CN 一种语言资源（英文版不上线，2026-10-29）", () => {
     expect(i18n.global.messages.value["zh-CN"]).toBeDefined();
-    expect(i18n.global.messages.value["en-US"]).toBeDefined();
+    // en-US 资源已随产品决定移除：注册表里既没有该键，可用 locale 也只有一档
+    expect(i18n.global.messages.value["en-US"]).toBeUndefined();
+    expect(i18n.global.availableLocales).toEqual(["zh-CN"]);
   });
 
   it("legacy 模式应为 false（启用 Composition API）", () => {
@@ -70,29 +78,33 @@ describe("i18n - locale 切换", () => {
     expect(t("home.welcome")).toBe("校园恋爱");
   });
 
-  it("en-US 下应返回英文翻译", () => {
+  it("非中文 locale（en-US）下 t() 应回退到 zh-CN 文案", () => {
+    // 英文版不上线：en-US 未注册任何资源，vue-i18n 走 fallbackLocale('zh-CN')
     i18n.global.locale.value = "en-US";
-    expect(t("common.confirm")).toBe("Confirm");
-    expect(t("common.cancel")).toBe("Cancel");
-    expect(t("home.welcome")).toBe("Campus Love");
+    expect(t("common.confirm")).toBe("确认");
+    expect(t("common.cancel")).toBe("取消");
+    expect(t("home.welcome")).toBe("校园恋爱");
   });
 
-  it("切换 locale 后 t() 应响应式返回新语言", () => {
+  it("locale 变更后 t() 响应式求值，且不因资源缺失露出 raw key", () => {
     i18n.global.locale.value = "zh-CN";
     const zhValue = t("common.save");
     expect(zhValue).toBe("保存");
 
+    // 切到已下线的英文档位：仍解析为中文兜底文案，而不是 "common.save" 这种 raw key
     i18n.global.locale.value = "en-US";
-    const enValue = t("common.save");
-    expect(enValue).toBe("Save");
+    const fallbackValue = t("common.save");
+    expect(fallbackValue).toBe("保存");
+    expect(fallbackValue).not.toBe("common.save");
+
+    i18n.global.locale.value = "zh-CN";
+    expect(t("common.save")).toBe("保存");
   });
 
   it("缺失 key 时应回退到 fallbackLocale", () => {
-    // 使用一个 zh-CN 有但 en-US 也会回退到 zh-CN 的场景
-    // 实际 vue-i18n 在 fallbackLocale 配置下，缺失 key 时回退到 fallback
+    // en-US 档位整体无资源 ⇒ 命中 fallbackLocale，取到中文文案
     i18n.global.locale.value = "en-US";
-    // common.confirm 在两端都存在，验证 key 解析正常
-    expect(t("common.confirm")).toBe("Confirm");
+    expect(t("common.confirm")).toBe("确认");
 
     // 不存在的 key：根据 vue-i18n 行为，回退到 fallback 后仍找不到则返回 key 本身
     i18n.global.locale.value = "zh-CN";
@@ -122,25 +134,48 @@ describe("i18n - 翻译 key 完整性", () => {
     return keys;
   }
 
-  it("zh-CN 与 en-US 的 key 集合应一致", () => {
-    const zhKeys = new Set(collectKeys(zhCN as unknown as Record<string, unknown>));
-    const enKeys = new Set(collectKeys(enUS as unknown as Record<string, unknown>));
+  /**
+   * 递归收集对象的所有叶子条目（路径 + 值），口径与 {@link collectKeys} 一致。
+   *
+   * @param obj - 待遍历的对象
+   * @param prefix - 当前路径前缀
+   * @returns 叶子条目数组（如 [['common.confirm', '确认']]）
+   */
+  function collectLeafEntries(
+    obj: Record<string, unknown>,
+    prefix = "",
+  ): Array<[string, unknown]> {
+    const entries: Array<[string, unknown]> = [];
+    for (const key of Object.keys(obj)) {
+      const path = prefix ? `${prefix}.${key}` : key;
+      const value = obj[key];
+      if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+        entries.push(...collectLeafEntries(value as Record<string, unknown>, path));
+      } else {
+        entries.push([path, value]);
+      }
+    }
+    return entries;
+  }
 
-    const missingInEn = [...zhKeys].filter((k) => !enKeys.has(k));
-    const missingInZh = [...enKeys].filter((k) => !zhKeys.has(k));
+  it("zh-CN 键集应自洽：叶子路径唯一且文案值非空", () => {
+    // 英文包下线后没有「zh/en 键集一致」可验，改为把同等强度的成对性约束
+    // 落在唯一语言资源自身：路径不得重复、叶子值不得为空串/null/undefined。
+    const entries = collectLeafEntries(zhCN as unknown as Record<string, unknown>);
+    const uniquePaths = new Set(entries.map((e) => e[0]));
+    expect(uniquePaths.size).toBe(entries.length);
 
-    expect(missingInEn).toEqual([]);
-    expect(missingInZh).toEqual([]);
+    // login.guestLoginDesc 是「访客入口不要描述语」的有意空串（zh-CN.ts:2199），
+    // 其余键都必须有文案：新增的空值/漏填会在这里红，而不是被成对检查掩盖。
+    const emptyLeaves = entries
+      .filter(([, value]) => value === "" || value === null || value === undefined)
+      .map(([path]) => path);
+    expect(emptyLeaves).toEqual(["login.guestLoginDesc"]);
   });
 
-  it("zh-CN 应至少包含 100 个翻译 key", () => {
+  it("zh-CN 应至少包含 1500 个翻译 key", () => {
     const zhKeys = collectKeys(zhCN as unknown as Record<string, unknown>);
-    expect(zhKeys.length).toBeGreaterThanOrEqual(100);
-  });
-
-  it("en-US 应至少包含 100 个翻译 key", () => {
-    const enKeys = collectKeys(enUS as unknown as Record<string, unknown>);
-    expect(enKeys.length).toBeGreaterThanOrEqual(100);
+    expect(zhKeys.length).toBeGreaterThanOrEqual(1500);
   });
 
   it("应覆盖核心页面文案（home/discover/chat/profile/likes）", () => {
@@ -165,11 +200,12 @@ describe("i18n - 占位符插值", () => {
     expect(t("home.checkinSuccess", { n: 7 })).toBe("签到成功！连续7天");
   });
 
-  it("en-US 下应正确替换 {n} 占位符", () => {
+  it("非中文 locale 下 {n} 占位符插值仍回退 zh-CN 文案", () => {
+    // 英文包已下线：回退链取的是 zh-CN 模板，插值同样要成立
     i18n.global.locale.value = "en-US";
-    expect(t("common.minutesAgo", { n: 5 })).toBe("5 minutes ago");
-    expect(t("common.hoursAgo", { n: 2 })).toBe("2 hours ago");
-    expect(t("home.checkinSuccess", { n: 7 })).toBe("Check-in succeeded! 7 days in a row");
+    expect(t("common.minutesAgo", { n: 5 })).toBe("5分钟前");
+    expect(t("common.hoursAgo", { n: 2 })).toBe("2小时前");
+    expect(t("home.checkinSuccess", { n: 7 })).toBe("签到成功！连续7天");
   });
 
   it("多占位符应同时替换", () => {
@@ -437,7 +473,7 @@ describe("Task 3.1 - 设计 Token 完整性回归", () => {
  * 1. Admin 后台 8+ 视图 i18n key 存在性（SubTask 3.3.2）
  * 2. 14 个 Store 错误回退消息 i18n key 存在性（SubTask 3.3.3）
  * 3. 法律文本 i18n key 存在性（SubTask 3.3.5）
- * 4. 核心模块 locale 切换响应式验证
+ * 4. 核心模块 locale 取值与中文兜底验证（英文版不上线后无「切英文出英文」一档）
  */
 describe("Task 3.3.2 - Admin 视图 i18n key 存在性", () => {
   /**
@@ -460,13 +496,11 @@ describe("Task 3.3.2 - Admin 视图 i18n key 存在性", () => {
   const zhKeys = new Set(
     collectKeys(zhCN as unknown as Record<string, unknown>),
   );
-  const enKeys = new Set(
-    collectKeys(enUS as unknown as Record<string, unknown>),
-  );
 
   /**
    * Admin 后台 8+ 视图清单（SubTask 3.3.2 要求至少 8 个视图）。
    * 每个视图对应 admin.<view> 命名空间。
+   * 2026-10-29：英文版不上线，en-US 侧键位存在性检查随资源一并移除，只验 zh-CN。
    */
   const adminViews = [
     "admin.login",
@@ -495,22 +529,26 @@ describe("Task 3.3.2 - Admin 视图 i18n key 存在性", () => {
     },
   );
 
-  it.each(adminViews)(
-    "en-US 应包含 %s.* 命名空间",
-    (namespace) => {
-      const hasKey = [...enKeys].some((k) => k.startsWith(`${namespace}.`));
-      expect(hasKey).toBe(true);
-    },
-  );
+  it("zh-CN 的 Admin 视图词条合计应不低于 40 条", () => {
+    const total = adminViews.reduce(
+      (sum, namespace) =>
+        sum + [...zhKeys].filter((k) => k.startsWith(`${namespace}.`)).length,
+      0,
+    );
+    // 正向计数下限（英文版下线后唯一语言资源的体量守卫，防空集合恒真）
+    expect(total).toBeGreaterThanOrEqual(40);
+  });
 
   it("admin.login 在 zh-CN 下应返回中文标题", () => {
     i18n.global.locale.value = "zh-CN";
     expect(t("admin.login.title")).toBe("管理员登录");
   });
 
-  it("admin.login 在 en-US 下应返回英文标题", () => {
+  it("admin.login 在非中文 locale 下应回退到 zh-CN 文案", () => {
     i18n.global.locale.value = "en-US";
-    expect(t("admin.login.title")).toBe("Administrator Login");
+    // en-US 资源已删除，vue-i18n 按 fallbackLocale 取中文，不得露出 raw key
+    expect(t("admin.login.title")).toBe("管理员登录");
+    i18n.global.locale.value = "zh-CN";
   });
 
   it("admin.common.logout 在 zh-CN 下应返回'退出登录'", () => {
@@ -537,15 +575,13 @@ describe("Task 3.3.3 - 14 个 Store 错误回退消息 i18n key 存在性", () =
   const zhKeys = new Set(
     collectKeys(zhCN as unknown as Record<string, unknown>),
   );
-  const enKeys = new Set(
-    collectKeys(enUS as unknown as Record<string, unknown>),
-  );
 
   /**
    * Store 模块清单（SubTask 3.3.3 要求覆盖 14+ 个 Store）。
    * 每个 Store 对应 storeErrors.<module> 命名空间。
    * 修复（R4-batch2）：原断言 14 但清单仅 13 项且漏掉 activity/report/session。
    * 2026-08-10：视频通话功能整体下架，storeErrors.videoCall 已随模块移除，断言 16 → 15。
+   * 2026-10-29：英文版不上线，en-US 侧键位存在性检查随资源一并移除，只验 zh-CN。
    */
   const storeModules = [
     "storeErrors.campus",
@@ -577,13 +613,15 @@ describe("Task 3.3.3 - 14 个 Store 错误回退消息 i18n key 存在性", () =
     },
   );
 
-  it.each(storeModules)(
-    "en-US 应包含 %s.* 命名空间",
-    (namespace) => {
-      const hasKey = [...enKeys].some((k) => k.startsWith(`${namespace}.`));
-      expect(hasKey).toBe(true);
-    },
-  );
+  it("zh-CN 的 storeErrors 词条合计应不低于 45 条", () => {
+    const total = storeModules.reduce(
+      (sum, namespace) =>
+        sum + [...zhKeys].filter((k) => k.startsWith(`${namespace}.`)).length,
+      0,
+    );
+    // 正向计数下限：15 个模块 × 每模块至少 3 条，防止命名空间清单退化为空匹配
+    expect(total).toBeGreaterThanOrEqual(45);
+  });
 
   it("storeErrors.checkin.timeout 在 zh-CN 下应返回中文", () => {
     i18n.global.locale.value = "zh-CN";
@@ -626,12 +664,10 @@ describe("Task 3.3.5 - 法律文本 i18n key 存在性", () => {
   const zhKeys = new Set(
     collectKeys(zhCN as unknown as Record<string, unknown>),
   );
-  const enKeys = new Set(
-    collectKeys(enUS as unknown as Record<string, unknown>),
-  );
 
   /**
    * 法律文本必备 key 清单（用户协议 / 隐私政策 / 授权同意）。
+   * 2026-10-29：英文版不上线，en-US 侧键位存在性检查随资源一并移除，只验 zh-CN。
    */
   const requiredLegalKeys = [
     "legal.userAgreement.title",
@@ -649,12 +685,11 @@ describe("Task 3.3.5 - 法律文本 i18n key 存在性", () => {
     },
   );
 
-  it.each(requiredLegalKeys)(
-    "en-US 应包含 key: %s",
-    (key) => {
-      expect(enKeys.has(key)).toBe(true);
-    },
-  );
+  it("zh-CN 的 legal.* 词条合计应不低于 6 条", () => {
+    const total = [...zhKeys].filter((k) => k.startsWith("legal.")).length;
+    // 正向计数下限：与必备清单等量，防止 legal 命名空间被整段裁掉后仍「逐条通过」
+    expect(total).toBeGreaterThanOrEqual(requiredLegalKeys.length);
+  });
 
   it("legal.userAgreement.title 在 zh-CN 下应返回'用户协议'", () => {
     i18n.global.locale.value = "zh-CN";
@@ -672,90 +707,98 @@ describe("Task 3.3.5 - 法律文本 i18n key 存在性", () => {
   });
 });
 
-describe("Task 3.3 - 核心模块 locale 切换响应式验证", () => {
+describe("Task 3.3 - 核心模块 locale 取值与中文兜底验证", () => {
   /**
-   * 验证 Task 3.3 新增的模块（admin / storeErrors / legal / success）
-   * 在 locale 切换时能正确响应式返回对应语言的翻译。
+   * 验证 Task 3.3 新增的模块（admin / storeErrors / legal / success）在
+   * locale 取值时的响应式行为。
+   *
+   * 2026-10-29 英文版不上线：en-US 资源已删除，这些模块不再存在「切英文出英文」
+   * 一档。此处按真实行为改写为——历史遗留的非中文 locale 值必须落回 zh-CN 文案，
+   * 既不能是空串，也不能露出 raw key。
    */
   beforeEach(() => {
     i18n.global.locale.value = "zh-CN";
   });
 
-  it("admin 模块 locale 切换应响应式返回对应语言", () => {
+  it("admin 模块：zh-CN 取中文，非中文 locale 回退 zh-CN", () => {
     i18n.global.locale.value = "zh-CN";
     const zhTitle = t("admin.login.title");
     expect(zhTitle).toBe("管理员登录");
 
     i18n.global.locale.value = "en-US";
-    const enTitle = t("admin.login.title");
-    expect(enTitle).toBe("Administrator Login");
+    const fallbackTitle = t("admin.login.title");
+    expect(fallbackTitle).toBe("管理员登录");
+    expect(fallbackTitle).not.toBe("admin.login.title");
 
     // 切回 zh-CN
     i18n.global.locale.value = "zh-CN";
     expect(t("admin.login.title")).toBe("管理员登录");
   });
 
-  it("storeErrors 模块 locale 切换应响应式返回对应语言", () => {
+  it("storeErrors 模块：非中文 locale 回退 zh-CN 文案", () => {
     i18n.global.locale.value = "zh-CN";
     const zhMsg = t("storeErrors.checkin.timeout");
     expect(zhMsg).toBe("签到请求超时，请稍后重试");
 
     i18n.global.locale.value = "en-US";
-    const enMsg = t("storeErrors.checkin.timeout");
-    // en-US 下应返回非空字符串，且不等于中文
-    expect(enMsg).not.toBe("");
-    expect(enMsg).not.toBe(zhMsg);
+    const fallbackMsg = t("storeErrors.checkin.timeout");
+    expect(fallbackMsg).toBe(zhMsg);
+    expect(fallbackMsg).not.toBe("");
   });
 
-  it("legal 模块 locale 切换应响应式返回对应语言", () => {
+  it("legal 模块：非中文 locale 回退 zh-CN 文案", () => {
     i18n.global.locale.value = "zh-CN";
     const zhTitle = t("legal.userAgreement.title");
     expect(zhTitle).toBe("用户协议");
 
     i18n.global.locale.value = "en-US";
-    const enTitle = t("legal.userAgreement.title");
-    expect(enTitle).not.toBe("");
-    expect(enTitle).not.toBe(zhTitle);
+    const fallbackTitle = t("legal.userAgreement.title");
+    expect(fallbackTitle).toBe("用户协议");
+    expect(fallbackTitle).not.toBe("");
   });
 
-  it("success 模块 locale 切换应响应式返回对应语言", () => {
+  it("success 模块：非中文 locale 回退 zh-CN 文案", () => {
     i18n.global.locale.value = "zh-CN";
     expect(t("success.saved")).toBe("保存成功");
 
     i18n.global.locale.value = "en-US";
-    expect(t("success.saved")).not.toBe("");
-    expect(t("success.saved")).not.toBe("保存成功");
+    expect(t("success.saved")).toBe("保存成功");
   });
 });
 
 describe("Task 3.5 - 常量化完整性回归", () => {
   /**
    * 验证 Task 3.5 创建的常量文件包含必要的导出。
+   *
+   * 超时口径同 Task 3.3.4：这几条走 await import 的冷模块图，在并行负载下会挤爆
+   * 5000ms 默认预算（2026-10-29 移除 en-US 语言包后同批跑 5 个 spec 实测
+   * routes.ts 一条 5033ms 超时，单独跑 1.5s 全绿）——属测量仪表预算不足，非产品缺陷，
+   * 断言本身不放宽。
    */
   it("constants/routes.ts 应导出页面路径常量", async () => {
     const routes = await import("../constants/routes");
     expect(routes).toBeDefined();
     // 至少应包含核心页面路径常量
     expect(typeof routes).toBe("object");
-  });
+  }, { timeout: 30_000 });
 
   it("constants/storage-keys.ts 应导出 Storage key 常量", async () => {
     const storageKeys = await import("../constants/storage-keys");
     expect(storageKeys).toBeDefined();
     expect(typeof storageKeys).toBe("object");
-  });
+  }, { timeout: 30_000 });
 
   it("constants/api-params.ts 应导出 API 参数常量", async () => {
     const apiParams = await import("../constants/api-params");
     expect(apiParams).toBeDefined();
     expect(typeof apiParams).toBe("object");
-  });
+  }, { timeout: 30_000 });
 
   it("constants/limits.ts 应导出魔法数字常量", async () => {
     const limits = await import("../constants/limits");
     expect(limits).toBeDefined();
     expect(typeof limits).toBe("object");
-  });
+  }, { timeout: 30_000 });
 });
 
 describe("Task 3.3.4 - Mock 数据 i18n 化回归", () => {
