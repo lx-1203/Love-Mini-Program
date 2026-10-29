@@ -112,3 +112,58 @@ git ls-files database/backup        → 105 个文件，其中 .sql 23 个
 
 A2/A3 建议单独一次提交：删 25 个组件 + 26 个对应 story/spec，然后重跑客户端 vitest 与 `test:asset-coverage:source`（本轮基线：ASSETCOV PASS、分母 929、缺件 0）。
 
+
+---
+
+## 六、第二轮（2026-10-29 续，用户要求「三件事全部完整实现」）
+
+先提交第一轮成果（6 个提交：后端 N+1 / 管理端 / 客户端构建与 lint / 客户端英文+死代码 /
+仓库文档工具链 / 索引瘦身），再执行原本标注「待确认」的三件事。
+
+### B1 仓库瘦身 —— 已执行（索引层）
+
+`scripts/repo-purge.sh --apply` 实测：`git ls-files` **18,062 → 10,052**，
+`git ls-files -ci --exclude-standard` **7,980 → 0**；工作区文件一个没删（盘上证据仍在）。
+执行后复跑 `test:contracts` EXIT=0，其中被门禁读取的三份台账
+（r16 处置台账、mp-fidelity baseline-manifest、fixlist-R16）经 `git check-ignore -v`
+确认不在忽略集内，未被移出。
+
+仍未做（需要协调，不在本机可控范围）：`git filter-repo` 清除历史 + force-push。
+remote 是 `github.com:lx-1234/...`（本次未 push 任何东西），历史重写会让所有协作者重新 clone，
+必须先取得同意并有全仓镜像。
+
+### B2 支付事务改造 —— 已实现并验证
+
+见提交 `fix(vip): keep WeChat calls out of DB transactions`。改造过程中
+新增的边界测试**抓到一个存量缺陷**：`formatRfc3339` 用 `XXX` 直接格式化
+`LocalDateTime` 必抛 `UnsupportedTemporalTypeException` —— 也就是说 VIP 下单
+在调微信之前就会 500，此前没有任何测试覆盖 `createOrder` 所以一直存在。
+现已先挂业务时区再格式化，并用 `time_expire` 的正则断言钉住。
+
+新增 `VipOrderTransactionBoundaryTest` 7 例：真实 `AbstractPlatformTransactionManager`
+子类驱动 `TransactionTemplate`，断言「调微信那一刻线程上没有活动事务」，并把
+`tx-begin / save:STATUS / tx-commit / wx-*` 排成事件序列逐字比对。
+全量 `./mvnw verify`（跳过被在跑服务占用的 repackage）：**1,438 测试 0 失败 0 错误，覆盖率门禁通过**。
+
+### 孤儿文案棘轮 —— 本轮新增已清零
+
+按 before/after 差集精确删除本轮新增的 40 个死键（`discover.*` 10、`home.*` 5、
+`homeBanner.*` 2 整块、`socialProgress.*` 23），zh-CN 键数 **4,203 → 4,163**，
+孤儿数 **1,319 → 1,279**，即回到本轮改动前的基线，本轮净增债为 0。
+删除前先测得 HEAD 基线就是 1,279（> 棘轮 1,257），所以那 **22 条是 2026-09-25 之后
+累积的历史债**（该工具不在 `test:contracts` 里，一直没被人复核），不属本轮责任；
+要不要顺手清掉需你决定——它们的删除方式与本轮相同（逐键唯一性守卫 + 键数守恒校验）。
+
+验证：客户端 `vue-tsc` 无错误、132 spec 全过；`test:docs` 通过；`pnpm run lint` 0 error / 493 warning。
+
+### 现在的门与债清单（供下一轮）
+
+| 事项 | 状态 |
+|---|---|
+| admin-legacy（13MB/454 文件，零引用）删除 | 待你确认 5178 回退端无人使用 |
+| A2/A3 死代码（20 组件 + 5 级联孤儿，另需删 26 个 story/spec） | 待做，VirtualList 已排除（长列表要用） |
+| 22 条历史孤儿键 / 把 `verify-i18n-orphan` 接进 `test:contracts` | 待做（接线后棘轮才有牙齿） |
+| H5 `build:h5:real` 走 strip-mock 后的真实产物 | 未跑（需 `.env.real.local` 占位域名） |
+| Testcontainers 集成测试 | 本机 Docker 引擎未运行，装不上就验不了 |
+| Caffeine maximumSize / Redis 多端会话 / 定时任务分布式锁 | 多实例上线前必做 |
+| 图片管线（H5 档 assets 14MB） | 待做；小程序 real 档已裁到 436KB，不受影响 |
