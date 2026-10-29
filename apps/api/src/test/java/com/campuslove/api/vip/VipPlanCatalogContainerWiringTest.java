@@ -30,6 +30,7 @@ import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.UnsatisfiedDependencyException;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 /**
  * P0-3 C：{@link VipPlanCatalog} 必须是<b>容器里的同一颗 bean</b>，而不是静态回退实例。
@@ -78,6 +79,12 @@ class VipPlanCatalogContainerWiringTest {
         beanFactory.registerSingleton("adminAppSwitchRepository", mock(AdminAppSwitchRepository.class));
         beanFactory.registerSingleton("redissonClient", mock(RedissonClient.class));
         beanFactory.registerSingleton("walletService", mock(WalletService.class));
+        // VipOrderService 依赖事务管理器做编程式事务边界（下单/退款/关单）。
+        // 本类只验「目录 bean 唯一」这条装配判点，不跑真实事务，故用不启事务的桩管理器。
+        org.springframework.transaction.PlatformTransactionManager txManager =
+                mock(org.springframework.transaction.PlatformTransactionManager.class);
+        when(txManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
+        beanFactory.registerSingleton("transactionManager", txManager);
         if (includeCatalog) {
             context.register(VipPlanCatalog.class);
         }

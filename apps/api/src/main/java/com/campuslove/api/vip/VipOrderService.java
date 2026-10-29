@@ -30,7 +30,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.SimpleTransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * VIP 微信支付订单服务（2026-10-05 微信支付工程补齐）。
@@ -91,6 +94,8 @@ public class VipOrderService {
     private final VipOrderRepository vipOrderRepository;
     private final BillingService billingService;
     private final PaymentCallbackLogRepository paymentCallbackLogRepository;
+    /** 状态写入的事务边界（下单 / 退款 / 关单都靠它把微信 API 调用留在事务之外） */
+    private final TransactionTemplate transactionTemplate;
 
     /** 微信支付配置（real profile 注入；缺省 enabled=false 时下单/回调端点 404） */
     @Autowired(required = false)
@@ -112,10 +117,61 @@ public class VipOrderService {
                            BillingService billingService,
                            PaymentCallbackLogRepository paymentCallbackLogRepository,
                            VipPlanCatalog planCatalog) {
+        this(vipOrderRepository, billingService, paymentCallbackLogRepository, planCatalog, noOpTxManager());
+    }
+
+    /**
+     * Spring 装配入口：由事务管理器构造 {@link TransactionTemplate}。
+     *
+     * <p>为什么用编程式事务而不是方法上的 {@code @Transactional}：下单 / 退款 / 关单都要
+     * 调微信 API，而声明式注解在同类自调用（this.xxx()）时不经过代理、根本不生效，
+     * 想拆开只能把状态写入挪到另一个 bean。TransactionTemplate 让「哪几条语句属于
+     * 同一个事务」在代码里可见，也让「外部调用必须落在事务边界之外」可被单测直接证伪
+     * （见 VipOrderTransactionBoundaryTest）。</p>
+     *
+     * <p>注入的是 {@link PlatformTransactionManager} 而不是 TransactionTemplate：
+     * 前者只要开了事务管理就一定存在，后者依赖 Boot 的 TransactionAutoConfiguration，
+     * 手工装配的容器（本仓的容器接线测试即是）里没有，会让 bean 创建直接失败。</p>
+     */
+    @Autowired
+    public VipOrderService(VipOrderRepository vipOrderRepository,
+                           BillingService billingService,
+                           PaymentCallbackLogRepository paymentCallbackLogRepository,
+                           VipPlanCatalog planCatalog,
+                           PlatformTransactionManager transactionManager) {
         this.vipOrderRepository = vipOrderRepository;
         this.billingService = billingService;
         this.paymentCallbackLogRepository = paymentCallbackLogRepository;
         this.planCatalog = planCatalog;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
+
+    /**
+     * 四参构造用的「不开事务」事务管理器。
+     *
+     * <p>单测直接 new 本类时不经过 Spring 代理，原先方法上的 {@code @Transactional}
+     * 本来就不生效；这里把同一事实显式化：回调照常执行，但不登记任何线程级事务同步，
+     * 因此 {@code TransactionSynchronizationManager.isActualTransactionActive()} 仍为 false，
+     * 不会让「外部调用在事务外」这类判点在测试里被假绿。</p>
+     */
+    private static PlatformTransactionManager noOpTxManager() {
+        return new PlatformTransactionManager() {
+            @Override
+            public org.springframework.transaction.TransactionStatus getTransaction(
+                    org.springframework.transaction.TransactionDefinition definition) {
+                return new SimpleTransactionStatus();
+            }
+
+            @Override
+            public void commit(org.springframework.transaction.TransactionStatus status) {
+                // 无事务可提交
+            }
+
+            @Override
+            public void rollback(org.springframework.transaction.TransactionStatus status) {
+                // 无事务可回滚
+            }
+        };
     }
 
     /* ==================== 下单 ==================== */
@@ -123,17 +179,25 @@ public class VipOrderService {
     /**
      * 创建 VIP 微信支付订单并获取 prepay_id。
      *
-     * <p>流程：校验套餐 → 服务端定价 → 生成全局唯一 orderNo → 落 PENDING（含过期时间）→
-     * 调微信统一下单 → 迁移 PAYING → 返回 wx.requestPayment 五件套。
-     * 下单失败（微信 API 异常）时订单置 FAILED 并抛出业务异常。</p>
+     * <p>事务边界（2026-10-29 改造，微信 API 调用一律落在事务之外）：
+     * 校验套餐与服务端定价 → 生成全局唯一 orderNo → <b>tx1</b> 落 PENDING（含过期时间）
+     * → 调微信统一下单拿 prepay_id（不开事务）→ <b>tx2</b> 按 id 重载、迁移 PAYING 并回填；
+     * 下单失败时 <b>tx3</b> 置 FAILED（终态），用户可重新下单。</p>
+     *
+     * <p>为什么不能一个事务做完：原先 {@code @Transactional} 覆盖整段，微信接口耗时直接
+     * 计入事务与行锁持有时间；更关键的是「微信已受理、本地事务随后回滚」会留下用户端
+     * 可支付而库中无单的 prepay_id（反之则出现库里有单、微信没单）。拆成可提交的小事务后，
+     * 失败补偿只动状态，不篡改资金事实。</p>
+     *
+     * <p>tx2/tx3 都按 id 重新装载并校验当前状态：两次提交之间支付回调可能已把订单推到
+     * SUCCESS（用户在微信侧秒付），此时必须放弃迁移而不是覆盖回调结论。</p>
      *
      * @param userId 下单用户 ID
      * @param planId 套餐 ID（monthly/quarterly/yearly）
      * @return wx.requestPayment 所需参数（orderNo + appId/timeStamp/nonceStr/package/signType/paySign）
-     * @throws IllegalArgumentException 套餐非法 / openid 缺失
+     * @throws IllegalArgumentException 套餐非法 / openid 缺失 / 微信下单失败
      * @throws WxPayDisabledException   微信支付未启用（端点层已 404，此处兜底）
      */
-    @Transactional
     public OrderCreatedView createOrder(Long userId, String planId) {
         if (userId == null) {
             throw new IllegalArgumentException("用户 ID 不能为空");
@@ -147,45 +211,80 @@ public class VipOrderService {
         }
 
         LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
-        VipOrder order = new VipOrder();
-        order.setOrderNo(newOrderNo(now));
-        order.setUserId(userId);
-        order.setPlanId(plan.planId());
-        order.setPlanName(plan.planName());
-        order.setPlanDays(plan.days());
-        order.setAmountCents(plan.priceCents());
-        order.setStatus(VipOrder.STATUS_PENDING);
-        order.setOpenid(openid);
-        order.setExpireAt(now.plusMinutes(orderExpireMinutes()));
-        vipOrderRepository.save(order);
-        log.info("VIP 订单已创建（PENDING）：orderNo={}, userId={}, planId={}, amountCents={}",
-                order.getOrderNo(), userId, planId, plan.priceCents());
+        VipOrder draft = new VipOrder();
+        draft.setOrderNo(newOrderNo(now));
+        draft.setUserId(userId);
+        draft.setPlanId(plan.planId());
+        draft.setPlanName(plan.planName());
+        draft.setPlanDays(plan.days());
+        draft.setAmountCents(plan.priceCents());
+        draft.setStatus(VipOrder.STATUS_PENDING);
+        draft.setOpenid(openid);
+        draft.setExpireAt(now.plusMinutes(orderExpireMinutes()));
 
-        // 调微信统一下单拿 prepay_id（双闸校验在 WxPayJsapiService 内部）
+        // tx1：只负责把 PENDING 单落库并提交，之后的外部调用不再持有事务与行锁
+        Long orderId = transactionTemplate.execute(tx -> {
+            VipOrder saved = vipOrderRepository.save(draft);
+            log.info("VIP 订单已创建（PENDING）：orderNo={}, userId={}, planId={}, amountCents={}",
+                    saved.getOrderNo(), userId, planId, saved.getAmountCents());
+            return saved.getId();
+        });
+
+        // 事务外调微信（双闸校验在 WxPayJsapiService 内部）
+        WxPayJsapiService.PrepayResult prepay;
         try {
-            WxPayJsapiService.PrepayResult prepay = wxPayJsapiService.createJsapiOrder(
+            prepay = wxPayJsapiService.createJsapiOrder(
                     new WxPayJsapiService.CreateOrderCommand(
-                            order.getOrderNo(),
+                            draft.getOrderNo(),
                             "校园恋爱 VIP - " + plan.planName(),
                             plan.priceCents(),
                             openid,
-                            formatRfc3339(order.getExpireAt()),
+                            formatRfc3339(draft.getExpireAt()),
                             null));
-            order.setPrepayId(prepay.prepayId());
-            applyTransition(order, VipOrder.STATUS_PAYING);
-            vipOrderRepository.save(order);
-            log.info("微信统一下单成功（PAYING）：orderNo={}, prepayId={}", order.getOrderNo(), prepay.prepayId());
-            WxPayJsapiService.JsapiPayParams payParams =
-                    wxPayJsapiService.buildJsapiPayParams(order.getOrderNo(), prepay.prepayId());
-            return new OrderCreatedView(payParams.orderNo(), payParams.appId(), payParams.timeStamp(),
-                    payParams.nonceStr(), payParams.packageValue(), payParams.signType(), payParams.paySign());
         } catch (WxPayApiException e) {
-            // 下单失败：订单置 FAILED（终态），用户可重新下单
-            log.error("微信统一下单失败，订单置 FAILED：orderNo={}, code={}", order.getOrderNo(), e.getCode(), e);
-            order.setStatus(VipOrder.STATUS_FAILED);
-            vipOrderRepository.save(order);
+            // 下单失败：订单置 FAILED（终态），用户可重新下单；本次写独立提交，不受上面那次影响
+            log.error("微信统一下单失败，订单置 FAILED：orderNo={}, code={}", draft.getOrderNo(), e.getCode(), e);
+            transactionTemplate.executeWithoutResult(tx -> markCreateFailed(orderId, draft.getOrderNo()));
             throw new IllegalArgumentException("微信下单失败，请稍后重试");
         }
+
+        // tx2：回填 prepay_id 并迁移 PAYING（状态已被回调推进时放弃迁移）
+        transactionTemplate.executeWithoutResult(tx -> {
+            VipOrder current = orderId == null ? null : vipOrderRepository.findById(orderId).orElse(null);
+            if (current == null) {
+                log.error("下单成功但订单丢失，无法回填 prepay_id：orderNo={}", draft.getOrderNo());
+                return;
+            }
+            if (!VipOrder.STATUS_PENDING.equals(current.getStatus())) {
+                log.warn("微信下单期间订单状态已被推进，放弃 PAYING 迁移：orderNo={}, status={}",
+                        current.getOrderNo(), current.getStatus());
+                return;
+            }
+            current.setPrepayId(prepay.prepayId());
+            applyTransition(current, VipOrder.STATUS_PAYING);
+            vipOrderRepository.save(current);
+            log.info("微信统一下单成功（PAYING）：orderNo={}, prepayId={}", current.getOrderNo(), prepay.prepayId());
+        });
+
+        WxPayJsapiService.JsapiPayParams payParams =
+                wxPayJsapiService.buildJsapiPayParams(draft.getOrderNo(), prepay.prepayId());
+        return new OrderCreatedView(payParams.orderNo(), payParams.appId(), payParams.timeStamp(),
+                payParams.nonceStr(), payParams.packageValue(), payParams.signType(), payParams.paySign());
+    }
+
+    /** 下单失败的补偿写：仍处 PENDING 才置 FAILED（已被回调推进的单不能动）。 */
+    private void markCreateFailed(Long orderId, String orderNo) {
+        VipOrder current = orderId == null ? null : vipOrderRepository.findById(orderId).orElse(null);
+        if (current == null) {
+            return;
+        }
+        if (!VipOrder.STATUS_PENDING.equals(current.getStatus())) {
+            log.warn("下单失败但订单状态已非 PENDING，保持现状：orderNo={}, status={}",
+                    orderNo, current.getStatus());
+            return;
+        }
+        current.setStatus(VipOrder.STATUS_FAILED);
+        vipOrderRepository.save(current);
     }
 
     /**
@@ -458,11 +557,18 @@ public class VipOrderService {
     /**
      * 管理员发起退款（SUPER_ADMIN 入口，见 AdminVipController）。
      *
-     * <p>流程：管道闸（mock/off 状态直接拒绝，不产生半状态）→ 校验订单存在且为
-     * SUCCESS → 状态机迁移 REFUNDING → 调微信退款 API（全额退款）→ 回填 refundId。
-     * 微信 API 失败时抛 {@link WxPayApiException}，@Transactional 回滚使订单留在
-     * SUCCESS；商户退款单号取 {@code RF + orderNo}（≤32 位），微信侧按其幂等，
-     * 重试安全。最终 REFUNDED 由退款回调（{@link #handleRefundNotification}）确认。</p>
+     * <p>流程：管道闸（mock/off 状态直接拒绝，不产生半状态）→ 读订单并校验为 SUCCESS →
+     * 状态机试迁移 REFUNDING（只验不改库）→ 调微信退款 API（<b>事务外</b>）→
+     * <b>单个短事务</b>内重载订单、迁移 REFUNDING 并回填 refundId。
+     * 微信 API 失败时异常原样上抛，整个过程一次写库都没发生，订单仍是 SUCCESS。</p>
+     *
+     * <p>这里刻意<b>不</b>预先落 REFUNDING 再调外部接口：退款事实的最终确认方是微信回调
+     * （{@link #handleRefundNotification} 允许 REFUNDING/SUCCESS → REFUNDED），
+     * 「调成功但回填前崩溃」留下的 SUCCESS 窗口会被回调收敛；而预写 REFUNDING 反而会把
+     * 「微信拒绝退款」的订单卡在中间态。下单方向相反 —— PENDING 必须先落库，
+     * 否则用户在微信侧秒付时回调找不到订单（见 createOrder）。</p>
+     *
+     * <p>商户退款单号取 {@code RF + orderNo}（≤32 位），微信侧按其幂等，重试安全。</p>
      *
      * @param orderNo 商户订单号
      * @param reason  退款原因（审计日志用，可空）
@@ -470,9 +576,8 @@ public class VipOrderService {
      * @throws WxPayDisabledException     微信支付未启用（mock/off，调用方转 404）
      * @throws IllegalArgumentException   订单不存在或状态不允许退款
      * @throws IllegalOrderStateException 非法状态迁移（如已 REFUNDING/REFUNDED 重复发起）
-     * @throws WxPayApiException          微信退款 API 调用失败（事务回滚，可凭同一单号重试）
+     * @throws WxPayApiException          微信退款 API 调用失败（未写库，可凭同一单号重试）
      */
-    @Transactional
     public RefundInitiatedView initiateRefund(String orderNo, String reason) {
         if (orderNo == null || orderNo.isBlank()) {
             throw new IllegalArgumentException("订单号不能为空");
@@ -491,18 +596,42 @@ public class VipOrderService {
         }
         // 状态机唯一入口：SUCCESS → REFUNDING（已 REFUNDING 的重复发起在此被 IllegalOrderStateException 拒绝）
         applyTransition(order, VipOrder.STATUS_REFUNDING);
+        Integer refundCents = order.getAmountCents();
 
         String outRefundNo = "RF" + orderNo;
         log.info("管理员发起退款：orderNo={}, outRefundNo={}, refundCents={}, reason={}",
-                orderNo, outRefundNo, order.getAmountCents(), reason);
+                orderNo, outRefundNo, refundCents, reason);
+        // 事务外调微信：退款接口耗时不再占用数据库事务与订单行锁
         WxPayJsapiService.RefundResult result = wxPayJsapiService.createRefund(
                 new WxPayJsapiService.RefundCommand(
-                        orderNo, outRefundNo, order.getAmountCents(), order.getAmountCents()));
-        order.setRefundId(result.refundId());
-        vipOrderRepository.save(order);
+                        orderNo, outRefundNo, refundCents, refundCents));
+
+        // 短事务：只写「微信已受理」这一事实（重载后迁移，避免覆盖并发回调的结果）
+        transactionTemplate.executeWithoutResult(tx -> {
+            VipOrder current = vipOrderRepository.findByOrderNo(orderNo).orElse(null);
+            if (current == null) {
+                log.error("退款已受理但订单丢失，无法回填 refundId：orderNo={}, refundId={}",
+                        orderNo, result.refundId());
+                return;
+            }
+            if (VipOrder.STATUS_SUCCESS.equals(current.getStatus())) {
+                // 正常路径：库里还是 SUCCESS，走状态机落 REFUNDING
+                applyTransition(current, VipOrder.STATUS_REFUNDING);
+            } else if (!VipOrder.STATUS_REFUNDING.equals(current.getStatus())) {
+                // REFUNDED/CLOSED/FAILED：回调已抢先到达或状态已终态，不改写
+                log.warn("退款已受理但订单状态已推进，保持现状：orderNo={}, status={}, refundId={}",
+                        orderNo, current.getStatus(), result.refundId());
+                return;
+            }
+            if (result.refundId() != null && result.refundId().equals(current.getRefundId())) {
+                return; // 已回填过（幂等）
+            }
+            current.setRefundId(result.refundId());
+            vipOrderRepository.save(current);
+        });
         log.info("退款受理成功（等待退款回调确认）：orderNo={}, refundId={}", orderNo, result.refundId());
         return new RefundInitiatedView(orderNo, result.refundId(), outRefundNo,
-                order.getStatus(), order.getAmountCents());
+                VipOrder.STATUS_REFUNDING, refundCents);
     }
 
     /** 退款发起受理视图（管理员端点出参）。 */
@@ -524,10 +653,17 @@ public class VipOrderService {
      * 恰好支付完成，需等回调确认）；enabled=false（管道未开）时不存在线上订单，
      * 仅做本地兜底清理。</p>
      *
+     * <p>事务边界（2026-10-29 改造）：微信调用在事务外，每张单一个独立短事务。
+     * 原先整批共用一个 {@code @Transactional}，一是把 N 次外部 HTTP 计入同一事务的持锁
+     * 时间，二是第 50 张单写库失败会把前 49 张一起回滚（下一轮又重复关单、重复调微信）。
+     * 现按单提交，失败的只影响自己。</p>
+     *
+     * <p><b>多实例部署前需补分布式锁</b>：本方法无互斥，两个实例会同时扫到同一批订单
+     * 并各自调用微信关单（微信侧幂等，但白白多打一轮）。见优化方案 B3 第 4 条。</p>
+     *
      * @return 本次关单数量
      */
     @Scheduled(fixedDelay = 60_000, initialDelay = 120_000)
-    @Transactional
     public int closeExpiredOrders() {
         List<VipOrder> expired = vipOrderRepository.findByStatusInAndExpireAtBefore(
                 List.of(VipOrder.STATUS_PENDING, VipOrder.STATUS_PAYING),
@@ -537,27 +673,40 @@ public class VipOrderService {
         }
         boolean wechatEnabled = wxPayProperties != null && wxPayProperties.isEnabled();
         int closed = 0;
-        for (VipOrder order : expired) {
+        for (VipOrder candidate : expired) {
+            String orderNo = candidate.getOrderNo();
+            Long userId = candidate.getUserId();
             if (wechatEnabled && wxPayJsapiService != null
-                    && VipOrder.STATUS_PAYING.equals(order.getStatus())) {
+                    && VipOrder.STATUS_PAYING.equals(candidate.getStatus())) {
                 try {
                     // 先关微信侧单，成功才置 CLOSED（避免用户在关单瞬间支付成功造成状态错乱）
-                    wxPayJsapiService.closeOrder(order.getOrderNo());
+                    wxPayJsapiService.closeOrder(orderNo);
                 } catch (WxPayApiException e) {
                     // 微信侧关单失败（可能已支付）：跳过，等支付回调确认
-                    log.warn("微信关单失败，跳过本地关单等待回调确认：orderNo={}, code={}",
-                            order.getOrderNo(), e.getCode());
+                    log.warn("微信关单失败，跳过本地关单等待回调确认：orderNo={}, code={}", orderNo, e.getCode());
                     continue;
                 } catch (WxPayDisabledException e) {
                     // 双闸竞态（运行中开关被关）：降级为本地关单
-                    log.info("微信支付开关已关闭，降级为本地关单：orderNo={}", order.getOrderNo());
+                    log.info("微信支付开关已关闭，降级为本地关单：orderNo={}", orderNo);
                 }
             }
-            applyTransitionQuietly(order, VipOrder.STATUS_CLOSED);
-            order.setClosedAt(LocalDateTime.now(TimeZones.BUSINESS));
-            vipOrderRepository.save(order);
+            // 每单一个短事务，并重新装载：扫描时的快照可能已被并发回调推进，不能用旧值覆盖
+            Boolean didClose = transactionTemplate.execute(tx -> {
+                VipOrder current = vipOrderRepository.findByOrderNo(orderNo).orElse(null);
+                if (current == null || VipOrder.STATUS_CLOSED.equals(current.getStatus())) {
+                    return false;
+                }
+                applyTransitionQuietly(current, VipOrder.STATUS_CLOSED);
+                current.setClosedAt(LocalDateTime.now(TimeZones.BUSINESS));
+                vipOrderRepository.save(current);
+                return true;
+            });
+            if (!Boolean.TRUE.equals(didClose)) {
+                log.info("订单已被并发处理或状态不允许关单，跳过：orderNo={}", orderNo);
+                continue;
+            }
             closed++;
-            log.info("超时订单已关单：orderNo={}, userId={}", order.getOrderNo(), order.getUserId());
+            log.info("超时订单已关单：orderNo={}, userId={}", orderNo, userId);
         }
         return closed;
     }
@@ -652,9 +801,17 @@ public class VipOrderService {
         return wxPayProperties != null ? wxPayProperties.getOrderExpireMinutes() : 120;
     }
 
-    /** 过期时间 → RFC 3339（微信 time_expire 要求，含时区偏移）。 */
+    /**
+     * 过期时间 → RFC 3339（微信 time_expire 要求形如 {@code 2026-10-29T21:30:00+08:00}）。
+     *
+     * <p>必须先把本地时间挂上业务时区再格式化：{@code LocalDateTime} 没有偏移信息，
+     * 直接用 {@code XXX} 格式化会抛
+     * {@link java.time.temporal.UnsupportedTemporalTypeException}。这个坑原本就存在
+     * （所有下单都在调微信之前 500），由 VipOrderTransactionBoundaryTest 的
+     * {@code time_expire} 格式断言钉住。</p>
+     */
     private String formatRfc3339(LocalDateTime time) {
-        return time.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX"));
+        return time.atZone(TimeZones.BUSINESS).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX"));
     }
 
     /** 分 → 元（两位小数，回调日志金额字段用）。 */
