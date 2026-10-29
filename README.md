@@ -62,7 +62,8 @@
 │       │   └── logback-spring.xml    # 日志配置
 │       └── pom.xml
 ├── database/flyway/            # Flyway 迁移脚本
-├── docs/                       # 项目文档（ADR / OpenAPI / CI-CD / 部署 / 隐私协议等）
+├── docs/                       # OpenAPI Schema（权威源）+ 微信提交材料清单
+├── doc/                        # 部署 / 设计 / 变更日志（DEPLOYMENT.md 等）
 ├── docker/                     # 监控 / 备份 / Nginx 配置
 ├── docker-compose.yml          # 生产部署编排
 ├── tests/                      # 端到端 / 性能 / 安全测试
@@ -324,62 +325,46 @@ cosign generate-key-pair
 ```
 
 未配置 secrets 时，CI 中签名步骤自动跳过（PR 场景不影响构建）。
-镜像签名验证流程见 `doc/DEPLOYMENT.md` 「镜像签名验证」小节，CI/CD 完整流程见 `docs/CI-CD.md`。
+镜像签名验证流程见 `doc/DEPLOYMENT.md` 「镜像签名验证」小节，CI/CD 的权威定义就是 `.github/workflows/ci.yml` 本身。
 
 ## 文档导航
 
-### 项目结构与契约
+> 2026-10-29 更正：本节原先列出的 28 条 docs 链接指向的文件**都不存在**。
+> 那批文档（ADR、API-CONTRACT、CI-CD、DR、发布清单、USER-GUIDE 等共 85 个文件）
+> 在提交 `aefd8a72`（2026-09-22）被整体删除，README 没有同步，一直没人发现。
+> 需要历史版本：`git show aefd8a72^:docs/CI-CD.md`（其余文件同理）。
+> 是否恢复到工作区由维护者决定——内容已漂移约三个月，恢复即视为待复核文档。
+> 现在 `npm run test:docs` 会逐条校验本节引用的 `doc/`、`docs/` 路径是否真实存在。
 
-- `docs/project-structure-detailed.md`：详细项目结构说明
-- `docs/component-cut-spec.md`：组件切分规范
-- `docs/branching.md`：分支策略
-- `docs/label-dictionary.md`：PR 标签字典
-- `docs/release-checklist-template.md` / `docs/release-checklist.md`：发布检查清单
-- `docs/go-no-go-template.md`：发布 Go/No-Go 决策模板
-- `docs/phase-0-1-foundation.md` / `docs/phase-1-execution-plan.md` / `docs/phase-2-planning-draft.md`：阶段规划
+### 项目与部署
 
-### API 与接口
+- `doc/DEPLOYMENT.md`：生产部署指南（Docker Compose / Nginx / 监控 / 备份 / 升级回滚 / 镜像签名）
+- `doc/overview.md`：总体设计说明
+- `doc/detailed-design.md`：详细设计说明
+- `doc/CHANGELOG.md`：变更日志
+- `doc/后台RBAC三级圈层规格.md`：管理端权限圈层规格
 
-- `docs/API-CONTRACT.md`：前后端接口契约（鉴权 / 错误码 / 限流 / 接口清单）
-- `docs/OPENAPI-ANNOTATION-GUIDE.md`：OpenAPI 注解补全指南
-- `docs/openapi/*.yaml`：分模块 OpenAPI Schema（权威源）
-- `docs/database-indexes.md`：数据库索引设计
+### 接口契约
 
-### 部署与运维
-
-- `doc/DEPLOYMENT.md`：生产部署指南（Docker Compose / Nginx / 监控 / 备份 / 升级回滚）
-- `docs/CI-CD.md`：CI/CD 流程
-- `docs/GRADUAL-RELEASE.md`：灰度发布方案
-- `docs/TROUBLESHOOTING.md`：故障排查手册
-- `docs/DR/`：灾难恢复方案（`restore-procedure.md` / `DRP.md`）
-- `docs/performance-testing-guide.md`：性能测试指南
-
-### 用户与管理员指南
-
-- `docs/USER-GUIDE.md`：用户使用指南
-- `docs/ADMIN-GUIDE.md`：管理员后台操作指南
-
-### 法律与合规
-
-- `docs/privacy-policy.md`：隐私政策
-- `docs/user-agreement.md`：用户协议
-- `docs/third-party-sdks.md`：第三方 SDK 清单
-
-### 微信小程序专项
-
-- `docs/WECHAT-MINI-PROGRAM-ACCEPTANCE.md`：微信小程序验收标准
+- `docs/openapi/`：分模块 OpenAPI Schema（鉴权 / 错误码 / 限流的权威源，`npm run lint:openapi` 校验）
 - `docs/wechat-submission-materials-checklist.md`：微信小程序提交材料清单
 
-### 架构决策
+### 视觉与保真基线
 
-- `docs/adr/`：架构决策记录（ADR）
-- `docs/superpowers/`：开发流程辅助资料
+- `doc/design-tokens-admin.md`：管理端设计令牌
+- `doc/design-beautify-research.md`：视觉走查研究
+- `素材/理想效果图/`：小程序保真审计的整页基准图（走 LFS，见 `.gitattributes`）
+
+### 质量门禁
+
+- `.github/workflows/ci.yml`：CI/CD 实际流程（13 个 job：gitleaks、lint、契约、双端 typecheck/build、单测、`mvn verify`、Trivy、e2e、release gate）
+- 根 `package.json` 的 `test:contracts`：18 项契约与门禁自检，新增门禁需同时登记进 `test:gate-wiring`
 
 ## 贡献指南
 
 ### 分支策略
 
-参见 `docs/branching.md` 获取完整规则，要点如下：
+分支策略的历史完整版见 `git show aefd8a72^:docs/branching.md`，当前要点如下：
 
 - `main`：唯一长期集成分支，必须保持可发布状态
 - `release/YYYY-MM-DD`：发布稳定分支
@@ -424,7 +409,7 @@ chore(ci): bump Trivy to v0.55.0
 1. 从 `main` 切出工作分支，命名遵循上述分支策略
 2. 提交前在本地运行 `npm run verify:phase01`（测试 + lint + typecheck + build + api test）
 3. PR 必须填写 `.github/pull_request_template.md` 中的检查清单
-4. PR 必须携带至少一个 `type:*` / `area:*` / `priority:*` / `risk:*` / `scope:*` 标签（见 `docs/label-dictionary.md`）
+4. PR 必须携带至少一个 `type:*` / `area:*` / `priority:*` / `risk:*` / `scope:*` 标签（标签字典的历史版本见 `git show aefd8a72^:docs/label-dictionary.md`）
 5. 通过 CODEOWNERS 评审与 CI 全绿后合并
 6. 涉及 `docs/openapi` 或 `database/flyway` 变更的 PR，必须在同一 PR 中同步客户端、API 与验证更新
 
@@ -434,7 +419,7 @@ chore(ci): bump Trivy to v0.55.0
 - `T-11` 起：仅发布阻塞项与已批准的回归修复可合入
 - `release/*` 分支切出后：修复从该 release 分支切出，必要时 cherry-pick 回 `main`
 
-详见 `docs/GRADUAL-RELEASE.md` 与 `docs/release-checklist.md`。
+发布判定的可执行来源是 CI 的 Release Gate job 与 `npm run test:release-gate`（环境域名/密钥校验），升级回滚步骤见 `doc/DEPLOYMENT.md`。灰度方案与发布清单的历史文档见 `git show aefd8a72^:docs/GRADUAL-RELEASE.md`。
 
 ## 注意事项
 

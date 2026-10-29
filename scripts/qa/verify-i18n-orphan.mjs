@@ -61,7 +61,13 @@ function* walkFiles(dir) {
 }
 
 const zh = loadLocale(ZH);
-const en = loadLocale(EN);
+/* 2026-10-29 产品决定「英文版不上线」，客户端 en-US.ts 已删除。
+   没有 EN 时成对性这一维不再有意义，但它不能悄悄算"通过"——
+   显式打 SKIPPED，并把 pairFail 置 false 只影响配对维，孤儿维照常判。
+   若将来重新引入 en-US.ts，本工具自动恢复成对检查，无需改回来。 */
+const enExists = existsSync(EN);
+const en = enExists ? loadLocale(EN) : new Map();
+if (!enExists) console.log(`I18N_PAIRING=SKIPPED reason=en-US 语言包已下线（${relative(REPO, EN)} 不存在）`);
 
 const refs = new Set();
 const prefixes = new Set();
@@ -104,11 +110,13 @@ orphans.slice(0, VERBOSE ? 9999 : 25).forEach((k) => console.log(`  ORPHAN ${k} 
 if (!VERBOSE && orphans.length > 25) console.log(`  …ORPHAN 另有 ${orphans.length - 25} 条（--verbose 全量）`);
 if (prefixes.size) console.log("I18N_DYNAMIC_PREFIXES_SEEN=" + [...prefixes].slice(0, 8).join(", ") + "（这些前缀下的键一律不算孤儿：看不见引用 ≠ 没人用）");
 
-const pairFail = zhOnly.length > 0 || enOnly.length > 0;
+const pairFail = enExists && (zhOnly.length > 0 || enOnly.length > 0);
 const orphanFail = orphans.length > ALLOW;
 if (!existsSync(SRC)) { console.log("I18N_RESULT=FAIL reason=扫描目录不存在 " + relative(REPO, SRC)); process.exit(2); }
-if (!inBoth.length) { console.log("I18N_RESULT=FAIL reason=配对键集为空（扫描/求值塌了），不许空过"); process.exit(2); }
+if (enExists && !inBoth.length) { console.log("I18N_RESULT=FAIL reason=配对键集为空（扫描/求值塌了），不许空过"); process.exit(2); }
 if (pairFail) console.log("I18N_FAIL_PAIR 成对 locale 文件键集不一致 —— 本仓纪律是「成对文件无例外」，必须两端同时补/删");
 if (orphanFail) console.log(`I18N_FAIL_ORPHAN 有 ${orphans.length - ALLOW} 条超出棘轮的孤儿键（定义未被任何静态/动态引用命中）`);
-console.log(pairFail || orphanFail ? `I18N_RESULT=FAIL（pair 差异 ${zhOnly.length + enOnly.length}，孤儿 ${orphans.length}>允许 ${ALLOW}）` : "I18N_RESULT=PASS");
+console.log(pairFail || orphanFail
+  ? `I18N_RESULT=FAIL（pair 差异 ${zhOnly.length + enOnly.length}，孤儿 ${orphans.length}>允许 ${ALLOW}）`
+  : `I18N_RESULT=PASS${enExists ? "" : "（成对维 SKIPPED，本次只有孤儿维生效）"}`);
 process.exit(pairFail || orphanFail ? 1 : 0);

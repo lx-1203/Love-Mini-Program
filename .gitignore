@@ -264,3 +264,13 @@ apps/api/*.tmp
 tmp_*_token.txt
 *.aof
 appendonly.aof
+
+# ---------- 本机材料防复活（2026-10-29 全量排查后加闸） ----------
+# 这些目录/文件只在本地用于做 PPT、跑 QA、存 mysqldump，历史上反复被 git add 进去。
+# 注意：ignore 不影响已跟踪文件，已入库的部分见 scripts/repo-purge.sh（需人工确认后执行）。
+/deck_build/
+*.pptx
+/ref_pptx_dump.json
+/assign_dump.txt
+# 数据库备份含手机号/openid/BCrypt，禁止再入库（现有 105 个待清理）
+/database/backup/
