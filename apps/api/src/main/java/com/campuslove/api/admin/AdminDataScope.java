@@ -7,6 +7,11 @@ import com.campuslove.api.entity.User;
 import com.campuslove.api.entity.UserCampusProfile;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +48,9 @@ import org.springframework.stereotype.Service;
 public class AdminDataScope {
 
     private static final Logger log = LoggerFactory.getLogger(AdminDataScope.class);
+
+    /** {@link #resolveUserCampusNames(Collection)} 单次 IN 查询的 id 上限，避免超长 IN 子句 */
+    private static final int CAMPUS_BATCH_SIZE = 500;
 
     /** 超级管理员角色编码 */
     public static final String ROLE_SUPER_ADMIN = "SUPER_ADMIN";
@@ -205,5 +213,37 @@ public class AdminDataScope {
         return userCampusProfileRepository.findByUserId(userId)
                 .map(UserCampusProfile::getCampusName)
                 .orElse(null);
+    }
+
+    /**
+     * 批量解析用户归属校区名（列表接口按校区做数据隔离时使用）。
+     *
+     * <p>语义与 {@link #resolveUserCampusName(Long)} 逐条调用等价：无校区资料的
+     * userId 不会出现在返回 Map 中，调用方取到 null 即视为「不属于任何校区」。
+     * 区别只在查询次数 —— 列表接口原先每行一次 {@code findByUserId}，
+     * 一页 100 条就是 100 次往返（N+1），这里压成每 {@code CAMPUS_BATCH_SIZE}
+     * 个 id 一次 IN 查询。分批是为了不把整页 id 塞进单条 SQL 的 IN 子句。</p>
+     *
+     * @param userIds 用户 ID 集合（允许含 null，允许为空）
+     * @return userId → campusName；无资料的 userId 不在 Map 中
+     */
+    public Map<Long, String> resolveUserCampusNames(Collection<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> distinct = userIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, String> campusByUserId = new HashMap<>();
+        for (int from = 0; from < distinct.size(); from += CAMPUS_BATCH_SIZE) {
+            List<Long> batch = distinct.subList(from, Math.min(from + CAMPUS_BATCH_SIZE, distinct.size()));
+            for (UserCampusProfile profile : userCampusProfileRepository.findByUserIdIn(batch)) {
+                if (profile.getUserId() != null && profile.getCampusName() != null) {
+                    campusByUserId.putIfAbsent(profile.getUserId(), profile.getCampusName());
+                }
+            }
+        }
+        return campusByUserId;
     }
 }

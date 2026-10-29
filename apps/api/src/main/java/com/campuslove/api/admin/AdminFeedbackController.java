@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
@@ -114,8 +115,8 @@ public class AdminFeedbackController {
             return new AdminPageView<>(List.of(), 0L, Math.max(1, page), safeSize(pageSize), 1);
         }
 
-        // 取全量（已按创建时间降序），在内存中按作者校区 / 状态 / 类型过滤
-        List<Feedback> filtered = new ArrayList<>();
+        // 第一步：按状态/类型收窄候选集（与校区无关，先把行数降下来）
+        List<Feedback> candidates = new ArrayList<>();
         for (Feedback f : feedbackRepository.findAllByOrderByCreatedAtDesc()) {
             if (statusFilter != null && f.getStatus() != statusFilter) {
                 continue;
@@ -123,13 +124,26 @@ public class AdminFeedbackController {
             if (typeFilter != null && f.getType() != typeFilter) {
                 continue;
             }
-            if (effectiveCampus != null) {
-                String authorCampus = adminDataScope.resolveUserCampusName(f.getUserId());
+            candidates.add(f);
+        }
+
+        // 第二步：校区隔离。原实现在这里对每一行调一次 resolveUserCampusName，
+        // 一页就是几十上百次 findByUserId（N+1）；改为一次性批量解析作者校区名。
+        // 语义保持不变：无校区资料的作者仍被排除（authorCampus == null → 不属于任何校区）。
+        List<Feedback> filtered;
+        if (effectiveCampus == null) {
+            filtered = candidates;
+        } else {
+            Map<Long, String> campusByAuthor = adminDataScope.resolveUserCampusNames(
+                    candidates.stream().map(Feedback::getUserId).toList());
+            filtered = new ArrayList<>();
+            for (Feedback f : candidates) {
+                String authorCampus = campusByAuthor.get(f.getUserId());
                 if (authorCampus == null || !authorCampus.equalsIgnoreCase(effectiveCampus)) {
                     continue;
                 }
+                filtered.add(f);
             }
-            filtered.add(f);
         }
 
         int safePage = Math.max(1, page);
