@@ -129,7 +129,7 @@ A2/A3 建议单独一次提交：删 25 个组件 + 26 个对应 story/spec，�
 确认不在忽略集内，未被移出。
 
 仍未做（需要协调，不在本机可控范围）：`git filter-repo` 清除历史 + force-push。
-remote 是 `github.com:lx-1234/...`（本次未 push 任何东西），历史重写会让所有协作者重新 clone，
+remote 是 `git@github.com:lx-1203/Love-Mini-Program.git`（本次未 push 任何东西），历史重写会让所有协作者重新 clone，
 必须先取得同意并有全仓镜像。
 
 ### B2 支付事务改造 —— 已实现并验证
