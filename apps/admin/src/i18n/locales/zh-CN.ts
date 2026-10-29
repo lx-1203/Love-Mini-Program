@@ -5,7 +5,7 @@
  * - 按「视图/模块」分组，key 使用点号分隔命名空间（如 login.title）；
  * - 覆盖 Admin 核心视图：Login / Layout / Dashboard / Users / Posts / Feedback /
  *   Reports / AuditLogs / NotifyConfig / SensitiveWords / ContentAudit；
- * - 与 en-US.ts 保持结构完全一致，新增文案时需同步更新两端；
+ * - 2026-10-29 起为唯一语言资源（英文版不上线，en-US.ts 已移除）；新增文案只改本文件；
  * - 服务端错误码（errors.*）需与后端 messages_zh_CN.properties 对齐。
  *
  * 本骨架任务约定：页面级 key（dashboard.*、users.* 等）沿用旧后台，
@@ -193,7 +193,7 @@ export default {
   /* ========== 后端中文菜单名翻译表（Layout.menuLabel 查表用） ==========
    * 后端 /v1/admin/menus/current 下发 title 为中文（如「用户管理」），
    * 侧边栏/面包屑/标签页通过 menu.<中文名> 查表翻译，未收录的标题回退原值。
-   * key 为中文本身，zh-CN 为恒等映射，en-US 提供英文翻译。 */
+   * key 为中文本身，zh-CN 为恒等映射（查表结构保留，未来上英文再补译表）。 */
   menu: {
     系统管理: "系统管理",
     用户与内容: "用户与内容",

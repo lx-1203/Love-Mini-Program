@@ -15,7 +15,6 @@
 import { computed, nextTick, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { setLocale, getLocale } from "../i18n";
 import { useSessionStore } from "../stores/session";
 import { useMenuStore, type AdminMenuNode } from "../stores/menu";
 import { logger } from "../utils/logger";
@@ -304,17 +303,6 @@ const campusName = computed(() => sessionStore.user?.campusName || "");
 /** 头像下拉菜单开关 */
 const userMenuOpen = ref(false);
 
-/** 当前语言（下拉切换，与 App 独立页浮层共用 setLocale） */
-const currentLocale = ref<string>(getLocale());
-
-function handleLocaleChange(event: Event): void {
-  const value = (event.target as HTMLSelectElement).value;
-  if (value === "zh-CN" || value === "en-US") {
-    setLocale(value);
-    currentLocale.value = value;
-  }
-}
-
 function toggleUserMenu(): void {
   userMenuOpen.value = !userMenuOpen.value;
 }
@@ -466,18 +454,6 @@ watch(
                 <span class="user-role">
                   {{ displayRole }}<template v-if="campusName"> · {{ campusName }}</template>
                 </span>
-              </div>
-              <div class="user-dropdown-locale">
-                <label class="user-dropdown-locale-label" for="layout-locale-select">{{ t("common.language") }}</label>
-                <select
-                  id="layout-locale-select"
-                  class="user-dropdown-locale-select"
-                  :value="currentLocale"
-                  @change="handleLocaleChange"
-                >
-                  <option value="zh-CN">{{ t("common.chinese") }}</option>
-                  <option value="en-US">{{ t("common.english") }}</option>
-                </select>
               </div>
               <button type="button" class="user-dropdown-logout" @click="handleLogoutClick">
                 {{ t("common.logout") }}
@@ -795,31 +771,6 @@ watch(
 .user-role {
   font-size: var(--admin-font-xs);
   color: var(--admin-color-text-tertiary);
-}
-
-.user-dropdown-locale {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--admin-space-md);
-  padding: var(--admin-space-md) var(--admin-space-lg);
-  border-bottom: 1px solid var(--admin-color-border-light);
-}
-
-.user-dropdown-locale-label {
-  font-size: var(--admin-font-md);
-  color: var(--admin-color-text-secondary);
-}
-
-.user-dropdown-locale-select {
-  height: 28px;
-  padding: 0 var(--admin-space-sm);
-  border: 1px solid var(--admin-color-border);
-  border-radius: var(--admin-radius-md);
-  font-size: var(--admin-font-sm);
-  font-family: inherit;
-  color: var(--admin-color-text-primary);
-  background: var(--admin-color-bg-container);
 }
 
 .user-dropdown-logout {

@@ -27,6 +27,7 @@ import { ApiError } from "@/api/http";
 import { withMediaToken } from "@/api/media";
 import Pagination from "@/components/Pagination.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import DetailDrawer from "@/components/DetailDrawer.vue";
 import ErrorState from "@/components/ErrorState.vue";
 import { useRequestRace } from "../../composables/useRequestRace";
 import { useSessionStore } from "@/stores/session";
@@ -966,15 +967,11 @@ onMounted(() => {
     </view>
 
     <!-- 用户详情抽屉：右侧约 520px，打开时保留列表页状态（不整页跳转）。
-         Esc / 遮罩点击可关闭（EP 默认行为，显式声明）；destroy-on-close=false 保留抽屉状态。 -->
-    <el-drawer
-      v-model="detailVisible"
-      class="detail-drawer"
-      direction="rtl"
-      size="520px"
-      :destroy-on-close="false"
-      :close-on-click-modal="true"
-      :close-on-press-escape="true"
+         Esc / 遮罩点击关闭与关闭后清空详情均由 DetailDrawer 提供。 -->
+    <DetailDrawer
+      v-model:visible="detailVisible"
+      :width="520"
+      :title="t('users.detailTitle')"
       @closed="detailUser = null"
     >
       <template #header>
@@ -1136,7 +1133,7 @@ onMounted(() => {
       <template #footer>
         <button class="ghost-button" @click="closeDetail">{{ t("common.close") }}</button>
       </template>
-    </el-drawer>
+    </DetailDrawer>
 
     <!-- 新增用户弹窗 -->
     <view v-if="createVisible" class="modal-mask" @click.self="closeCreateUser">
@@ -1505,16 +1502,7 @@ onMounted(() => {
 }
 
 /* ========== 用户详情抽屉（原详情弹窗改造） ========== */
-
-.detail-drawer :deep(.el-drawer__header) {
-  margin-bottom: 0;
-  padding-bottom: var(--admin-space-md);
-  border-bottom: 1px solid var(--admin-color-border-light);
-}
-
-.detail-drawer :deep(.el-drawer__footer) {
-  border-top: 1px solid var(--admin-color-border-light);
-}
+/* 头/尾分隔线由 DetailDrawer 自身负责，此处只描述抽屉内容 */
 
 .drawer-header {
   display: flex;

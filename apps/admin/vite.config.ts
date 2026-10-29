@@ -78,7 +78,11 @@ export default defineConfig(({ mode }) => ({
     outDir: "dist",
     assetsDir: "assets",
     target: "es2015",
-    sourcemap: mode === "development" ? true : "hidden",
+    // 生产默认关闭：原 'hidden' 仍会产出 .map，而 apps/admin/docker/nginx.conf
+    // 的静态资源正则不覆盖 .map，会落到 SPA fallback 被直接下载（源码泄露）。
+    // 需要 Sentry 源码上传时显式 BUILD_SOURCEMAP=true，产物用后即删。
+    sourcemap:
+      mode === "development" ? true : process.env.BUILD_SOURCEMAP === "true" ? "hidden" : false,
     chunkSizeWarningLimit: 1000,
     cssCodeSplit: true,
     minify: "esbuild",

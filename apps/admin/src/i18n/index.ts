@@ -17,7 +17,6 @@
  */
 import { createI18n } from "vue-i18n";
 import zhCN from "./locales/zh-CN";
-import enUS from "./locales/en-US";
 
 /**
  * 创建 vue-i18n 实例。
@@ -26,7 +25,10 @@ import enUS from "./locales/en-US";
  * - legacy: false —— 启用 Composition API 模式（vue-i18n@9 推荐）；
  * - locale: 'zh-CN' —— 默认语言为简体中文；
  * - fallbackLocale: 'zh-CN' —— 找不到翻译时回退到简体中文；
- * - messages —— 语言资源映射，结构与 locales/zh-CN.ts、locales/en-US.ts 一致。
+ * - messages —— 语言资源映射，结构与 locales/zh-CN.ts 一致。
+ *
+ * 2026-10-29：英文版不上线，en-US 语言包与 setLocale 一并移除，后台固定 zh-CN。
+ * 保留 i18n 机制本身：全站文案仍走 t(key)，改的是语言资源而不是调用点。
  */
 export const i18n = createI18n({
   legacy: false,
@@ -34,7 +36,6 @@ export const i18n = createI18n({
   fallbackLocale: "zh-CN",
   messages: {
     "zh-CN": zhCN,
-    "en-US": enUS,
   },
 });
 
@@ -51,27 +52,11 @@ export const i18n = createI18n({
 export const t = i18n.global.t;
 
 /**
- * 切换当前 locale。
- *
- * 调用方：App.vue 顶部语言切换下拉（zh-CN / en-US）。
- * 本地存储 key 使用 admin_v2_locale，与旧后台（admin_locale）隔离。
- *
- * @param locale - 目标 locale，目前支持 'zh-CN' / 'en-US'
- */
-export function setLocale(locale: "zh-CN" | "en-US"): void {
-  i18n.global.locale.value = locale;
-  // 持久化用户选择，下次启动恢复
-  try {
-    localStorage.setItem("admin_v2_locale", locale);
-  } catch {
-    // localStorage 不可用（隐私模式等）时静默降级，不阻塞切换
-  }
-}
-
-/**
  * 获取当前 locale。
  *
  * 用于在工具函数中根据当前 locale 选择不同策略（如时间格式化、数字格式化）。
+ * 语言包目前只有 zh-CN，因此返回值恒为 'zh-CN'；保留函数是为了让
+ * utils/format.ts 等调用方在未来重新引入多语言时不必改签名。
  *
  * @returns 当前 locale 字符串
  */

@@ -17,7 +17,7 @@
  * 必须经 api/media.ts 的 withMediaToken 拼接管理员 token。
  *
  * ===== i18n 清单（postCompose.* 为本视图新增命名空间，需补进
- * apps/admin/src/i18n/locales/{zh-CN,en-US}.ts；下列为待补文案）=====
+ * apps/admin/src/i18n/locales/zh-CN.ts；下列为待补文案）=====
  * title                     发布内容 / Create Post
  * subtitle                  以官方小编身份发布新的动态（后台不支持编辑已有帖子） / Publish a new post as the official editor. Editing existing posts is not supported here.
  * titleLabel                标题 / Title
@@ -551,7 +551,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* 本视图复用 data-table / primary-button / form-input 等共享类，
-   而 admin-common.css 不是全局引入（main.ts 只引 tokens/element-override），
+   而 admin-common.css 不是全局引入（main.ts 只引 admin-tokens.css），
    缺这行 import 会让按钮与表格完全裸奔。 */
 @import "../../styles/admin-common.css";
 
