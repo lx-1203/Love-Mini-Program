@@ -83,8 +83,12 @@ public class RealVillageService implements VillageService {
         return view;
     }
 
+    // S2-1（2026-10-30）：以下 createPost 全部是「纯委托」，自身没有任何写库语句，
+    // 却都带着 @Transactional ——于是发帖线程在进入 VillagePostService 之前就已经
+    // 持有一个活动事务，里面那次微信 msgSecCheck 外呼（以及它占用的连接/行锁）
+    // 全都算在这个事务上。事务边界由 VillagePostService 用 TransactionTemplate
+    // 精确划定（落库段一个短事务、外呼段挂起事务），门面层不再另开事务。
     @Override
-    @Transactional
     public PostDetailView createPost(Long userId, @Valid CreatePostRequest request) {
         return postService.createPost(userId, request.title(), request.content(), request.images(),
                 request.tags(), request.category(), request.activityId(),
@@ -153,13 +157,11 @@ public class RealVillageService implements VillageService {
     }
 
     @Override
-    @Transactional
     public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags, String category, Long activityId) {
         return postService.createPost(userId, title, content, images, tags, category, activityId, null, null);
     }
 
     @Override
-    @Transactional
     public PostDetailView createPost(Long userId, String title, String content, List<String> images,
                                      List<String> tags, String category, Long activityId,
                                      String targetType, Long targetId) {
@@ -167,7 +169,6 @@ public class RealVillageService implements VillageService {
     }
 
     @Override
-    @Transactional
     public PostDetailView createPost(Long userId, String title, String content, List<String> images,
                                      List<String> tags, String category, Long activityId,
                                      String targetType, Long targetId, List<Long> mentionedUserIds) {

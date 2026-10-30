@@ -3,6 +3,7 @@ package com.campuslove.api.chat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,7 +42,10 @@ class PrivateMessageSoftDeleteTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         service = new RealPrivateMessageService(conversationRepository, messageRepository,
-                userRepository, messagingTemplate, sensitiveWordFilter, blockRepository);
+                userRepository, messagingTemplate, sensitiveWordFilter, blockRepository,
+                // S2-1（2026-10-30）新增的事务管理器参数：本用例只走 softDeleteMessage，
+                // 不触碰 sendMessage 的编程式事务边界，因此 mock 即可。
+                mock(org.springframework.transaction.PlatformTransactionManager.class));
     }
 
     private PrivateMessage message(Long id, Long senderId) {

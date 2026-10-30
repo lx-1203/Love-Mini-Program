@@ -70,7 +70,10 @@ class ProfileUpdateServiceTest {
                 mediaAssetService,
                 queryService,
                 followService,
-                sensitiveWordFilter);
+                sensitiveWordFilter,
+                // S2-1（2026-10-30）新增的事务管理器参数：本类的 saveBasicProfile 用例都在
+                // 进事务之前的字段校验阶段就抛错，这里用桩即可（口径同 TempChatMessageServiceTest）。
+                mock(org.springframework.transaction.PlatformTransactionManager.class));
     }
 
     /**

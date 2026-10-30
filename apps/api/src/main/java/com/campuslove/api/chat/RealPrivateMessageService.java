@@ -33,7 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 真实私信服务实现。
@@ -80,13 +82,49 @@ public class RealPrivateMessageService implements PrivateMessageService {
     @Autowired(required = false)
     private ContentSecurityChecker contentSecurityChecker;
 
+    /**
+     * 私信落库段的显式事务边界（S2-1，2026-10-30，口径同 VillagePostService）。
+     *
+     * <p>内容安全检查（微信 msgSecCheck v2）是外部 HTTP 调用，原先被 sendMessage 的
+     * 方法级 {@code @Transactional} 圈在事务里：微信侧一慢，就长时间占住一条 Hikari 连接
+     * 和 private_conversations / private_messages 的行锁，聊天是 QPS 最高的写路径之一，
+     * 并发发消息会把连接池抽干，进而拖垮整个 API。现改成
+     * 「校验 + 外呼在事务外，落库在事务内」，边界由本模板划定。</p>
+     *
+     * <p>用编程式而不是声明式：同类自调用不经过代理，注解本来就不生效；
+     * 而且只有把边界写成代码，测试才能证伪「外呼发生在事务内」。</p>
+     */
+    private final TransactionTemplate transactionTemplate;
+
+    /**
+     * 「挂起一切事务」模板（S2-1，2026-10-30）——内容安全外呼专用。
+     *
+     * <p>只把本方法改成编程式事务还不够：调用方仍可能带着外层事务进来（例如上层
+     * {@code @Transactional} 的服务复用 sendMessage）。此时内层 REQUIRED 模板会直接
+     * <b>加入</b>那个事务，微信 HTTP 调用照样跑在事务里——连接和行锁还是被占着，改造等于没发生。</p>
+     *
+     * <p>PROPAGATION_NOT_SUPPORTED 会让 Spring <b>挂起</b>当前事务（含其 EntityManager
+     * 与连接），外呼返回后再恢复，因此「外呼不在事务内」由本类自己保证，不依赖任何调用方
+     * 的注解写法。落库段仍用 {@link #transactionTemplate}（REQUIRED）：有外层事务就加入、
+     * 没有就新建，原子性与改造前一致。</p>
+     */
+    private final TransactionTemplate suspendingTemplate;
+
+    /**
+     * Spring 注入构造器。
+     *
+     * <p>注入 {@link PlatformTransactionManager} 而不是 TransactionTemplate bean：
+     * 前者只要开了事务管理就一定存在，后者依赖 Boot 的 TransactionAutoConfiguration，
+     * 手工装配的容器里没有，会让 bean 创建直接失败（口径同 VipOrderService）。</p>
+     */
     public RealPrivateMessageService(
             PrivateConversationRepository conversationRepository,
             PrivateMessageRepository messageRepository,
             UserRepository userRepository,
             SimpMessagingTemplate messagingTemplate,
             SensitiveWordFilter sensitiveWordFilter,
-            UserBlockRepository blockRepository) {
+            UserBlockRepository blockRepository,
+            PlatformTransactionManager transactionManager) {
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.userRepository = userRepository;
@@ -94,6 +132,10 @@ public class RealPrivateMessageService implements PrivateMessageService {
         this.sensitiveWordFilter = sensitiveWordFilter;
         this.blockRepository = blockRepository;
         this.objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.suspendingTemplate = new TransactionTemplate(transactionManager);
+        this.suspendingTemplate.setPropagationBehavior(
+                org.springframework.transaction.TransactionDefinition.PROPAGATION_NOT_SUPPORTED);
     }
 
     /**
@@ -207,9 +249,24 @@ public class RealPrivateMessageService implements PrivateMessageService {
 
     /**
      * 在指定会话中发送消息。
+     *
+     * <p>S2-1（2026-10-30）：本方法<b>不再声明方法级 {@code @Transactional}</b>
+     * （注解口径同 {@code VillagePostService#createPost}）。原实现把整条链路圈在一个事务里，
+     * 而其中的 {@code rejectIfRisky} 要外呼微信 msgSecCheck——于是每次发私信都是
+     * 「持着一条 Hikari 连接 + 会话行锁，等一个不受我们控制的第三方 HTTP 调用」；
+     * 聊天是全站 QPS 最高的写路径之一，微信侧超时（秒级）时并发发消息会先把连接池抽干，
+     * 再让整个 API 排队，表现为「私信慢」，实际是全服务退化。</p>
+     *
+     * <p>现在的边界：参数校验、授权读（会话存在 / 参与者 / 拉黑）、内容安全外呼、
+     * 敏感词过滤、引用快照读取全部在事务之外；只有「消息插入 + 会话预览更新 + 视图构建」
+     * 在一个短事务里原子提交；WebSocket 推送与社交升温埋点留在事务之外，
+     * 并保持改造前的相对顺序（先推送、后埋点）。</p>
+     *
+     * <p>注：授权用的会话实例（事务外读取）在落库段会<b>重新加载</b>——拆分后那个实例
+     * 出了事务就是游离对象，直接改预览再 save 会带着过期 {@code @Version} 走 merge，
+     * 造成乐观锁误报 409 / 更新丢失。重新加载同时保留「会话不存在」的原有报错语义。</p>
      */
     @Override
-    @Transactional
     public MessageView sendMessage(Long conversationId, Long senderId, String content, String kind,
                                    Integer durationSeconds, String quoteRef) {
         if (conversationId == null || senderId == null) {
@@ -219,6 +276,8 @@ public class RealPrivateMessageService implements PrivateMessageService {
             throw new IllegalArgumentException("content is required");
         }
 
+        // 授权校验（会话存在 + 参与者 + 拉黑）必须在任何写入之前完成，且刻意留在事务之外：
+        // 每个 Repository 调用自带事务，读一致性由下面的落库段重新加载来保证。
         PrivateConversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("Conversation not found: " + conversationId));
 
@@ -240,11 +299,14 @@ public class RealPrivateMessageService implements PrivateMessageService {
 
         // 录音修复：kind 统一规范化为小写（客户端发送小写 text/voice，
         // 与临时聊天链路 kind 约定及前端 mapToMessageItem(messageKind === "voice") 映射保持一致）
-        String resolvedKind = kind != null ? kind.toLowerCase(Locale.ROOT) : "text";
+        String normalizedKind = kind != null ? kind.toLowerCase(Locale.ROOT) : "text";
 
         // 2026-10-05 合规接线：发送前统一内容安全检查（微信 msgSecCheck v2，scene=4 社交日志），
         // 命中高风险（risky）直接拒绝发送；checker 异常时内部降级本地敏感词（fail-closed）。
-        rejectIfRisky(content, senderId, "4");
+        // S2-1（2026-10-30）：这里会外呼微信 API，因此必须在事务之外——放进事务会带着连接和
+        // 行锁等一个外部调用；挪到提交后又等于「先发后审」，合规检查失效。
+        // 用 NOT_SUPPORTED 模板包一层：调用方即便带着外层事务进来，外呼期间也会被挂起。
+        suspendingTemplate.executeWithoutResult(status -> rejectIfRisky(content, senderId, "4"));
 
         // 敏感词过滤：过滤私信内容
         String filteredContent = sensitiveWordFilter.filterWithLog(content, senderId, "MESSAGE");
@@ -253,42 +315,55 @@ public class RealPrivateMessageService implements PrivateMessageService {
         // 写 quote_context 快照，并把类型规范化为 quote（读侧 MessageView.quoteContext 与
         // 会话预览的 quote 分支由此可达）；跨会话/不存在的 quoteRef 按未引用处理，不阻断发送。
         String quoteSnapshot = buildQuoteSnapshot(conversationId, quoteRef);
-        if (quoteSnapshot != null) {
-            resolvedKind = "quote";
-        }
+        final String resolvedKind = quoteSnapshot != null ? "quote" : normalizedKind;
 
-        // 创建消息
-        PrivateMessage message = new PrivateMessage();
-        message.setConversation(conversation);
-        message.setSenderId(senderId);
-        message.setContent(filteredContent);
-        message.setMessageKind(resolvedKind);
-        message.setQuoteContext(quoteSnapshot);
-        message.setDurationSeconds(durationSeconds);
-        message.setIsRead(false);
-        message.setCreatedAt(now);
+        // S2-1 事务边界：只有这段落库在一个短事务里原子提交（消息插入 + 会话预览更新，
+        // 少一边就是「消息在、会话列表预览不更新」）。视图也在事务内构建：
+        // toMessageView 读 message.getConversation().getId()，而 conversation 是
+        // @ManyToOne(LAZY)，出事务后再取会抛 LazyInitializationException。
+        MessageView messageView = transactionTemplate.execute(status -> {
+            // 事务内重新加载会话（口径同上方校验：不存在时保持原有报错语义）
+            PrivateConversation managedConversation = conversationRepository.findById(conversationId)
+                    .orElseThrow(() -> new IllegalArgumentException("Conversation not found: " + conversationId));
 
-        // 缺陷修复：saveAndFlush 立即回填 IDENTITY 主键，保证消息视图 id 非空
-        // （实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id）
-        message = messageRepository.saveAndFlush(message);
+            // 创建消息
+            PrivateMessage message = new PrivateMessage();
+            message.setConversation(managedConversation);
+            message.setSenderId(senderId);
+            message.setContent(filteredContent);
+            message.setMessageKind(resolvedKind);
+            message.setQuoteContext(quoteSnapshot);
+            message.setDurationSeconds(durationSeconds);
+            message.setIsRead(false);
+            message.setCreatedAt(now);
 
-        // 更新会话的最后消息信息：quote 类型提取纯文本摘要；activity 卡片提取标题
-        String preview;
-        if ("quote".equals(resolvedKind)) {
-            preview = buildQuotePreview(filteredContent);
-        } else if ("activity".equals(resolvedKind)) {
-            preview = buildActivityPreview(filteredContent);
-        } else {
-            preview = filteredContent.length() > 50 ? filteredContent.substring(0, 50) + "..." : filteredContent;
-        }
-        conversation.setLastMessagePreview(preview);
-        conversation.setLastMessageAt(now);
-        conversation.setUpdatedAt(now);
-        conversationRepository.save(conversation);
+            // 缺陷修复：saveAndFlush 立即回填 IDENTITY 主键，保证消息视图 id 非空
+            // （实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id）
+            message = messageRepository.saveAndFlush(message);
 
-        MessageView messageView = toMessageView(message);
+            // 更新会话的最后消息信息：quote 类型提取纯文本摘要；activity 卡片提取标题
+            String preview;
+            if ("quote".equals(resolvedKind)) {
+                preview = buildQuotePreview(filteredContent);
+            } else if ("activity".equals(resolvedKind)) {
+                preview = buildActivityPreview(filteredContent);
+            } else {
+                preview = filteredContent.length() > 50 ? filteredContent.substring(0, 50) + "..." : filteredContent;
+            }
+            managedConversation.setLastMessagePreview(preview);
+            managedConversation.setLastMessageAt(now);
+            managedConversation.setUpdatedAt(now);
+            // save 可能返回 merge 后的新托管实例（@Version），必须接收返回值，
+            // 并让消息的懒加载关联指向它，视图才拿得到事务内的那份数据
+            PrivateConversation savedConversation = conversationRepository.save(managedConversation);
+            message.setConversation(savedConversation);
+
+            return toMessageView(message);
+        });
 
         // 通过 WebSocket 推送消息给接收者（recipientId 已在拉黑拦截处计算）
+        // S2-1：推送改到落库事务提交之后——原先在提交前推送，接收端可能先收到推送、
+        // 回查却读不到那条消息。
         messagingTemplate.convertAndSendToUser(
                 String.valueOf(recipientId),
                 "/queue/messages",
@@ -296,7 +371,8 @@ public class RealPrivateMessageService implements PrivateMessageService {
         );
 
         // R4-00327：社交升温漏斗埋点——开启对话（L4_COMMUNICATION 计数）；
-        // 埋点失败不影响消息主流程（仅记录日志）
+        // 埋点失败不影响消息主流程（仅记录日志）。recordChat 自带 @Transactional，
+        // 在这里调用即跑在它自己的事务里，与改造前的可观测行为一致。
         if (socialProgressService != null) {
             try {
                 socialProgressService.recordChat(senderId);
@@ -676,7 +752,7 @@ public class RealPrivateMessageService implements PrivateMessageService {
             return new RelationshipInfo(
                     status,
                     score,
-                    LocalDateTime.now().minusDays(idx),
+                    LocalDateTime.now(TimeZones.BUSINESS).minusDays(idx),
                     idx + 1,
                     java.util.List.of(),
                     0,

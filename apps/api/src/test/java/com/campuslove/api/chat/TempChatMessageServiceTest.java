@@ -44,7 +44,14 @@ class TempChatMessageServiceTest {
         // infra R2-00252:默认 stub 过滤器透传原文,避免未配置 mock 时 body 被过滤为 null
         when(sensitiveWordFilter.filterWithLog(anyString(), anyLong(), anyString()))
                 .thenAnswer(inv -> inv.getArgument(0));
-        messageService = new TempChatMessageService(messageRepository, sessionService, sensitiveWordFilter);
+        // S2-1（2026-10-30）：sendMessage 现在会把 saveSession 的返回值当作落库后的会话实例
+        // （@Version 实体 merge 返回新实例）。桩必须照合同事契约返回入参，否则返回 null。
+        when(sessionService.saveSession(any())).thenAnswer(inv -> inv.getArgument(0));
+        // 事务模板只做记账：这里不需要真事务，Mockito 桩让回调直接执行。
+        // 注意：桩事务管理器不会让 isActualTransactionActive() 变 true，
+        // 「外呼在事务外」的判点见 TempChatContentSecCheckBoundaryTest。
+        messageService = new TempChatMessageService(messageRepository, sessionService,
+                sensitiveWordFilter, mock(org.springframework.transaction.PlatformTransactionManager.class));
     }
 
     /**

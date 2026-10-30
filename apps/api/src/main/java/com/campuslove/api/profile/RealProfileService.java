@@ -81,7 +81,8 @@ public class RealProfileService implements ProfileService {
     }
 
     @Override
-    @Transactional
+    // S2-1（2026-10-30）：纯委托，不得再另开事务——否则 ProfileUpdateService 里的
+    // msgSecCheck 外呼（昵称/简介）会被圈进这个外层事务，占着连接等第三方 HTTP 返回。
     public BasicProfileView saveBasicProfile(BasicProfileRequest request) {
         return updateService.saveBasicProfile(request);
     }

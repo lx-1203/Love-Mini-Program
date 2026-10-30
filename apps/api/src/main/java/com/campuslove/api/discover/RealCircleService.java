@@ -51,7 +51,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 真实兴趣圈服务实现。
@@ -125,7 +128,44 @@ public class RealCircleService implements CircleService {
     private SocialProgressService socialProgressService;
 
     /**
+     * 话题/回复落库段的显式事务边界（S2-2，2026-10-30，口径同 VillagePostService）。
+     *
+     * <p>内容安全检查（微信 msgSecCheck v2）是外部 HTTP 调用，原先被方法级
+     * {@code @Transactional} 圈在事务里：微信侧一慢，就长时间占住一条 Hikari 连接
+     * 和 circle_topics / circle_replies 的行锁，并发发帖会把连接池抽干，
+     * 进而拖垮整个 API。现改成「校验 + 检查在事务外，落库在事务内」，
+     * 边界由本模板划定。</p>
+     *
+     * <p>用编程式而不是声明式：{@code createTopic} 的 5 参重载自调用 6 参重载、
+     * {@code replyToTopic} 的 3 参重载自调用 4 参重载，同类自调用不经过代理，
+     * 内层注解本来就不生效；而且只有把边界写成代码，测试才能证伪
+     * 「外呼发生在事务内」。</p>
+     */
+    private final TransactionTemplate transactionTemplate;
+
+    /**
+     * 「挂起一切事务」模板（S2-2，2026-10-30）——内容安全外呼专用。
+     *
+     * <p>只把本方法改成编程式事务还不够：调用方仍可能带着外层事务进来
+     * （本类的 {@code joinCircle}/{@code likeTopic} 等方法就是 {@code @Transactional} 的，
+     * 任何后续把发布链路包进事务的调用方也一样）。内层用 REQUIRED 的话会直接
+     * <b>加入</b>那个外层事务，{@code rejectIfRisky} 的微信 HTTP 调用照样跑在事务里——
+     * 连接和行锁还是被占着，改造等于没发生。</p>
+     *
+     * <p>PROPAGATION_NOT_SUPPORTED 会让 Spring <b>挂起</b>当前事务（含其 EntityManager
+     * 与连接），外呼返回后再恢复，因此「外呼不在事务内」由本类自己保证，不依赖任何调用方
+     * 的注解写法。落库段仍用 {@link #transactionTemplate}（REQUIRED）：有外层事务就加入、
+     * 没有就新建，原子性与改造前一致。</p>
+     */
+    private final TransactionTemplate suspendingTemplate;
+
+    /**
      * 构造函数，注入所有必要的 Repository 和工具类。
+     *
+     * <p>注入 {@link PlatformTransactionManager} 而不是 TransactionTemplate bean：
+     * 前者只要开了事务管理就一定存在，后者依赖 Boot 的 TransactionAutoConfiguration，
+     * 手工装配的容器里没有，会让 bean 创建直接失败（口径同 VipOrderService、
+     * VillagePostService）。</p>
      *
      * @param interestCircleRepository 兴趣圈 Repository
      * @param circleMembershipRepository 圈子成员关系 Repository
@@ -134,6 +174,9 @@ public class RealCircleService implements CircleService {
      * @param userRepository            用户 Repository
      * @param objectMapper              JSON 序列化工具
      * @param interactionEventService   互动事件服务
+     * @param sensitiveWordFilter       敏感词过滤器
+     * @param entityManager             JPA 实体管理器
+     * @param transactionManager        事务管理器（划定落库段边界用）
      */
     public RealCircleService(
             InterestCircleRepository interestCircleRepository,
@@ -144,7 +187,8 @@ public class RealCircleService implements CircleService {
             ObjectMapper objectMapper,
             InteractionEventService interactionEventService,
             SensitiveWordFilter sensitiveWordFilter,
-            EntityManager entityManager) {
+            EntityManager entityManager,
+            PlatformTransactionManager transactionManager) {
         this.interestCircleRepository = interestCircleRepository;
         this.circleMembershipRepository = circleMembershipRepository;
         this.circleTopicRepository = circleTopicRepository;
@@ -154,6 +198,9 @@ public class RealCircleService implements CircleService {
         this.interactionEventService = interactionEventService;
         this.sensitiveWordFilter = sensitiveWordFilter;
         this.entityManager = entityManager;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.suspendingTemplate = new TransactionTemplate(transactionManager);
+        this.suspendingTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_NOT_SUPPORTED);
     }
 
     // ==================== 圈子列表 ====================
@@ -436,13 +483,11 @@ public class RealCircleService implements CircleService {
      * @throws IllegalArgumentException 圈子不存在或参数不合法时抛出
      */
     @Override
-    @Transactional
     public CircleTopicView createTopic(Long circleId, Long authorId, String title, String content, List<String> images) {
         return createTopic(circleId, authorId, title, content, images, null);
     }
 
     @Override
-    @Transactional
     public CircleTopicView createTopic(Long circleId, Long authorId, String title, String content,
                                        List<String> images, List<Long> mentionedUserIds) {
         log.info("创建话题, circleId={}, authorId={}, title={}", circleId, authorId, title);
@@ -457,61 +502,77 @@ public class RealCircleService implements CircleService {
             throw new IllegalArgumentException(ErrorMessages.CONTENT_REQUIRED_CN);
         }
 
-        // 验证圈子是否存在
-        InterestCircle circle = findCircleOrThrow(circleId);
-
-        // 2026-08-31 成员权限校验（用户验收：只有加入了圈子才能在圈子里发帖）。
-        // 此前端只过滤了 UI 选项，后端不校验——任意圈 id 都可发帖，属越权漏洞。
-        // OperationForbiddenException → 403 + 用户可读 message（全局异常处理器透传）。
-        boolean isMember = circle.getId() != null
+        // S2-1（2026-10-30）授权先于外呼：圈子存在性 + 成员身份必须在任何外部调用之前判定。
+        // 顺序有两个理由：①越权请求不该先惊动微信（也不该花掉一次外呼配额）；
+        // ②错误优先级必须是 403 盖过 400，否则非成员提交敏感文本会收到"内容违规"，
+        // 等于告诉调用方"你的内容被判了"而其实他连进这个圈子的资格都没有。
+        // 这两次读都在事务之外执行（Repository 调用各自成事务），不持有任何锁。
+        InterestCircle authorizedCircle = findCircleOrThrow(circleId);
+        boolean isMember = authorizedCircle.getId() != null
                 && !circleMembershipRepository
-                        .findByUserIdAndCircleId(authorId, circle.getId()).isEmpty();
+                        .findByUserIdAndCircleId(authorId, authorizedCircle.getId()).isEmpty();
         if (!isMember) {
             throw new OperationForbiddenException(ErrorMessages.CIRCLE_JOIN_REQUIRED);
         }
 
         // 2026-10-05 合规接线：发布前统一内容安全检查（微信 msgSecCheck v2，scene=3 论坛），
         // 命中高风险（risky）直接拒绝；checker 异常时内部降级本地敏感词（fail-closed）。
-        rejectIfRisky(title, authorId, "3", "话题标题");
-        rejectIfRisky(content, authorId, "3", "话题内容");
+        // S2-1（2026-10-30）：这里会外呼微信 API，因此必须在事务之外——放进事务会带着连接
+        // 和 circle_topics 行锁等一个外部调用；挪到 afterCommit 等于先发后审，合规失效。
+        // 用 NOT_SUPPORTED 模板包一层：调用方即便带着外层事务进来，外呼期间那个事务也会被挂起。
+        suspendingTemplate.executeWithoutResult(status -> {
+            rejectIfRisky(title, authorId, "3", "话题标题");
+            rejectIfRisky(content, authorId, "3", "话题内容");
+        });
 
         // FIN-00039 修复：标题与内容做敏感词过滤（与 VillagePostService 用法一致），
-        // 过滤策略为替换为 *** 而非拒绝发布，保证用户体验
+        // 过滤策略为替换为 *** 而非拒绝发布，保证用户体验。纯内存，不涉及数据库。
         String filteredTitle = sensitiveWordFilter != null
                 ? sensitiveWordFilter.filterWithLog(title, authorId, "CIRCLE_TOPIC")
                 : title;
         String filteredContent = sensitiveWordFilter != null
                 ? sensitiveWordFilter.filterWithLog(content, authorId, "CIRCLE_TOPIC")
                 : content;
+        String imagesJson = toJsonString(images);
 
-        // 创建话题实体
-        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
-        CircleTopic topic = new CircleTopic();
-        topic.setCircle(circle);
-        topic.setAuthorId(authorId);
-        topic.setTitle(filteredTitle);
-        topic.setContent(filteredContent);
-        topic.setImages(toJsonString(images));
-        topic.setReplyCount(0);
-        topic.setIsPinned(false);
-        // CircleTopic 审核链路：新建话题进入待审（pending），后台审核通过后前台才可见；
-        // 本路径仅由 CircleController（用户发布）调用，不影响 admin 测试数据创建
-        topic.setAuditStatus(CircleTopic.AuditStatus.pending);
-        topic.setCreatedAt(now);
+        // S2-1（2026-10-30）事务边界：上面「参数校验 + 授权读 + 内容安全外呼 + 敏感词过滤」
+        // 全在事务之外，只有下面这段「取托管圈子 + 落库 + 构建视图」在一个短事务里原子提交。
+        // 读操作也要在这个 lambda 里做一次：出事务读到的实体是游离态，
+        // topic.setCircle(circle) 与后续 save 的 merge 语义会变，且 toTopicView 触碰
+        // LAZY 的 topic.circle 关联会抛 LazyInitializationException（视图构建同理必须在事务内）。
+        return transactionTemplate.execute(status -> {
+            // 授权已在外层判定完毕，这里只为拿到事务内的托管圈子实例
+            InterestCircle circle = findCircleOrThrow(circleId);
 
-        // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
-        // 否则 mentions 落库与响应里的 topicId 都是 null（2026-10-28 实测）
-        topic = circleTopicRepository.save(topic);
+            // 创建话题实体
+            LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
+            CircleTopic topic = new CircleTopic();
+            topic.setCircle(circle);
+            topic.setAuthorId(authorId);
+            topic.setTitle(filteredTitle);
+            topic.setContent(filteredContent);
+            topic.setImages(imagesJson);
+            topic.setReplyCount(0);
+            topic.setIsPinned(false);
+            // CircleTopic 审核链路：新建话题进入待审（pending），后台审核通过后前台才可见；
+            // 本路径仅由 CircleController（用户发布）调用，不影响 admin 测试数据创建
+            topic.setAuditStatus(CircleTopic.AuditStatus.pending);
+            topic.setCreatedAt(now);
 
-        // 2026-10-28：话题 @提及先落关系，后台审核通过后再发通知（与帖子同模式）
-        if (contentMentionService != null) {
-            contentMentionService.saveMentions(
-                    ContentMention.TARGET_TOPIC, topic.getId(), authorId, circleId, mentionedUserIds);
-        }
+            // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
+            // 否则 mentions 落库与响应里的 topicId 都是 null（2026-10-28 实测）
+            topic = circleTopicRepository.save(topic);
 
-        log.info("话题创建成功, topicId={}, circleId={}", topic.getId(), circleId);
+            // 2026-10-28：话题 @提及先落关系，后台审核通过后再发通知（与帖子同模式）
+            if (contentMentionService != null) {
+                contentMentionService.saveMentions(
+                        ContentMention.TARGET_TOPIC, topic.getId(), authorId, circleId, mentionedUserIds);
+            }
 
-        return toTopicView(topic);
+            log.info("话题创建成功, topicId={}, circleId={}", topic.getId(), circleId);
+
+            return toTopicView(topic);
+        });
     }
 
     /**
@@ -550,13 +611,11 @@ public class RealCircleService implements CircleService {
      * @throws IllegalArgumentException 话题不存在或参数不合法时抛出
      */
     @Override
-    @Transactional
     public CircleReplyView replyToTopic(Long topicId, Long authorId, String content) {
         return replyToTopic(topicId, authorId, content, null);
     }
 
     @Override
-    @Transactional
     public CircleReplyView replyToTopic(Long topicId, Long authorId, String content,
                                         List<Long> mentionedUserIds) {
         log.info("回复话题, topicId={}, authorId={}", topicId, authorId);
@@ -568,10 +627,19 @@ public class RealCircleService implements CircleService {
             throw new IllegalArgumentException(ErrorMessages.REPLY_CONTENT_REQUIRED);
         }
 
+        // 话题存在性先判定（事务外的只读查询）：不存在就不该惊动微信。
+        // 事务内还会再读一次拿托管实例（口径同 createTopic）。
+        findTopicOrThrow(topicId);
+
         // 2026-10-05 合规接线：回复前统一内容安全检查（msgSecCheck v2，scene=2 评论），命中即拒绝
-        rejectIfRisky(content, authorId, "2", "回复内容");
+        // S2-1（2026-10-30）：同 createTopic——外呼微信 API 必须在事务之外，
+        // 并且用 NOT_SUPPORTED 挂起调用方可能带着的外层事务，保证「回复内容检查不在事务里」
+        // 由本类自己兜住，而不是依赖调用方的注解写法。
+        suspendingTemplate.executeWithoutResult(status ->
+                rejectIfRisky(content, authorId, "2", "回复内容"));
 
         // infra R2-00234: 回复内容补敏感词过滤（createTopic 已有过滤，此前回复可绕过）
+        // 纯内存操作，仍在事务之外。
         String filteredContent = sensitiveWordFilter != null
                 ? sensitiveWordFilter.filterWithLog(content, authorId, "CIRCLE_REPLY")
                 : content;
@@ -579,44 +647,53 @@ public class RealCircleService implements CircleService {
             throw new IllegalArgumentException(ErrorMessages.REPLY_CONTENT_REQUIRED);
         }
 
-        // 查找话题，不存在则抛出异常
-        CircleTopic topic = findTopicOrThrow(topicId);
+        // S2-1（2026-10-30）事务边界：只有「查话题 + 落回复 + 更新回复数 + 提及/互动事件 +
+        // 构建视图」这段在一个短事务里原子提交。
+        // findTopicOrThrow 必须在事务内：出事务读到的 topic 是游离态，reply.setTopic(topic)
+        // 与 save 的 merge 语义会变，topic.getReplyCount() 的读改写也可能落到旧值上，
+        // 且 toReplyView 触碰 LAZY 的 reply.topic（以及 topic.circle）会抛
+        // LazyInitializationException。
+        return transactionTemplate.execute(status -> {
+            // 查找话题，不存在则抛出异常
+            CircleTopic topic = findTopicOrThrow(topicId);
 
-        // 创建回复实体
-        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
-        CircleReply reply = new CircleReply();
-        reply.setTopic(topic);
-        reply.setAuthorId(authorId);
-        reply.setContent(filteredContent);
-        reply.setCreatedAt(now);
+            // 创建回复实体
+            LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
+            CircleReply reply = new CircleReply();
+            reply.setTopic(topic);
+            reply.setAuthorId(authorId);
+            reply.setContent(filteredContent);
+            reply.setCreatedAt(now);
 
-        reply = circleReplyRepository.save(reply);
+            // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id
+            reply = circleReplyRepository.save(reply);
 
-        // 更新话题回复数
-        topic.setReplyCount(topic.getReplyCount() + 1);
-        circleTopicRepository.save(topic);
+            // 更新话题回复数
+            topic.setReplyCount(topic.getReplyCount() + 1);
+            topic = circleTopicRepository.save(topic);
 
-        // 2026-10-28：回复 @提及（回复无审核，创建即通知；引用 topicId 保证客户端可打开话题详情）
-        if (contentMentionService != null) {
-            contentMentionService.saveMentions(
-                    ContentMention.TARGET_REPLY, reply.getId(), authorId,
-                    topic.getCircle() != null ? topic.getCircle().getId() : null, mentionedUserIds);
-            contentMentionService.notifyMentions(
-                    ContentMention.TARGET_REPLY, reply.getId(), authorId, "comment", topicId);
-        }
+            // 2026-10-28：回复 @提及（回复无审核，创建即通知；引用 topicId 保证客户端可打开话题详情）
+            if (contentMentionService != null) {
+                contentMentionService.saveMentions(
+                        ContentMention.TARGET_REPLY, reply.getId(), authorId,
+                        topic.getCircle() != null ? topic.getCircle().getId() : null, mentionedUserIds);
+                contentMentionService.notifyMentions(
+                        ContentMention.TARGET_REPLY, reply.getId(), authorId, "comment", topicId);
+            }
 
-        // 记录互动事件：通知话题作者有人回复
-        if (!authorId.equals(topic.getAuthorId())) {
-            interactionEventService.recordEvent(
-                    topic.getAuthorId(), authorId, "TOPIC_REPLIED", topicId, "TOPIC",
-                    "有人回复了你的话题"
-            );
-        }
+            // 记录互动事件：通知话题作者有人回复
+            if (!authorId.equals(topic.getAuthorId())) {
+                interactionEventService.recordEvent(
+                        topic.getAuthorId(), authorId, "TOPIC_REPLIED", topicId, "TOPIC",
+                        "有人回复了你的话题"
+                );
+            }
 
-        log.info("回复创建成功, replyId={}, topicId={}, 当前回复数={}",
-                reply.getId(), topicId, topic.getReplyCount());
+            log.info("回复创建成功, replyId={}, topicId={}, 当前回复数={}",
+                    reply.getId(), topicId, topic.getReplyCount());
 
-        return toReplyView(reply);
+            return toReplyView(reply);
+        });
     }
 
     /**

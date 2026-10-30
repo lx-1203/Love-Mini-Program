@@ -63,10 +63,37 @@ public class TempChatMessageService {
 
     public TempChatMessageService(TempChatMessageRepository messageRepository,
                                   TempChatSessionService sessionService,
-                                  SensitiveWordFilter sensitiveWordFilter) {
+                                  SensitiveWordFilter sensitiveWordFilter,
+                                  org.springframework.transaction.PlatformTransactionManager transactionManager) {
         this.messageRepository = messageRepository;
         this.sessionService = sessionService;
         this.sensitiveWordFilter = sensitiveWordFilter;
+        this.transactionTemplate = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+        this.suspendingTemplate = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+        this.suspendingTemplate.setPropagationBehavior(
+                org.springframework.transaction.TransactionDefinition.PROPAGATION_NOT_SUPPORTED);
+    }
+
+    /**
+     * 落库段事务（消息插入 + 会话预览/未读数更新必须原子）。
+     *
+     * <p>S2-1（2026-10-30）：原先整个 sendMessage 挂着 {@code @Transactional}，而其中的
+     * {@code rejectIfRisky} 要外呼微信 msgSecCheck ——发消息就等于「持着连接和会话行锁
+     * 等一个第三方 HTTP 调用」。现只把写库圈进事务，外呼单独挂起事务。</p>
+     */
+    private final org.springframework.transaction.support.TransactionTemplate transactionTemplate;
+
+    /**
+     * 「挂起一切事务」模板：内容安全外呼专用。
+     *
+     * <p>调用方 {@code RealTempChatService.sendMessage} 带 {@code @Transactional}，
+     * 只用 REQUIRED 模板的话内层会「加入」外层事务，外呼照样在事务里。NOT_SUPPORTED
+     * 会挂起调用方的事务，保证「外呼不在事务内」由本类自己兜住，不依赖调用方的注解写法。</p>
+     */
+    private final org.springframework.transaction.support.TransactionTemplate suspendingTemplate;
+
+    /** 一次落库的结果：新消息与会话（合并后的托管实例，版本号是新的）。 */
+    private record Persisted(TempChatMessage message, TempChatSession session) {
     }
 
     /**
@@ -84,7 +111,6 @@ public class TempChatMessageService {
      * @param currentUserId 当前用户 ID
      * @return 更新后的会话实体（调用方负责转换为视图）
      */
-    @Transactional
     public TempChatSession sendMessage(String id, ChatMessageRequest request, Long currentUserId) {
         if (currentUserId == null) {
             throw new IllegalArgumentException(ErrorMessages.CURRENT_USER_ID_REQUIRED);
@@ -118,7 +144,10 @@ public class TempChatMessageService {
 
         // 2026-10-05 合规接线：发送前统一内容安全检查（微信 msgSecCheck v2，scene=4 社交日志），
         // 命中高风险（risky）直接拒绝发送；checker 异常时内部降级本地敏感词（fail-closed）。
-        rejectIfRisky(request.body(), currentUserId, "4");
+        // S2-1（2026-10-30）：外呼放在挂起事务的模板里——检查必须在任何写库之前（合规），
+        // 但不能带着事务等微信返回。
+        suspendingTemplate.executeWithoutResult(status ->
+                rejectIfRisky(request.body(), currentUserId, "4"));
 
         // infra R2-00252: 临时聊天消息补敏感词过滤（村口/私信已有，此处此前可绕过）
         String filteredBody = sensitiveWordFilter != null
@@ -163,29 +192,33 @@ public class TempChatMessageService {
             }
         }
 
-        // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
-        // 否则下方 toMessageView 中 message.getId() 为 null
-        message = messageRepository.save(message);
-
-        // 更新会话最后消息信息和未读计数
-        String preview = buildMessagePreview(request.kind(), filteredBody);
-        session.setLastMessagePreview(preview);
-        session.setLastMessageAt(now);
-        session.setUpdatedAt(now);
-
-        boolean isPeerMessage = "peer".equals(sender);
-        if (isPeerMessage) {
-            session.setUserAUnreadCount(session.getUserAUnreadCount() + 1);
-        } else {
-            session.setUserBUnreadCount(session.getUserBUnreadCount() + 1);
-        }
-
-        sessionService.saveSession(session);
+        // S2-1（2026-10-30）事务边界：消息插入与会话预览/未读数更新必须在同一个短事务里
+        // 原子提交（少了任一边就是「消息在、未读数不对」）；而内容安全外呼已经在这个事务
+        // 之前跑完。实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值，
+        // 否则下方 toMessageView 中 message.getId() 为 null。
+        final boolean isPeerMessage = "peer".equals(sender);
+        final String preview = buildMessagePreview(request.kind(), filteredBody);
+        Persisted persisted = transactionTemplate.execute(status -> {
+            TempChatMessage saved = messageRepository.save(message);
+            // 更新会话最后消息信息和未读计数
+            session.setLastMessagePreview(preview);
+            session.setLastMessageAt(now);
+            session.setUpdatedAt(now);
+            if (isPeerMessage) {
+                session.setUserAUnreadCount(session.getUserAUnreadCount() + 1);
+            } else {
+                session.setUserBUnreadCount(session.getUserBUnreadCount() + 1);
+            }
+            return new Persisted(saved, sessionService.saveSession(session));
+        });
+        TempChatMessage savedMessage = persisted.message();
+        TempChatSession savedSession = persisted.session();
 
         // WebSocket 推送给对方（R16：推送视图按接收方视角翻转 sender）
-        Long recipientId = isPeerMessage ? session.getUserAId() : session.getUserBId();
-        boolean recipientIsUserB = session.getUserBId().equals(recipientId);
-        ChatMessageView messageView = sessionService.toMessageView(message, recipientIsUserB);
+        // 推送在事务提交之后：原先「提交前推送」，接收端可能先收到推送再回查却读不到消息。
+        Long recipientId = isPeerMessage ? savedSession.getUserAId() : savedSession.getUserBId();
+        boolean recipientIsUserB = savedSession.getUserBId().equals(recipientId);
+        ChatMessageView messageView = sessionService.toMessageView(savedMessage, recipientIsUserB);
         sessionService.getMessagingTemplate().convertAndSendToUser(
                 String.valueOf(recipientId),
                 "/queue/temp-chat/messages",
@@ -193,7 +226,7 @@ public class TempChatMessageService {
         );
 
         log.debug("会话 {} 发送消息: sender={}, kind={}", id, sender, request.kind());
-        return session;
+        return savedSession;
     }
 
     /**

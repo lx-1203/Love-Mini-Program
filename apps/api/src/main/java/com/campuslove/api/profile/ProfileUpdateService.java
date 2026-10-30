@@ -29,7 +29,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -47,7 +50,10 @@ import org.springframework.web.multipart.MultipartFile;
  * </ul>
  *
  * <p>该组件通过 ProfileQueryService 复用视图转换、JSON 解析与资料完善度计算逻辑，
- * 避免职责重复。所有写操作使用 {@code @Transactional} 保证事务一致性。</p>
+ * 避免职责重复。写操作默认使用 {@code @Transactional} 保证事务一致性；
+ * 唯一例外是 {@link #saveBasicProfile}（S2-1，2026-10-30）：它要外呼微信
+ * msgSecCheck，事务边界改由 {@link #transactionTemplate} / {@link #suspendingTemplate}
+ * 显式划定，见该方法的说明。</p>
  */
 @Profile("real")
 @Component
@@ -98,6 +104,44 @@ public class ProfileUpdateService {
     @Autowired(required = false)
     private com.campuslove.api.repository.circle.CircleLayerRepository circleLayerRepository;
 
+    /**
+     * 资料落库段的显式事务边界（S2-1，2026-10-30）。
+     *
+     * <p>内容安全检查（微信 msgSecCheck v2）是外部 HTTP 调用，原先被
+     * {@code saveBasicProfile} 的方法级 {@code @Transactional} 圈在事务里：微信侧一慢，
+     * 就长时间占住一条 Hikari 连接，外加 {@code users} / {@code user_basic_profiles}
+     * 上它自己拿到的行锁，并发改资料会把连接池抽干，进而拖垮整个 API。现改成
+     * 「校验 + 内容检查在事务外，读改写在事务内」，边界由本模板划定。</p>
+     *
+     * <p>用编程式而不是声明式：同类自调用不经过代理，注解本来就不生效；
+     * 而且只有把边界写成代码，测试才能证伪「外呼发生在事务内」。</p>
+     */
+    private final TransactionTemplate transactionTemplate;
+
+    /**
+     * 「挂起一切事务」模板（S2-1，2026-10-30）——内容安全外呼专用。
+     *
+     * <p>只把本方法改成编程式事务还不够：调用方仍可能带着外层事务进来。
+     * {@code RealProfileService.saveBasicProfile} 此前就是一个 {@code @Transactional}
+     * 的纯委托，于是改资料的线程上早就有一个活动事务，本类里 {@code rejectIfRisky}
+     * 的微信 HTTP 调用照样跑在事务内——连接和行锁还是被占着，改造等于没发生。</p>
+     *
+     * <p>PROPAGATION_NOT_SUPPORTED 会让 Spring <b>挂起</b>当前事务（含其 EntityManager
+     * 与连接），外呼返回后再恢复，因此「外呼不在事务内」由本类自己保证，不依赖任何调用方
+     * 的注解写法。落库段仍用 {@link #transactionTemplate}（REQUIRED）：有外层事务就加入、
+     * 没有就新建，原子性与改造前一致。</p>
+     */
+    private final TransactionTemplate suspendingTemplate;
+
+    /**
+     * Spring 注入构造器。
+     *
+     * <p>注入 {@link PlatformTransactionManager} 而不是 TransactionTemplate bean：
+     * 前者只要开了事务管理就一定存在，后者依赖 Boot 的 TransactionAutoConfiguration，
+     * 手工装配的容器（含本包单测）里没有，会让 bean 创建直接失败（口径同
+     * VillagePostService、VipOrderService）。</p>
+     */
+    @Autowired
     public ProfileUpdateService(
             UserRepository userRepository,
             UserFollowRepository userFollowRepository,
@@ -110,7 +154,8 @@ public class ProfileUpdateService {
             MediaAssetService mediaAssetService,
             ProfileQueryService queryService,
             FollowService followService,
-            SensitiveWordFilter sensitiveWordFilter) {
+            SensitiveWordFilter sensitiveWordFilter,
+            PlatformTransactionManager transactionManager) {
         this.userRepository = userRepository;
         this.userFollowRepository = userFollowRepository;
         this.notificationRepository = notificationRepository;
@@ -123,6 +168,10 @@ public class ProfileUpdateService {
         this.queryService = queryService;
         this.followService = followService;
         this.sensitiveWordFilter = sensitiveWordFilter;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.suspendingTemplate = new TransactionTemplate(transactionManager);
+        this.suspendingTemplate.setPropagationBehavior(
+                TransactionDefinition.PROPAGATION_NOT_SUPPORTED);
     }
 
     // ---- 基本资料保存 ----
@@ -131,121 +180,148 @@ public class ProfileUpdateService {
      * 保存基本资料。
      * 仅当请求显式传入扩展字段时才更新（null 保留原值）。
      * 同步更新 User 表的 nickname/bio/gradeLabel/pronouns 与 profileCompletion。
+     *
+     * <p>S2-1（2026-10-30）事务边界：这里<b>不能</b>用方法级 {@code @Transactional}。
+     * 本方法中的 {@code rejectIfRisky}（昵称/简介）会外呼微信 msgSecCheck v2，
+     * 声明式事务会让那次第三方 HTTP 调用带着 Hikari 连接和 {@code users} /
+     * {@code user_basic_profiles} 行锁一起挂起等待，微信侧超时即等于拖垮连接池。
+     * 现在的划分是：字段校验、取当前用户、内容安全检查（在 NOT_SUPPORTED 的
+     * {@link #suspendingTemplate} 里，连调用方的外层事务也被挂起）全部在事务之外；
+     * 从第一次仓库读开始，读-改-写、完善度重算与视图构建放进一个短事务
+     * （{@link #transactionTemplate}，REQUIRED）原子提交。</p>
+     *
+     * <p>视图必须留在事务内构建：{@link ProfileQueryService#toBasicProfileView}
+     * 会再查认证徽章等级与媒体资产，出事务后取会抛 LazyInitializationException。</p>
+     *
+     * <p>顺序与改造前一致：两次检查仍先于任何写入，敏感词命中判定（纯内存）仍在检查之后。</p>
      */
-    @Transactional
     public BasicProfileView saveBasicProfile(BasicProfileRequest request) {
         validateExtendedFields(request);
         Long currentUserId = SecurityUtils.getCurrentUserId();
         LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
 
-        UserBasicProfile profile = userBasicProfileRepository.findByUserId(currentUserId)
-                .orElseGet(() -> {
-                    UserBasicProfile newProfile = new UserBasicProfile();
-                    newProfile.setUserId(currentUserId);
-                    newProfile.setCreatedAt(now);
-                    newProfile.setPhotoGallery("[]");
-                    newProfile.setFuturePlanTags("[]");
-                    newProfile.setInterestTags("[]");
-                    return newProfile;
-                });
-
-        // infra R2-00254: 昵称/简介补敏感词过滤（防止资料携带违规词）
-        // R4-00298：资料昵称/简介属身份展示字段，命中敏感词直接【拒绝】并记录
-        // （仅替换为 *** 无法阻止拆分/谐音绕过内容审核；拒绝策略保证资料区无违规内容）。
-        // 与社区发帖（村口帖子/评论走替换策略）语义区分：资料字段更接近实名身份，
-        // 从严处理。
         // 2026-10-05 合规接线：保存前统一内容安全检查（微信 msgSecCheck v2，scene=1 资料），
         // 命中高风险（risky）直接拒绝；checker 异常时内部降级本地敏感词（fail-closed）。
-        rejectIfRisky(request.nickname(), currentUserId, "1", "昵称");
-        rejectIfRisky(request.bio(), currentUserId, "1", "简介");
-        String filteredNickname = request.nickname();
-        if (sensitiveWordFilter != null && sensitiveWordFilter.containsSensitive(request.nickname())) {
-            // 记录命中（含用户 ID 与场景），随后拒绝保存
-            sensitiveWordFilter.filterWithLog(request.nickname(), currentUserId, "PROFILE_NICKNAME");
-            throw new IllegalArgumentException("资料包含违规内容，请修改后重试");
-        }
-        String filteredBio = request.bio();
-        if (request.bio() != null && sensitiveWordFilter != null
-                && sensitiveWordFilter.containsSensitive(request.bio())) {
-            sensitiveWordFilter.filterWithLog(request.bio(), currentUserId, "PROFILE_BIO");
-            throw new IllegalArgumentException("资料包含违规内容，请修改后重试");
-        }
+        // S2-1（2026-10-30）：这里会外呼微信 API，因此必须在事务之外——放进事务会带着连接和
+        // 行锁等一个外部调用；挪到 afterCommit 等于先存后审，合规失效。用 NOT_SUPPORTED
+        // 模板包一层：调用方即便带着外层事务进来，外呼期间那个事务也会被挂起。
+        suspendingTemplate.executeWithoutResult(status -> {
+            rejectIfRisky(request.nickname(), currentUserId, "1", "昵称");
+            rejectIfRisky(request.bio(), currentUserId, "1", "简介");
+        });
 
-        profile.setNickname(filteredNickname);
-        profile.setBio(filteredBio);
-        profile.setGradeLabel(request.grade());
-        profile.setPronouns(request.pronouns());
-        if (request.height() != null) {
-            profile.setHeight(request.height());
-        }
-        if (request.educationLevel() != null) {
-            profile.setEducationLevel(request.educationLevel());
-        }
-        if (request.relationshipStatus() != null) {
-            profile.setRelationshipStatus(request.relationshipStatus());
-        }
-        if (request.hometownProvince() != null) {
-            profile.setHometownProvince(request.hometownProvince());
-        }
-        if (request.hometownCity() != null) {
-            profile.setHometownCity(request.hometownCity());
-        }
-        if (request.futureCity() != null) {
-            profile.setFutureCity(request.futureCity());
-        }
-        if (request.futurePlanTags() != null) {
-            profile.setFuturePlanTags(queryService.serializeListToJson(request.futurePlanTags()));
-        }
-        // P0-34 修复（2026-08-08）：兴趣标签写入（此前缺失 → 完善度差 20 分 → 无法解锁）
-        if (request.interestTags() != null) {
-            profile.setInterestTags(queryService.serializeListToJson(request.interestTags()));
-        }
-        // 2026-08-11 匹配精细化：理想型画像写入（可空，未传保留既有值）
-        if (request.expectedPartner() != null) {
-            profile.setExpectedPartner(request.expectedPartner().trim());
-        }
-        profile.setUpdatedAt(now);
-        userBasicProfileRepository.save(profile);
+        // infra R2-00254 / R4-00298 的落库段（含读）整体在一个短事务里，见方法注释。
+        return transactionTemplate.execute(status -> {
+            UserBasicProfile profile = userBasicProfileRepository.findByUserId(currentUserId)
+                    .orElseGet(() -> {
+                        UserBasicProfile newProfile = new UserBasicProfile();
+                        newProfile.setUserId(currentUserId);
+                        newProfile.setCreatedAt(now);
+                        newProfile.setPhotoGallery("[]");
+                        newProfile.setFuturePlanTags("[]");
+                        newProfile.setInterestTags("[]");
+                        return newProfile;
+                    });
 
-        // 同步更新 User 表
-        User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new IllegalStateException(ErrorMessages.USER_NOT_FOUND_CN_PREFIX + currentUserId));
-        user.setNickname(filteredNickname);
-        user.setBio(filteredBio);
-        user.setGradeLabel(request.grade());
-        user.setPronouns(request.pronouns());
-        // 3-N 未成年人保护：birthDate 可选（存量用户不强制补填，避免破坏既有资料更新）；
-        // 传值时校验年龄 >= 18，未满 18 拒绝保存并返回 MINOR_NOT_ALLOWED 业务错误
-        if (request.birthDate() != null) {
-            if (!com.campuslove.api.common.AgePolicy.isAdult(request.birthDate())) {
-                log.warn("未成年人资料更新被拒绝: userId={}, birthDate={}",
-                        currentUserId, request.birthDate());
-                throw new com.campuslove.api.common.MinorNotAllowedException(
-                        com.campuslove.api.common.ErrorMessages.MINOR_NOT_ALLOWED);
+            // R4-00298：资料昵称/简介属身份展示字段，命中敏感词直接【拒绝】并记录
+            // （仅替换为 *** 无法阻止拆分/谐音绕过内容审核；拒绝策略保证资料区无违规内容）。
+            // 与社区发帖（村口帖子/评论走替换策略）语义区分：资料字段更接近实名身份，
+            // 从严处理。
+            String filteredNickname = request.nickname();
+            if (sensitiveWordFilter != null && sensitiveWordFilter.containsSensitive(request.nickname())) {
+                // 记录命中（含用户 ID 与场景），随后拒绝保存
+                sensitiveWordFilter.filterWithLog(request.nickname(), currentUserId, "PROFILE_NICKNAME");
+                throw new IllegalArgumentException("资料包含违规内容，请修改后重试");
             }
-            user.setBirthDate(request.birthDate());
-        }
-
-        // 2026-08-07：头像 URL 可选更新（非空时写入 users.avatar_url）
-        // R4-00297：仅允许本服务媒体存储返回的 URL（/api/v1/media/ 或 /uploads/ 前缀
-        // 的相对路径）——拒绝任意外部 URL（http/https/data/blob/wxfile 等），
-        // 防止注入外部图片冒充头像（钓鱼/第三方追踪像素）。
-        if (request.avatarUrl() != null && !request.avatarUrl().isBlank()) {
-            String avatarUrl = request.avatarUrl().trim();
-            if (!isTrustedMediaUrl(avatarUrl)) {
-                log.warn("头像 URL 未通过白名单校验，拒绝写入: userId={}, avatarUrl={}",
-                        currentUserId, sanitizeForLog(avatarUrl));
-                throw new IllegalArgumentException("头像地址不合法，仅支持本服务上传的图片");
+            String filteredBio = request.bio();
+            if (request.bio() != null && sensitiveWordFilter != null
+                    && sensitiveWordFilter.containsSensitive(request.bio())) {
+                sensitiveWordFilter.filterWithLog(request.bio(), currentUserId, "PROFILE_BIO");
+                throw new IllegalArgumentException("资料包含违规内容，请修改后重试");
             }
-            user.setAvatarUrl(avatarUrl);
-        }
 
-        // 重新计算资料完善度并保存
-        user.setProfileCompletion(queryService.calculateProfileCompletion(currentUserId));
-        user.setUpdatedAt(now);
-        userRepository.save(user);
+            profile.setNickname(filteredNickname);
+            profile.setBio(filteredBio);
+            profile.setGradeLabel(request.grade());
+            profile.setPronouns(request.pronouns());
+            if (request.height() != null) {
+                profile.setHeight(request.height());
+            }
+            if (request.educationLevel() != null) {
+                profile.setEducationLevel(request.educationLevel());
+            }
+            if (request.relationshipStatus() != null) {
+                profile.setRelationshipStatus(request.relationshipStatus());
+            }
+            if (request.hometownProvince() != null) {
+                profile.setHometownProvince(request.hometownProvince());
+            }
+            if (request.hometownCity() != null) {
+                profile.setHometownCity(request.hometownCity());
+            }
+            if (request.futureCity() != null) {
+                profile.setFutureCity(request.futureCity());
+            }
+            if (request.futurePlanTags() != null) {
+                profile.setFuturePlanTags(queryService.serializeListToJson(request.futurePlanTags()));
+            }
+            // P0-34 修复（2026-08-08）：兴趣标签写入（此前缺失 → 完善度差 20 分 → 无法解锁）
+            if (request.interestTags() != null) {
+                profile.setInterestTags(queryService.serializeListToJson(request.interestTags()));
+            }
+            // 2026-08-11 匹配精细化：理想型画像写入（可空，未传保留既有值）
+            if (request.expectedPartner() != null) {
+                profile.setExpectedPartner(request.expectedPartner().trim());
+            }
+            profile.setUpdatedAt(now);
+            // save(...) 的返回值必须接收：实体带 @Version（UserBasicProfile#version），
+            // Spring Data 走的是 em.merge，merge 返回的才是持久化上下文里那份权威实例
+            // （读被挪出本事务时它就是游离态，merge 会换一个新对象并带上自增后的 version）。
+            // 旧写法丢弃返回值，一旦调用形态变化就会静默改掉乐观锁/标识语义。
+            profile = userBasicProfileRepository.save(profile);
 
-        return queryService.toBasicProfileView(profile, user);
+            // 同步更新 User 表
+            User user = userRepository.findById(currentUserId)
+                    .orElseThrow(() -> new IllegalStateException(ErrorMessages.USER_NOT_FOUND_CN_PREFIX + currentUserId));
+            user.setNickname(filteredNickname);
+            user.setBio(filteredBio);
+            user.setGradeLabel(request.grade());
+            user.setPronouns(request.pronouns());
+            // 3-N 未成年人保护：birthDate 可选（存量用户不强制补填，避免破坏既有资料更新）；
+            // 传值时校验年龄 >= 18，未满 18 拒绝保存并返回 MINOR_NOT_ALLOWED 业务错误
+            if (request.birthDate() != null) {
+                if (!com.campuslove.api.common.AgePolicy.isAdult(request.birthDate())) {
+                    log.warn("未成年人资料更新被拒绝: userId={}, birthDate={}",
+                            currentUserId, request.birthDate());
+                    throw new com.campuslove.api.common.MinorNotAllowedException(
+                            com.campuslove.api.common.ErrorMessages.MINOR_NOT_ALLOWED);
+                }
+                user.setBirthDate(request.birthDate());
+            }
+
+            // 2026-08-07：头像 URL 可选更新（非空时写入 users.avatar_url）
+            // R4-00297：仅允许本服务媒体存储返回的 URL（/api/v1/media/ 或 /uploads/ 前缀
+            // 的相对路径）——拒绝任意外部 URL（http/https/data/blob/wxfile 等），
+            // 防止注入外部图片冒充头像（钓鱼/第三方追踪像素）。
+            if (request.avatarUrl() != null && !request.avatarUrl().isBlank()) {
+                String avatarUrl = request.avatarUrl().trim();
+                if (!isTrustedMediaUrl(avatarUrl)) {
+                    log.warn("头像 URL 未通过白名单校验，拒绝写入: userId={}, avatarUrl={}",
+                            currentUserId, sanitizeForLog(avatarUrl));
+                    throw new IllegalArgumentException("头像地址不合法，仅支持本服务上传的图片");
+                }
+                user.setAvatarUrl(avatarUrl);
+            }
+
+            // 重新计算资料完善度并保存
+            user.setProfileCompletion(queryService.calculateProfileCompletion(currentUserId));
+            user.setUpdatedAt(now);
+            // 同上：@Version（User#version）使 save 走 merge，返回值才是权威实例，
+            // 接收后再传给视图。
+            user = userRepository.save(user);
+
+            return queryService.toBasicProfileView(profile, user);
+        });
     }
 
     /**

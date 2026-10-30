@@ -29,7 +29,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 村口帖子发布组件（Task 4.2.2 拆分）。
@@ -92,6 +94,35 @@ public class VillagePostService {
     private final CampusCertificationRepository campusCertificationRepository;
 
     /**
+     * 发帖落库段的显式事务边界（S2-1，2026-10-30）。
+     *
+     * <p>内容安全检查（微信 msgSecCheck v2）是外部 HTTP 调用，原先被方法级
+     * {@code @Transactional} 圈在事务里：微信侧一慢，就长时间占住一条 Hikari 连接
+     * 和帖子相关行锁，并发发帖会把连接池抽干，进而拖垮整个 API。现改成
+     * 「校验 + 检查在事务外，落库在事务内」，边界由本模板划定。</p>
+     *
+     * <p>用编程式而不是声明式：同类自调用不经过代理，注解本来就不生效；
+     * 而且只有把边界写成代码，测试才能证伪「外呼发生在事务内」。</p>
+     */
+    private final TransactionTemplate transactionTemplate;
+
+    /**
+     * 「挂起一切事务」模板（S2-1，2026-10-30）——内容安全外呼专用。
+     *
+     * <p>只把本方法改成编程式事务还不够：调用方仍可能带着外层事务进来。实测
+     * {@code RealVillageService.createPost}（4 个重载）与
+     * {@code AdminContentComposeController} 都是 {@code @Transactional} 的纯委托，
+     * 于是发帖线程上早就有一个活动事务，本类里 {@code rejectIfRisky} 的微信 HTTP 调用
+     * 照样跑在事务内——连接和行锁还是被占着，改造等于没发生。</p>
+     *
+     * <p>PROPAGATION_NOT_SUPPORTED 会让 Spring <b>挂起</b>当前事务（含其 EntityManager
+     * 与连接），外呼返回后再恢复，因此「外呼不在事务内」由本类自己保证，不依赖任何调用方
+     * 的注解写法。落库段仍用 {@link #transactionTemplate}（REQUIRED）：有外层事务就加入、
+     * 没有就新建，原子性与改造前一致。</p>
+     */
+    private final TransactionTemplate suspendingTemplate;
+
+    /**
      * 圈层归属回填（2026-10-14）：把发帖人的 {@code users.circle_path} 写进
      * {@code posts.owner_circle_path}，让<b>小程序新发的帖子</b>与后台圈层导航、
      * 审核作用域同源——此前该列只由一次性回填脚本和后台代发链路写入，
@@ -106,6 +137,10 @@ public class VillagePostService {
     /**
      * Spring 注入构造器（多个构造器时必须显式 @Autowired 指定，
      * 否则 Spring 报 "No default constructor found"）。
+     *
+     * <p>注入 {@link PlatformTransactionManager} 而不是 TransactionTemplate bean：
+     * 前者只要开了事务管理就一定存在，后者依赖 Boot 的 TransactionAutoConfiguration，
+     * 手工装配的容器里没有，会让 bean 创建直接失败（口径同 VipOrderService）。</p>
      */
     @Autowired
     public VillagePostService(PostRepository postRepository,
@@ -114,7 +149,8 @@ public class VillagePostService {
                               ActivityRepository activityRepository,
                               PostTagRepository postTagRepository,
                               CircleMembershipRepository circleMembershipRepository,
-                              CampusCertificationRepository campusCertificationRepository) {
+                              CampusCertificationRepository campusCertificationRepository,
+                              PlatformTransactionManager transactionManager) {
         this.postRepository = postRepository;
         this.sensitiveWordFilter = sensitiveWordFilter;
         this.queryService = queryService;
@@ -122,6 +158,10 @@ public class VillagePostService {
         this.postTagRepository = postTagRepository;
         this.circleMembershipRepository = circleMembershipRepository;
         this.campusCertificationRepository = campusCertificationRepository;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.suspendingTemplate = new TransactionTemplate(transactionManager);
+        this.suspendingTemplate.setPropagationBehavior(
+                org.springframework.transaction.TransactionDefinition.PROPAGATION_NOT_SUPPORTED);
     }
 
     /**
@@ -133,7 +173,7 @@ public class VillagePostService {
     public VillagePostService(PostRepository postRepository,
                               SensitiveWordFilter sensitiveWordFilter,
                               VillageQueryService queryService) {
-        this(postRepository, sensitiveWordFilter, queryService, null, null, null, null);
+        this(postRepository, sensitiveWordFilter, queryService, null, null, null, null, noOpTxManager());
     }
 
     /**
@@ -146,7 +186,36 @@ public class VillagePostService {
                               SensitiveWordFilter sensitiveWordFilter,
                               VillageQueryService queryService,
                               ActivityRepository activityRepository) {
-        this(postRepository, sensitiveWordFilter, queryService, activityRepository, null, null, null);
+        this(postRepository, sensitiveWordFilter, queryService, activityRepository,
+                null, null, null, noOpTxManager());
+    }
+
+    /**
+     * 测试构造器用的「不开事务」事务管理器。
+     *
+     * <p>单测直接 new 本类时原本就不经过 Spring 代理，方法上的 {@code @Transactional}
+     * 从来不生效；这里把同一事实显式化，使
+     * {@code TransactionSynchronizationManager.isActualTransactionActive()} 仍为 false，
+     * 不会让「外呼在事务外」这类判点在测试里假绿。</p>
+     */
+    private static PlatformTransactionManager noOpTxManager() {
+        return new PlatformTransactionManager() {
+            @Override
+            public org.springframework.transaction.TransactionStatus getTransaction(
+                    org.springframework.transaction.TransactionDefinition definition) {
+                return new SimpleTransactionStatus();
+            }
+
+            @Override
+            public void commit(org.springframework.transaction.TransactionStatus status) {
+                // 无事务可提交
+            }
+
+            @Override
+            public void rollback(org.springframework.transaction.TransactionStatus status) {
+                // 无事务可回滚
+            }
+        };
     }
 
     /**
@@ -176,14 +245,12 @@ public class VillagePostService {
      * @throws IllegalArgumentException 当 userId/content/title 为空或 title 长度不合法时
      * @throws OperationForbiddenException 当可见范围校验不通过时（非圈子成员发圈子帖/未认证发校园帖）
      */
-    @Transactional
     @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
     public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags,
                                      String category, Long activityId, String targetType, Long targetId) {
         return createPost(userId, title, content, images, tags, category, activityId, targetType, targetId, List.of());
     }
 
-    @Transactional
     @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
     public PostDetailView createPost(Long userId, String title, String content, List<String> images, List<String> tags,
                                      String category, Long activityId, String targetType, Long targetId,
@@ -219,8 +286,14 @@ public class VillagePostService {
 
         // 2026-10-05 合规接线：发布前统一内容安全检查（微信 msgSecCheck v2，scene=3 论坛），
         // 命中高风险（risky）直接拒绝发布；checker 异常时内部降级本地敏感词（fail-closed）。
-        rejectIfRisky(title, userId, "3", "帖子标题");
-        rejectIfRisky(content, userId, "3", "帖子内容");
+        // S2-1（2026-10-30）：这里会外呼微信 API，因此必须在事务之外——
+        // 放进事务会带着连接和行锁等一个外部调用；挪到 afterCommit 等于先发后审，合规失效。
+        // 用 NOT_SUPPORTED 模板包一层：调用方（RealVillageService / 后台代发）即便带着
+        // 外层事务进来，外呼期间那个事务也会被挂起。
+        suspendingTemplate.executeWithoutResult(status -> {
+            rejectIfRisky(title, userId, "3", "帖子标题");
+            rejectIfRisky(content, userId, "3", "帖子内容");
+        });
 
         String filteredTitle = sensitiveWordFilter.filterWithLog(title.trim(), userId, "POST");
         String filteredContent = sensitiveWordFilter.filterWithLog(content, userId, "POST");
@@ -266,27 +339,34 @@ public class VillagePostService {
         // 缺陷修复：使用 saveAndFlush 立即回填 IDENTITY 主键，保证返回视图中的 id 非空
         // （原 save() 在事务提交时才生成主键，实体在构建视图时 getId() 仍为 null；
         //  实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id）
-        post = postRepository.saveAndFlush(post);
+        //
+        // S2-1（2026-10-30）事务边界：上面「校验 + 内容安全检查 + 敏感词过滤」全部在事务之外
+        // （其中 msgSecCheck 要外呼微信 API），只有下面这段落库在一个短事务里原子提交。
+        // 视图也在事务内构建：toPostDetailView 会触碰懒加载关联，出事务后再取会抛
+        // LazyInitializationException。
+        return transactionTemplate.execute(status -> {
+            Post saved = postRepository.saveAndFlush(post);
 
-        // 2026-10-28：@提及关系先落库；待审帖不提前发通知，审核通过后由 PostMentionService.notifyMentions 发送
-        if (postMentionService != null) {
-            postMentionService.saveMentions(post.getId(), userId, mentionedUserIds);
-        }
+            // 2026-10-28：@提及关系先落库；待审帖不提前发通知，审核通过后由 PostMentionService.notifyMentions 发送
+            if (postMentionService != null) {
+                postMentionService.saveMentions(saved.getId(), userId, mentionedUserIds);
+            }
 
-        // R4-00328：同步写入 post_tags 关联表——此前 post_tag 表无任何写入方，
-        // 「按标签查帖子 / 热门话题」恒为空，标签功能断链。现发帖时按过滤后标签
-        // 逐条写 PostTag（同一事务；唯一约束冲突（重复标签）仅记录日志不阻断发帖）。
-        if (postTagRepository != null && !filteredTags.isEmpty()) {
-            for (String tag : filteredTags) {
-                try {
-                    postTagRepository.save(new PostTag(post.getId(), tag));
-                } catch (org.springframework.dao.DataIntegrityViolationException e) {
-                    logDuplicateTag(tag);
+            // R4-00328：同步写入 post_tags 关联表——此前 post_tag 表无任何写入方，
+            // 「按标签查帖子 / 热门话题」恒为空，标签功能断链。现发帖时按过滤后标签
+            // 逐条写 PostTag（同一事务；唯一约束冲突（重复标签）仅记录日志不阻断发帖）。
+            if (postTagRepository != null && !filteredTags.isEmpty()) {
+                for (String tag : filteredTags) {
+                    try {
+                        postTagRepository.save(new PostTag(saved.getId(), tag));
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        logDuplicateTag(tag);
+                    }
                 }
             }
-        }
 
-        return queryService.toPostDetailView(post, userId);
+            return queryService.toPostDetailView(saved, userId);
+        });
     }
 
     /** 2026-10-14 圈层归属回填：读发帖人自己的 users.circle_path。 */
