@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * 真实热搜词服务实现（real profile，2026-08-11）。
@@ -29,7 +30,7 @@ public class RealHotSearchService implements HotSearchService {
     @Override
     @Transactional(readOnly = true)
     public List<HotSearchView> getHotSearches(int limit) {
-        LocalDate since = LocalDate.now().minusDays(HOT_DAYS);
+        LocalDate since = LocalDate.now(TimeZones.BUSINESS).minusDays(HOT_DAYS);
         List<Object[]> rows = searchQueryRepository.aggregateByKeyword(since);
         if (rows.isEmpty()) {
             return List.of();

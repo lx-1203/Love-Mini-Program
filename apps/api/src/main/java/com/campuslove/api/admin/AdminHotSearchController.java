@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * 管理后台 - 热搜词管理控制器（2026-08-11）。
@@ -54,7 +55,7 @@ public class AdminHotSearchController {
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(100, pageSize));
 
-        LocalDate since = LocalDate.now().minusDays(HOT_DAYS);
+        LocalDate since = LocalDate.now(TimeZones.BUSINESS).minusDays(HOT_DAYS);
         List<Object[]> rows = searchQueryRepository.aggregateForAdmin(since);
         // 内存分页（词条量小，聚合结果本身有限）
         int from = Math.min((safePage - 1) * safeSize, rows.size());

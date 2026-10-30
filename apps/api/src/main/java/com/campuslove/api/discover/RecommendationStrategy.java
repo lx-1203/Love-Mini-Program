@@ -492,11 +492,17 @@ public class RecommendationStrategy {
             }
         }
 
-        // 校园优先加成：同校用户总分加成 30%
-        if (campusPriorityEnabled && campusProfile != null
+        // 校园优先加成：同校用户总分加成。
+        // S2-3（2026-10-30）：倍率原先硬编码在这里（score * 1.3），而
+        // RecommendationConfig.sameSchoolBoostPercent / sameSchoolBoostEnabled 两个键
+        // 已经被后台 RealAdminMatchConfigService 列为可编辑项——于是管理员把加成调成
+        // 0.1 或干脆关掉都不生效（配置在界面上能改，算法不读）。现统一读配置：
+        // 用户偏好（campusPriority）与全局开关都开时才加成，倍率取自配置。
+        if (campusPriorityEnabled && recommendationConfig.isSameSchoolBoostEnabled()
+                && campusProfile != null
                 && myCampusName != null && !myCampusName.isBlank()
                 && myCampusName.equals(campusProfile.getCampusName())) {
-            score = (int) (score * 1.3);
+            score = (int) (score * (1 + recommendationConfig.getSameSchoolBoostPercent()));
         }
 
         return score;

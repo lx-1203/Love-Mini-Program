@@ -2,6 +2,7 @@ package com.campuslove.api.entity.circle;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * RBAC 三级圈层实体（L1 公司 / L2 区域 / L3 学校）。
@@ -44,10 +45,10 @@ public class CircleLayer {
     private Integer sort = 0;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now(TimeZones.BUSINESS);
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now(TimeZones.BUSINESS);
 
     // Getters/Setters
     public Long getId() { return id; }

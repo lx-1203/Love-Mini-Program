@@ -2,6 +2,7 @@ package com.campuslove.api.entity.circle;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * 管理员-圈层绑定实体。
@@ -27,7 +28,7 @@ public class AdminLayer {
     private String roleCode = "ADMIN";
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now(TimeZones.BUSINESS);
 
     // Getters/Setters
     public Long getId() { return id; }

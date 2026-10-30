@@ -3,6 +3,7 @@ package com.campuslove.api.chat;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.stereotype.Service;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * 关系建议动作生成服务。
@@ -13,7 +14,7 @@ public class SuggestedActionService {
     public SuggestedActionView build(Long peerUserId, LocalDateTime lastInteractionTime,
                                      List<String> commonInterests, int commonActivities,
                                      int profileViewCount) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         if (lastInteractionTime == null || lastInteractionTime.isBefore(now.minusHours(48))) {
             return new SuggestedActionView("reply", "发一句问候", null,
                     "lastInteractionStale");

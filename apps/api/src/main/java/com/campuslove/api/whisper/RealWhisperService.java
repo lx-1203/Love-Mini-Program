@@ -22,6 +22,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * 悄悄话真实服务（v3.1 契约 §9/§10）：
@@ -112,7 +113,7 @@ public class RealWhisperService implements WhisperService {
         }
 
         // 发送者每日 ≤5 条
-        LocalDateTime dayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
+        LocalDateTime dayStart = LocalDateTime.of(LocalDate.now(TimeZones.BUSINESS), LocalTime.MIN);
         if (repository.countBySenderIdAndCreatedAtBetween(senderId, dayStart, dayStart.plusDays(1)) >= DAILY_LIMIT) {
             throw new IllegalArgumentException("今日悄悄话已达上限（5 条）");
         }
@@ -175,7 +176,7 @@ public class RealWhisperService implements WhisperService {
                         String.valueOf(request.receiverId())
                 );
             });
-            persistStatusInNewTransaction(message, STATUS_REFUNDED, LocalDateTime.now(),
+            persistStatusInNewTransaction(message, STATUS_REFUNDED, LocalDateTime.now(TimeZones.BUSINESS),
                     "创建失败已退款，退款orderId=" + refundOrderId);
             throw new IllegalArgumentException("悄悄话创建失败，已自动退款");
         }
@@ -210,7 +211,7 @@ public class RealWhisperService implements WhisperService {
         }
         if (!STATUS_READ.equals(message.getStatus())) {
             message.setStatus(STATUS_READ);
-            message.setReadAt(LocalDateTime.now());
+            message.setReadAt(LocalDateTime.now(TimeZones.BUSINESS));
             repository.save(message);
         }
         return toView(message);

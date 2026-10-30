@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * 管理后台 - 主页运营配置（profile.config）。
@@ -62,7 +63,7 @@ public class AdminProfileConfigController {
             throw new IllegalStateException("配置序列化失败", e);
         }
         config.setUpdatedBy(SecurityUtils.getCurrentUserId());
-        config.setUpdatedAt(LocalDateTime.now());
+        config.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         configRepository.save(config);
         return view;
     }

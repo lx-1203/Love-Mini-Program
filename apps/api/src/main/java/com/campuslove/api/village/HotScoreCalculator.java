@@ -13,6 +13,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * 帖子热度分计算器（2026-08-11 热度榜，参考贴吧/主流社区热度公式）。
@@ -82,7 +83,7 @@ public class HotScoreCalculator {
 
         double ageHours = post.getCreatedAt() == null
                 ? 0.0
-                : Math.max(0.0, Duration.between(post.getCreatedAt(), LocalDateTime.now()).toMinutes() / 60.0);
+                : Math.max(0.0, Duration.between(post.getCreatedAt(), LocalDateTime.now(TimeZones.BUSINESS)).toMinutes() / 60.0);
         double gravity = weight(KEY_GRAVITY, DEFAULT_GRAVITY);
         double boost = post.getHotBoost() != null ? post.getHotBoost() : 1.0;
         return raw / Math.pow(ageHours + 2.0, gravity) * boost;

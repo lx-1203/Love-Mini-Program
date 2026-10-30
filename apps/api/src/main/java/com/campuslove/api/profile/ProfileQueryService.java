@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * 个人资料查询组件（Task 4.2.4 拆分）。
@@ -233,7 +234,7 @@ public class ProfileQueryService {
         if (heartSignalRepository != null) {
             matchCount = (int) heartSignalRepository
                     .findByUserAIdOrUserBIdAndStatusNotExpired(currentUserId, currentUserId,
-                            HeartSignal.SignalStatus.pending, java.time.LocalDateTime.now())
+                            HeartSignal.SignalStatus.pending, java.time.LocalDateTime.now(TimeZones.BUSINESS))
                     .stream()
                     .filter(signal -> "mutual_like".equals(signal.getMatchType()))
                     .count();

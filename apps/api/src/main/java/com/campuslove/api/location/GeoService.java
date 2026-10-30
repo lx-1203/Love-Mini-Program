@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * LBS Phase 2：地理坐标服务。
@@ -52,7 +53,7 @@ public class GeoService {
             return;
         }
         // 节流：5 分钟内不重复更新
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         if (user.getGeoUpdatedAt() != null &&
                 user.getGeoUpdatedAt().plusMinutes(REPORT_THROTTLE_MINUTES).isAfter(now)) {
             return;

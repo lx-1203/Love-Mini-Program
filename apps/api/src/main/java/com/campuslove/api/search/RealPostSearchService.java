@@ -20,6 +20,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * 真实帖子搜索服务实现（real profile，2026-08-11）。
@@ -116,7 +117,7 @@ public class RealPostSearchService implements PostSearchService {
     /** 搜索词记录（防刷：同人同词同日仅一条，命中则累加计数）。 */
     private void recordSearchQuery(Long userId, String keyword) {
         try {
-            LocalDate today = LocalDate.now();
+            LocalDate today = LocalDate.now(TimeZones.BUSINESS);
             SearchQuery existing = searchQueryRepository
                     .findByUserIdAndKeywordAndSearchDate(userId, keyword, today).orElse(null);
             if (existing != null) {

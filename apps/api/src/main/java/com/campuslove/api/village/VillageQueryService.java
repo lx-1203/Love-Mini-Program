@@ -56,6 +56,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * 村口帖子查询组件（Task 4.2.2 拆分）。
@@ -612,7 +613,7 @@ public class VillageQueryService {
     public PostListResponse getPostRecommend(Long userId, int page, int pageSize) {
         int safePage = Math.max(1, page);
         int safeSize = Math.max(1, Math.min(100, pageSize));
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         LocalDateTime followSince = now.minusDays(7);
 
         LinkedHashSet<Long> candidateIds = new LinkedHashSet<>();
@@ -686,7 +687,7 @@ public class VillageQueryService {
         double heat = post.getHotScore() != null ? post.getHotScore() : 0.0;
         double hours = post.getCreatedAt() == null
                 ? 0.0
-                : Math.max(0.0, Duration.between(post.getCreatedAt(), LocalDateTime.now()).toMinutes() / 60.0);
+                : Math.max(0.0, Duration.between(post.getCreatedAt(), LocalDateTime.now(TimeZones.BUSINESS)).toMinutes() / 60.0);
         double freshness = Math.max(0.0, 100.0 - hours);
         return heat * 0.7 + freshness * 0.3;
     }

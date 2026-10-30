@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * 官方客服双向会话服务（R16 2026-09-07）。
@@ -37,7 +38,7 @@ public class OfficialChatService {
     public List<OfficialMessageView> sendUserMessage(String code, Long userId, String content) {
         OfficialAccount account = accountRepository.findByCode(code).orElse(null);
         long accountId = account != null ? account.getId() : 0L;
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
 
         OfficialChatMessage userMessage = new OfficialChatMessage();
         userMessage.setUserId(userId);

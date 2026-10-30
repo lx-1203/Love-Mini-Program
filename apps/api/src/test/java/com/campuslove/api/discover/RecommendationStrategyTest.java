@@ -287,13 +287,20 @@ class RecommendationStrategyTest {
     }
 
     /**
-     * 场景：开启校园优先加成时，同校用户分数应乘 1.3。
+     * 场景：开启校园优先加成时，同校用户分数应乘 (1 + 同校加成比例)。
+     *
+     * <p>S2-3（2026-10-30）：倍率以前是硬编码的 {@code score * 1.3}，而
+     * {@code app.recommendation.same-school-boost-percent} /
+     * {@code same-school-boost-enabled} 已被后台列为可编辑项——界面上改了却不生效。
+     * 现在倍率与开关都必须来自配置，下面两条附加用例分别钉住"改倍率生效"和"关开关生效"。</p>
      */
     @Test
     void calculateScore_campusPriorityEnabledAndSameCampus_appliesBoost() {
         when(recommendationConfig.getCampusWeight()).thenReturn(50);
         when(recommendationConfig.getCityWeight()).thenReturn(20);
         when(recommendationConfig.getSameMajorWeight()).thenReturn(20);
+        when(recommendationConfig.isSameSchoolBoostEnabled()).thenReturn(true);
+        when(recommendationConfig.getSameSchoolBoostPercent()).thenReturn(0.30);
         when(recommendationConfig.getCircleWeight()).thenReturn(8);
 
         UserCampusProfile candidateCampus = new UserCampusProfile();
@@ -308,6 +315,57 @@ class RecommendationStrategyTest {
 
         // (50+20+20) * 1.3 = 117，转 int 取整
         assertEquals(117, score);
+    }
+
+    /**
+     * 场景（S2-3）：同校加成倍率必须读配置——把 percent 改成 0.5，得分必须是 *1.5 而不是 *1.3。
+     * 这条用例是"硬编码 1.3"的直接反证：改回硬编码即变红。
+     */
+    @Test
+    void calculateScore_sameSchoolBoostPercentComesFromConfig() {
+        when(recommendationConfig.getCampusWeight()).thenReturn(50);
+        when(recommendationConfig.getCityWeight()).thenReturn(20);
+        when(recommendationConfig.getSameMajorWeight()).thenReturn(20);
+        when(recommendationConfig.isSameSchoolBoostEnabled()).thenReturn(true);
+        when(recommendationConfig.getSameSchoolBoostPercent()).thenReturn(0.50);
+
+        UserCampusProfile candidateCampus = new UserCampusProfile();
+        candidateCampus.setCampusName("北大");
+        candidateCampus.setCityName("北京");
+        candidateCampus.setDepartmentName("计算机");
+
+        int score = strategy.calculateScoreOptimized(
+                1L, "北大", "北京", Set.of(), "{}",
+                "计算机", Set.of(), Set.of(), true,
+                candidateCampus, null, List.of());
+
+        // 基础分 50+20+20 = 90，按配置倍率 90 * (1 + 0.5) = 135
+        assertEquals(135, score, "同校加成必须按配置倍率计算，不能是硬编码的 1.3");
+    }
+
+    /**
+     * 场景（S2-3）：后台把 sameSchoolBoostEnabled 关掉必须真的关掉加成
+     * （此前该开关没有任何读取方，属"界面上能改、算法不认"的死配置）。
+     */
+    @Test
+    void calculateScore_sameSchoolBoostDisabledByConfigSkipsBoost() {
+        when(recommendationConfig.getCampusWeight()).thenReturn(50);
+        when(recommendationConfig.getCityWeight()).thenReturn(20);
+        when(recommendationConfig.getSameMajorWeight()).thenReturn(20);
+        when(recommendationConfig.isSameSchoolBoostEnabled()).thenReturn(false);
+        when(recommendationConfig.getSameSchoolBoostPercent()).thenReturn(0.30);
+
+        UserCampusProfile candidateCampus = new UserCampusProfile();
+        candidateCampus.setCampusName("北大");
+        candidateCampus.setCityName("北京");
+        candidateCampus.setDepartmentName("计算机");
+
+        int score = strategy.calculateScoreOptimized(
+                1L, "北大", "北京", Set.of(), "{}",
+                "计算机", Set.of(), Set.of(), true,
+                candidateCampus, null, List.of());
+
+        assertEquals(90, score, "全局开关关闭时不得加成，即使用户偏好允许校园优先");
     }
 
     /**

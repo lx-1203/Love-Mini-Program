@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import com.campuslove.api.common.TimeZones;
 
 /**
  * 官方客服双向会话消息实体，对应 official_chat_messages 表（R16 2026-09-07）。
@@ -50,7 +51,7 @@ public class OfficialChatMessage {
     private String content;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now(TimeZones.BUSINESS);
 
     public Long getId() {
         return id;
