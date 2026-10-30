@@ -13,6 +13,13 @@ spring:
     # 部署规范：生产/联调显式指定 real（SPRING_PROFILES_ACTIVE=real），
     # 本地开发显式指定 mock（如 --spring.profiles.active=mock）。
     default: mock
+  # 优雅停机（S3-1，2026-10-30）：容器收到 SIGTERM 时，先把在途请求处理完再关。
+  # 默认（immediate）会在收到信号时立刻停止接收并关闭连接——滚动发布/扩缩容时
+  # 用户请求会被硬切断（客户端看到连接重置），正在提交的扣费/发帖也可能停在半路。
+  lifecycle:
+    # 每个 phase 最多等 30 秒；配合 docker-compose 的 stop_grace_period=45s，
+    # 保证 Spring 的等待窗口真的能被容器等到（容器先被 SIGKILL 就等于没配）。
+    timeout-per-shutdown-phase: 30s
   # Multipart 文件上传配置：允许上传最大 50MB 的单文件、50MB 的整体请求
   # 与媒体上传校验逻辑（视频 ≤50MB）保持一致
   servlet:
@@ -57,6 +64,9 @@ spring:
 
 server:
   port: ${APP_PORT:8080}
+  # 优雅停机：见上方 spring.lifecycle（S3-1）。两者缺一都不生效——
+  # shutdown 决定"要不要等"，timeout-per-shutdown-phase 决定"最多等多久"。
+  shutdown: graceful
   # Tomcat 配置（Task 8.2.3 访问日志 + 容器化线程池优化）
   # 访问日志与 logback-spring.xml 中 ACCESS_FILE appender 协同工作：
   # - AccessLogValve 由 Tomcat 内置实现，将访问日志输出到 logger org.apache.catalina.accesslog

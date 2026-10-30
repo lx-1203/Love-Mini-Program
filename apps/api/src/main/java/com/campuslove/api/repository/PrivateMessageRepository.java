@@ -14,16 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 私信消息 Repository。
  * 提供基于会话的查询和批量更新方法。
+ *
+ * <p><b>排序必须带 id 兜底</b>（S3-5，2026-10-30）：{@code private_messages.created_at}
+ * 是秒级 DATETIME，同一秒内的多条消息只按 createdAt 排是不确定的——分页会把同秒的
+ * 消息在页边界重复一次或漏掉一次（用户表现为"消息偶尔看不见"）。下面所有分页/列表查询
+ * 一律 {@code ORDER BY created_at, id}，两个方向同向。</p>
  */
 public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, Long> {
-
-    /**
-     * 根据会话 ID 查询消息列表，按创建时间正序。
-     *
-     * @param conversationId 会话 ID
-     * @return 消息列表
-     */
-    List<PrivateMessage> findByConversationIdOrderByCreatedAtAsc(Long conversationId);
 
     /**
      * 根据会话 ID 查询消息列表，按创建时间倒序分页。
@@ -38,7 +35,7 @@ public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, 
      */
     @Query("SELECT m FROM PrivateMessage m WHERE m.conversation.id = :conversationId "
             + "AND (m.deletedForSender = false OR m.senderId <> :currentUserId) "
-            + "ORDER BY m.createdAt DESC")
+            + "ORDER BY m.createdAt DESC, m.id DESC")
     Page<PrivateMessage> findByConversationIdOrderByCreatedAtDesc(
             @Param("conversationId") Long conversationId,
             @Param("currentUserId") Long currentUserId,
@@ -57,7 +54,7 @@ public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, 
      * @return 分页消息列表（conversation 已被预加载）
      */
     @EntityGraph(attributePaths = "conversation")
-    @Query("SELECT m FROM PrivateMessage m WHERE m.conversation.id = :conversationId ORDER BY m.createdAt DESC")
+    @Query("SELECT m FROM PrivateMessage m WHERE m.conversation.id = :conversationId ORDER BY m.createdAt DESC, m.id DESC")
     Page<PrivateMessage> findWithConversationByConversationIdOrderByCreatedAtDesc(
             @Param("conversationId") Long conversationId, Pageable pageable);
 
@@ -69,7 +66,7 @@ public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, 
      * @return 消息列表（conversation 已被预加载）
      */
     @EntityGraph(attributePaths = "conversation")
-    @Query("SELECT m FROM PrivateMessage m WHERE m.conversation.id = :conversationId ORDER BY m.createdAt ASC")
+    @Query("SELECT m FROM PrivateMessage m WHERE m.conversation.id = :conversationId ORDER BY m.createdAt ASC, m.id ASC")
     List<PrivateMessage> findWithConversationByConversationIdOrderByCreatedAtAsc(
             @Param("conversationId") Long conversationId);
 
@@ -87,7 +84,7 @@ public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, 
     @EntityGraph(attributePaths = "conversation")
     @Query("SELECT m FROM PrivateMessage m WHERE m.conversation.id = :conversationId "
             + "AND (m.deletedForSender = false OR m.senderId <> :currentUserId) "
-            + "ORDER BY m.createdAt ASC")
+            + "ORDER BY m.createdAt ASC, m.id ASC")
     Page<PrivateMessage> findWithConversationByConversationIdOrderByCreatedAtAscPage(
             @Param("conversationId") Long conversationId,
             @Param("currentUserId") Long currentUserId,

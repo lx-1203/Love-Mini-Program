@@ -13,7 +13,7 @@ spring:
     # 安全说明（R4-00408）：username 不再带 root 默认值——漏配 DB_USERNAME 时
     # 以空密码 root 连库的本地默认值会沿用至错误环境；password 同样不带任何
     # 明文默认值（空字符串仅占位），生产环境必须通过 DB_PASSWORD 注入强密码。
-    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/campus_love?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai}
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/campus_love?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true}
     username: ${DB_USERNAME:}
     password: ${DB_PASSWORD:}
     # 修复：HikariCP 连接池配置，避免默认配置在高并发下连接不足或泄漏。
@@ -108,6 +108,17 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+        # S3-4（2026-10-30）批量写。三件事缺一不可：
+        # * jdbc.batch_size：Hibernate 攒够 N 条再发一次 JDBC 调用；
+        # * order_inserts / order_updates：一个事务里混写多种实体时，默认按调用顺序发送会
+        #   把批次切碎（写一条 A、一条 B 就 flush 一次），排序后同表语句才能真的成批；
+        # * 连接串上的 rewriteBatchedStatements=true（见上方 datasource / DB_URL）：
+        #   MySQL 驱动默认把 addBatch 展开成逐条发送，不加这个参数前两项等于白设。
+        # 典型受益路径：热榜分数批量刷新、点赞/未读数回写、后台批量审核。
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
   # ============ RabbitMQ 消息队列配置 ============
   # 通过环境变量外部化：RABBITMQ_HOST / RABBITMQ_PORT / RABBITMQ_USERNAME / RABBITMQ_PASSWORD / RABBITMQ_VIRTUAL_HOST
   # R4-01777：密码无默认值（生产必须显式注入 RABBITMQ_PASSWORD；本地开发如需

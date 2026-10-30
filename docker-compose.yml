@@ -194,6 +194,10 @@ services:
     image: ${IMAGE_PREFIX:-campus-love}/api:${TAG:-dev}
     container_name: campus-api
     restart: unless-stopped
+    # S3-1（2026-10-30）优雅停机：Spring 侧 server.shutdown=graceful +
+    # spring.lifecycle.timeout-per-shutdown-phase=30s 只是「愿意等」，容器必须真的等得到。
+    # docker 默认 10s 就 SIGKILL，30 秒的收尾窗口会形同虚设，故这里给 45s（> 30s）。
+    stop_grace_period: 45s
     depends_on:
       mysql:
         condition: service_healthy
@@ -203,7 +207,7 @@ services:
       SPRING_PROFILES_ACTIVE: real
       APP_PORT: 8080
       # ---------- 数据库 ----------
-      DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-campus_love}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      DB_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-campus_love}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true
       DB_USERNAME: ${MYSQL_USER:-campus}
       # Task 22（FIN-00270）：移除默认密码，强制通过环境变量注入（与 mysql 服务一致）
       DB_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}

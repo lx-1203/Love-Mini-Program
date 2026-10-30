@@ -111,7 +111,10 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # 启动命令：从分层目录加载，提升启动速度
-CMD ["sh", "-c", "java $JAVA_OPTS org.springframework.boot.loader.launch.JarLauncher"]
+# S3-1（2026-10-30）：必须 exec，否则 sh 是 dumb-init 的直接子进程、java 是孙子进程：
+# SIGTERM 只会杀死 sh，java 被留下孤儿，优雅停机（server.shutdown=graceful）根本收不到信号，
+# 容器最终靠 10 秒后的 SIGKILL 硬停——在途请求与未提交的扣费就断在半路。
+CMD ["sh", "-c", "exec java $JAVA_OPTS org.springframework.boot.loader.launch.JarLauncher"]
 
 # ---------- Stage 3: Trivy 漏洞扫描（Task 24，中间步骤）----------
 # 说明：此 stage 仅用于 CI 构建期漏洞扫描，不会进入最终运行镜像。
