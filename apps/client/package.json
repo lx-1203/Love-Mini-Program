@@ -49,9 +49,6 @@
     "test:e2e:ui": "playwright test --ui --config=../../tests/e2e/playwright.config.ts",
     "test:a11y": "playwright test --grep=@a11y --config=../../tests/e2e/playwright.config.ts",
     "generate:openapi": "openapi-typescript ../../docs/openapi/feedback-growth-and-auth.yaml -o src/services/generated/api-types.ts",
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build",
-    "chromatic": "chromatic --exit-zero-on-changes",
     "verify:contract": "node scripts/verify-contract.mjs",
     "check:project-rules": "node scripts/check-project-rules.mjs",
     "check:p0": "node scripts/p0-compliance-check.mjs"
