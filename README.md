@@ -206,6 +206,11 @@ cd apps/api
 ./mvnw flyway:info                                           # 查看迁移状态
 ```
 
+> `./mvnw flyway:*` 的参数取自环境变量 `DB_URL` / `DB_USERNAME` / `DB_PASSWORD`
+> （与 `application-real.yml` 同源，密码不写进文件）。容器化部署走另一条等价路径：
+> `docker-compose.yml` 里一次性的 `migrate` 服务（Flyway CLI 镜像）先跑完，api 才启动，
+> 以免多副本并发迁移同一套库——见 `doc/DEPLOYMENT.md#数据库初始化与迁移s3-2single-writer`。
+
 > 顶层 `npm run api:dev` / `npm run api:test` 已封装 `./mvnw` 调用，可在根目录直接使用。
 
 ### 微信小程序构建

@@ -150,7 +150,7 @@ function headingSlugs(markdownText) {
       m[1]
         .toLowerCase()
         .replace(/`/gu, "")
-        .replace(/[^\p{L}\p{N}_ -]/u, "")
+        .replace(/[^\p{L}\p{N}_ -]/gu, "")
         .replace(/\s/gu, "-"),
     );
   }
