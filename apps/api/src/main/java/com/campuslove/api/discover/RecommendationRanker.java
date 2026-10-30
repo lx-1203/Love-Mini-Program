@@ -317,13 +317,19 @@ public class RecommendationRanker {
         // R4-00315：批量预加载已解锁私信/悄悄话的目标 ID 集合（一次查询）
         Set<Long> unlockedMessageIds = loadUnlockedMessageIds(currentUserId, candidateIds);
 
+        // S3-6（2026-10-30）：距离文案的「当前用户锚点」每页解析一次 + SecurityUtils 读取上提，
+        // 替代原先在每个候选的 map 里重复解析（viewer 侧 1-2 次查询 × N 个候选，
+        // 且 candidate 侧还各发 1-2 次查询——合计每候选 2-4 次往返 + N 次 ThreadLocal 读取）。
+        // 候选侧锚点改用 Strategy 已批量预加载的 campusProfileMap + 手上的 User 实体：零查询。
+        DistanceContext distanceContext = buildDistanceContext();
+
         return topResults.stream()
                 .map(su -> toRecommendedPersonView(
                         su.user(), myCampusName, myDepartmentName, myCircleIds,
                         campusProfileMap.get(su.user().getId()),
                         basicProfileMap.get(su.user().getId()),
                         membershipMap.getOrDefault(su.user().getId(), List.of()),
-                        badgeLevelMap, recentPostMap, unlockedMessageIds))
+                        badgeLevelMap, recentPostMap, unlockedMessageIds, distanceContext))
                 .toList();
     }
 
@@ -543,6 +549,26 @@ public class RecommendationRanker {
             List<CircleMembership> memberships, Map<Long, String> badgeLevelMap,
             Map<Long, RecommendedPersonView.RecentPostView> recentPostMap,
             Set<Long> unlockedMessageIds) {
+        // 单条/历史场景：无页级上下文，距离锚点在本方法内自行解析一次（每候选一次，
+        // 与修复前同口径）；推荐主流程走下面的私有重载，传入按页算好的上下文。
+        return toRecommendedPersonView(user, myCampusName, myDepartmentName, myCircleIds,
+                campusProfile, basicProfile, memberships, badgeLevelMap, recentPostMap,
+                unlockedMessageIds, null);
+    }
+
+    /**
+     * S3-6 扩展：接收按页预解析的距离上下文，避免同一页内每个候选重复解析当前用户锚点。
+     *
+     * @param distanceContext {@link #buildDistanceContext()} 的结果；
+     *                        为 null 时退化为「本次调用内解析一次」（单条查询场景）
+     */
+    private RecommendedPersonView toRecommendedPersonView(User user,
+            String myCampusName, String myDepartmentName, Set<Long> myCircleIds,
+            UserCampusProfile campusProfile, UserBasicProfile basicProfile,
+            List<CircleMembership> memberships, Map<Long, String> badgeLevelMap,
+            Map<Long, RecommendedPersonView.RecentPostView> recentPostMap,
+            Set<Long> unlockedMessageIds,
+            DistanceContext distanceContext) {
         String name = user.getNickname() != null ? user.getNickname() : "";
         String initials = extractInitials(name);
         String headline = user.getBio() != null ? user.getBio() : "";
@@ -607,7 +633,8 @@ public class RecommendationRanker {
         // 展示 ID：User 无独立字段，稳定推导为 CL-{id}（同 mock 口径）
         String displayId = user.getId() != null ? "CL-" + user.getId() : null;
         // 距离文案：LBS Phase 2——有坐标时计算真实距离，无坐标返回 null
-        String distanceText = deriveDistanceText(user);
+        // S3-6：候选侧锚点用「已批量预加载的 campusProfile + 手上的 user 实体」，viewer 侧用页级上下文
+        String distanceText = deriveDistanceText(user, campusProfile, distanceContext);
         // 活跃状态：离线为默认，在线用户由前端二次查询回填
         String activeStatusText = "online";
         // 双重认证：由认证徽章级别推导（有认证即视为机器认证；school/idcard 视为有人工认证）
@@ -881,16 +908,21 @@ public class RecommendationRanker {
             java.util.Map.entry("哈尔滨工业大学", new double[]{45.7461, 126.6280}),
             java.util.Map.entry("重庆大学", new double[]{29.5617, 106.4660}));
 
-    /** 解析用户位置锚点：优先校区坐标，其次本人 GPS；都无则 null。 */
-    private double[] resolveUserAnchor(Long userId) {
-        UserCampusProfile campus = userCampusProfileRepository.findByUserId(userId).orElse(null);
+    /**
+     * 解析用户位置锚点：优先校区坐标，其次本人 GPS；都无则 null。
+     *
+     * <p>S3-6（2026-10-30）：拆成纯函数——入参直接是「已经拿在手上」的校区资料与 User
+     * 实体，本方法自身不查库。原先的逐 id 查库形态（{@code findByUserId} 再 {@code findById}）
+     * 只在 {@link #buildDistanceContext()} 里对「当前用户」各执行一次，
+     * 候选侧则复用 Strategy 批量预加载的 campusProfileMap（零查询）。</p>
+     */
+    private static double[] anchorOf(UserCampusProfile campus, User user) {
         if (campus != null && campus.getCampusName() != null) {
             double[] anchor = CAMPUS_ANCHORS.get(campus.getCampusName());
             if (anchor != null) {
                 return anchor;
             }
         }
-        User user = userRepository.findById(userId).orElse(null);
         if (user != null && user.getLatitude() != null && user.getLongitude() != null) {
             return new double[]{user.getLatitude().doubleValue(), user.getLongitude().doubleValue()};
         }
@@ -898,25 +930,59 @@ public class RecommendationRanker {
     }
 
     /**
+     * S3-6：一页的距离上下文（每页构造一次，替代每候选重复解析）。
+     *
+     * @param viewerId     当前登录用户 ID（null 表示未认证，整页无距离文案，同修复前）
+     * @param viewerAnchor 当前用户锚点（校区坐标优先，其次 GPS；可为 null）
+     * @param viewerUser   当前用户实体（锚点缺失时的 GPS 回退用；可为 null）
+     */
+    private record DistanceContext(Long viewerId, double[] viewerAnchor, User viewerUser) {}
+
+    /**
+     * 构造页级距离上下文：{@link com.campuslove.api.config.SecurityUtils} 的
+     * ThreadLocal 读取与当前用户资料查询各上提为「每页一次」。
+     *
+     * <p>{@code geoService == null}（未注入 LBS / 旧测试构造器）时返回 null，
+     * 与修复前 {@code deriveDistanceText} 首行早退一致：一条 SQL 都不发。</p>
+     */
+    private DistanceContext buildDistanceContext() {
+        if (geoService == null) {
+            return null;
+        }
+        Long viewerId = com.campuslove.api.config.SecurityUtils.getCurrentUserIdOrNull();
+        if (viewerId == null) {
+            return new DistanceContext(null, null, null);
+        }
+        UserCampusProfile viewerCampus = userCampusProfileRepository.findByUserId(viewerId).orElse(null);
+        User viewerUser = userRepository.findById(viewerId).orElse(null);
+        return new DistanceContext(viewerId, anchorOf(viewerCampus, viewerUser), viewerUser);
+    }
+
+    /**
      * LBS Phase 2：距离文案——有坐标时计算真实 haversine 距离，无坐标返回 null。
      * R16：距离以校区锚点计算（见 CAMPUS_ANCHORS），GPS 漂移 >300km 时不显示。
+     *
+     * <p>S3-6：候选侧锚点由「批量预加载的 campusProfile + 手上的 candidate 实体」推导（零查询），
+     * viewer 侧锚点与 GPS 实体取自页级 {@link DistanceContext}；
+     * {@code distanceContext} 传 null 表示单条/历史查询场景，本次调用内解析一次。</p>
      */
-    private String deriveDistanceText(User candidate) {
+    private String deriveDistanceText(User candidate, UserCampusProfile campusProfile,
+                                       DistanceContext distanceContext) {
         if (geoService == null) return null;
-        Long currentUserId = com.campuslove.api.config.SecurityUtils.getCurrentUserIdOrNull();
-        if (currentUserId == null) return null;
-        double[] myAnchor = resolveUserAnchor(currentUserId);
-        double[] candAnchor = resolveUserAnchor(candidate.getId());
+        DistanceContext ctx = distanceContext != null ? distanceContext : buildDistanceContext();
+        if (ctx == null || ctx.viewerId() == null) return null;
+        double[] myAnchor = ctx.viewerAnchor();
+        double[] candAnchor = anchorOf(campusProfile, candidate);
         Double km = null;
         if (myAnchor != null && candAnchor != null) {
             km = geoService.haversineKm(myAnchor[0], myAnchor[1], candAnchor[0], candAnchor[1]);
         } else {
-            // 锚点缺失：回退双方 GPS
-            User currentUser = userRepository.findById(currentUserId).orElse(null);
+            // 锚点缺失：回退双方 GPS（当前用户实体已在页级取好，不再逐候选 findById）
+            User currentUser = ctx.viewerUser();
             if (currentUser == null || currentUser.getLatitude() == null || currentUser.getLongitude() == null) {
                 return null;
             }
-            if (candidate.getLatitude() == null || candidate.getLongitude() == null) {
+            if (candidate == null || candidate.getLatitude() == null || candidate.getLongitude() == null) {
                 return null;
             }
             km = geoService.haversineKm(

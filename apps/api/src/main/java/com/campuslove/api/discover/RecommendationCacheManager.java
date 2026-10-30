@@ -209,11 +209,25 @@ public class RecommendationCacheManager {
      * <p>当 excludeIds 非空时调用本方法，绕过缓存直接计算，
      * 在 rankAndConvert 中排序前过滤已曝光用户，保证截断后新用户数充足。</p>
      *
+     * <p><b>S3-6（2026-10-30）配额口径修正</b>：本方法原先<b>没有</b>调用
+     * {@link RecommendQuotaService#tryConsume}，而 {@link #getCachedRecommendations}
+     * 的扣减点就在方法体第一行——于是客户端只要每次请求都带上非空 excludeIds
+     * （发现页滑动曝光去重的正常用法）就能<b>无限</b>拉取新推荐：每日推荐配额形同虚设，
+     * 且本方法的 {@code socialProgressService.recordExposure} 照常计数，
+     * 表现成「曝光埋点一直涨、配额用量恒为 0」。修复前每次真实计算扣一次配额，
+     * 与缓存路径同口径（缓存绕过本身是设计需要：excludeIds 参与 key 会让缓存命中率归零，
+     * 故保留不走缓存）。</p>
+     *
      * @param userId     当前用户 ID
      * @param excludeIds 已曝光用户 ID 集合（非空）
-     * @return 推荐人物视图列表
+     * @return 推荐人物视图列表；配额耗尽时返回空列表（与 {@link #getCachedRecommendations} 一致）
      */
     public List<RecommendedPersonView> getRecommendationsWithExclude(Long userId, Set<Long> excludeIds) {
+        // R4-00325 / S3-6：excludeIds 路径同样「真实计算一批新推荐」，必须扣减配额。
+        // 耗尽时返回空列表且不计算（前端已有「今日次数已用完」空态 + /recommendations/quota 提示）。
+        if (recommendQuotaService != null && !recommendQuotaService.tryConsume(userId)) {
+            return List.of();
+        }
         long startNanos = System.nanoTime();
         try {
             RecommendationStrategy.RecommendResult result = recommendationStrategy.doRecommend(userId);

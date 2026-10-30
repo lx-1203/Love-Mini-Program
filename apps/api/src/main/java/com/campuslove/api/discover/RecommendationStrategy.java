@@ -31,11 +31,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -70,6 +72,12 @@ public class RecommendationStrategy {
      * 不得进入游客/登录推荐池；演示人设已补全到 90–100%。
      */
     private static final int MIN_RECOMMEND_PROFILE_COMPLETION = 80;
+
+    /**
+     * S3-6：{@link #loadCampusProfiles(java.util.Collection)} 单次 IN 查询的 id 上限，
+     * 避免把整页 id 塞进一条 SQL 的超长 IN 子句（与 {@code AdminDataScope} 的批量解析器同口径）。
+     */
+    private static final int CAMPUS_BATCH_SIZE = 500;
 
     private final RecommendationConfig recommendationConfig;
     private final UserRepository userRepository;
@@ -125,8 +133,10 @@ public class RecommendationStrategy {
      *   <li>加载当前用户上下文（校区/城市/专业/日程/标签/圈/每日一问）</li>
      *   <li>获取推荐偏好（scope, campusPriority）</li>
      *   <li>计算排除集合（自己 + 已喜欢 + 已 pass + 已有双向信号）</li>
-     *   <li>分页查询候选用户并按 scope 过滤</li>
-     *   <li>批量预加载候选用户的 campusProfile / basicProfile / circleMemberships</li>
+     *   <li>分页查询候选用户</li>
+     *   <li>整页批量预加载候选用户的 campusProfile（S3-6：一次 IN 查询，供 scope 过滤复用）</li>
+     *   <li>按 scope 在内存里过滤候选（不再逐候选查库）</li>
+     *   <li>批量预加载候选用户的 basicProfile / circleMemberships / 最近发帖数</li>
      *   <li>对每个候选调用 {@link #calculateScoreOptimized} 计算分数</li>
      *   <li>返回 {@link RecommendResult}，包含 ScoredUser 列表与预加载的 Map</li>
      * </ol>
@@ -171,11 +181,19 @@ public class RecommendationStrategy {
                 "active", "USER", MIN_RECOMMEND_PROFILE_COMPLETION,
                 PageRequest.of(0, recommendationConfig.getCandidatePageSize())).getContent();
 
-        // 9. 根据 scope 过滤候选
+        // S3-6（2026-10-30）：校区资料改成「整页一次批量取」，scope 过滤与后续评分共用同一份数据。
+        // 原实现里 filterByScope 对每个候选各发一次 findByUserId —— 一页 candidatePageSize（默认 200）
+        // 个候选就是 200 次数据库往返，campus_first 无候选放宽到 city 时还会再扫一轮（最坏 2N 次），
+        // 而取回的内容与第 10 步批量预加载的 campusProfileMap 完全重复。
+        // 结构仿 AdminDataScope.resolveUserCampusNames：批量 + 去重 + null 安全 + 超长 IN 分批。
+        Map<Long, UserCampusProfile> pageCampusProfileMap =
+                loadCampusProfiles(allUsers.stream().map(User::getId).toList());
+
+        // 9. 根据 scope 过滤候选（纯内存判定，不再逐候选查库）
         String scope = pref.getScope();
         List<User> candidates = allUsers.stream()
                 .filter(u -> !excludedUserIds.contains(u.getId()))
-                .filter(u -> filterByScope(u.getId(), scope, myCampusName, myCityName))
+                .filter(u -> matchesScope(pageCampusProfileMap.get(u.getId()), scope, myCampusName, myCityName))
                 .toList();
 
         // P0-21 空池兜底：campus_first 同校无候选时放宽到同城，再放宽到全国
@@ -183,7 +201,7 @@ public class RecommendationStrategy {
         if (candidates.isEmpty() && "campus_first".equals(scope)) {
             candidates = allUsers.stream()
                     .filter(u -> !excludedUserIds.contains(u.getId()))
-                    .filter(u -> filterByScope(u.getId(), "city", myCampusName, myCityName))
+                    .filter(u -> matchesScope(pageCampusProfileMap.get(u.getId()), "city", myCampusName, myCityName))
                     .toList();
         }
         if (candidates.isEmpty() && "campus_first".equals(scope)) {
@@ -194,8 +212,15 @@ public class RecommendationStrategy {
 
         // 10. 批量预加载候选用户的关联数据
         List<Long> candidateIds = candidates.stream().map(User::getId).toList();
-        Map<Long, UserCampusProfile> campusProfileMap = userCampusProfileRepository.findByUserIdIn(candidateIds)
-                .stream().collect(Collectors.toMap(UserCampusProfile::getUserId, p -> p));
+        // 校区资料第 8 步已整页批量取回，这里只按候选集裁剪（不再产生第 2 次查询）；
+        // 交给 Ranker 的 Map 内容与修复前逐字节一致
+        Map<Long, UserCampusProfile> campusProfileMap = new HashMap<>();
+        for (Long candidateId : candidateIds) {
+            UserCampusProfile profile = pageCampusProfileMap.get(candidateId);
+            if (profile != null) {
+                campusProfileMap.putIfAbsent(candidateId, profile);
+            }
+        }
         Map<Long, UserBasicProfile> basicProfileMap = userBasicProfileRepository.findByUserIdIn(candidateIds)
                 .stream().collect(Collectors.toMap(UserBasicProfile::getUserId, p -> p));
         Map<Long, List<CircleMembership>> membershipMap = loadMemberships(candidateIds);
@@ -253,8 +278,8 @@ public class RecommendationStrategy {
 
         // 批量预加载候选用户的关联数据（与 doRecommend 相同，保证视图字段完整）
         List<Long> candidateIds = allUsers.stream().map(User::getId).toList();
-        Map<Long, UserCampusProfile> campusProfileMap = userCampusProfileRepository.findByUserIdIn(candidateIds)
-                .stream().collect(Collectors.toMap(UserCampusProfile::getUserId, p -> p));
+        // S3-6：与登录链路共用同一个批量解析器（整页一次 IN 查询，去重 + null 安全）
+        Map<Long, UserCampusProfile> campusProfileMap = loadCampusProfiles(candidateIds);
         Map<Long, UserBasicProfile> basicProfileMap = userBasicProfileRepository.findByUserIdIn(candidateIds)
                 .stream().collect(Collectors.toMap(UserBasicProfile::getUserId, p -> p));
         Map<Long, List<CircleMembership>> membershipMap = loadMemberships(candidateIds);
@@ -346,16 +371,41 @@ public class RecommendationStrategy {
         if ("unlimited".equals(scope)) {
             return true;
         }
+        // S3-6：逐条查询的公开入口（历史/单条场景与既有测试仍在用）。
+        // 推荐主流程不再走这里——doRecommend 用整页批量预加载的 Map 调 matchesScope。
+        return matchesScope(userCampusProfileRepository.findByUserId(candidateUserId).orElse(null),
+                scope, myCampusName, myCityName);
+    }
 
-        Optional<UserCampusProfile> candidateCampusOpt = userCampusProfileRepository.findByUserId(candidateUserId);
-        if (candidateCampusOpt.isEmpty()) {
+    /**
+     * S3-6 纯内存版 scope 判定：候选用户的校区资料由调用方批量预加载后传入，
+     * 本方法不产生任何查询。语义与 {@link #filterByScope(Long, String, String, String)} 一致：
+     * <ul>
+     *   <li>{@code unlimited} 恒通过；</li>
+     *   <li>候选无校区资料（profile 为 null）时，除 {@code city} 外一律放行
+     *       （2026-08-07 链路调整：避免未完善资料的人在推荐流中永远不可见）；</li>
+     *   <li>{@code campus_first}：当前用户未填校区时放宽为同城；</li>
+     *   <li>{@code city}：要求同城。</li>
+     * </ul>
+     *
+     * @param candidateCampus 候选用户校区资料（可为 null，表示未完善）
+     * @param scope           推荐范围
+     * @param myCampusName    当前用户校区名称
+     * @param myCityName      当前用户城市名称
+     * @return true 表示候选用户通过过滤
+     */
+    public boolean matchesScope(UserCampusProfile candidateCampus, String scope,
+                                 String myCampusName, String myCityName) {
+        if ("unlimited".equals(scope)) {
+            return true;
+        }
+
+        if (candidateCampus == null) {
             // 2026-08-07 链路调整：候选用户未完善校区资料时，非 city 严格模式一律放行
             // （原实现直接排除，导致未完善资料的用户在推荐流中永远不可见，
             //   配合评分降级可保证列表非空；city 模式依赖城市信息，无依据时排除）
             return !"city".equals(scope);
         }
-
-        UserCampusProfile candidateCampus = candidateCampusOpt.get();
 
         if ("campus_first".equals(scope)) {
             // 2026-08-07 链路调整：当前用户未填校区资料（体验账号/未完善资料）时
@@ -595,6 +645,41 @@ public class RecommendationStrategy {
                     defaultPref.setScope("campus_first");
                     return defaultPref;
                 });
+    }
+
+    /**
+     * S3-6：批量预加载候选用户的校区资料（userId → UserCampusProfile）。
+     *
+     * <p>结构仿 {@code AdminDataScope.resolveUserCampusNames(Collection)}：
+     * 先过滤 null 并去重，再按 {@link #CAMPUS_BATCH_SIZE} 分批发 IN 查询，
+     * 因此「一页多少候选」只决定返回 Map 的大小，不决定查询次数
+     * （candidatePageSize=200 → 1 次查询；修复前是 200~400 次单条查询）。</p>
+     *
+     * <p>与逐条 {@code findByUserId} 的语义差异仅有一处：同一 userId 出现多条资料时
+     * 取第一条（原 {@code Collectors.toMap} 会抛 IllegalStateException 直接 500）。
+     * 查库异常不吞：与修复前的主流程一致向上抛出，避免静默产出空推荐池。</p>
+     *
+     * @param userIds 候选用户 ID（允许含 null / 重复 / 为空）
+     * @return userId → 校区资料；无资料的 userId 不在 Map 中
+     */
+    private Map<Long, UserCampusProfile> loadCampusProfiles(Collection<Long> userIds) {
+        Map<Long, UserCampusProfile> profileByUserId = new HashMap<>();
+        if (userIds == null || userIds.isEmpty()) {
+            return profileByUserId;
+        }
+        List<Long> distinct = userIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        for (int from = 0; from < distinct.size(); from += CAMPUS_BATCH_SIZE) {
+            List<Long> batch = distinct.subList(from, Math.min(from + CAMPUS_BATCH_SIZE, distinct.size()));
+            for (UserCampusProfile profile : userCampusProfileRepository.findByUserIdIn(batch)) {
+                if (profile != null && profile.getUserId() != null) {
+                    profileByUserId.putIfAbsent(profile.getUserId(), profile);
+                }
+            }
+        }
+        return profileByUserId;
     }
 
     /**
