@@ -75,13 +75,19 @@ docker compose exec api sh -c 'wget -qO- http://localhost:8080/actuator/health'
 
 ## 备份与恢复
 
-权威步骤见 `doc/DEPLOYMENT.md`「备份 / 恢复」章节。要点：
+权威步骤见 `doc/DEPLOYMENT.md`「备份与恢复（P3-D.3 + S4-3）」章节。要点：
 
 - `backup` 服务受 `profiles: backup` 门控，`docker compose up -d` **不会**启动它，
   必须 `docker compose --profile backup up -d`（否则等于没有备份）。
-- 备份产物目前只 gzip 未加密，且落在宿主 `./backups`（单机），**不满足异地容灾**；
-  MySQL 已开 binlog 但脚本无 binlog 归档 ⇒ PITR 暂不可用。
-- 恢复前先验证备份可用：`gunzip -c <file> | mysql -e 'SET sql_log_bin=0; source /dev/stdin'` 在影子库演练，
+- 备份落宿主 `./backups`（单机）。S4-3 后 `scripts/backup-mysql.sh` 已具备：
+  可选 AES-256 加密（`BACKUP_ENCRYPT=true` + `BACKUP_ENCRYPTION_KEY`，缺密钥即硬失败不落明文）、
+  binlog 归档（`BACKUP_BINLOG_ARCHIVE=true`，MySQL 已在 compose 开 `--log-bin`）⇒ **PITR 可用**、
+  保留改为「窗口 `BACKUP_RETENTION_DAYS` + 最少份数 `BACKUP_KEEP_COUNT`」且覆盖 `.enc`/binlog 产物。
+- ⚠️ 异地容灾仍非本脚本职责：脚本只清 `./backups`，**不会**过期任何异地副本；若用 rclone/S3
+  同步，异地保留须在同步工具/桶策略里单独配置，否则异地副本无限增长。密钥只放部署机环境，绝不入库。
+- 恢复前先验证备份可用：明文用 `gunzip -c <file> | mysql ...`、加密先
+  `openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 -pass env:BACKUP_ENCRYPTION_KEY -in <file>`，
+  在影子库演练（含 PITR：先灌全量、再按备份头 `CHANGE MASTER TO` 坐标 `mysqlbinlog` 重放），
   演练记录写回本文件末尾的「演练日志」。
 
 ## 演练日志
@@ -89,3 +95,4 @@ docker compose exec api sh -c 'wget -qO- http://localhost:8080/actuator/health'
 | 日期 | 场景 | 结果 | 执行人 |
 |---|---|---|---|
 | — | 尚未做过恢复演练 | 待补 | — |
+| 2026-10-30 | 待做：全量 + PITR（加密开启）恢复演练——S4-3 上线备份脚本后首次真实演练，记录耗时/是否成功/发现的问题 | ⬜ 待执行 | （填写执行人） |

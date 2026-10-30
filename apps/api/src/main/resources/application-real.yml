@@ -66,7 +66,16 @@ spring:
   # P0-14 ⚠️ 生产警告：体验账号入口（app.guest-login.enabled）默认关闭，
   # 本地联调可通过 APP_GUEST_LOGIN_ENABLED=true 临时开启，上线前确认关闭。
   flyway:
-    enabled: true
+    # S3-2（2026-10-30）single-writer：迁移不再默认在 api 启动时执行——多副本（N 个 api
+    # 容器同时 boot）会并发抢跑同一批 DDL，产生 schema_history 竞态/重复执行。
+    # 生产/compose 由一次性 `migrate` 服务（官方 Flyway CLI）跑完，api 通过
+    # depends_on.condition: service_completed_successfully 等它成功后再启动，
+    # compose 给 api 注入 FLYWAY_ENABLED=false 关闭本启动时迁移。
+    # 单容器/本地 real 直跑（`./mvnw spring-boot:run -Dspring.profiles.active=real`）
+    # 不经过 compose，仍按下面 true 的默认值自动迁移，保持旧开发体验。
+    # 回退开关：把环境变量 FLYWAY_ENABLED 置为 true（或在 compose .env 覆盖）即可
+    # 重新打开 api 启动时迁移（详见 doc/DEPLOYMENT.md「数据库初始化」）。
+    enabled: ${FLYWAY_ENABLED:true}
     # 默认扫描 filesystem 迁移目录（单源）：
     #   filesystem:../../database/flyway/sql —— 全部迁移脚本（含原 classpath 的 4 个 Phase A
     #   迁移，已并入主链并重编号为 V2026.07.24.0001~0004，保证 media_asset 等表在引用前创建）。

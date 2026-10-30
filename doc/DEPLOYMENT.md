@@ -46,6 +46,7 @@ graph TB
         NGINX[Nginx 反向代理<br/>SSL 终止]
     end
     subgraph App[应用层]
+        MIGRATE[Flyway migrate<br/>一次性 single writer]
         API[Spring Boot API<br/>:8080]
         ADMIN[Admin 后台 nginx<br/>:8080]
         CLIENT[Client H5 nginx<br/>:80]
@@ -70,6 +71,8 @@ graph TB
     NGINX --> API
     NGINX --> ADMIN
     NGINX --> CLIENT
+    MYSQL --> MIGRATE
+    MIGRATE -->|成功完成后| API
     API --> MYSQL
     API --> REDIS
     API -.可选.-> RABBIT
@@ -83,20 +86,21 @@ graph TB
 ### 启动顺序（depends_on）
 
 ```
-mysql ─┐
-       ├─→ api ─→ admin ─→ client (profile: client-h5)
-redis ─┘       ↑
-                ├─→ prometheus ─→ grafana
-                │                └─→ alertmanager
-                └─→ node-exporter (profile: monitoring)
+mysql ─┬─→ migrate(一次性,成功退出) ─┐
+redis ─┘                              ├─→ api ─→ admin ─→ client (profile: client-h5)
+                                      │        ↑
+                                      │        ├─→ prometheus ─→ grafana
+                                      │        │                └─→ alertmanager
+                                      │        └─→ node-exporter (profile: monitoring)
 mysql ─→ backup (profile: backup)
 ```
 
-- `api` 依赖 `mysql` 与 `redis` 均健康（`condition: service_healthy`）
+- `migrate` 依赖 `mysql` 健康（`condition: service_healthy`），跑 `flyway migrate` 后退出（`restart: "no"`）
+- `api` 依赖 `migrate` **成功完成**（`condition: service_completed_successfully`）以及 `mysql`/`redis` 健康
 - `admin` 与 `client` 依赖 `api` 健康
 - `prometheus` 依赖 `api`（无需等待健康，仅启动顺序）
 - `grafana` 与 `alertmanager` 依赖 `prometheus`
-- `backup` 依赖 `mysql` 健康
+- `backup` 依赖 `mysql` 健康（另需只读挂载 `mysql-data` 以归档 binlog）
 
 ## 环境变量配置
 
@@ -306,12 +310,22 @@ docker compose --profile monitoring up -d
 
 ### 启动数据库备份
 
+> ⚠️ `backup` 在 `profiles: [backup]` 下，`docker compose up -d` **不会**启动它。
+> 备份不是默认开的——必须显式带上 `--profile backup`，否则等于系统没有备份。
+
 ```bash
-# 启动 db-backup 服务（每日凌晨 2 点自动备份，可通过 BACKUP_CRON 修改）
+# 启动 backup 服务（每日凌晨 2 点自动备份，可通过 BACKUP_CRON 修改）
 docker compose --profile backup up -d
 
 # 手动触发一次备份（容器内脚本挂载点为 /backup.sh，infra #38 修正）
-docker compose exec backup /backup.sh
+docker compose --profile backup exec backup /backup.sh
+
+# dry-run：打印将执行的全部动作（含加密/binlog/保留），不写任何文件、不连库
+docker compose --profile backup run --rm backup /backup.sh --dry-run
+
+# 开启加密的一次性备份（密钥只在部署机环境里注入，绝不写进 compose/仓库）
+BACKUP_ENCRYPT=true BACKUP_ENCRYPTION_KEY='<从密钥管理注入>' \
+  docker compose --profile backup run --rm backup /backup.sh
 ```
 
 ### Docker Compose 服务清单（与 `docker-compose.yml` 对齐）
@@ -322,6 +336,7 @@ docker compose exec backup /backup.sh
 |------|------|---------------------|----------|---------|----------|----------|
 | `mysql` | `mysql:8.0` | `${MYSQL_PORT:-3306}` | 3306 | 默认 | `mysqladmin ping` (10s/5s/10次/start 30s) | json-file (10m×5) |
 | `redis` | `redis:7-alpine` | `${REDIS_PORT:-6379}` | 6379 | 默认 | `redis-cli ping` (10s/5s/5次/start 10s) | json-file (10m×5) |
+| `migrate` | `flyway/flyway:10.10.0-alpine` | - | - | 默认（一次性，`restart: "no"`） | 无（跑完即退出，供 api 依赖其成功完成） | json-file (10m×3) |
 | `api` | `${IMAGE_PREFIX:-campus-love}/api:${TAG:-dev}` | `${API_PORT:-8080}` | 8080 | 默认 | `curl /actuator/health` (30s/5s/5次/start 90s) | json-file (10m×5) |
 | `admin` | `${IMAGE_PREFIX:-campus-love}/admin:${TAG:-dev}` | `${ADMIN_PORT:-5177}` | 8080 | 默认 | `curl /healthz` (30s/5s/3次/start 10s) | json-file (10m×5) |
 | `client` | `nginx:1.27-alpine` | `${CLIENT_PORT:-5173}` | 80 | `client-h5` | `wget /` (30s/5s/3次/start 10s) | json-file (10m×5) |
@@ -336,10 +351,13 @@ docker compose exec backup /backup.sh
 > **日志驱动说明**：所有服务统一使用 `json-file` 日志驱动，通过 `max-size` 与 `max-file` 限制单文件大小（10MB）与轮转文件数（5 个，backup 为 3 个），避免日志撑满磁盘。
 >
 > **Profile 说明**：
-> - 默认启动：`mysql`、`redis`、`api`、`admin`、`prometheus`、`grafana`、`alertmanager`
+> - 默认启动：`mysql`、`redis`、`migrate`（一次性迁移）、`api`、`admin`、`prometheus`、`grafana`、`alertmanager`
 > - `--profile client-h5`：追加 `client`（H5 预览，mp-weixin 产物需在微信开发者工具中导入）
 > - `--profile monitoring`：追加 `node-exporter`（主机指标采集）
-> - `--profile backup`：追加 `backup`（MySQL 定时备份 cron sidecar）
+> - `--profile backup`：追加 `backup`（MySQL 定时备份 cron sidecar）。⚠️ **`docker compose up -d` 不会启动 backup**，
+>   等于没有备份；必须显式 `docker compose --profile backup up -d`（见「启动数据库备份」）。
+> - `migrate` 无 profile（始终参与默认启动），它是 `api` 的 `service_completed_successfully` 前置；
+>   因此把它挪进 profile 会让 `api` 起不来——保持默认。
 
 > 启动顺序与依赖关系见本文档开头「部署架构图 → 启动顺序」小节。
 
@@ -380,9 +398,15 @@ docker compose exec backup /backup.sh
 | `PROMETHEUS_PORT` | - | `9090` | Prometheus 宿主机端口 | prometheus |
 | `ALERTMANAGER_PORT` | - | `9093` | Alertmanager 宿主机端口 | alertmanager |
 | `NODE_EXPORTER_PORT` | - | `9100` | Node Exporter 宿主机端口 | node-exporter |
-| `BACKUP_RETENTION_DAYS` | - | `7` | 备份保留天数 | backup |
+| `BACKUP_RETENTION_DAYS` | - | `7`（脚本内单一真相源） | 备份保留窗口（天）；compose 只透传、不再自带默认，避免与脚本重复写死 | backup |
+| `BACKUP_KEEP_COUNT` | - | `7`（脚本内单一真相源） | 每类产物至少保留份数（下限，防止删光最近备份）（S4-3） | backup |
+| `BACKUP_ENCRYPT` | - | `false` | 置真则备份落盘前 AES-256 加密（S4-3） | backup |
+| `BACKUP_ENCRYPTION_KEY` | - | 无（**无默认值**） | 加密密钥；`BACKUP_ENCRYPT` 为真而此项缺失时脚本硬失败、绝不落明文。切勿写进 compose/仓库，仅部署机 .env/密钥管理注入（S4-3） | backup |
+| `BACKUP_BINLOG_ARCHIVE` | - | `true` | 归档 `mysql-bin.*` 以支撑 PITR（S4-3）；关闭则不做 binlog、也不给 mysqldump 加 `--master-data` | backup |
+| `MYSQL_BINLOG_DIR` | - | `/var/lib/mysql` | backup 容器内 binlog 源目录（= 只读挂载的 mysql-data 卷）（S4-3） | backup |
 | `BACKUP_CRON` | - | `0 2 * * *` | 备份 cron 表达式（由 backup 服务启动命令写入 crontab） | backup |
 | `BACKUP_DIR` | - | `/backups` | 备份存储目录（容器内，与宿主 `./backups` bind 挂载对齐） | backup |
+| `FLYWAY_ENABLED` | - | compose 下 api 为 `false`；`application-real.yml` 直跑为 `true` | api 启动时迁移开关（S3-2 single writer：compose 关闭，由 `migrate` 服务负责）。置 `true` 可退回单容器启动即迁移 | api |
 | `TAG` | - | `dev` | Docker 镜像 tag（生产必须注入 git sha / release tag，禁止 latest） | api、admin |
 
 > **安全提示**（P1.19）：docker-compose.yml 中所有密码字段使用 `${VAR:?error message}` 形式，未设置环境变量时 `docker compose up` 会失败（强制注入，无弱默认值兜底）。必填字段：`MYSQL_ROOT_PASSWORD` / `MYSQL_PASSWORD` / `REDIS_PASSWORD` / `JWT_SECRET` / `GRAFANA_ADMIN_PASSWORD`。
@@ -434,18 +458,57 @@ IMAGE_PREFIX=$IMAGE_PREFIX TAG=$TAG docker compose up -d api admin
 - 对应公钥 `cosign.pub` 分发给部署方，用于部署端验证
 - 未配置 secrets 时，CI 中签名步骤自动跳过（PR 场景不影响构建）
 
-## 数据库初始化
+## 数据库初始化与迁移（S3-2：single writer）
 
-Flyway 迁移在应用启动时自动执行（`spring.flyway.enabled=true`），无需手动运行。
+**迁移不再由 api 启动时执行**：多副本（N 个 api 容器同时 boot）会并发抢跑同一批 DDL，
+在 `flyway_schema_history` 上产生竞态/重复执行。现在由一个**一次性 `migrate` 服务**作为
+唯一写入者，跑完即退出；`api` 通过
+`depends_on: migrate: {condition: service_completed_successfully}` 等它成功后才启动。
 
-如需手动验证迁移状态：
+`migrate` 用的是**官方 Flyway CLI 镜像**（与仓内既有 CLI 方式同源：`database/flyway/flyway.toml`
++ `scripts/launcher/run-flyway.ps1`）。宿主侧也有一条等价路径：
+`apps/api/pom.xml` 现已声明 `flyway-maven-plugin`（2026-10-30 补；参数取环境变量
+`DB_URL/DB_USERNAME/DB_PASSWORD`），因此 `./mvnw flyway:info|migrate|repair` 可直接使用——
+此前文档写了这些命令而 pom 里没有插件，照做只会得到
+"No plugin found for prefix 'flyway'"。两条路径注入的占位符值必须一致。
+compose 给 api 注入 `FLYWAY_ENABLED=false` 关闭其启动时迁移（`application-real.yml` 的
+`spring.flyway.enabled` 默认仍为 `true`，供本地 real 直跑使用）。
+
+### 首次启动（空库）
+
+`docker compose up -d` 时 compose 先等 `mysql` 健康，再拉起 `migrate` 跑
+`flyway migrate`：空库上 `baselineOnMigrate=false`，Flyway 从头应用
+`database/flyway/sql` 下**全部**版本化迁移；管理员占位符（`admin_openid` /
+`admin_password_hash`）**无默认值**，缺失即迁移失败（fail-fast，杜绝弱账号），
+因此首次部署必须在 `.env` 配置 `ADMIN_OPENID` 与 `ADMIN_INITIAL_PASSWORD_HASH`。
+`migrate` 成功退出（exit 0）后 `api` 才会启动。
+
+### 手动运行迁移 / 查看状态 / 修复
+
+一次性服务可被 `docker compose run` 复用来跑其它 flyway 子命令（`run` 会用你给的参数
+覆盖 service 的默认 `command`）：
 
 ```bash
-cd database/flyway
-.\flyway migrate -configFiles=flyway.toml \
-  -Url="jdbc:mysql://127.0.0.1:3306/campus_love" \
-  -User=campus -Password=your-password
+# 状态（等价于 flyway info）——single writer 视图，不启 api
+docker compose run --rm migrate info
+
+# 手动补跑一次迁移（例如滚动发布中单独触发）
+docker compose run --rm migrate migrate
+
+# checksum 校验
+docker compose run --rm migrate validate
+
+# 迁移历史表损坏（失败/重复）时：社区版无 undo，先备份再 repair，
+# 然后从备份恢复或人工补偿（见「升级与回滚 → 数据库回滚」）
+docker compose run --rm migrate repair
 ```
+
+> repair / info 也可在宿主用仓库既有 CLI：`scripts/launcher/run-flyway.cmd info|migrate|validate|repair`
+> （连接串走环境变量，仓内并不存在 flyway.user.toml 这种文件）。两条路径注入的**占位符值必须一致**。
+
+> 若要临时退回「api 启动即迁移」的单容器形态（不推荐多副本）：设 `FLYWAY_ENABLED=true`，
+> api 会以自身 datasource 与挂载的 `./database/flyway/sql:/app/db/migration` 在 boot 时迁移。
+
 
 ## 配置文件分离（Task 8.4.5）
 
@@ -505,19 +568,26 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/profile/me
 - Grafana：http://localhost:3001
 - Alertmanager：http://localhost:9093
 
-## 备份与恢复（P3-D.3）
+## 备份与恢复（P3-D.3 + S4-3）
 
 ### 备份策略
 
 `backup` 服务（`docker-compose.yml` 中 `profiles: [backup]`）基于 alpine + cron 实现，
 每天 02:00（容器内 `TZ=Asia/Shanghai`）自动执行 `scripts/backup-mysql.sh`，产出：
 
-- MySQL 全量备份：`./backups/<db>-<YYYYMMDD-HHMMSS>.sql.gz`（gzip 压缩，`--single-transaction` 一致性快照）
-- Redis RDB 备份：`./backups/redis-<YYYYMMDD-HHMMSS>.rdb`（BGSAVE 后复制 `dump.rdb`）
+- MySQL 全量备份：`./backups/<db>-<YYYYMMDD-HHMMSS>.sql.gz`
+  （`BACKUP_ENCRYPT=true` 时为 `.sql.gz.enc`，AES-256-CBC + PBKDF2；加密请求但缺
+  `BACKUP_ENCRYPTION_KEY` 时脚本在写任何文件前硬失败，**不会**留下明文）
+- Redis RDB 备份：`./backups/redis-<YYYYMMDD-HHMMSS>.rdb`（或 `.rdb.enc`）
+- binlog 归档（S4-3，PITR 用）：`./backups/binlogs/mysql-bin.<n>.gz`（或 `.gz.enc`）；
+  同时 mysqldump 以 `--master-data=2` 在备份头部记录快照对应的 binlog 坐标
 
-**保留策略**：默认保留 7 天（`BACKUP_RETENTION_DAYS` 可调），过期 `.sql.gz` / `.rdb` 文件自动删除。
+**保留策略**：窗口由 `BACKUP_RETENTION_DAYS`（默认 7）与 `BACKUP_KEEP_COUNT`
+（默认 7，每类产物最少保留份数）共同决定；二者的默认值**只在脚本里定义一处**
+（compose 只透传）。清理覆盖所有落盘类型（`.sql.gz`/`.sql.gz.enc`/`.rdb`/`.rdb.enc`/
+binlog 归档），避免加密或 binlog 引入后新产物永不轮转。
 
-**手动触发备份**：
+**手动触发备份**：见上方「启动数据库备份」小节。
 
 ```bash
 # 立即执行一次备份（不等待 cron 调度）
@@ -536,15 +606,21 @@ docker compose logs backup
 docker compose exec backup cat /backup/cron.log 2>/dev/null || true
 ```
 
-### MySQL 恢复
+### MySQL 恢复（全量）
 
 ```bash
 # 1. 停止 API 服务避免恢复期间有写入
 docker compose stop api
 
-# 2. 解压备份文件并恢复到 MySQL
-gunzip -c ./backups/campus_love-20260729-020000.sql.gz | \
-  docker compose exec -T mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" campus_love
+# 2. 恢复备份到 MySQL（明文 .sql.gz 直接 gunzip；加密 .sql.gz.enc 先解密再 gunzip）
+BACKUP=./backups/campus_love-20260729-020000.sql.gz   # 或同名 .enc
+case "$BACKUP" in
+  *.enc) openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 \
+           -pass env:BACKUP_ENCRYPTION_KEY -in "$BACKUP" | gunzip \
+           | docker compose exec -T mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" campus_love ;;
+  *)     gunzip -c "$BACKUP" \
+           | docker compose exec -T mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" campus_love ;;
+esac
 
 # 3. 验证关键表行数
 docker compose exec mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" campus_love \
@@ -553,6 +629,33 @@ docker compose exec mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" campus_love \
 # 4. 重启 API
 docker compose up -d api
 ```
+
+> 恢复期间不要重复跑 `migrate`：全量备份已含 `flyway_schema_history`，导入后迁移状态
+> 随之还原；若导入后又手动 `migrate`，以历史表为准，不会重放已应用迁移。
+
+### 按时间点恢复（PITR，S4-3）
+
+前置：备份为 `BACKUP_BINLOG_ARCHIVE=true` 产出（mysqldump 头部有 `-- CHANGE MASTER TO
+MASTER_LOG_FILE='mysql-bin.NNNNNN', MASTER_LOG_POS=...;` 注释），且
+`./backups/binlogs/` 内有覆盖目标时刻的 `mysql-bin.*.gz[.enc]` 归档。若当初 binlog
+未开或卷未挂载，脚本会记录 WARN 且无归档——此时 PITR 不可用，只能回到全量快照点。
+
+```bash
+# 1. 先按「MySQL 恢复（全量）」把库还原到快照点（导入全量备份）
+# 2. 从备份头部读出快照坐标
+HEAD=$( { [ "${BACKUP##*.}" = enc ] && openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 -pass env:BACKUP_ENCRYPTION_KEY -in "$BACKUP" | gunzip || gunzip -c "$BACKUP"; } | head -50 )
+echo "$HEAD" | grep -E 'CHANGE MASTER TO'
+# 3. 用 mysqlbinlog 从该坐标重放到目标时间戳（示例：SET @@session.sql_log_bin=0 于目标库）
+#    归档为 .gz.enc 时先 openssl 解密再 gunzip，喂给 mysqlbinlog --read-from-remote-server 不适用，
+#    需先把解密后的原始 binlog 文件落盘（解密到临时目录，仅在本机操作）：
+mysqlbinlog --start-position=<POS> --stop-datetime='2026-07-29 15:30:00' \
+  ./backups/binlogs/mysql-bin.<NNNNNN> \
+  | docker compose exec -T mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" campus_love
+```
+
+> ⚠️ 具体坐标/文件序号以你这次备份的 `CHANGE MASTER TO` 与 `binlogs/` 实际内容为准；
+> 多个连续 binlog 文件需按顺序一并传给 mysqlbinlog。恢复务必先在**影子库演练**，
+> 确认无误再上生产——演练记录写进 `doc/RUNBOOKS.md#演练日志`。
 
 **部分恢复（仅单表）**：从解压后的 SQL 文件中提取 `INSERT INTO <table>` 语句执行。
 
@@ -565,6 +668,8 @@ docker compose up -d api
 docker compose stop redis
 
 # 2. 将备份的 dump.rdb 复制到 redis-data 卷（覆盖现有 RDB）
+#    加密备份（.rdb.enc）先解密再落盘：
+#    openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 -pass env:BACKUP_ENCRYPTION_KEY -in /backups/redis-<ts>.rdb.enc > /data/dump.rdb
 docker run --rm -v campus-redis-data:/data -v "$(pwd)/backups:/backups" alpine \
   sh -c "cp /backups/redis-20260729-020000.rdb /data/dump.rdb && chmod 644 /data/dump.rdb"
 
@@ -582,21 +687,34 @@ docker compose exec redis redis-cli -a "$REDIS_PASSWORD" DBSIZE
 
 ### 备份保留策略
 
-| 配置项 | 默认值 | 说明 |
+| 配置项 | 默认值（脚本内单一真相源） | 说明 |
 |--------|--------|------|
-| `BACKUP_RETENTION_DAYS` | `7` | 过期清理阈值（天） |
+| `BACKUP_RETENTION_DAYS` | `7` | 过期清理窗口（天）；早于此且超出 keep 份数的产物被删 |
+| `BACKUP_KEEP_COUNT` | `7` | 每类产物最少保留份数（下限），防止把最近备份也删光（S4-3） |
+| `BACKUP_ENCRYPT` | `false` | 落盘前 AES-256 加密（S4-3）；true 且无密钥 → 脚本硬失败不落明文 |
+| `BACKUP_ENCRYPTION_KEY` | 无（**无默认值**） | 加密密钥；仅在部署机 .env/密钥管理注入，**绝不**写进 compose/仓库 |
+| `BACKUP_BINLOG_ARCHIVE` | `true` | 归档 binlog 支撑 PITR（S4-3）；关闭则无归档、mysqldump 也不加 `--master-data` |
 | `BACKUP_CRON` | `0 2 * * *` | cron 表达式（每天 02:00，由启动命令写入 crontab） |
-| `BACKUP_DIR` | `/backups`（compose 注入，容器内） | 备份存储目录，对应宿主 `./backups`（infra #16：与 backup-mysql.sh 的 BACKUP_DIR 环境变量对齐；脚本自身默认值为 `/backup`，compose 部署时以 `/backups` 覆盖） |
+| `BACKUP_DIR` | `/backups`（compose 注入，容器内） | 备份存储目录，对应宿主 `./backups`（infra #16：与 backup-mysql.sh 的 BACKUP_DIR 对齐；脚本默认 `/backups`，compose 亦注入 `/backups`） |
 
-**异地备份建议**：将 `./backups` 目录定期同步到对象存储（OSS/S3）或异地服务器，
-避免单机故障导致备份丢失。可使用 `rclone` 或 `aws s3 sync`：
+> compose 里 `BACKUP_RETENTION_DAYS`/`BACKUP_KEEP_COUNT` 只透传、不再自带 `:-7`；
+> 留空即由脚本内默认值兜底——保留数字只出现在脚本一处。
+
+**异地备份与异地保留（S4-3）**：将 `./backups` 定期同步到对象存储（OSS/S3）或异地服务器，
+避免单机故障导致备份丢失：
 
 ```bash
-# 示例：每日同步到 S3
-rclone sync ./backups remote:campus-love-backups/ --transfers 4
+# 示例：每日同步到 S3，并对远端施加与本脚本一致的保留（本地脚本【管不到】远端副本！）
+rclone sync ./backups remote:campus-love-backups/ --transfers 4 \
+  --min-age 7d --delete-during   # 远端也按 7 天过期，否则异地副本永不轮转会无限增长
 ```
 
-更完整的灾难恢复流程见 `doc/RUNBOOKS.md#备份与恢复` 与 `doc/RUNBOOKS.md#api-下线`。
+⚠️ `backup-mysql.sh` 的保留**只清理 `BACKUP_DIR`（宿主 `./backups`）**，**不会**过期任何
+异地副本。异地目标的保留必须在同步工具里单独配置（如 rclone `--min-age`/生命周期规则、
+S3 生命周期策略），否则异地副本会无限累积。异地恢复同样先解密再按上文流程处理。
+
+恢复流程与备份可用性的完整灾难恢复步骤见 `doc/RUNBOOKS.md#备份与恢复`，
+**每次恢复演练请登记到 `doc/RUNBOOKS.md#演练日志`**；下线处置见 `doc/RUNBOOKS.md#api-下线`。
 
 ## 域名与 SSL
 
@@ -795,28 +913,52 @@ Alertmanager 按严重级路由（详见 `docker/alertmanager/alertmanager.yml`�
 
 | 级别 | 接收者 | 等待 | 重复间隔 | 渠道 |
 |------|--------|------|----------|------|
-| `critical` | `critical-email` | 0s | 1h | 邮件 + 钉钉 |
-| `warning` | `warning-webhook` | 30s | 4h | 飞书群机器人 |
-| `info` | `null-pager` | - | - | 仅归档，不通知 |
+| `critical` | `critical-email` | 0s | 1h | ⚠ 当前未配置任何渠道（见下节） |
+| `warning` | `warning-webhook` | 30s | 4h | ⚠ 同上 |
+| `info` / 其它 | `null-pager` | - | - | 静默丢弃（默认 receiver） |
 
-### 通知渠道配置
+### 通知渠道配置（当前状态：没有可达渠道，且这是显式声明的）
 
-部署前需在 `.env` 中配置以下变量（可选，未配置则使用默认值占位）：
+`docker/alertmanager/alertmanager.yml` 的文件头有一条哨兵注释
+`# ⚠ # NO-ALERT-CHANNEL-CONFIGURED`，代码与配置的事实是：
 
-```bash
-# 邮件（critical 级别）
-SMTP_HOST=smtp.example.com:587
-SMTP_FROM=alert@example.com
-SMTP_USER=
-SMTP_PASSWORD=
-CRITICAL_EMAIL=oncall@example.com
+- `route.receiver` = `null-pager`（静默丢弃）；
+- `critical-email` 的 `smtp` 段整段注释、`warning-webhook` 指向未部署的地址；
+- `tests/monitoring-wiring.spec.mjs` 会把「哨兵存在」与「配置里没有可用渠道」绑成一对，
+  所以这份状态不可能悄悄漂成「看起来配好了」。
 
-# 钉钉机器人（critical 级别）
-DINGTALK_CRITICAL_WEBHOOK=
+因此**本栈当前不会把任何告警发到外部**。`critical` 级告警现在只存在于 Alertmanager
+自己的界面与 Prometheus 规则里——这一点必须写明白，早前一版文档在这里列了
+`SMTP_HOST` / `DINGTALK_CRITICAL_WEBHOOK` / `FEISHU_WARNING_WEBHOOK` 等 `.env` 变量，
+读起来像"填了就有通知"，而**没有任何代码读取这些变量**（alertmanager.yml 是静态文件，
+compose 也不做模板替换）。那是文档在替实现撒谎，已删。
 
-# 飞书群机器人（warning 级别）
-FEISHU_WARNING_WEBHOOK=
-```
+要真的接上渠道，用不污染主配置、不把凭据写进 git 的方式：
+
+1. 以 `docker/alertmanager/alertmanager.yml` 为底稿复制一份站点专用配置，
+   填 `route.receiver`、`receivers[].email_configs`（`smtp_smarthost` / `smtp_from` /
+   `smtp_hello` / `to`）或 `webhook_configs`；
+2. 口令与 token **只走文件**，不写字面值：`smtp_auth_password` 改用 `password_file`、
+   webhook 的 `basic_auth`/`authorization` 改用 `password_file` / `credentials_file`，
+   这样凭据不会出现在进程参数、日志或 `docker inspect` 输出里；
+3. 用覆盖文件挂载它（默认不加载，主配置与主 compose 不动）：
+
+   ```bash
+   export ALERTMANAGER_CONFIG_FILE=/etc/campus-love/alertmanager.site.yml
+   export ALERT_SECRETS_DIR=/run/secrets
+   docker compose -f docker-compose.yml -f docker-compose.alerting.yml up -d alertmanager
+   ```
+
+   `docker-compose.alerting.yml` 对这两个变量用的是 `${VAR:?}`，缺任一即拒绝启动——
+   它不会退回去静默用主配置（那会让人误以为渠道已生效）。
+4. 验证：`curl -s localhost:9093/api/v2/alerts | jq length` 有告警、
+   `amtool check-config $ALERTMANAGER_CONFIG_FILE` 通过、
+   然后按 doc/RUNBOOKS.md 的演练日志记一次真实触达。
+
+站点配置是主配置的**副本**，二者会漂移：主配置改动时（尤其 `tests/monitoring-wiring.spec.mjs`
+涉及的 receiver/route）必须同步站点副本，这是这套「单文件、不做合并」机制的代价，
+因为 Alertmanager 不支持多文件合并配置，而它的字符串字段能否做 `${ENV}` 插值随版本而异，
+本机 Docker 引擎未运行、我无法在真容器里验证，所以不写"看着能跑"的插值。
 
 ### Grafana 面板
 
@@ -898,7 +1040,9 @@ docker compose logs --since 7d api > api-logs-$(date +%Y%m%d).log
    cosign verify --key /etc/campus-love/cosign.pub $IMAGE_PREFIX/api:$TAG_NEW
    cosign verify --key /etc/campus-love/cosign.pub $IMAGE_PREFIX/admin:$TAG_NEW
    ```
-4. **数据库迁移预演**：在 staging 环境执行 `./mvnw flyway:info` 与 `flyway:migrate`，确认无破坏性 DDL
+4. **数据库迁移预演**：在 staging 用一次性 `migrate` 服务预演：`docker compose run --rm migrate info`
+   查看待应用迁移（不在容器里跑时，宿主侧 `./mvnw flyway:info` 等价可用）、
+   `docker compose run --rm migrate migrate` 演练，确认无破坏性 DDL
 
 ### 滚动升级（Docker Compose）
 
@@ -922,7 +1066,10 @@ docker compose up -d --no-deps admin
 docker compose --profile client-h5 up -d --no-deps client
 ```
 
-> Flyway 迁移在 API 启动时自动执行；若迁移失败，API 容器会退出，旧实例仍在线服务（已通过 `--no-deps` 隔离）。
+> 迁移由一次性 `migrate` 服务在 `api` 之前完成（single writer），**不再在 API 启动时执行**。
+> 滚动升级 `api` 时（`--no-deps`）不会触发迁移；需要新 schema 时先
+> `docker compose run --rm migrate migrate`，成功后再滚 `api`。若迁移失败，`migrate` 非零退出，
+> `api` 因 `service_completed_successfully` 不满足而不会起，旧实例仍在（`--no-deps` 已隔离）。
 
 ### 回滚步骤
 
@@ -988,9 +1135,12 @@ curl -sH "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/profile/me 
 
 ### 数据库迁移失败
 
-1. 查看 Flyway 状态：`docker compose exec api ./mvnw flyway:info`
-2. 修复迁移脚本后重新运行：`docker compose exec api ./mvnw flyway:repair`
-3. 参考 `doc/RUNBOOKS.md#备份与恢复` 进行数据恢复
+1. 查看 Flyway 状态：`docker compose run --rm migrate info`
+   （api 运行镜像是 JRE、**不含 mvnw**，所以这条命令只能在宿主的仓库目录里跑，
+   不要写 `docker compose exec api ./mvnw flyway:info`）
+2. 迁移历史损坏（失败项/校验和不符）时先做一次可用备份，再 `docker compose run --rm migrate repair`；
+   社区版无 undo，改不动的按「升级与回滚 → 数据库回滚」从备份恢复
+3. 参考 `doc/RUNBOOKS.md#备份与恢复` 进行数据恢复（含 PITR 与加密解密步骤）
 
 ### 更多文档
 

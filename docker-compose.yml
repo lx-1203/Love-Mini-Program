@@ -4,17 +4,18 @@
 # 服务清单：
 #   1. mysql       — MySQL 8.0 数据库
 #   2. redis       — Redis 7 缓存
-#   3. api         — Spring Boot 后端 API
-#   4. admin       — Vue3 管理后台（nginx 静态托管）
-#   5. client      — uni-app 客户端 H5 预览
-#   6. prometheus  — 指标采集
-#   7. grafana     — 监控面板
-#   8. alertmanager— 告警路由
-#   9. node-exporter— 主机指标采集
-#  10. backup      — MySQL 定时备份（cron sidecar）
+#   3. migrate     — Flyway 一次性迁移（single writer，跑完即退出）
+#   4. api         — Spring Boot 后端 API
+#   5. admin       — Vue3 管理后台（nginx 静态托管）
+#   6. client      — uni-app 客户端 H5 预览
+#   7. prometheus  — 指标采集
+#   8. grafana     — 监控面板
+#   9. alertmanager— 告警路由
+#  10. node-exporter— 主机指标采集
+#  11. backup      — MySQL 定时备份（cron sidecar）
 #
 # 启动顺序（depends_on）：
-#   mysql/redis → api → admin/client → prometheus → grafana/alertmanager
+#   mysql/redis → migrate（一次性，成功退出）→ api → admin/client → prometheus → grafana/alertmanager
 #
 # 使用方式：
 #   1. 复制 .env.example 为 .env 并填写真实值
@@ -38,8 +39,13 @@
 # 2026-08-05 Infra 加固（infra-review 45 条）：
 #   - 所有对外端口仅绑定 127.0.0.1（数据库/Redis/监控/应用服务均不暴露公网，
 #     与外层 Nginx 80/443 入网策略一致；Prometheus/Alertmanager 无认证，仅限本机访问）
-#   - Flyway 迁移目录不再挂载为 MySQL initdb.d（避免迁移脚本重复执行损坏数据），
-#     仅保留 flyway 容器自身挂载（./database/flyway/sql:/app/db/migration:ro）
+#   - Flyway 迁移既不挂载到 MySQL initdb.d，也不再于 api 启动时执行（S3-2：
+#     多副本并发启动会同时抢跑同一批 DDL）。改由一次性 `migrate` 服务运行官方 Flyway CLI
+#     （本仓既有 CLI 方式，见 database/flyway/flyway.toml + scripts/launcher/run-flyway.ps1；
+#     注意 apps/api/pom.xml 只有 flyway-core/flyway-mysql 依赖，无 flyway-maven-plugin，
+#     故不存在 `./mvnw flyway:migrate`）。api 以 depends_on.condition:service_completed_successfully
+#     等其成功退出后再启动。单容器开发可用 FLYWAY_ENABLED=true 重开 api 启动时迁移，届时
+#     迁移目录仍以只读挂载 ./database/flyway/sql:/app/db/migration:ro 供该路径使用。
 #   - 全部服务增加 deploy.resources.limits（防止 JVM/容器无限制占用宿主机资源）
 #   - healthcheck 通过容器内环境变量（MYSQL_PWD / REDISCLI_AUTH）传递密码，
 #     避免密码出现在进程参数中
@@ -186,6 +192,61 @@ services:
       - MKNOD
       - SYS_CHROOT
 
+  # ---------- Flyway 一次性迁移（S3-2：single writer）----------
+  # 只跑一次、成功即退出；api 通过 depends_on.condition: service_completed_successfully
+  # 等它跑完再启动，杜绝 N 个 api 副本并发抢跑同一批 DDL。
+  # 用的是官方 Flyway CLI 镜像（本仓既有 CLI 方式：database/flyway/flyway.toml +
+  # scripts/launcher/run-flyway.ps1 都指向 flyway CLI，而 apps/api/pom.xml 并无
+  # flyway-maven-plugin——所以不能用 ./mvnw flyway:migrate）。
+  # 版本对齐：pin 到 Spring Boot 3.3.1 托管的 Flyway 10.10.0（flyway-core 版本由
+  # spring-boot-starter-parent BOM 决定）；如需精确小版本以 `mvn dependency:tree` 实测为准，
+  # 本环境离线无法 docker pull 校验镜像 tag 存在性。
+  migrate:
+    image: flyway/flyway:10.10.0-alpine
+    container_name: campus-flyway-migrate
+    # 一次性任务绝不能重启：compose 默认 restart 即为 "no"，这里显式写出，防止被误改成
+    # unless-stopped——那会让成功退出后的 migrate 反复重跑，并让 api 的
+    # service_completed_successfully 依赖永远无法满足（容器被重启回 running）。
+    restart: "no"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # 与 api 启动时迁移走同一套库账号（campus 用户，其 DDL 权限已在既有启动迁移中验证）。
+      # 密码经 FLYWAY_PASSWORD 环境变量注入，不进命令行进程参数（infra #3 一致）。
+      FLYWAY_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-campus_love}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+      FLYWAY_USER: ${MYSQL_USER:-campus}
+      FLYWAY_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
+      # 迁移行为与 flyway.toml / application-real.yml 对齐（CLI 侧用环境变量覆盖）
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql
+      FLYWAY_VALIDATE_ON_MIGRATE: "true"
+      FLYWAY_VALIDATE_MIGRATION_NAMING: "true"
+      FLYWAY_BASELINE_ON_MIGRATE: "false"
+      # 占位符：CLI 路径与 Spring 路径必须注入【同一份值】（见 flyway.toml R4-00410 注释）。
+      # admin_openid / admin_password_hash 无默认值——缺失即迁移失败（fail-fast，杜绝弱账号）。
+      FLYWAY_PLACEHOLDERS_ADMIN_OPENID: ${ADMIN_OPENID:-}
+      FLYWAY_PLACEHOLDERS_ADMIN_NICKNAME: ${ADMIN_NICKNAME:-系统管理员}
+      FLYWAY_PLACEHOLDERS_ADMIN_PASSWORD_HASH: ${ADMIN_INITIAL_PASSWORD_HASH:-}
+      FLYWAY_PLACEHOLDERS_DEMO_SEED: ${DEMO_SEED:-false}
+    volumes:
+      - ./database/flyway/sql:/flyway/sql:ro
+    # 镜像 ENTRYPOINT 即 flyway 可执行文件，command 传子命令；默认执行 migrate
+    command: ["migrate"]
+    networks:
+      - data-net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512m
+    security_opt:
+      - no-new-privileges:true
+
   # ---------- 后端 API（Spring Boot）----------
   api:
     build:
@@ -203,6 +264,9 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # S3-2：等一次性 migrate 成功退出后再起 api（single writer，迁移不再在 boot 抢跑）
+      migrate:
+        condition: service_completed_successfully
     environment:
       SPRING_PROFILES_ACTIVE: real
       APP_PORT: 8080
@@ -254,6 +318,11 @@ services:
       # 原 classpath 的 4 个 Phase A 迁移已并入主链重编号为 V2026.07.24.0001~0004,
       # 保证 media_asset 等表在后续迁移引用前创建)
       APP_FLYWAY_LOCATIONS: filesystem:/app/db/migration
+      # S3-2（single writer）：compose 默认关闭 api 启动时迁移，改由一次性 `migrate`
+      # 服务在 api 之前跑完（api depends_on migrate: service_completed_successfully）。
+      # 多副本时只有 migrate 一个写入者，N 个 api 不再并发抢跑 DDL。
+      # 单容器/本地开发想恢复「启动即迁移」：设 FLYWAY_ENABLED=true（在 .env 覆盖即可）。
+      FLYWAY_ENABLED: ${FLYWAY_ENABLED:-false}
       # ---------- 媒体存储 ----------
       APP_MEDIA_STORAGE_ROOT: /app/uploads
       # ---------- RabbitMQ（可选）----------
@@ -629,7 +698,20 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
       REDIS_RDB_PATH: /data/redis/dump.rdb
-      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+      # S4-3：保留策略的唯一真相源在 scripts/backup-mysql.sh（窗口 BACKUP_RETENTION_DAYS、
+      # 最少份数 BACKUP_KEEP_COUNT）。compose 只透传、不再自带 `:-7` 默认值，避免两处
+      # magic number 打架；留空即由脚本内的默认值兜底。
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-}
+      BACKUP_KEEP_COUNT: ${BACKUP_KEEP_COUNT:-}
+      # S4-3 加密（可选）：BACKUP_ENCRYPT=true 请求加密，密钥只能来自 BACKUP_ENCRYPTION_KEY
+      # （compose 不给任何默认值；脚本在「请求加密但密钥缺失」时硬失败，绝不落明文）。
+      # 切勿把真实密钥写进本文件或提交入库——只在部署机 .env / 密钥管理里注入。
+      BACKUP_ENCRYPT: ${BACKUP_ENCRYPT:-false}
+      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-}
+      # S4-3 PITR：归档 binlog（mysql-bin.*）以便按时间点恢复；默认开。
+      # 源目录 = 下面只读挂载的 mysql-data 卷里的 datadir。
+      BACKUP_BINLOG_ARCHIVE: ${BACKUP_BINLOG_ARCHIVE:-true}
+      MYSQL_BINLOG_DIR: /var/lib/mysql
       # infra #20：BACKUP_CRON 通过启动命令写入 crontab（不再硬编码 0 2 * * *）
       BACKUP_CRON: ${BACKUP_CRON:-0 2 * * *}
       TZ: Asia/Shanghai
@@ -638,11 +720,20 @@ services:
       - ./backups:/backups
       # P3-D.3：挂载 redis-data 卷（只读）以便复制 dump.rdb
       - redis-data:/data/redis:ro
+      # S4-3 PITR：只读挂载 mysql-data，以便归档 datadir 下的 mysql-bin.* 完成 binlog。
+      # 注意：这会把整个数据目录（含表文件）以只读方式暴露给 backup 容器；backup 本就
+      # 通过 mysqldump 能读到全库数据，暴露面一致。若不接受，可改用 mysqldump --master-data
+      # 记录的坐标 + `mysqlbinlog --read-from-remote-server`（走网络、不挂卷）替代。
+      - mysql-data:/var/lib/mysql:ro
     # infra #20 / FIN-00851：crontab 由启动命令根据 BACKUP_CRON 生成，
     # 以非 root 用户 backup 运行 crond（避免定时任务以 root 运行）
     # apk 包锁主版本（infra #28）：alpine 3.19 仓库中 mysql-client=10.11.x、redis=7.2.x
+    # S4-3：补 bash —— backup-mysql.sh 用 `#!/usr/bin/env bash` 且依赖数组/进程替换等
+    #   bash-ism，alpine 基础镜像默认只有 busybox sh，缺 bash 会让脚本根本无法执行；
+    #   补 openssl —— 供 BACKUP_ENCRYPT=true 时的 AES-256 加解密（openssl 为 alpine 仓库包，
+    #   非浮点 latest，随 alpine 3.19.4 基镜像版本走）。
     command: >
-      /bin/sh -c "apk add --no-cache mysql-client~10.11 redis~7.2 gzip tini &&
+      /bin/sh -c "apk add --no-cache bash openssl mysql-client~10.11 redis~7.2 gzip tini &&
       adduser -D -H -s /sbin/nologin backup &&
       mkdir -p /etc/crontabs /backup &&
       chown -R backup:backup /etc/crontabs /backup /backups &&

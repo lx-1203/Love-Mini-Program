@@ -1,0 +1,33 @@
+# ============================================================================
+# 告警渠道覆盖文件（S0-3b，2026-10-30）——默认不生效，必须显式 -f 才加载
+#
+#   docker compose -f docker-compose.yml -f docker-compose.alerting.yml up -d alertmanager
+#
+# 为什么需要这个文件：`docker/alertmanager/alertmanager.yml` 里的 critical-email 的 smtp 段
+# 整段是注释状态、默认 receiver 是 null-pager，文件头用
+# `# ⚠ # NO-ALERT-CHANNEL-CONFIGURED` 哨兵显式声明「当前没有任何可达渠道」。
+# 那是有意的 fail-closed：不编造凭据、也不让告警"看起来配好了其实投递到 localhost"。
+# 本文件把「接入真实渠道」这件事变成一条不改主配置、不进 git 的路径。
+#
+# 为什么用「挂载整份配置」而不是改主配置里的字段：
+#   Alertmanager 只接受单个 config.file，不做多文件合并；而它的字符串字段是否支持
+#   ${ENV} 插值随版本而异，我没有在真容器里验证过（本机 Docker 引擎未运行），
+#   因此不写"看着能跑的插值"。让运维提供一份完整配置，是唯一可核对的做法。
+#   代价：这份配置与主配置存在漂移风险 —— 所以要求它以主配置为底稿复制、
+#   并且每次主配置改动时同步（tests/monitoring-wiring.spec.mjs 会校验哨兵与
+#   localhost 占位的一致性，但管不到外部副本）。
+#
+# 凭据放哪：只放文件，不放本仓库、不放 compose 明文 env。
+#   ALERT_SMTP_PASSWORD_FILE / ALERT_WEBHOOK_TOKEN_FILE 指向容器内路径，
+#   宿主侧由 secrets/绑定挂载提供（例如 /run/secrets/…）。
+#   alertmanager.yml 的 email_configs 支持 smtp_auth_password 换成 password_file，
+#   webhook/http_config 同样支持 credentials_file ——填配置时用文件形式，
+#   口令就不会出现在进程参数、日志和 `docker inspect` 输出里。
+# ============================================================================
+services:
+  alertmanager:
+    volumes:
+      # 运维自备的完整配置（必填：缺失时 compose 直接失败，不会静默用回静默配置）
+      - ${ALERTMANAGER_CONFIG_FILE:?必须提供 ALERTMANAGER_CONFIG_FILE（以 docker/alertmanager/alertmanager.yml 为底稿、填好 smtp/webhook 的副本）}:/etc/alertmanager/alertmanager.yml:ro
+      # 凭据文件目录（只读绑定；目录内容由部署环境的 secrets 机制提供，不入 git）
+      - ${ALERT_SECRETS_DIR:?必须提供 ALERT_SECRETS_DIR（存放 smtp 口令 / webhook token 文件的目录）}:/run/secrets:ro
