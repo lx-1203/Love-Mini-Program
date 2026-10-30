@@ -2,8 +2,9 @@
 
 本文件是 `docker/prometheus/rules/alert-rules.yml` 里所有 `runbook:` 字段的指向目标。
 
-> 历史说明：本仓原先有 `docs/DR/restore-procedure.md` 与 `docs/CI-CD.md` 两份手册，
-> 在提交 `aefd8a72`（2026-09-22）随 85 个文档一起被整体删除，而告警规则里的引用没同步，
+> 历史说明：本仓原先有两份手册，在提交 `aefd8a72`（2026-09-22）随 85 个文档一起被整体删除，
+> 需要回看原文时用 `git show aefd8a72^:docs/DR/restore-procedure.md` 与
+> `git show aefd8a72^:docs/CI-CD.md` 取回；而告警规则里的引用当时没同步，
 > 于是"照着 runbook 做"这句话在三个月里一直指向不存在的文件。现集中到本文件，
 > `tests/monitoring-wiring.spec.mjs` 会校验每条 `runbook:` 的目标真实存在。
 

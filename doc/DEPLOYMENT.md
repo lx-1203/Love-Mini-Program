@@ -387,7 +387,7 @@ docker compose exec backup /backup.sh
 
 > **安全提示**（P1.19）：docker-compose.yml 中所有密码字段使用 `${VAR:?error message}` 形式，未设置环境变量时 `docker compose up` 会失败（强制注入，无弱默认值兜底）。必填字段：`MYSQL_ROOT_PASSWORD` / `MYSQL_PASSWORD` / `REDIS_PASSWORD` / `JWT_SECRET` / `GRAFANA_ADMIN_PASSWORD`。
 
-> 数据库初始化详见下方「数据库初始化」小节；备份恢复详见「启动数据库备份」小节与 `docs/CI-CD.md` 第八章「数据备份与恢复」、`docs/DR/restore-procedure.md`。
+> 数据库初始化详见下方「数据库初始化」小节；备份恢复详见「启动数据库备份」小节与 `doc/RUNBOOKS.md#备份与恢复`。
 
 ### 镜像签名验证（P3-D.2）
 
@@ -596,7 +596,7 @@ docker compose exec redis redis-cli -a "$REDIS_PASSWORD" DBSIZE
 rclone sync ./backups remote:campus-love-backups/ --transfers 4
 ```
 
-更完整的灾难恢复流程见 `docs/DR/restore-procedure.md` 与 `docs/DR/DRP.md`。
+更完整的灾难恢复流程见 `doc/RUNBOOKS.md#备份与恢复` 与 `doc/RUNBOOKS.md#api-下线`。
 
 ## 域名与 SSL
 
@@ -756,7 +756,7 @@ server {
 
 ### Nginx 健康检查
 
-外层 Nginx 自身可用性可通过 `docs/TROUBLESHOOTING.md` 中的 `nginx -t` 与 `systemctl status nginx` 验证；后端服务健康检查由 Docker Compose healthcheck 与 Prometheus blackbox 探针负责。
+外层 Nginx 自身可用性可通过 `doc/RUNBOOKS.md#通用第一步` 中的 `nginx -t` 与 `systemctl status nginx` 验证；后端服务健康检查由 Docker Compose healthcheck 与 Prometheus blackbox 探针负责。
 
 ## 监控与告警
 
@@ -892,7 +892,7 @@ docker compose logs --since 7d api > api-logs-$(date +%Y%m%d).log
 ### 升级前检查
 
 1. **备份**：触发一次手动备份，确认 `./backups` 下有最新的 `.sql.gz` / `.rdb`
-2. **变更日志**：查阅 `CHANGELOG.md` 与 `docs/release-checklist.md`，确认本次升级范围
+2. **变更日志**：查阅 `CHANGELOG.md` 与 `README.md#发布窗口`，确认本次升级范围
 3. **镜像签名**（如启用 cosign）：验证新镜像签名
    ```bash
    cosign verify --key /etc/campus-love/cosign.pub $IMAGE_PREFIX/api:$TAG_NEW
@@ -956,7 +956,7 @@ docker compose up -d api
 
 ### 蓝绿部署 / 灰度发布
 
-详见 `docs/GRADUAL-RELEASE.md`：
+详见 `README.md#发布窗口`：
 
 - **蓝绿**：通过两套 docker-compose（`docker-compose.green.yml` / `docker-compose.blue.yml`）+ Nginx upstream 切换
 - **灰度**：按用户 ID hash 路由，逐步将流量从旧版本切到新版本（10% → 50% → 100%）
@@ -990,10 +990,11 @@ curl -sH "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/profile/me 
 
 1. 查看 Flyway 状态：`docker compose exec api ./mvnw flyway:info`
 2. 修复迁移脚本后重新运行：`docker compose exec api ./mvnw flyway:repair`
-3. 参考 `docs/DR/restore-procedure.md` 进行数据恢复
+3. 参考 `doc/RUNBOOKS.md#备份与恢复` 进行数据恢复
 
 ### 更多文档
 
-- 数据库恢复：`docs/DR/restore-procedure.md`
-- CI/CD 流程：`docs/CI-CD.md`
-- 发布检查清单：`docs/release-checklist-template.md`
+- 数据库恢复：`doc/RUNBOOKS.md#备份与恢复`
+- CI/CD 流程：`.github/workflows/ci.yml`
+- 发布检查清单：`README.md#发布窗口`（现行判定：CI Release Gate + `npm run test:release-gate`；
+  历史模板见 `git show aefd8a72^:docs/release-checklist-template.md`，该目录已在瘦身时下线）

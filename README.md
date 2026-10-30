@@ -260,7 +260,7 @@ pnpm --filter @campus-love/client run build:mp-weixin
 - `VITE_API_BASE_URL`：后端 API 基础地址（生产必须 https://）
 - `VITE_APP_VERSION`：应用版本号
 - `VITE_SENTRY_DSN`：Sentry 错误监控 DSN（可选）
-- `WX_APPID`：微信小程序 AppID（通过 `scripts/inject-wx-appid.mjs` 注入到 `manifest.json`）
+- `WX_APPID`：微信小程序 AppID（通过 `apps/client/scripts/inject-wx-appid.mjs` 注入到 `manifest.json`）
 
 ### 后端 API（apps/api）
 

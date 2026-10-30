@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 
 /**
  * 部署/构建文档与实现的一致性门（2026-10-25）。
@@ -75,23 +75,12 @@ console.log(`docs contract ok（client 命令 ${referenced.size} 条全部存在
  *
  * 起因：README「文档导航」列出 31 条 doc/docs 引用，其中 28 条指向的文件在
  * 提交 aefd8a72（2026-09-22）被整体删除，README 一直没同步，且没有任何门校验过
- * 「文档里写的路径是否真的存在」。本门把这条判点固化下来。
+ * 「文档里写的路径是否真的存在」。
+ *
+ * 2026-10-30（S0-3）：这条判点被下面的一般化门「全量 markdown 文档引用存在性门」
+ * 接管——它扫 README 之外的 doc/*.md 与 PR 模板，并额外校验 `#锚点`。
+ * 只查 README 的旧版可以覆盖到 DEPLOYMENT.md 之外的 25 条死链里的一条都不剩。
  */
-const readmeDocRefs = [...readme.matchAll(/`((?:docs|doc)\/[^`*<]+)`/giu)]
-  .map((m) => m[1].replace(/[，。、）)：:;\s]+$/u, ""));
-
-// 正向计数下限：正则失效时不能静默变成「0 条引用 ⇒ 全绿」。
-assert.ok(
-  readmeDocRefs.length >= 10,
-  `README 文档引用只解析到 ${readmeDocRefs.length} 条（<10），本门自身可能失效`,
-);
-
-for (const ref of readmeDocRefs) {
-  assert.ok(
-    existsSync(new URL(ref, root)),
-    `README 引用的文档路径不存在：${ref}（历史版本可用 git show aefd8a72^:${ref} 取回）`,
-  );
-}
 
 /**
  * Node 版本一致性门：.nvmrc ↔ CI setup-node ↔ 根 engines 三者必须指向同一主版本。
@@ -118,6 +107,144 @@ assert.ok(
 );
 
 console.log(
-  `docs contract ok（README 文档链接 ${readmeDocRefs.length} 条全部存在；`
-  + `node 主版本 ${nvmrc} 与 CI/engines 一致）`,
+  `docs contract ok（node 主版本 ${nvmrc} 与 CI/engines 一致）`,
+);
+
+/**
+ * 全量 markdown 文档引用存在性门（2026-10-30，S0-3）。
+ *
+ * <p>起因：2026-10-29 那轮修掉 28 条死链之后只给 README 加了校验，DEPLOYMENT/RUNBOOKS
+ * 等运维文档没人管——本轮复查时 `doc/DEPLOYMENT.md` 又查出 8 条指向 `docs/*` 的死链
+ * （含 `docs/release-checklist-template.md`、`docs/DR/*`），而且我昨天新建的
+ * `doc/RUNBOOKS.md` 自己也写了两条死链。`test:tracked-refs` 报「缺件=0」是因为它
+ * 只查 package.json 脚本、images.ts、CI 产物目录与孤儿脚本，从不解析 markdown 链接。
+ * 本门把「文档里反引号括起来的仓库路径必须真的存在」这条判点覆盖到全部运维文档。</p>
+ *
+ * <p>判点：①路径存在；②`xxx.md#锚点` 的锚点在目标文件里确有对应标题；
+ * ③`git show <ref>:<path>` 形式的历史取回说明不计入死链（那本来就是指路，
+ * 但写法必须带 git show，否则门看不见）。</p>
+ */
+
+/** 只有以仓库顶层目录开头的反引号片段才当路径处理，避免误伤 `/var/log`、`./backups` 等运行时路径。 */
+const DOC_REF_PREFIXES = [
+  "docs/", "doc/", "scripts/", "tests/", "tools/",
+  "docker/", "database/", "apps/", ".github/",
+];
+
+/**
+ * 历史记录类文档：正文写的是「当时存在」的路径（变更日志、起始设计基线），
+ * 把它们改写成 git show 取回说明会破坏可读性，也不属于运维入口。
+ * 该清单只允许收缩，不允许新增（下面有计数钉住）。
+ */
+const HISTORIC_DOC_FILES = new Set([
+  "doc/CHANGELOG.md",
+  "doc/detailed-design.md",
+  "doc/proposal.md",
+]);
+
+/** GitHub 风格标题锚点：小写、去掉标点（保留 CJK 与字母数字）、空格转连字符。 */
+function headingSlugs(markdownText) {
+  const slugs = new Set();
+  for (const m of markdownText.matchAll(/^#{1,6}\s+(.+?)\s*#*$/gmu)) {
+    slugs.add(
+      m[1]
+        .toLowerCase()
+        .replace(/`/gu, "")
+        .replace(/[^\p{L}\p{N}_ -]/u, "")
+        .replace(/\s/gu, "-"),
+    );
+  }
+  return slugs;
+}
+
+/** 从一段 markdown 里抽出「疑似仓库路径」的反引号片段。 */
+function extractDocRefs(text) {
+  const withoutRecovery = text.replace(/git\s+show\s+\S+:\S+/giu, "");
+  const refs = [];
+  for (const m of withoutRecovery.matchAll(/`([^`\n]+)`/gu)) {
+    for (const raw of m[1].split(/\s+/u)) {
+      const token = raw
+        .replace(/[.,;:!?、。，；：）)】》"'`]+$/u, "")
+        .replace(/:\d+$/u, "");
+      if (!DOC_REF_PREFIXES.some((p) => token.startsWith(p))) continue;
+      if (/[*<>{}|]/u.test(token)) continue;
+      // .env / .env.real 一类是运维自建的 gitignore 文件，仓库里本就不入库
+      if (/(^|\/)\.env([._-]|$)/u.test(token)) continue;
+      refs.push(token);
+    }
+  }
+  return refs;
+}
+
+// —— 本门自测：解析器必须能抓到一条真的不存在的引用，且不把合法写法当死链 ——
+const selfTestFixture = [
+  "合法路径：`doc/DEPLOYMENT.md`",
+  "死链：`scripts/__docs_contract_selftest_missing__.sh`",
+  "历史取回写法必须被跳过：`git show aefd8a72^:docs/CI-CD.md`",
+  "运维自建 env 文件跳过：`apps/client/.env.real`",
+  "通配符跳过：`docs/openapi/*.yaml`",
+  "运行时路径跳过：`/var/log/api.log`、`./backups`",
+].join("\n");
+assert.deepEqual(
+  extractDocRefs(selfTestFixture),
+  ["doc/DEPLOYMENT.md", "scripts/__docs_contract_selftest_missing__.sh"],
+  "文档引用解析与预期不符（多抓/漏抓都会让本门失效）",
+);
+assert.ok(
+  !existsSync(new URL("scripts/__docs_contract_selftest_missing__.sh", root)),
+  "自测负例必须真的不存在，否则「能变红」这条无从保证",
+);
+assert.ok(
+  headingSlugs("# 概览\n\n## 备份与恢复\n").has("备份与恢复")
+    && !headingSlugs("## 备份与恢复").has("不存在的锚点"),
+  "锚点解析失效：本门的 #锚点 校验不可信",
+);
+
+const docFiles = [
+  "README.md",
+  ".github/PULL_REQUEST_TEMPLATE.md",
+  ...readdirSync(new URL("doc/", root), { withFileTypes: true })
+    .filter((e) => e.isFile() && e.name.endsWith(".md"))
+    .map((e) => `doc/${e.name}`),
+].filter((f) => existsSync(new URL(f, root)));
+
+let refsChecked = 0;
+const deadPathRefs = [];
+const deadAnchorRefs = [];
+for (const file of docFiles) {
+  const text = readFileSync(new URL(file, root), "utf8");
+  if (HISTORIC_DOC_FILES.has(file)) continue;
+  for (const ref of extractDocRefs(text)) {
+    const hashAt = ref.indexOf("#");
+    const pathPart = hashAt === -1 ? ref : ref.slice(0, hashAt);
+    const anchor = hashAt === -1 ? "" : ref.slice(hashAt + 1);
+    refsChecked += 1;
+    if (!existsSync(new URL(pathPart, root))) {
+      deadPathRefs.push(`${file} -> ${ref}`);
+      continue;
+    }
+    if (anchor && pathPart.endsWith(".md")) {
+      const target = readFileSync(new URL(pathPart, root), "utf8");
+      if (!headingSlugs(target).has(anchor.toLowerCase())) {
+        deadAnchorRefs.push(`${file} -> ${ref}`);
+      }
+    }
+  }
+}
+
+// 正向计数下限：正则/清单失效时不能静默退化成「0 条 ⇒ 全绿」。
+assert.ok(
+  refsChecked >= 80,
+  `只解析到 ${refsChecked} 条文档引用（<80），本门自身可能失效`,
+);
+assert.ok(
+  HISTORIC_DOC_FILES.size <= 3,
+  `历史豁免文档已膨胀到 ${HISTORIC_DOC_FILES.size} 个，该清单只允许收缩`,
+);
+assert.deepEqual(deadPathRefs, [], `文档引用了不存在的路径：\n  ${deadPathRefs.join("\n  ")}`);
+assert.deepEqual(deadAnchorRefs, [], `文档引用的 #锚点 在目标文件里不存在：\n  ${deadAnchorRefs.join("\n  ")}`);
+
+console.log(
+  `docs contract ok（文档引用 ${refsChecked} 条路径与锚点全部可解析，`
+  + `覆盖 ${docFiles.length} 个 markdown，历史豁免 ${HISTORIC_DOC_FILES.size} 个文件）`,
 );
