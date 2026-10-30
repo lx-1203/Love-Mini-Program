@@ -26,6 +26,7 @@
     "test:e2e-types": "tsc -p tests/e2e/tsconfig.json --noEmit",
     "test:admin-write-gate": "node tests/admin-write-gate.spec.mjs",
     "test:admin-scope-leak": "node tests/admin-scope-leak.spec.mjs",
+    "test:audit-ratchet": "node tools/audit-prod-ratchet.mjs",
     "test:tz-ratchet": "node tests/tz-ratchet.spec.mjs",
     "test:openapi-coverage": "node tests/openapi-coverage.spec.mjs",
     "test:admin-credential": "node tests/admin-credential-gate.spec.mjs",

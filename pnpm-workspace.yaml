@@ -11,3 +11,10 @@ allowBuilds:
 
 overrides:
   "@vitejs/plugin-vue": 5.0.5
+  # S0-1b（2026-10-30）prod 审计面治理：以下三项是 vue/@vue 链上的传递依赖，
+  # 同主线内均为可直接替换的补丁版本（nanoid 3.3.x、postcss 8.5.x、source-map-js 1.x），
+  # 用范围条件只抬高「仍处在受影响区间」的解析结果，不动 vue 自身版本。
+  # 注：pnpm 10+ 的 overrides 只认本文件（root package.json 里的 pnpm.overrides 会被忽略）。
+  "nanoid@<3.3.20": "^3.3.20"
+  "postcss@<8.5.23": "^8.5.23"
+  "source-map-js@<1.2.2": "^1.2.2"

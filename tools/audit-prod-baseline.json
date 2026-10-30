@@ -1,0 +1,47 @@
+{
+  "_comment": [
+    "生产依赖 high/critical 豁免基线（tools/audit-prod-ratchet.mjs 消费）。",
+    "规则：新增一条必须在这里登记理由，且 CI 会因『未登记的 high/critical』失败；",
+    "某条修掉后若仍留在本清单里，CI 会因『基线未同步收缩』失败。清单只能变短，不能变长不变短。",
+    "critical 不在这里豁免——ci.yml 的 pnpm audit --prod --audit-level critical 直接硬失败。"
+  ],
+  "generatedAt": "2026-10-30",
+  "advisories": {
+    "1241259": {
+      "module": "@vue/server-renderer",
+      "severity": "high",
+      "vulnerable": "<3.5.42",
+      "arrivesVia": "apps/client > vue@3.4.21 > @vue/server-renderer",
+      "whyNotPatched": "修复只在 vue 3.5.42+。客户端 vue 锁 3.4.21：uni-app 3.0.0-alpha-1000920260525813 构建链与 vue 3.4 配套，且小程序端已做过保真回归（reports/verify 语料）。单独 override @vue/server-renderer 会让 vue 与它的 server renderer 版本错配——本项目无 SSR，风险低但会留下一个『装了却不被支持』的组合。",
+      "remediation": "随 uni-app 正式版对齐 vue ≥3.5.42 后一并解决；届时先跑 build:mp-weixin + 开发者工具真机回归再删本条。",
+      "exposureNote": "该 XSS 判点发生在 SSR 属性名拼接路径上；本仓 H5/小程序均为客户端渲染，产物不含服务端渲染调用。"
+    },
+    "1243637": {
+      "module": "@intlify/shared",
+      "severity": "high",
+      "vulnerable": "=9.14.5",
+      "arrivesVia": "apps/{client,admin} > vue-i18n@9.14.5 > @intlify/shared",
+      "whyNotPatched": "vue-i18n 9.x 的最后发布就是 9.14.5，本条没有 9.x 补丁版；修复只存在于 11.x（@intlify/* 同步跳大版本）。",
+      "remediation": "vue-i18n 9 → 11 的大版本迁移（legacy API 移除、消息编译行为变化），需两端 i18n 运行时回归后再删本条。",
+      "exposureNote": "escapeParameter/srcdo 相关 XSS 触发前提是模板里注入未转义内容；本仓文案均为自有中文常量（第一轮已下线英文版与语言切换入口）。"
+    },
+    "1243649": {
+      "module": "@intlify/core-base",
+      "severity": "high",
+      "vulnerable": "=9.14.5",
+      "arrivesVia": "apps/{client,admin} > vue-i18n@9.14.5 > @intlify/core-base",
+      "whyNotPatched": "同 1243637：随 vue-i18n 9.x 锁死，无 9.x 补丁版。",
+      "remediation": "同 1243637，随 vue-i18n 11 迁移一并清除。",
+      "exposureNote": "同 1243637。"
+    },
+    "1243657": {
+      "module": "vue-i18n",
+      "severity": "high",
+      "vulnerable": "=9.14.5",
+      "arrivesVia": "apps/{client,admin} > vue-i18n",
+      "whyNotPatched": "本仓声明 vue-i18n ~9.14.2，解析到 9.14.5（9.x 末版）。升到 11.4.16 是跨大版本。",
+      "remediation": "vue-i18n 11 迁移；迁移前先确认 client/admin 两侧没有依赖 legacy 模式 API。",
+      "exposureNote": "同 1243637。"
+    }
+  }
+}

@@ -100,9 +100,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # infra #49：依赖漏洞门禁（生产依赖，HIGH 及以上即失败）
-      - name: Audit dependencies
-        run: pnpm audit --prod --audit-level high
+      # infra #49：依赖漏洞门禁（生产依赖）
+      # S0-1b（2026-10-30）拆成两条，替代原先的 `pnpm audit --prod --audit-level high`：
+      # 那条命令在本仓当前必然红（uni-app alpha 锁 vue 3.4 + vue-i18n 9.x 无补丁版 ⇒ 4 条 high
+      # 无法用 overrides 干净解决），而一条常年红的门等于没有门——它的红会淹没其它所有信号。
+      # 处置方式不是 continue-on-error（那是拆门），而是：
+      #   ① critical 一律硬失败；
+      #   ② high 按 advisory id 逐条钉在 tools/audit-prod-baseline.json，新增即红、
+      #      修掉不收缩基线也红（豁免清单只能变短）。
+      - name: Audit dependencies (critical must be zero)
+        run: pnpm audit --prod --audit-level critical
+
+      - name: Audit high ratchet
+        run: npm run test:audit-ratchet
 
       # R4-00517：ESLint 门禁（产品代码：admin/client 源码 + 工具脚本；
       # 0 errors 即失败；warning 不阻塞——历史 style 债另项清理）
