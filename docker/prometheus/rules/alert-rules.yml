@@ -26,14 +26,14 @@ groups:
         annotations:
           summary: "API 服务不可用"
           description: "实例 {{ $labels.instance }} 已离线超过 5 分钟，请立即检查容器状态与日志。"
-          runbook: "docs/DR/restore-procedure.md#api-下线"
+          runbook: "doc/RUNBOOKS.md#api-下线"
 
       # API 健康检查端点异常
-      # 指标 spring_boot_health_status 由 micrometer 注册（Spring Boot 3 + actuator，
-      # apps/api/pom.xml 含 micrometer-registry-prometheus）；infra #26：表达式放宽为 > 0
-      # （gauge 在 DOWN 时为 1），并注明：若应用未暴露该指标则规则无数据、不触发
+      # 指标 app_health_status 由 apps/api/.../monitor/HealthMetrics.java 显式注册
+      # （按 status 标签各一条 gauge，命中的取 1）；2026-10-29 修正：原表达式引用的
+      # spring_boot_health_status 从未被任何代码注册，规则自建立起就没有数据源、永不触发。
       - alert: ApiHealthCheckFailed
-        expr: spring_boot_health_status{status="DOWN"} > 0
+        expr: app_health_status{status="DOWN"} > 0
         for: 2m
         labels:
           severity: critical
@@ -55,7 +55,7 @@ groups:
       #   annotations:
       #     summary: "Admin 后台不可用"
       #     description: "Admin 健康检查端点 http://admin:8080/healthz 探测失败超过 5 分钟，请检查 nginx 容器状态。"
-      #     runbook: "docs/DR/restore-procedure.md#admin-下线"
+      #     runbook: "doc/RUNBOOKS.md#admin-下线"
 
   # ---------- API 性能与延迟告警 ----------
   - name: api-performance
@@ -76,7 +76,7 @@ groups:
         annotations:
           summary: "API P99 响应时间过高"
           description: "URI {{ $labels.uri }} 的 P99 响应时间已达 {{ $value }}s，超过 2s 阈值，请检查慢 SQL / 缓存命中 / 第三方调用。"
-          runbook: "docs/CI-CD.md#性能问题排查"
+          runbook: "doc/RUNBOOKS.md#性能退化"
 
       # P95 响应时间 > 1 秒（连续 10 分钟，提示级别）
       - alert: ApiHighLatencyP95
@@ -123,7 +123,7 @@ groups:
         annotations:
           summary: "API 5xx 错误率过高"
           description: "URI {{ $labels.uri }} 5xx 错误率 {{ $value | humanizePercentage }}，超过 1% 阈值，请检查异常日志。"
-          runbook: "docs/CI-CD.md#错误率排查"
+          runbook: "doc/RUNBOOKS.md#错误率"
 
       # 4xx 错误率 > 5%（提示级别，可能是客户端误用）
       - alert: ApiHighClientErrorRate
@@ -155,7 +155,7 @@ groups:
         annotations:
           summary: "JVM 堆内存使用率过高"
           description: "实例 {{ $labels.instance }} 堆内存使用率 {{ $value | humanizePercentage }}，超过 85% 阈值，可能触发 OOM 或频繁 Full GC。"
-          runbook: "docs/DR/restore-procedure.md#jvm-oom"
+          runbook: "doc/RUNBOOKS.md#jvm-oom"
 
       # JVM 线程数 > 500（提示线程泄漏可能）
       - alert: JvmThreadsHigh
@@ -228,7 +228,7 @@ groups:
         annotations:
           summary: "磁盘使用率过高"
           description: "{{ $labels.mountpoint }} 磁盘使用率 {{ $value | humanizePercentage }}，超过 80% 阈值，请清理日志/备份/镜像。"
-          runbook: "docs/DR/restore-procedure.md#磁盘满"
+          runbook: "doc/RUNBOOKS.md#磁盘满"
 
       # 主机内存使用率 > 85%（连续 5 分钟）
       # 阈值依据：spec 中明确 "内存 > 85% 触发告警"
@@ -274,7 +274,7 @@ groups:
   #       annotations:
   #         summary: "微信 API 不可达"
   #         description: "微信 jscode2session 端点探测失败，登录可能受影响。"
-  #         runbook: "docs/DR/restore-procedure.md#第三方依赖故障"
+  #         runbook: "doc/RUNBOOKS.md#通用第一步"
   #
   #     # Agnes AI 探测失败
   #     - alert: AgnesApiUnreachable

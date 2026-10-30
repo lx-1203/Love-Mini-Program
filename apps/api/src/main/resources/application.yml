@@ -157,6 +157,13 @@ springdoc:
   paths-to-match: /api/v1/**,/api/ai/**
 
 app:
+  # 指标抓取来源白名单（CIDR / IP，逗号分隔；换行也可以）。
+  # 默认空 ⇒ /actuator/prometheus 仍要求 ROLE_ADMIN，行为与配置前一致（fail-closed）。
+  # Prometheus 抓取不带凭据，因此部署时必须把抓取方所在网段写进来，例如
+  # METRICS_SCRAPE_ALLOWLIST=172.16.0.0/12,10.0.0.0/8,192.168.0.0/16
+  # 判定只用 request.getRemoteAddr()，不读 X-Forwarded-For（该头可被客户端伪造）。
+  metrics:
+    scrape-allowlist: ${METRICS_SCRAPE_ALLOWLIST:}
   # 后台内容创作（官方小编代发）配置
   # compose-author-user-id：后台「发布内容」页发帖与上传配图所归属的官方小编 users.id。
   # 保持 0（未配置）时两个写端点返回 503 并给出中文指引——刻意不回退成当前登录管理员，

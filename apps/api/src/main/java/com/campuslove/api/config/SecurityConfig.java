@@ -48,6 +48,14 @@ public class SecurityConfig {
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
     /**
+     * 指标抓取来源白名单（CIDR / IP，逗号分隔），来自 {@code app.metrics.scrape-allowlist}
+     * （环境变量 {@code METRICS_SCRAPE_ALLOWLIST}）。空=不额外放行，见
+     * {@link MetricsScrapeAuthorizationManager}。
+     */
+    @Value("${app.metrics.scrape-allowlist:${METRICS_SCRAPE_ALLOWLIST:}}")
+    private String metricsScrapeAllowlist;
+
+    /**
      * CORS 允许的源列表，从配置 app.cors.allowed-origins 读取。
      *
      * <p>Task 0.6.2：配置项 key 从 {@code app.security.cors.allowed-origins}
@@ -174,6 +182,13 @@ public class SecurityConfig {
                 // Task 2.6.3：Actuator 端点鉴权 —— 仅 ADMIN 可访问完整端点；
                 // /actuator/health 公开（健康检查供负载均衡探测）
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                // 2026-10-29 监控断链修复：Prometheus 抓取 /actuator/prometheus 时没有凭据
+                // （docker/prometheus/prometheus.yml 的 campuslove-api job 不带 basic_auth），
+                // 原先整段 ADMIN-only 使抓取恒被拒 ⇒ 所有 API 指标无数据、ApiDown 长期误报。
+                // 改为「内网来源白名单」而非 permitAll：白名单为空时仍走 ADMIN-only 语义（fail-closed），
+                // 配置来源 METRICS_SCRAPE_ALLOWLIST（见 application.yml 的 app.metrics.scrape-allowlist）。
+                .requestMatchers(HttpMethod.GET, "/actuator/prometheus")
+                    .access(new MetricsScrapeAuthorizationManager(metricsScrapeAllowlist))
                 .requestMatchers("/actuator/**").hasRole("ADMIN")
                 // Task 0.3.1：/uploads/** 完全拒绝直接访问，强制走鉴权代理端点
                 // /api/v1/media/{userId}/{path}。原代码 permitAll 导致任意匿名用户可枚举/

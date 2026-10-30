@@ -11,8 +11,8 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
       "fieldConfig": {"defaults": {"unit": "ops", "custom": {"fillOpacity": 10}}},
       "targets": [
-        {"expr": "sum(rate(campuslove_auth_login_total{status=\"success\"}[5m]))", "legendFormat": "成功", "refId": "A"},
-        {"expr": "sum(rate(campuslove_auth_login_total{status=\"failed\"}[5m]))", "legendFormat": "失败", "refId": "B"}
+        {"expr": "sum(rate(auth_login_success_total[5m]))", "legendFormat": "成功", "refId": "A"},
+        {"expr": "sum(rate(auth_login_failure_total[5m]))", "legendFormat": "失败", "refId": "B"}
       ]
     },
     {
@@ -34,7 +34,7 @@
         }
       },
       "targets": [
-        {"expr": "sum(rate(campuslove_match_total{result=\"matched\"}[5m])) / sum(rate(campuslove_match_total[5m]))", "refId": "A"}
+        {"expr": "sum(rate(match_success_count_total[5m])) / sum(rate(match_swipe_total[5m]))", "refId": "A"}
       ]
     },
     {
@@ -44,7 +44,7 @@
       "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
       "fieldConfig": {"defaults": {"unit": "ops"}},
       "targets": [
-        {"expr": "sum(rate(campuslove_chat_messages_sent_total[5m]))", "refId": "A"}
+        {"expr": "sum(rate(chat_message_sent_total[5m]))", "refId": "A"}
       ]
     },
     {
@@ -54,7 +54,7 @@
       "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
       "fieldConfig": {"defaults": {"unit": "short"}},
       "targets": [
-        {"expr": "sum(rate(campuslove_ratelimit_rejected_total[5m])) by (endpoint)", "legendFormat": "{{endpoint}}", "refId": "A"}
+        {"expr": "sum by (uri) (rate(http_server_requests_seconds_count{status=\"429\"}[5m]))", "legendFormat": "{{uri}}", "refId": "A"}
       ]
     },
     {
@@ -85,27 +85,7 @@
         }
       },
       "targets": [
-        {"expr": "sum(cache_gets_hit_total) / (sum(cache_gets_hit_total) + sum(cache_gets_miss_total))", "refId": "A"}
-      ]
-    },
-    {
-      "title": "未处理举报数",
-      "type": "stat",
-      "datasource": {"type": "prometheus", "uid": "Prometheus"},
-      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 16},
-      "fieldConfig": {"defaults": {"unit": "short"}},
-      "targets": [
-        {"expr": "campuslove_reports_pending_total", "refId": "A"}
-      ]
-    },
-    {
-      "title": "未读反馈数",
-      "type": "stat",
-      "datasource": {"type": "prometheus", "uid": "Prometheus"},
-      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 16},
-      "fieldConfig": {"defaults": {"unit": "short"}},
-      "targets": [
-        {"expr": "campuslove_feedback_pending_total", "refId": "A"}
+        {"expr": "sum(rate(cache_gets_total{result=\"hit\"}[5m])) / sum(rate(cache_gets_total[5m]))", "refId": "A"}
       ]
     }
   ],

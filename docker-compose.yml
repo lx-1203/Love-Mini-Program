@@ -228,6 +228,13 @@ services:
       # 生产必须通过 .env 注入真实域名；默认值仅保留本地开发地址，
       # 不含示例生产域名，避免生产 .env 漏配时白名单混入无效 example.com 源（R4-00485/R4-02097）
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174,http://localhost:5177}
+      # ---------- 监控抓取 ----------
+      # Prometheus 的 campuslove-api job 不带凭据抓取 http://api:8080/actuator/prometheus，
+      # 而 SecurityConfig 对 /actuator/** 要求 ROLE_ADMIN —— 不配白名单则抓取恒被拒，
+      # 所有 API 指标（5xx/P99/JVM/HikariCP/登录/支付回调）无数据且 ApiDown 长期误报。
+      # 默认放行 docker 私有网段（api 与 prometheus 同一 app-net）；留空即回到 fail-closed。
+      # 宿主网段规划不同的，请在 .env 覆盖 METRICS_SCRAPE_ALLOWLIST。
+      METRICS_SCRAPE_ALLOWLIST: ${METRICS_SCRAPE_ALLOWLIST:-172.16.0.0/12,10.0.0.0/8,192.168.0.0/16}
       # ---------- AI ----------
       AGNES_API_KEY: ${AGNES_API_KEY:-}
       AGNES_API_BASE: ${AGNES_API_BASE:-https://api.agnes-ai.com/api}

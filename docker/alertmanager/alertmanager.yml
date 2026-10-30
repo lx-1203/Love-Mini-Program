@@ -26,6 +26,13 @@
 #       DEFAULT_WEBHOOK_URL                                →  默认归档 webhook
 #   未配置渠道时：critical 仅走钉钉 webhook（未配置时指向本地无效地址，
 #   投递失败重试并记录日志，可被运维感知）；warning 走 webhook 失败重试；
+#
+# ⚠ # NO-ALERT-CHANNEL-CONFIGURED
+#   截至本次修改，本文件里所有渠道的 url/smtp 仍是 localhost 占位或被注释：
+#   **没有任何一条告警能送到人手里**（默认 receiver 是 null-pager，直接静默丢弃）。
+#   监控"配了"不等于"会响"——这是 2026-10-29 第二轮排查确认的断链之一。
+#   接入真实渠道后要删掉上面这行哨兵；tests/monitoring-wiring.spec.mjs 会双向校验：
+#   哨兵在 ⇔ 渠道仍指向 localhost 占位。配置入口：DEFAULT_WEBHOOK_URL / SMTP_*（见 .env.example）。
 #   info 级别直接丢弃（见 null-pager）。
 # ============================================================
 
