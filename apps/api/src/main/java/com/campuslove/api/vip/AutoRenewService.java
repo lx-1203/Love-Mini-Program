@@ -12,6 +12,7 @@ import com.campuslove.api.wallet.InsufficientBalanceException;
 import com.campuslove.api.wallet.WalletService;
 import com.campuslove.api.wallet.WalletTransactionLog;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -87,6 +88,22 @@ public class AutoRenewService {
      */
     private static final int NO_CHARGE_AMOUNT_CENTS = 0;
 
+    /** 续费流水状态：失败。FAILED 走独立事务落库，见 {@link #writeBillingLog}。 */
+    private static final String STATUS_FAILED = "FAILED";
+
+    /**
+     * 续费结果状态：本周期已续费（幂等命中），未再次扣款、未再次顺延权益。
+     * 既不是成功续费也不是失败，扫描统计单独计入 skipped。
+     */
+    private static final String STATUS_SKIPPED = "SKIPPED";
+
+    /**
+     * 续费幂等键里的到期日精度（秒）：足够区分同一套餐的相邻周期，
+     * 又不至于因为写入时的毫秒截断而漂移。
+     */
+    private static final DateTimeFormatter RENEWAL_KEY_FORMAT =
+            DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
     private final UserRepository userRepository;
     private final VipBillingLogRepository vipBillingLogRepository;
     /**
@@ -154,7 +171,7 @@ public class AutoRenewService {
      * （失败不扣费）。订阅套餐无法按目录定价的用户同样留在「不扣款」一侧，
      * 直到其订阅数据被修正或下架套餐重新可售（fail-closed，不猜测金额）。</p>
      *
-     * @return 扫描结果汇总（scanned 扫描数 / renewed 续费成功数 / failed 失败数）
+     * @return 扫描结果汇总（scanned 扫描数 / renewed 续费成功数 / failed 失败数 / skipped 幂等跳过数）
      */
     public RenewScanResult runRenewScan() {
         List<User> users;
@@ -162,11 +179,12 @@ public class AutoRenewService {
             users = userRepository.findByAutoRenewEnabledTrue();
         } catch (DataAccessException e) {
             log.error("自动续费扫描查询用户失败：{}", e.getMessage());
-            return new RenewScanResult(0, 0, 0);
+            return new RenewScanResult(0, 0, 0, 0);
         }
         int scanned = 0;
         int renewed = 0;
         int failed = 0;
+        int skipped = 0;
         for (User user : users) {
             if (!isVipExpiringSoon(user.getId())) {
                 continue;
@@ -176,6 +194,12 @@ public class AutoRenewService {
                 RenewResultView result = self.renewVip(user.getId());
                 if ("SUCCESS".equals(result.status())) {
                     renewed++;
+                } else if (STATUS_SKIPPED.equals(result.status())) {
+                    // 本周期已扣过款：既不算新续费，也不算失败。skipped>0 说明并发/锁失效
+                    // 真实发生过，只是被幂等键拦住了——这是"避免了一次双扣"的证据。
+                    skipped++;
+                    log.info("自动续费扫描：用户 {} 本周期已续费，幂等跳过：orderNo={}",
+                            user.getId(), result.orderNo());
                 } else {
                     failed++;
                     log.info("自动续费扫描：用户 {} 续费未成功：status={}, message={}",
@@ -186,8 +210,9 @@ public class AutoRenewService {
                 log.warn("自动续费扫描：用户 {} 续费异常：{}", user.getId(), e.getMessage());
             }
         }
-        log.info("自动续费扫描完成：scanned={}, renewed={}, failed={}", scanned, renewed, failed);
-        return new RenewScanResult(scanned, renewed, failed);
+        log.info("自动续费扫描完成：scanned={}, renewed={}, failed={}, skipped={}",
+                scanned, renewed, failed, skipped);
+        return new RenewScanResult(scanned, renewed, failed, skipped);
     }
 
     /**
@@ -233,8 +258,9 @@ public class AutoRenewService {
      * @param scanned 进入续费窗口并尝试续费的用户数
      * @param renewed 续费成功数
      * @param failed  续费失败数（余额不足 / 异常）
+     * @param skipped 幂等跳过数（本周期已扣过款；&gt;0 说明并发或锁失效真实发生过）
      */
-    public record RenewScanResult(int scanned, int renewed, int failed) {
+    public record RenewScanResult(int scanned, int renewed, int failed, int skipped) {
     }
 
     /**
@@ -359,8 +385,9 @@ public class AutoRenewService {
      * 导致 VIP 时间被多次延长、用户被多次扣费。WalletService 内部还有悲观锁 +
      * 幂等键（order_id 唯一索引）+ 事务三重保障，即使锁失效也不会重复扣减。</p>
      *
-     * <p>幂等性：orderNo 作为 WalletService.deduct 的 orderId 参数，
-     * 重复调用同一 orderNo 会直接返回已处理结果，不会重复扣减。
+     * <p>幂等性：orderNo 是「用户 + 套餐 + 当前到期日」的确定性键（{@link #renewalOrderNo}），
+     * 作为 WalletService.deduct 的 orderId 参数，同一续费周期重复触发只扣一次；
+     * 扣款前还会用 SUCCESS 流水短路（{@link #STATUS_SKIPPED}），避免重放白送权益。
      * 未产生扣款的失败分支流水金额记 0（{@link #NO_CHARGE_AMOUNT_CENTS}），
      * 不再沿用任何硬编码续费价。</p>
      *
@@ -381,6 +408,9 @@ public class AutoRenewService {
         // R4-00317：锁是否已委托事务同步释放（afterCompletion 在事务提交/回滚后执行）。
         // 为 true 时 finally 不再主动释放，保证锁生命周期覆盖整个事务提交过程。
         boolean unlockAfterCommitRegistered = false;
+        // 临时订单号：仅用于「还没解析出续费目标」的失败分支流水（锁未获取、用户不存在、
+        // 未开启续费、目录不可定价），这些分支金额恒为 0、不触碰钱包扣费。
+        // 一旦目录解析成功，订单号立刻换成确定性幂等键（见步骤 3.5）。
         String orderNo = "RENW-" + UUID.randomUUID().toString().replace("-", "");
         // 本次实际扣款额（分）：目录解析成功前保持 0，保证异常分支流水不会伪造一个「续费价」
         int chargeCents = NO_CHARGE_AMOUNT_CENTS;
@@ -444,6 +474,22 @@ public class AutoRenewService {
                         "订阅套餐不在服务端可售目录，已拒绝续费");
             }
             chargeCents = target.plan().priceCents();
+
+            // 3.5 扣款幂等键确定性化（S1-2，2026-10-30）：一个续费周期只对应一个键。
+            //     原实现整个方法都用步骤 1 之前的 UUID 订单号，于是本类文档里
+            //     「重复调用同一 orderNo 会直接返回已处理结果」这条保障在续费链路上
+            //     从未成立：分布式锁一旦失效（30 秒持锁超时自动释放、Redis 重启、
+            //     扫描任务被重复触发），同一周期就会二次扣款并二次顺延 VIP。
+            //     续费成功必然把 vip_bills.period_end 推进到下一周期，所以下一轮扫描
+            //     自然换键，不会影响正常续费节奏。
+            orderNo = renewalOrderNo(userId, target.plan().planId(), target.bill().getPeriodEnd());
+            if (vipBillingLogRepository.existsByOrderNoAndStatus(orderNo, "SUCCESS")) {
+                // 短路必须在扣款之前：deduct 命中同 orderId 时只静默返回旧余额，
+                // 调用方无从分辨「重放」与「新扣款」，若继续往下走就会白送一个周期的权益。
+                log.info("自动续费幂等命中，本周期已续费，跳过：userId={}, orderNo={}", userId, orderNo);
+                return new RenewResultView(orderNo, NO_CHARGE_AMOUNT_CENTS, STATUS_SKIPPED,
+                        "本周期已续费，未重复扣款");
+            }
 
             // 4. 真实扣减用户钱包余额（Task 2 FIN-00003）
             //    WalletService 内部通过悲观锁 + 幂等键 + 事务保证扣减安全：
@@ -525,6 +571,26 @@ public class AutoRenewService {
         } catch (RuntimeException e) {
             log.warn("释放自动续费锁异常（不影响业务结果）：lockKey={}, error={}", lockKey, e.getMessage());
         }
+    }
+
+    /**
+     * 生成续费幂等键（S1-2）。
+     *
+     * <p>键由「用户 + 套餐 + 本次要顺延的当前到期日」三元组决定，与扣款次数无关：
+     * 同一周期内无论被触发多少次（并发、锁失效、任务重放）都落在同一个 orderId 上，
+     * 由 {@code wallet_transaction_log.order_id} 唯一索引挡下重复扣款；续费成功后
+     * period_end 前进到下一周期，键随之改变，正常续费节奏不受影响。</p>
+     *
+     * <p>长度控制在 {@code vip_billing_logs.order_no VARCHAR(64)} 之内：
+     * {@code RENW-<userId>-<planId>-<yyyyMMddHHmmss>}。</p>
+     *
+     * @param userId             用户 ID
+     * @param planId             目录套餐 ID
+     * @param currentPeriodEnd   当前订阅到期时间（续费前的 period_end）
+     * @return 续费订单号，同时作为钱包扣款的幂等 orderId
+     */
+    static String renewalOrderNo(Long userId, String planId, LocalDateTime currentPeriodEnd) {
+        return "RENW-" + userId + "-" + planId + "-" + currentPeriodEnd.format(RENEWAL_KEY_FORMAT);
     }
 
     /**
@@ -622,6 +688,34 @@ public class AutoRenewService {
      * @param status  状态 SUCCESS / FAILED
      */
     private void writeBillingLog(Long userId, String orderNo, int amount, String status) {
+        if (STATUS_FAILED.equals(status)) {
+            // 失败流水走独立事务：renewVip 的失败分支大多会 rethrow，主事务回滚会把
+            // "这一轮续费失败过"的证据一起抹掉，对账与告警都看不到。
+            // SUCCESS 不能这样处理——若顺延失败却留下 SUCCESS 流水，反而是更糟的假账。
+            failedLedgerProxy().writeFailedBillingLog(userId, orderNo, amount);
+            return;
+        }
+        doWriteBillingLog(userId, orderNo, amount, status);
+    }
+
+    /**
+     * 写"续费失败"流水（独立事务提交）。
+     *
+     * <p>必须由代理调用才生效，因此通过 {@link #self} 走一层；单测直连构造时代理缺失，
+     * 退化为随主事务（此时方法上的 @Transactional 本来也不生效，与本类其他路径一致）。</p>
+     */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public void writeFailedBillingLog(Long userId, String orderNo, int amount) {
+        doWriteBillingLog(userId, orderNo, amount, STATUS_FAILED);
+    }
+
+    /** 取代理对象；无代理时退回 this（见方法注释）。 */
+    private AutoRenewService failedLedgerProxy() {
+        return self != null ? self : this;
+    }
+
+    /** 流水落库本体（不改变调用方的事务边界）。 */
+    private void doWriteBillingLog(Long userId, String orderNo, int amount, String status) {
         try {
             VipBillingLog logEntry = new VipBillingLog();
             logEntry.setUserId(userId);

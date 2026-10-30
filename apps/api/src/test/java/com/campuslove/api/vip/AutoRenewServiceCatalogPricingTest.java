@@ -2,6 +2,7 @@ package com.campuslove.api.vip;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,7 +54,7 @@ import org.redisson.api.RedissonClient;
  * （订阅身份 = 最近一笔 SUCCESS 账单的 {@code plan_id} 快照，项目无订阅表且本次不加迁移）；
  * 空白/目录外/已下架一律 fail-closed——写 FAILED 流水、不产生任何钱包交易、不动账单；
  * 历史账单/订单的金额快照只读不写（仅顺延 {@code period_end}）；
- * 续费订单号仍走 {@code RENW-<uuid>} 唯一键幂等。</p>
+ * 续费订单号为 {@code RENW-<userId>-<planId>-<当前到期日>} 确定性幂等键（S1-2）。</p>
  *
  * <p>RED 证据（对修复前代码执行同一组断言）：月卡扣款 1990≠1800、
  * 季卡/年卡只顺延 30 天、目录外套餐照旧扣款 1990、目录外 planId 也能开启自动续费。</p>
@@ -339,8 +340,10 @@ class AutoRenewServiceCatalogPricingTest {
     /* ==================== 4. 幂等键与锁语义保持不变 ==================== */
 
     @Test
-    @DisplayName("续费订单号 RENW- 前缀唯一，且作为钱包 orderId 与流水 orderNo 同值（幂等键不变）")
-    void renewOrderIdIsUniqueAndSharedBetweenWalletAndLedger() {
+    @DisplayName("续费订单号是确定性周期键（无随机段），且作为钱包 orderId 与流水 orderNo 同值")
+    void renewOrderIdIsDeterministicAndSharedBetweenWalletAndLedger() {
+        // 桩返回同一笔订阅快照：第一次续费把 period_end 顺延 30 天，第二次的"当前到期日"
+        // 随之推进——这正是键的语义：一个周期一个键，周期换键。
         givenSubscription(subscriptionBill("monthly", 1800, 1));
 
         AutoRenewService.RenewResultView first = newService().renewVip(USER_ID);
@@ -350,8 +353,16 @@ class AutoRenewServiceCatalogPricingTest {
         verify(walletService, org.mockito.Mockito.times(2))
                 .deduct(eq(USER_ID), anyLong(), orderIdCaptor.capture(), anyString(), anyString());
         List<String> orderIds = orderIdCaptor.getAllValues();
-        assertTrue(orderIds.get(0).startsWith("RENW-"), "续费订单号前缀保持 RENW-，实际: " + orderIds.get(0));
-        assertTrue(!orderIds.get(0).equals(orderIds.get(1)), "两次续费必须使用不同订单号");
+        // S1-2（2026-10-30）：本断言原先要求"两次续费必须使用不同订单号"，靠的就是随机 UUID，
+        // 而那正是双扣的根因——orderId 唯一索引对每次新键形同虚设，锁一失效就重复扣款。
+        // 现键必须逐字可预测：RENW-<userId>-<planId>-<当前到期日>。
+        String keyPattern = "RENW-" + USER_ID + "-monthly-\\d{14}";
+        assertTrue(orderIds.get(0).matches(keyPattern),
+                "续费订单号必须是「用户+套餐+当前到期日」的确定性键，实际: " + orderIds.get(0));
+        assertTrue(orderIds.get(1).matches(keyPattern),
+                "续费订单号必须是「用户+套餐+当前到期日」的确定性键，实际: " + orderIds.get(1));
+        assertNotEquals(orderIds.get(0), orderIds.get(1),
+                "上一轮已顺延 period_end，下一周期必须换新键，否则正常续费会被幂等拦死");
 
         ArgumentCaptor<VipBillingLog> logCaptor = ArgumentCaptor.forClass(VipBillingLog.class);
         verify(vipBillingLogRepository, org.mockito.Mockito.times(2)).save(logCaptor.capture());

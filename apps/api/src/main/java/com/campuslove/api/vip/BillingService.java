@@ -128,6 +128,12 @@ public class BillingService {
         int finalAmount = Math.max(0, baseAmount - discountAmount);
 
         // 3. 钱包扣费（折后价；orderId 唯一索引幂等防重复扣款）
+        //    这里的订单号必须每次新生成，不能像自动续费那样改成确定性键
+        //    （对比 AutoRenewService.renewalOrderNo）：重复购买同一套餐是受支持的生意
+        //    （grantVipExpiry 明确按 max(now, periodEnd)+days 顺延权益），若同键重入，
+        //    WalletService.deduct 只会静默返回旧余额，调用方无从分辨"重放"与"新扣款"，
+        //    于是变成不扣款白拿一个周期 VIP。防双击重复扣款靠 BillingController.purchase
+        //    上的 @RateLimit（60 秒 1 次/用户+套餐），而不是靠幂等键。
         String orderNo = "VIP-PURCHASE-" + UUID.randomUUID().toString().replace("-", "");
         Long balanceAfter = null;
         if (finalAmount > 0) {

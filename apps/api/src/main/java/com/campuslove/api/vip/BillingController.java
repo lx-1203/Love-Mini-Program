@@ -227,6 +227,16 @@ public class BillingController {
      */
     @PostMapping("/purchase")
     @FeatureSwitch(FeatureSwitchKeys.COMMERCE_VIP)
+    // 2026-10-30：按 (用户, 套餐) 限流，堵住"双击=两次真实扣款"。
+    // 客户端在未显式设置 Idempotency-Key 时会为每个请求现生成一个（apps/client
+    // src/services/http.ts:279-280 的口径就是"双击=两次操作"），而本端点的 orderId
+    // 又是每次新 UUID（BillingService.purchaseVip），所以两次点击会各自扣款一次、
+    // 各自顺延一次。钱包余额是用户资产，这里按 60 秒 1 次/用户+套餐收紧：
+    // 误点的第二次立即 429，真想买第二次（续期）等一分钟即可，不构成业务阻碍。
+    @com.campuslove.api.ratelimit.RateLimit(
+            capacity = 1,
+            refillTokens = 1.0 / 60.0,
+            key = "T(com.campuslove.api.config.SecurityUtils).getCurrentUserId() + ':' + #request.planId()")
     @PreAuthorize("hasRole('USER')")
     public BillingService.PurchaseResultView purchase(@Valid @RequestBody VipPurchaseRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
