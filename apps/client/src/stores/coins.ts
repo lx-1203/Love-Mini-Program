@@ -73,19 +73,22 @@ export const UNLOCK_RELATED_TYPE: Record<UnlockScene, string> = {
 };
 
 /**
- * 生成解锁幂等 orderId（单一真相源，R4-00195）。
+ * 生成解锁 orderId（自 2026-10-30 起仅作日志/兼容用途，不再是幂等键）。
  *
- * 按后端契约规范生成（WalletController Javadoc：`UNLOCK-{scene}-{targetUserId}`），
- * 后端以 orderId 唯一索引去重，重复解锁不重复扣费。
+ * 后端契约变更：`/wallet/deduct` 的幂等键已改为服务端派生的
+ * `UNLOCK-{relatedType}-{userId}-{relatedId}`（见 WalletController.deriveOrderId），
+ * 客户端传来的 orderId 不再参与计算。原因是 wallet_transaction_log.order_id 是
+ * **全局**唯一索引，而本函数旧格式不含 userId —— 用户 A 解锁过 T 之后，
+ * 用户 B 解锁同一个 T 会命中 A 的流水并被拒（400 "orderId 已存在但归属用户不一致"），
+ * 等于同一目标只有第一个人能付费解锁。
  *
- * 修复（R4-00195）：likes.ts 的 unlockUser 原先直写 `unlock-{type}-{userId}` 头，
- * 与 coins.spend 的 `UNLOCK-{scene}-{targetId}` 两套幂等键并存，同一解锁行为
- * 从不同入口调用会生成不同幂等键（重复解锁/双扣风险难排查）。现统一收敛为
- * 本函数，全部解锁入口（/wallet/unlock 与 /wallet/deduct）共用同一键体系。
+ * 保留本函数的理由：/wallet/unlock 与 /wallet/deduct 两条入口此前各自手写键格式，
+ * 收敛成一个函数便于日志对账；若将来后端恢复"客户端提供幂等键"的契约，
+ * 键格式必须包含当前用户 id，否则上述跨用户碰撞会复发。
  *
  * @param scene 解锁场景
  * @param targetId 目标业务 ID（如目标用户 ID）
- * @returns 幂等 orderId（如 `UNLOCK-LIKES-2003`）
+ * @returns orderId（如 `UNLOCK-LIKES-2003`）
  */
 export function buildUnlockOrderId(scene: UnlockScene, targetId: string | number): string {
   return `UNLOCK-${scene}-${String(targetId)}`;

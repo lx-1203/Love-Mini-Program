@@ -432,8 +432,13 @@ public class WalletController {
      * 幂等：Idempotency-Key 请求头 + 服务层 orderId 唯一索引兜底，
      * 同一业务扣费（orderId 相同）重复调用不重复扣钱。</p>
      *
-     * <p>调用方约定：orderId 建议为 {@code UNLOCK-{scene}-{targetUserId}}，
-     * scene ∈ MESSAGE / VISITORS / LIKES / WHISPER；余额不足返回
+     * <p><b>orderId 由服务端派生（2026-10-30）</b>：形如
+     * {@code UNLOCK-{relatedType}-{userId}-{relatedId}}，请求体里的 {@code orderId}
+     * 字段仅作日志/兼容用途，<b>不参与</b>幂等键计算。原契约
+     * （{@code UNLOCK-{scene}-{targetUserId}}，由客户端生成）存在跨用户碰撞缺陷：
+     * order_id 是全局唯一索引，键里没 userId 时"A 解锁过 T"会让 B 解锁同一 T 直接失败。</p>
+     *
+     * <p>scene 取值 {@code MESSAGE / VISITORS / LIKES / WHISPER}；余额不足返回
      * {@link InsufficientBalanceException}（HTTP 409，见全局异常处理）。</p>
      *
      * <p><b>服务端定价（2026-10-05）</b>：客户端自带 amountCents 不可信任（可被改包
@@ -469,12 +474,41 @@ public class WalletController {
                             + "clientAmount={}, serverPrice={}",
                     userId, request.relatedType(), request.amountCents(), serverPrice);
         }
-        String orderId = request.orderId() != null && !request.orderId().isBlank()
-                ? request.orderId()
-                : "UNLOCK-" + UUID.randomUUID();
+        // 2026-10-30：幂等键一律由服务端派生并强制含 userId，客户端 orderId 不再参与扣费键。
+        // 原实现直接采信客户端传来的 orderId，而 wallet_transaction_log.order_id 是**全局**唯一索引：
+        // apps/client 生成的 `UNLOCK-{scene}-{targetId}` 不含 userId，于是用户 A 解锁过 T 之后，
+        // 用户 B 解锁同一个 T 会命中 A 的流水，被 WalletServiceImpl 判为
+        // "orderId 已存在但归属用户不一致" 抛 400 ⇒ 同一目标只有第一个人能付费解锁。
+        // 服务端同类缺陷 2026-10-05 已在 RealWalletUnlockService 修过（键含 userId），
+        // 这里补齐客户端直连这条路。
+        String orderId = deriveOrderId(userId, request.relatedType(), request.relatedId());
         Long balanceAfter = walletService.deduct(userId, serverPrice, orderId,
                 request.relatedType(), request.relatedId());
         return new WalletDeductView(balanceAfter, serverPrice, orderId);
+    }
+
+    /**
+     * 派生扣费幂等键：{@code UNLOCK-{relatedType}-{userId}-{relatedId}}。
+     *
+     * <p>两条约束缺一不可：</p>
+     * <ul>
+     *   <li><b>必须含 userId</b> —— 否则不同用户在唯一索引上互相占位（就是上面的缺陷）；</li>
+     *   <li><b>必须确定性</b>（同一用户重复提交同一目标得到同一个键）—— 否则客户端重试会重复扣钱。</li>
+     * </ul>
+     *
+     * <p>没有业务 relatedId 时无法构造确定性键，退化为一次性随机键：宁可让调用方重试时
+     * 多一次扣费风险（仍由 @Idempotent 的头级幂等兜住），也不能造出跨用户碰撞的键。</p>
+     *
+     * @param userId     当前用户 ID（取自 JWT，不接受客户端传入）
+     * @param relatedType 扣费业务类型（已在客户端白名单内）
+     * @param relatedId   业务目标 ID，可空
+     * @return 服务端权威幂等键
+     */
+    static String deriveOrderId(Long userId, String relatedType, String relatedId) {
+        if (relatedId == null || relatedId.isBlank()) {
+            return "DEDUCT-" + userId + "-" + UUID.randomUUID();
+        }
+        return "UNLOCK-" + relatedType + "-" + userId + "-" + relatedId;
     }
 
     /**
@@ -527,7 +561,8 @@ record WalletDeductView(
  *
  * @param amountCents 扣减金额（分，1 ~ 100_000_000）。2026-10-05 起为<b>建议值</b>：
  *                    服务端按 relatedType 查价格目录定价，与定价不符时以服务端为准
- * @param orderId     幂等订单号（建议 UNLOCK-{scene}-{targetUserId}，可空，空则服务端生成）
+ * @param orderId     客户端自报的订单号（2026-10-30 起<b>不参与</b>幂等键计算，
+ *                    实际键由服务端 {@link WalletController#deriveOrderId} 派生并含 userId）
  * @param relatedType 关联业务类型（MESSAGE_UNLOCK / VISITORS_UNLOCK / LIKES_UNLOCK / WHISPER_UNLOCK）
  * @param relatedId   关联业务实体 ID（如目标用户 ID，可空）
  */
