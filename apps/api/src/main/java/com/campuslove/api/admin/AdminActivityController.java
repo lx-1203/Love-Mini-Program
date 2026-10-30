@@ -196,9 +196,12 @@ public class AdminActivityController {
         activity.setScheduleText(req.scheduleText().trim());
         activity.setDescription(req.description().trim());
         activity.setCityName(normalize(req.cityName()));
-        // 数据隔离：校区管理员强制把活动归属设为管辖校区，全局管理员使用请求体中的校区
-        String scopedCampus = adminDataScope.getCurrentAdminCampusName();
-        activity.setCampusName(scopedCampus != null ? scopedCampus : normalize(req.campusName()));
+        // 数据隔离：校区管理员强制把活动归属设为管辖校区，全局管理员使用请求体中的校区。
+        // S2-2（2026-10-30）：这里原先写的是 `scopedCampus != null ? scopedCampus : normalize(...)`，
+        // 而 getCurrentAdminCampusName() 对空校区账号返回内部哨兵 __AUDITOR_NO_CAMPUS__（非 null），
+        // 于是哨兵被直接写进 activities.campus_name——活动对所有校区管理员都不可见，
+        // 也没人能在界面上改回来。归属解析集中到 resolveCampusForWrite：哨兵一律 403。
+        activity.setCampusName(adminDataScope.resolveCampusForWrite(normalize(req.campusName())));
         activity.setActivityDate(req.activityDate());
         ActivityStatus status = parseActivityStatus(req.status());
         activity.setStatus(status != null ? status : ActivityStatus.upcoming);

@@ -107,6 +107,45 @@ public class AdminDataScope {
     }
 
     /**
+     * 解析「允许写进业务表的归属校区」（S2-2，2026-10-30）。
+     *
+     * <p>不能用 {@link #getCurrentAdminCampusName()} 的返回值直接落库：那个方法在
+     * 空校区的 ADMIN / AUDITOR 情形返回内部哨兵 {@link #NO_CAMPUS_SCOPE}，作用是让<b>读</b>
+     * 查询收敛成空集。写路径照抄那句三元表达式，哨兵字符串就被写进了
+     * {@code activities.campus_name} / {@code shop_items.campus_name} —— 记录随即对所有
+     * 校区管理员不可见，也无人能从界面上把它改回来（改归属仍会走同一个错误分支）。</p>
+     *
+     * <p>规则集中在这里：哨兵作用域一律 403（fail-closed，绝不落库）；校区管理员一律写
+     * 自己的校区（与改造前一致，请求体里的校区名对其不生效）；只有超级管理员按请求体归属；
+     * 拿不到认证上下文时按最小权限拒绝——后台写接口都在 {@code @PreAuthorize} 之后，
+     * 走到那一步本身就是异常，不能退化成"超管语义"而放开任意校区写入。</p>
+     *
+     * @param requestedCampusName 请求体里的归属校区（仅对超级管理员生效）
+     * @return 允许落库的校区名（超管未指定时可为 null，表示全局/未归属）
+     * @throws OperationForbiddenException 当前账号没有可写的校区作用域
+     */
+    public String resolveCampusForWrite(String requestedCampusName) {
+        // 未认证走不到这里：SecurityUtils.getCurrentUserId() 自己就抛 401（fail-closed），
+        // 因此本方法只需要处理"已认证但作用域异常"的账号。
+        Long userId = SecurityUtils.getCurrentUserId();
+        String myCampus = resolveCampusName(userId);
+        if (NO_CAMPUS_SCOPE.equals(myCampus)) {
+            log.warn("写入归属校区被拒绝：userId={} 无管辖校区，内部哨兵不得落库", userId);
+            throw new OperationForbiddenException(ErrorMessages.CAMPUS_ADMIN_SCOPE_FORBIDDEN);
+        }
+        if (myCampus == null) {
+            // 超级管理员：按请求体归属（与改造前一致）
+            return requestedCampusName;
+        }
+        return myCampus;
+    }
+
+    /** 判断给定校区名是否为本类的内部哨兵（S2-2：写路径与门禁用它排除哨兵）。 */
+    public static boolean isNoCampusScope(String campusName) {
+        return NO_CAMPUS_SCOPE.equals(campusName);
+    }
+
+    /**
      * 判断当前管理员是否为超级管理员（SUPER_ADMIN）。
      *
      * @return true 表示当前管理员为超级管理员

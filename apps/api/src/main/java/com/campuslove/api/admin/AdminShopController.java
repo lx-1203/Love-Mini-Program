@@ -136,13 +136,11 @@ public class AdminShopController {
         item.setPublished(req.published() != null ? req.published() : true);
         item.setSortOrder(req.sortOrder() != null ? req.sortOrder() : 0);
 
-        // 数据隔离：校区管理员创建的商品强制归属其管辖校区
-        String myCampus = adminDataScope.getCurrentAdminCampusName();
-        if (myCampus != null) {
-            item.setCampusName(myCampus);
-        } else {
-            item.setCampusName(normalize(req.campusName()));
-        }
+        // 数据隔离：校区管理员创建的商品强制归属其管辖校区。
+        // S2-2（2026-10-30）：同 AdminActivityController——不能拿 getCurrentAdminCampusName()
+        // 的返回值直接落库，空校区账号的那句话返回的是内部哨兵字符串，会被写进
+        // shop_items.campus_name。改走 resolveCampusForWrite（哨兵 403，绝不落库）。
+        item.setCampusName(adminDataScope.resolveCampusForWrite(normalize(req.campusName())));
 
         LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
         item.setCreatedAt(now);
