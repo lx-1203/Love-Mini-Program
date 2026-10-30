@@ -1,0 +1,34 @@
+-- ============================================================
+-- 迁移：为 promo_code_usages 添加 use_count（单用户累计使用次数）
+-- ============================================================
+-- 背景（2026-10-30）：
+--   promo_codes.max_uses_per_user 对外承诺「同一用户对一个码可用多次」，
+--   但本表建表时（V2026.07.25.0003）声明了
+--     UNIQUE KEY uk_promo_code_usages (promo_code_id, user_id)
+--   ——结构上「每个 (码, 用户) 只能有一行」。而 PromoCodeService.redeem 此前
+--   每次兑换都 INSERT 一行，于是 max_uses_per_user > 1 的码在第二次兑换时
+--   必然撞该唯一键，抛 DataIntegrityViolationException，被服务层
+--   catch (DataAccessException) 兜住后转成 HTTP 500「优惠码兑换失败，请稍后重试」。
+--   即：多用途码从来不可用。
+--
+-- 修复方向（聚合行，不新增行）：
+--   同一 (码, 用户) 的多次使用在本行上累加，use_count 即累计使用次数，
+--   discount_amount 为累计折扣金额；服务层用
+--   findByPromoCodeIdAndUserId(...).useCount 与 max_uses_per_user 比较，
+--   不再用 COUNT(*) 数行（数行永远 ≤ 1，多用途码的上限校验形同虚设）。
+--
+-- 回填口径：
+--   存量行 DEFAULT 1 是正确值而非近似值——uk_promo_code_usages 使这些行
+--   结构上不可能代表超过一次的使用（第二次插入根本落不了库），
+--   故每行恰好对应「用过一次」。
+--
+-- 字段说明：
+--   * use_count：INT NOT NULL DEFAULT 1，累计使用次数（>=1）
+--   * used_at 保持「首次使用时间」语义，后续使用不回写（实体 updatable=false）
+--
+-- 回滚（手动执行，Flyway 不自动回滚）：
+--   ALTER TABLE promo_code_usages DROP COLUMN use_count;
+-- ============================================================
+
+ALTER TABLE promo_code_usages
+    ADD COLUMN use_count INT NOT NULL DEFAULT 1 COMMENT '累计使用次数（每 (码,用户) 一个聚合行，多用途码在此累加）' AFTER discount_amount;

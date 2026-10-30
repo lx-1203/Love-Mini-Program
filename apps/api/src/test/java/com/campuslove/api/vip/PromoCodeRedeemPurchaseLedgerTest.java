@@ -119,11 +119,23 @@ class PromoCodeRedeemPurchaseLedgerTest {
             promo.setUsedCount(promo.getUsedCount() + 1);
             return 1;
         });
-        when(promoCodeUsageRepository.countByPromoCodeIdAndUserId(any(), any())).thenAnswer(inv ->
-                (long) usages.size());
+        // 内存态 promo_code_usages：uk_promo_code_usages 使 (码, 用户) 只有一行，
+        // 单用户已用次数取聚合行的 use_count（不再是行数）
+        when(promoCodeUsageRepository.findByPromoCodeIdAndUserId(any(), any())).thenAnswer(inv -> {
+            Long promoCodeId = inv.getArgument(0);
+            Long userId = inv.getArgument(1);
+            return usages.stream()
+                    .filter(u -> u.getPromoCodeId().equals(promoCodeId) && u.getUserId().equals(userId))
+                    .findFirst();
+        });
+        // save 语义模拟 upsert：id 为空 = 首次插入（新增一行），
+        // id 非空 = 更新既有聚合行（不得新增行）
         when(promoCodeUsageRepository.save(any(PromoCodeUsage.class))).thenAnswer(inv -> {
             PromoCodeUsage usage = inv.getArgument(0);
-            usages.add(usage);
+            if (usage.getId() == null) {
+                usage.setId((long) usages.size() + 1);
+                usages.add(usage);
+            }
             return usage;
         });
 

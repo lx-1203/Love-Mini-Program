@@ -16,14 +16,19 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /**
  * 任务领取记录实体，对应 task_claim 表（3-J 任务与积分，Flyway V2026.08.10.0024）。
  *
- * <p>领取语义：</p>
+ * <p>领取语义（S2-4，2026-10-30 修订）：claim_date 现为 NOT NULL，
+ * 每日与一次性任务都写「业务时区的今天」（迁移 V2026.10.30.0002）。</p>
  * <ul>
- *   <li>每日任务（daily-checkin）：claimDate = 当日，(user_id, task_code, claim_date)
- *       唯一约束防同日重复领取；次日可再领</li>
- *   <li>一次性任务（complete-profile / first-post / campus-verify）：
- *       claimDate = null，应用层校验「同一任务只可领取一次」
- *       （MySQL 唯一索引允许多个 NULL，故由服务层先查后写兜底）</li>
+ *   <li>每日任务（daily-checkin）：(user_id, task_code, claim_date) 唯一约束挡掉同日重复领取；
+ *       次日换日期，可再领</li>
+ *   <li>一次性任务（complete-profile / first-post / campus-verify）：同样写当日日期，
+ *       因此<b>同日重复领取由数据库挡下</b>；跨天的「一生只领一次」仍依赖服务层
+ *       existsByUserIdAndTaskCode 先查后写——那条路径没有加锁，午夜竞态理论上仍可双发，
+ *       彻底方案（对 user/task 行加悲观锁或做生命周期唯一键）另列待办</li>
  * </ul>
+ *
+ * <p>原先一次性任务写 NULL：MySQL 唯一索引视多个 NULL 互不相等，那把唯一键对一次性任务
+ * 完全不起作用，双发双扣是实测可发生的（不是潜在风险）。</p>
  */
 @Entity
 @EntityListeners(AuditingEntityListener.class)
@@ -45,8 +50,8 @@ public class TaskClaim {
     @Column(name = "task_code", nullable = false, length = 32)
     private String taskCode;
 
-    /** 领取日期：每日任务=当日；一次性任务=NULL */
-    @Column(name = "claim_date")
+    /** 领取日期：每日与一次性任务都写业务时区的当日（列已 NOT NULL，见类注释） */
+    @Column(name = "claim_date", nullable = false)
     private LocalDate claimDate;
 
     /** 领取时间 */

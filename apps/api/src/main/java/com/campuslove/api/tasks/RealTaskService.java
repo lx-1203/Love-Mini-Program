@@ -36,7 +36,11 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>奖励发放：walletService.recharge 入「交友币钱包」（1 积分 = 1 分），
  * 与签到奖励同一账本；领取记录 task_claim 先查后写 +
- * (user_id, task_code, claim_date) 唯一约束防重复领取。</p>
+ * (user_id, task_code, claim_date) 唯一约束防同日重复领取。
+ * claim_date 自 Flyway V2026.10.30.0002 起对四类任务一律写业务时区当日（非空）——
+ * 该列曾允许 NULL，而 MySQL 唯一索引把 NULL 视为互不相同，
+ * 使一次性任务的重复领取护栏形同虚设；一次性任务「终身一次」的语义
+ * 由不按日期分片的 existsByUserIdAndTaskCode 继续兜底。</p>
  */
 @Profile("real")
 @Service
@@ -137,7 +141,12 @@ public class RealTaskService implements TaskService {
         TaskClaim claim = new TaskClaim();
         claim.setUserId(userId);
         claim.setTaskCode(taskCode);
-        claim.setClaimDate(def.daily ? today : null);
+        // claim_date 一律落业务时区当日（与上面防重查询用的 today 同一口径，Flyway V2026.10.30.0002
+        // 起该列 NOT NULL）：旧写法对一次性任务写 NULL，而 InnoDB 唯一索引里 NULL 彼此不相等，
+        // uk_task_claim_user_code_date 对一次性任务完全不设防，并发双击可重复入账发奖。
+        // 一次性任务的「终身一次」仍由第 2 步 existsByUserIdAndTaskCode（不按日期分片）做主校验，
+        // 本列非空后唯一键额外补上「同日并发重复领取」的数据库护栏。
+        claim.setClaimDate(today);
         claimRepository.saveAndFlush(claim);
 
         // 4. 发放奖励入「交友币钱包」（1 积分 = 1 分，与签到同一账本）

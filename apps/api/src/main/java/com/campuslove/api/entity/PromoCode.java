@@ -74,9 +74,12 @@ public class PromoCode {
      * 单用户最大使用次数。
      *
      * <p>Task 12.4（REAUDIT-REPORT-100+ 编号 41）：限制同一用户对同一优惠码的使用次数。
-     * 默认 1（即同一用户只能用一次），管理员可在创建/编辑优惠码时调整。
-     * 兑换时通过 {@code SELECT COUNT(*) FROM promo_code_usages WHERE promo_code_id = ? AND user_id = ?}
-     * 校验当前用户已使用次数 &lt; maxUsesPerUser 才允许继续。</p>
+     * 默认 1（即同一用户只能用一次），管理员可在创建/编辑优惠码时调整。</p>
+     *
+     * <p>S2-4（2026-10-30）：校验读的是 promo_code_usages 该行的 {@code use_count}
+     * 累计值，不再是 {@code COUNT(*)}。因为 {@code uk_promo_code_usages(promo_code_id, user_id)}
+     * 让本表<b>一人一码只有一行</b>，用行数当次数会恒等于 1——于是 maxUsesPerUser&gt;1 的码
+     * 第二次核销既通过校验、又撞唯一键变成 500。现在多次使用累加在同一行的 use_count 上。</p>
      */
     @Column(name = "max_uses_per_user", nullable = false)
     private Integer maxUsesPerUser = 1;

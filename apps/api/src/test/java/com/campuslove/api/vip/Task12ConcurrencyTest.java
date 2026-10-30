@@ -163,9 +163,9 @@ class Task12ConcurrencyTest {
         // incrementUsedCount 始终返回 1
         when(promoCodeRepository.incrementUsedCount(promoCodeId)).thenReturn(1);
 
-        // countByPromoCodeIdAndUserId 返回 0（每个用户都未使用过）
-        when(promoCodeUsageRepository.countByPromoCodeIdAndUserId(eq(promoCodeId), anyLong()))
-                .thenReturn(0L);
+        // 聚合行查询返回空：100 个不同用户都还没有该码的用量行（已用次数 0）
+        when(promoCodeUsageRepository.findByPromoCodeIdAndUserId(eq(promoCodeId), anyLong()))
+                .thenReturn(Optional.empty());
 
         // 模拟 save：返回传入的 usage 对象
         when(promoCodeUsageRepository.save(any(PromoCodeUsage.class)))

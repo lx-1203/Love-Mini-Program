@@ -133,21 +133,21 @@ public class PromoCodeService {
      *   <li>原子扣减：UPDATE ... WHERE remaining_uses > 0，
      *       影响行数 0 则失败（优惠码已用完）</li>
      *   <li>累加 used_count（统计展示用）</li>
-     *   <li>保存使用记录（应用层 countByPromoCodeIdAndUserId 校验防重放）</li>
+     *   <li>保存使用记录（每 (码, 用户) 一个聚合行：首次插入，后续累加 use_count）</li>
      * </ol>
      *
      * <p>并发安全：</p>
      * <ul>
      *   <li>悲观锁保证同一优惠码同时只有一个事务在处理</li>
      *   <li>原子扣减作为兜底，即使悲观锁失效也能保证不超发</li>
-     *   <li>应用层 countByPromoCodeIdAndUserId 校验防止单用户超过 max_uses_per_user</li>
+     *   <li>应用层按聚合行 use_count 校验，防止单用户超过 max_uses_per_user</li>
      * </ul>
      *
      * @param code        优惠码字符串
      * @param userId      当前用户 ID
      * @param baseAmount  计算折扣的基础金额（分）
      * @return 兑换结果视图
-     * @throws IllegalArgumentException 优惠码不存在/已禁用/已过期/已用完/已使用过时抛出
+     * @throws IllegalArgumentException 优惠码不存在/已禁用/已过期/已用完/已达单用户上限时抛出
      */
     @Transactional
     public RedeemResultView redeem(String code, Long userId, Integer baseAmount) {
@@ -186,14 +186,34 @@ public class PromoCodeService {
             // 5. 累加 used_count（统计展示用，与 decrementRemaining 在同一事务内）
             promoCodeRepository.incrementUsedCount(promo.getId());
 
-            // 6. 保存使用记录（应用层 countByPromoCodeIdAndUserId 校验防重放）
-            PromoCodeUsage usage = new PromoCodeUsage();
-            usage.setPromoCodeId(promo.getId());
-            usage.setCode(promo.getCode());
-            usage.setUserId(userId);
-            usage.setDiscountAmount(discountAmount);
-            usage.setUsedAt(LocalDateTime.now(TimeZones.BUSINESS));
-            promoCodeUsageRepository.save(usage);
+            // 6. 保存使用记录：uk_promo_code_usages 使 (码, 用户) 结构上只有一行，
+            //    故多用途码在既有聚合行上「读-改-写」累加，而不是插入新行
+            //    （行已由步骤 1 的 SELECT ... FOR UPDATE 悲观锁保护，读-改-写无并发竞态）
+            PromoCodeUsage existing = promoCodeUsageRepository
+                    .findByPromoCodeIdAndUserId(promo.getId(), userId)
+                    .orElse(null);
+            if (existing == null) {
+                PromoCodeUsage usage = new PromoCodeUsage();
+                usage.setPromoCodeId(promo.getId());
+                usage.setCode(promo.getCode());
+                usage.setUserId(userId);
+                usage.setDiscountAmount(discountAmount);
+                usage.setUseCount(1);
+                // usedAt = 首次使用时间（列 updatable=false，后续使用不回写）
+                usage.setUsedAt(LocalDateTime.now(TimeZones.BUSINESS));
+                promoCodeUsageRepository.save(usage);
+            } else {
+                int accumulatedUses = normalizeUseCount(existing) + 1;
+                // discount_amount 是这一聚合行的累计折扣（本行代表该用户对该码的全部使用），
+                // 故此处按「累加」记账：报表若要单次平均折扣需用 discount_amount / use_count 还原。
+                int accumulatedDiscount =
+                        (existing.getDiscountAmount() == null ? 0 : existing.getDiscountAmount()) + discountAmount;
+                existing.setUseCount(accumulatedUses);
+                existing.setDiscountAmount(accumulatedDiscount);
+                promoCodeUsageRepository.save(existing);
+                log.info("优惠码聚合行累加：code={}, userId={}, useCount={}, totalDiscount={}",
+                        normalizedCode, userId, accumulatedUses, accumulatedDiscount);
+            }
 
             log.info("优惠码兑换成功：code={}, userId={}, discount={}, remainingUses={}",
                     normalizedCode, userId, discountAmount,
@@ -231,7 +251,7 @@ public class PromoCodeService {
      * <p>Task 12.4：原校验仅基于 used_count vs max_uses，存在并发竞态。
      * 现引入 remaining_uses（原子扣减用）和 max_uses_per_user（单用户上限）双重校验：
      * remaining_uses > 0 由原子扣减 SQL 兜底，此处仅做快速失败提示；
-     * 单用户使用次数通过 countByPromoCodeIdAndUserId 查询，超过 maxUsesPerUser 则拒绝。</p>
+     * 单用户使用次数通过聚合行 use_count 查询，超过 maxUsesPerUser 则拒绝。</p>
      *
      * @param promo  优惠码实体
      * @param userId 当前用户 ID
@@ -256,14 +276,41 @@ public class PromoCodeService {
         }
 
         // 检查单用户使用次数限制（maxUsesPerUser 默认 1）
+        // 已用次数取聚合行的 use_count（不是行数——本表每个 (码, 用户) 结构上只有一行）
         if (userId != null && promo.getMaxUsesPerUser() != null && promo.getMaxUsesPerUser() > 0) {
-            long userUsedCount = promoCodeUsageRepository
-                    .countByPromoCodeIdAndUserId(promo.getId(), userId);
+            long userUsedCount = usedCountOf(promo.getId(), userId);
             if (userUsedCount >= promo.getMaxUsesPerUser()) {
                 throw new IllegalArgumentException(
                         "您已达到该优惠码的使用次数上限（" + promo.getMaxUsesPerUser() + " 次）");
             }
         }
+    }
+
+    /**
+     * 读取某用户对某优惠码的累计使用次数（{@code promo_code_usages.use_count}）。
+     *
+     * <p>聚合行不存在表示从未使用过（0）；历史行在 Flyway V2026.10.30.0001
+     * 回填时统一记为 1，故 use_count 为 null 的兜底也按 1 处理。</p>
+     *
+     * @param promoCodeId 优惠码 ID
+     * @param userId      用户 ID
+     * @return 该用户对该码已使用的次数
+     */
+    private long usedCountOf(Long promoCodeId, Long userId) {
+        return promoCodeUsageRepository.findByPromoCodeIdAndUserId(promoCodeId, userId)
+                .map(this::normalizeUseCount)
+                .map(Integer::longValue)
+                .orElse(0L);
+    }
+
+    /**
+     * 聚合行的 use_count 兜底：null 按 1 处理（存量行只可能用过一次）。
+     *
+     * @param usage 聚合行
+     * @return 归一化后的使用次数
+     */
+    private int normalizeUseCount(PromoCodeUsage usage) {
+        return usage.getUseCount() == null ? 1 : usage.getUseCount();
     }
 
     /**

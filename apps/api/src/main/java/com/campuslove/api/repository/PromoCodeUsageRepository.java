@@ -13,27 +13,19 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface PromoCodeUsageRepository extends JpaRepository<PromoCodeUsage, Long> {
 
     /**
-     * 按优惠码 ID + 用户 ID 查询使用记录。
-     * <p>用于判断用户是否已使用过该优惠码，避免重复使用。</p>
+     * 按优惠码 ID + 用户 ID 查询使用记录（聚合行）。
+     *
+     * <p>唯一索引 {@code uk_promo_code_usages (promo_code_id, user_id)} 保证至多一行。
+     * Task 12.4（REAUDIT-REPORT-100+ 编号 41）单用户上限校验与兑换时的
+     * 「读-改-写」聚合都走本方法：已用次数取 {@code PromoCodeUsage.getUseCount()}，
+     * 而非行数（旧实现按 {@code COUNT(*)} 统计行数，在 max_uses_per_user &gt; 1 时
+     * 第二次兑换会插入第二行并撞唯一键，返回 HTTP 500）。</p>
      *
      * @param promoCodeId 优惠码 ID
      * @param userId      用户 ID
      * @return 使用记录（可选）
      */
     Optional<PromoCodeUsage> findByPromoCodeIdAndUserId(Long promoCodeId, Long userId);
-
-    /**
-     * 按优惠码 ID + 用户 ID 统计使用次数。
-     *
-     * <p>Task 12.4（REAUDIT-REPORT-100+ 编号 41）：用于支持 max_uses_per_user 限制。
-     * 兑换前查询当前用户对该优惠码的已使用次数，与 promo_codes.max_uses_per_user 比较，
-     * 超过则拒绝兑换。当 max_uses_per_user = 1 时退化为"是否已使用过"判断。</p>
-     *
-     * @param promoCodeId 优惠码 ID
-     * @param userId      用户 ID
-     * @return 已使用次数
-     */
-    long countByPromoCodeIdAndUserId(Long promoCodeId, Long userId);
 
     /**
      * 按用户 ID 查询使用记录列表，按使用时间倒序。
