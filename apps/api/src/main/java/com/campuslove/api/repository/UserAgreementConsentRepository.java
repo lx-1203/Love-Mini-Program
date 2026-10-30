@@ -21,4 +21,17 @@ public interface UserAgreementConsentRepository
      * @return true 表示已存在留痕记录
      */
     boolean existsByUserIdAndLegalVersionAndSource(Long userId, String legalVersion, String source);
+
+    /**
+     * 查询某用户的全部协议同意留痕（按同意时间升序）。
+     *
+     * <p>S2-5（2026-10-30）：用户侧「查阅、复制自己的个人信息」端点需要列出同意记录本身，
+     * 仅有 {@link #existsByUserIdAndLegalVersionAndSource} 的布尔判定不足以履行查阅权。
+     * 派生查询按 {@code user_id} 等值过滤——userId 传 null 时条件恒不成立（返回空列表），
+     * 不会退化成全表读取。</p>
+     *
+     * @param userId 用户 ID
+     * @return 同意留痕列表（无记录时为空列表）
+     */
+    java.util.List<UserAgreementConsent> findByUserIdOrderByAgreedAtAsc(Long userId);
 }

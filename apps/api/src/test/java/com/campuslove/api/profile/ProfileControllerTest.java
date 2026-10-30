@@ -15,19 +15,20 @@ class ProfileControllerTest {
 
     @Mock private ProfileService profileService;
     @Mock private UserRepository userRepository;
+    @Mock private PersonalDataService personalDataService;
 
     private ProfileController controller;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        controller = new ProfileController(profileService, userRepository);
+        controller = new ProfileController(profileService, userRepository, personalDataService);
     }
 
     @Test
     void constructor_shouldAcceptDependencies() {
         // Arrange & Act & Assert
-        assertNotNull(new ProfileController(profileService, userRepository));
+        assertNotNull(new ProfileController(profileService, userRepository, personalDataService));
     }
 
     @Test

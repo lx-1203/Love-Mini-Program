@@ -6,6 +6,7 @@ import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.dto.DtoMapper;
 import com.campuslove.api.dto.UserDto;
 import com.campuslove.api.entity.User;
+import com.campuslove.api.ratelimit.RateLimit;
 import com.campuslove.api.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,7 +21,10 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -59,10 +63,16 @@ public class ProfileController {
 
   private final ProfileService profileService;
   private final UserRepository userRepository;
+  /** S2-5（2026-10-30）：个人信息自助导出（PIPL 第 45 条查阅/复制权） */
+  private final PersonalDataService personalDataService;
 
-  public ProfileController(ProfileService profileService, UserRepository userRepository) {
+  public ProfileController(
+          ProfileService profileService,
+          UserRepository userRepository,
+          PersonalDataService personalDataService) {
     this.profileService = profileService;
     this.userRepository = userRepository;
+    this.personalDataService = personalDataService;
   }
 
   @GetMapping("/stats")
@@ -224,6 +234,76 @@ public class ProfileController {
   @PreAuthorize("hasRole('USER')")
   public ScheduleProfileView saveScheduleProfile(@Valid @RequestBody ScheduleProfileRequest request) {
     return profileService.saveScheduleProfile(request);
+  }
+
+  /**
+   * 查阅并复制本人全部个人信息（S2-5，PIPL 第 45 条）。
+   *
+   * <p><b>单一响应形态</b>：逻辑载荷恒为
+   * {@link PersonalDataExport}{@code （userId + generatedAt + categories[]），
+   * 每个类别是一张表 {@code {name, label, columns[], rows[][], truncated}}，
+   * 所有单元格一律渲染为字符串。差异只在渲染层：</p>
+   * <ul>
+   *   <li>{@code format=json}（缺省）：
+   *       {@code ApiResponse<PersonalDataExport>}，即
+   *       {@code {code, message, data:{userId, generatedAt, categories:[...]}, traceId}}；</li>
+   *   <li>{@code format=csv}：同一 categories 逐类别成块（{@code # 标题} 注释行 + 表头 + 数据行），
+   *       UTF-8 带 BOM，响应带 {@code Content-Disposition: attachment} 与
+   *       {@code text/csv; charset=UTF-8}。</li>
+   * </ul>
+   * <p>两种 format 承载的字段集合逐字一致，不存在「CSV 少几列」的合规缺口；
+   * 非法 format 走 {@link IllegalArgumentException} 由全局异常处理转 400。</p>
+   *
+   * <p><b>无参数化主体</b>：本方法不接受 userId/path 变量，导出对象只取
+   * {@link SecurityUtils#getCurrentUserId()}（未登录 401），从根上封死 IDOR。
+   * 归属过滤与脱敏口径见 {@link PersonalDataService}；未认证/越权行不会出现在结果里，
+   * 手机号/openid/真实姓名/学信码等为掩码值。</p>
+   *
+   * <p><b>重查询</b>：跨 20+ 张表聚合，按用户限流（突发 3 次，之后约 1 次/10 分钟），
+   * 服务侧只读事务 + 单类别 2000 行上限（超限置 {@code truncated=true}）。</p>
+   *
+   * @param format 输出格式：{@code json}（缺省）或 {@code csv}
+   * @return json 时为 {@code ResponseEntity<ApiResponse<PersonalDataExport>>}；
+   *     csv 时为 {@code ResponseEntity<byte[]>} 附件
+   */
+  @GetMapping("/personal-data")
+  @RateLimit(
+          capacity = 3,
+          refillTokens = 1.0 / 600.0,
+          key = "T(com.campuslove.api.config.SecurityUtils).getCurrentUserId()")
+  @Operation(summary = "导出我的个人信息",
+          description = "PIPL 第 45 条查阅/复制权：按登录主体聚合账号、资料、动态、评论、喜欢与匹配、"
+                  + "聊天消息（仅本人发出的行）、钱包与 VIP 账单、通知、签到、任务领取、协议同意与审计记录；"
+                  + "format=json（默认）或 csv。标识类字段脱敏输出，密码散列与令牌不外泄。",
+          operationId = "exportPersonalData")
+  @io.swagger.v3.oas.annotations.responses.ApiResponses({
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
+                  description = "导出结果（json 包装体或 csv 附件）",
+                  content = @Content(schema = @Schema(implementation = PersonalDataExport.class))),
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400",
+                  description = "format 取值非法", content = @Content),
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401",
+                  description = "未登录", content = @Content),
+          @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429",
+                  description = "超出导出频次限制", content = @Content)
+  })
+  public ResponseEntity<?> exportPersonalData(
+          @Parameter(in = ParameterIn.QUERY, description = "输出格式：json（默认）/ csv",
+                  example = "json")
+          @RequestParam(value = "format", defaultValue = "json") String format) {
+    PersonalDataExport export = personalDataService.exportForCurrentUser();
+    if ("csv".equalsIgnoreCase(format)) {
+      byte[] body = export.toCsv().getBytes(StandardCharsets.UTF_8);
+      String filename = "campuslove_personal_data_" + export.userId() + ".csv";
+      return ResponseEntity.ok()
+              .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+              .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+              .body(body);
+    }
+    if (!"json".equalsIgnoreCase(format)) {
+      throw new IllegalArgumentException("format 取值非法: " + format + ", 仅支持 json / csv");
+    }
+    return ResponseEntity.ok(ApiResponse.ok(export));
   }
 
   // ---- DTO 层接入 ----
