@@ -3,7 +3,10 @@ info:
   title: Campus Love - Village Community API
   version: 1.0.0
 servers:
-  - url: /api
+  # VillageController 的 @RequestMapping 前缀是 /api/v1/posts（不是 /api），
+  # 这里写 /api 会让任何按本文件生成客户端的代码少一层版本段。
+  - url: /api/v1
+    description: Versioned API gateway prefix
 paths:
   # ========== 帖子 ==========
   /posts:
@@ -16,7 +19,10 @@ paths:
           required: false
           schema:
             type: string
-            enum: [all, dating, study, life, activity, help]
+            # 取值来自 Post.PostCategory（entity/Post.java）；VillageController 用
+            # PostCategory.valueOf(category) 解析，传这里的假值会得到 400，
+            # 而按本文件生成的客户端会默认发 dating/study/life/help —— 全是无效分类。
+            enum: [all, interest, sincere, hometown, anonymous, latest, campus, activity]
             default: all
           description: Post category filter
         - in: query
@@ -477,7 +483,9 @@ components:
       type: object
       properties:
         id:
-          type: string
+          # PostSummaryView.java 的 id 是 Long（数据库 BIGINT 主键），不是字符串
+          type: integer
+          format: int64
         title:
           type: string
         summary:
@@ -486,7 +494,8 @@ components:
           $ref: '#/components/schemas/PostAuthor'
         category:
           type: string
-          enum: [dating, study, life, activity, help]
+          # 取值来自 Post.PostCategory 枚举（entity/Post.java）；原先这五个值与代码和库都不是一组
+          enum: [all, interest, sincere, hometown, anonymous, latest, campus, activity]
         tags:
           type: array
           items:
@@ -535,7 +544,8 @@ components:
           $ref: '#/components/schemas/PostAuthor'
         category:
           type: string
-          enum: [dating, study, life, activity, help]
+          # 取值来自 Post.PostCategory 枚举（entity/Post.java）；原先这五个值与代码和库都不是一组
+          enum: [all, interest, sincere, hometown, anonymous, latest, campus, activity]
         tags:
           type: array
           items:
@@ -596,7 +606,8 @@ components:
           maxLength: 5000
         category:
           type: string
-          enum: [dating, study, life, activity, help]
+          # 取值来自 Post.PostCategory 枚举（entity/Post.java）；原先这五个值与代码和库都不是一组
+          enum: [all, interest, sincere, hometown, anonymous, latest, campus, activity]
         tags:
           type: array
           items:

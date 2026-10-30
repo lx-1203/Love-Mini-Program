@@ -6,6 +6,10 @@ info:
     悄悄话（付费留言）模块。同一对用户 A↔B 最多 1 条有效；发送者每日 ≤5 条；
     幂等 clientRequestId；钱包扣费与创建同事务，创建失败自动退款（REFUNDED）。
     文案承诺：优先送达 / 直接进入 TA 的悄悄话。
+servers:
+  # WhisperController 的 @RequestMapping 是 /api/v1/whispers，本文件此前没有 servers。
+  - url: /api/v1
+    description: Versioned API gateway prefix
 paths:
   /whispers/send:
     post:

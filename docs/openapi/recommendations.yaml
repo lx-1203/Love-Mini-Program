@@ -3,7 +3,9 @@ info:
   title: Campus Love - Recommendations API
   version: 1.0.0
 servers:
-  - url: /api
+  # RecommendationController 的 @RequestMapping 是 /api/v1
+  - url: /api/v1
+    description: Versioned API gateway prefix
 paths:
   /daily-question/today:
     get:
