@@ -79,13 +79,6 @@
     }
   },
   "dependencies": {
-    "@dcloudio/types": "3.4.31",
-    "@dcloudio/uni-app": "3.0.0-alpha-1000920260525813",
-    "@dcloudio/uni-h5": "3.0.0-alpha-1000920260525813",
-    "@dcloudio/uni-h5-vue": "3.0.0-alpha-1000920260525813",
-    "@dcloudio/uni-mp-weixin": "3.0.0-alpha-1000920260525813",
-    "@dcloudio/uni-ui": "~1.5.12",
-    "@dcloudio/vite-plugin-uni": "3.0.0-alpha-1000920260525813",
     "@sentry-internal/browser-utils": "8.55.2",
     "@sentry-internal/feedback": "8.55.2",
     "@sentry-internal/replay": "8.55.2",
@@ -100,7 +93,14 @@
     "vue-i18n": "~9.14.2"
   },
   "devDependencies": {
+    "@dcloudio/types": "3.4.31",
+    "@dcloudio/uni-app": "3.0.0-alpha-1000920260525813",
     "@dcloudio/uni-components": "3.0.0-alpha-1000920260525813",
+    "@dcloudio/uni-h5": "3.0.0-alpha-1000920260525813",
+    "@dcloudio/uni-h5-vue": "3.0.0-alpha-1000920260525813",
+    "@dcloudio/uni-mp-weixin": "3.0.0-alpha-1000920260525813",
+    "@dcloudio/uni-ui": "~1.5.12",
+    "@dcloudio/vite-plugin-uni": "3.0.0-alpha-1000920260525813",
     "@vitejs/plugin-vue": "~5.0.0",
     "@vitest/coverage-v8": "~2.1.9",
     "@vue/test-utils": "~2.4.10",

@@ -123,8 +123,18 @@ const clientPackageJson = JSON.parse(
 );
 assert.equal(clientPackageJson.type, "module");
 assert.equal(clientPackageJson.dependencies.vue, "3.4.21");
-assert.ok(clientPackageJson.dependencies["@dcloudio/uni-app"]);
-assert.ok(clientPackageJson.dependencies["@dcloudio/uni-ui"]);
+// uni-app / uni-ui 是**构建期**依赖：产物由 vite 打包成自包含文件，运行时不从 node_modules 取。
+// 本断言的意图是"这两颗包必须仍在项目依赖里声明"（防止被误删），不是钉死它们必须在 prod 面。
+// 2026-10-29：把它们移到 devDependencies，让 `pnpm audit --prod` 只覆盖真实运行时依赖
+// （adm-zip / express / jimp 等高危 advisory 全部来自 @dcloudio 的工具链子依赖）。
+const declaredClientDeps = {
+  ...clientPackageJson.dependencies,
+  ...clientPackageJson.devDependencies,
+};
+assert.ok(declaredClientDeps["@dcloudio/uni-app"]);
+assert.ok(declaredClientDeps["@dcloudio/uni-ui"]);
+assert.ok(clientPackageJson.dependencies["@dcloudio/uni-app"] === undefined,
+  "uni-app 应留在 devDependencies：留在 dependencies 会把构建链 advisory 拉进 --prod 审计面");
 assert.ok(clientPackageJson.dependencies.pinia);
 assert.equal(typeof clientPackageJson.scripts["dev:h5:real"], "string");
 assert.equal(typeof clientPackageJson.scripts["build:h5:real"], "string");
