@@ -6,6 +6,22 @@
  *   2. 当后端不可达或处于 mock 模式时，回退到本地 JSON 文本，保证 UI 始终可展示
  *   3. 提供 5 分钟内存缓存 + 强制刷新接口，平衡流量与时效性
  *
+ * ─── 真相源（S2-5 合规结论，2026-10-30 复核并记录）───
+ *   后端 MySQL 表 `legal_document`（V2026.10.28.0001__create_legal_document.sql）
+ *   是法律文本的唯一正式真源：
+ *     - 读取链：GET /api/v1/config/legal → ConfigController → LegalDocumentService.list/getPublished
+ *       → legal_document（DB 优先，按 status='published' + effective_at 取最新）；
+ *     - 注册同意留痕的版本号同样取自该表
+ *       （AgreementConsentService → LegalDocumentService.currentVersion）；
+ *     - 后台法务可经 AdminLegalController 改文并发布新版本。
+ *   因此：本文件（以及它回退到的 i18n `legal.*` 文案）只是**展示兜底**，不具备约束力；
+ *   离线/mock/后端不可达时用户看到的文本可能与已发布正式版本不一致，这一点必须显式
+ *   保留版本号差异（兜底 version 固定为 'local-fallback'，正式版本形如 'v1.0.0'）。
+ *   后端 `LegalTextProvider` 的 Java 字面量是 DB 空表时的种子/兜底，由
+ *   LegalDocumentService 反向注入，不是第二真相源——请勿把它当作可独立编辑的文案来源。
+ *   待办（未在本次改动处理）：i18n zh-CN 的 `legal.*` 兜底文案与表内容需法务比对，
+ *   长期方向是让运行时 /v3/api-docs + legal_document 成为唯一暴露面、删掉本地副本。
+ *
  * 与 i18n 的关系：
  *   - 本地 fallback 文本使用 i18n key（legal.userAgreement / legal.privacyPolicy）；
  *     2026-10-29 英文版不上线，唯一语言资源为 zh-CN，非中文 locale 经 fallbackLocale 取中文

@@ -20,6 +20,15 @@ import org.springframework.util.StringUtils;
  *
  * <p>当前版本为后端内嵌静态文本；后续如需 CMS 在线更新，可替换为
  * 数据库驱动（参考 RealConfigService 的降级策略，内嵌文本作为兜底）。</p>
+ *
+ * <p><b>真相源澄清（S2-5，2026-10-30 复核）</b>：CMS 化其实已经落地——正式文本的唯一真源是
+ * {@code legal_document} 表（迁移 V2026.10.28.0001），读取链是
+ * {@code ConfigController -> LegalDocumentService.list/getPublished}（DB 优先），
+ * 注册同意版本也走 {@code LegalDocumentService.currentVersion}。本类的字面量只在两种情况下出现：
+ * 表为空时被 {@link LegalDocumentService} 当作 v1.0.0 种子写入，以及 DB 不可用时的兜底。
+ * 因此<b>不要</b>把本类改成"优先读表"——那会与 {@code LegalDocumentService} 形成循环依赖
+ * （后者正依赖本类做种子与兜底），方向是反的。改文案请改表（后台法务 CMS），
+ * 并同步客户端展示兜底 {@code apps/client/src/config/legal-texts.ts}（已注明后端为准）。</p>
  */
 @Component
 public class LegalTextProvider {

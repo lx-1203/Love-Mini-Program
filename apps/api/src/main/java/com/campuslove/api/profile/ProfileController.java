@@ -239,8 +239,8 @@ public class ProfileController {
   /**
    * 查阅并复制本人全部个人信息（S2-5，PIPL 第 45 条）。
    *
-   * <p><b>单一响应形态</b>：逻辑载荷恒为
-   * {@link PersonalDataExport}{@code （userId + generatedAt + categories[]），
+   * <p><b>单一响应形态</b>：逻辑载荷恒为 {@link PersonalDataExport}
+   * （{@code userId + generatedAt + categories[]}），
    * 每个类别是一张表 {@code {name, label, columns[], rows[][], truncated}}，
    * 所有单元格一律渲染为字符串。差异只在渲染层：</p>
    * <ul>
