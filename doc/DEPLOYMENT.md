@@ -328,6 +328,15 @@ docker compose up -d
 > `BackupNeverCompleted` 还剩一个自己的前置：`node_backup_*` 由 backup 容器里的脚本
 > 写进 textfile 目录，所以必须 `--profile backup` 起备份（见下一节），否则指标同样为空。
 >
+> ⚠️ 这次「常开」带来的唯一新前置：`node-exporter` 挂的是宿主根
+> （`/:/host:ro,rslave`，只读、`cap_drop: ALL`、端口只绑 `127.0.0.1`）。
+> 普通 Docker Engine 的服务器允许这种只读绑定；**rootless Docker / 不允许挂 `/` 的宿主**
+> 会在 `docker compose up -d` 时报挂载失败。那种环境要么给 node-exporter 换一个
+> 可用的 `--path.rootfs`，要么把该服务单独停用——但请记住停用之后 `/targets` 里
+> `job=node-exporter` 会长年 DOWN，且四条主机/备份告警重新变成哑的：
+> `tests/monitoring-wiring.spec.mjs` 第 6b 节不许「注释抓取任务」这条退路回来，
+> 所以真要停用必须连规则一起按实情改写，而不是靠注释蒙过门。
+>
 > 接线状态由 `npm run test:monitoring` 钉住：job 被重新注释 ⇒ 门红；规则里还挂着
 > `INERT-WITHOUT-SCRAPE=node-exporter` 这种过期声明 ⇒ 同样门红；node-exporter 与
 > prometheus 的 profile 档位被改成不一致 ⇒ 也门红。
