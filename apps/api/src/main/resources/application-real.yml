@@ -86,29 +86,55 @@ spring:
     baseline-on-migrate: false
     # 使用 Flyway 默认 ${...} 占位符语法（Spring 属性风格），
     # 迁移脚本中引用（见 V2026.06.25.0002）：${admin_password_hash} ← admin_password_hash，
-    # 由 ADMIN_INITIAL_PASSWORD_HASH 环境变量注入，注入路径核对无误。
+    # 由 ADMIN_INITIAL_PASSWORD_HASH 环境变量注入。
     # 注意：不能使用双下划线 __xxx__ 语法——Flyway 会将迁移文件名中的 __ 也当作
     # 占位符解析导致启动失败；双下划线语法是历史遗留，已统一改为 ${...}。
+    #
+    # ============ 2026-10-31 复审（P1）：凭据类占位符一律【不带默认值】 ============
+    # 原写法 `admin_openid: ${ADMIN_OPENID:admin-default-openid-change-me}` 与
+    # `admin_password_hash: ${ADMIN_INITIAL_PASSWORD_HASH:}` 的注释都声称"无默认值、fail-fast"，
+    # 实际是 fail-open，两种失效方式各不相同：
+    #   * 带默认值：漏配时迁移照常执行，落库一个 openid 完全可预测（admin-default-openid-change-me）
+    #     的 ADMIN 行，第三方登录链路可冒用；
+    #   * 冒号后为空：空字符串也是"有值"——users.openid / users.password 均为 NOT NULL
+    #     （V2026.05.18.0001:5），'' 恰好满足约束，于是照样插入一行"空凭据管理员"。
+    # 单靠 AdminOpenidValidator / AdminPasswordValidator 兜不住：它们只在 api 进程里拒绝启动，
+    # 而 Flyway 初始化器与这两个校验器的 bean 创建顺序没有保证，拒绝得再早也撤回不了
+    # 已经落库的那一行（compose 编排里 migrate 服务还会先于 api 独立跑完迁移）。
+    # 现在写成不带 `:默认值` 的 ${VAR}：环境变量缺失 → Spring 解析占位符直接抛
+    # "Could not resolve placeholder 'ADMIN_OPENID'"，上下文启动失败，Flyway 一行都不跑。
+    # 三条迁移路径口径统一（详见 database/flyway/flyway.toml 顶部注释）：
+    #   1) 本文件（api 启动时迁移，单容器/本地 real 直跑）：缺失 → 启动失败；
+    #   2) docker-compose 一次性 migrate 服务 + api 服务：${ADMIN_OPENID:?...} → compose 层中止；
+    #   3) 独立 CLI（flyway.toml + scripts/launcher/run-flyway.ps1）：该文件【不定义】这些
+    #      占位符，Flyway 遇到未替换的 ${...} → migrate 失败。
     placeholders:
-      admin_openid: ${ADMIN_OPENID:admin-default-openid-change-me}
+      # 运营真实微信 openid：必须由环境变量 ADMIN_OPENID 注入（AdminOpenidValidator 还会
+      # 校验长度与 o+27 位格式）。无默认值——缺失即启动失败。
+      admin_openid: ${ADMIN_OPENID}
+      # 管理员昵称是展示字段、不是凭据，因此保留默认值；关键是三条路径取值必须一致，
+      # 本文件与 docker-compose 都用同一个"系统管理员"，独立 CLI 则要求显式注入
+      # FLYWAY_PLACEHOLDERS_ADMIN_NICKNAME（flyway.toml 刻意不给，属严格度差异，不产生凭据风险）。
       admin_nickname: ${ADMIN_NICKNAME:系统管理员}
       #
-      # R4-00366/R4-01776：默认值已移除——不再内置任何 BCrypt 哈希默认值（含强随机哈希），
+      # R4-00366/R4-01776：不内置任何 BCrypt 哈希默认值（含强随机哈希）——
       # 内置哈希默认值均存在口令猜测风险（已知哈希可被逆向/字典攻击）。
       #
-      # ⚠️ 首次部署必须通过环境变量 ADMIN_INITIAL_PASSWORD_HASH 覆盖为运营已知明文对应的哈希：
+      # ⚠️ 首次部署必须通过环境变量 ADMIN_INITIAL_PASSWORD_HASH 注入运营已知明文对应的哈希：
       #   - 生成明文：openssl rand -base64 24（生成 24 字节随机明文）
       #   - 生成哈希：调用 PasswordEncoderConfig.encodePassword(plaintext) 或
       #     python -c "import bcrypt; print(bcrypt.hashpw(b'YOUR-PASSWORD', bcrypt.gensalt(10)).decode())"
       #   - 设置环境变量：ADMIN_INITIAL_PASSWORD_HASH=$2a$10$<your-generated-hash>
       #   - 首次登录后必须立即修改密码为运营人已知的安全密码
       #
-      # 未配置时占位符注入空字符串：管理员账号无法登录（安全锁定），
-      # 且 AdminPasswordValidator（real profile）检测到空哈希直接拒绝启动（fail-fast）。
-      admin_password_hash: ${ADMIN_INITIAL_PASSWORD_HASH:}
+      # 未配置时【不再注入空字符串】（那是原注释的 fail-open 漏洞）：占位符解析失败即拒绝启动，
+      # 迁移脚本根本不会执行，因此不会插入 password='' 的管理员行；即使运营显式注入了空串/弱值，
+      # AdminPasswordValidator（real profile 严格模式）仍会二次拒绝启动。
+      admin_password_hash: ${ADMIN_INITIAL_PASSWORD_HASH}
       # R4-00420/00422/00423：演示种子数据环境守卫——虚拟用户/演示私信/画像随机种子
-      # 迁移仅在 demo_seed=true 时写入（默认 false，生产不灌入虚拟用户与演示数据）。
-      # 演示/验收环境通过 DEMO_SEED=true 环境变量开启。
+      # 迁移仅在 demo_seed=true 时写入（默认 false）。这里 false 不是"空默认值冒充已配置"，
+      # 而是 fail-closed 的安全侧：漏配时生产不灌入虚拟用户与演示数据，只有显式
+      # DEMO_SEED=true 才放开——保留默认值。
       demo_seed: ${DEMO_SEED:false}
   jpa:
     hibernate:

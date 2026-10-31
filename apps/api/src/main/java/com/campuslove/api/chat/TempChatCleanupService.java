@@ -19,6 +19,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * 临时聊天清理与联系交换组件（Task 4.2.3 拆分）。
@@ -39,6 +41,15 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>accepted-by-peer：对方单方同意</li>
  *   <li>completed：双方同意（终态，触发 WebSocket 通知）</li>
  * </ul>
+ *
+ * <p><b>租约策略</b>（两个定时清理任务共用，2026-10-31）：只传等待时间、不传租期的
+ * {@code tryLock(waitTime, unit)} → Redisson 看门狗在持锁线程存活期间每
+ * lockWatchdogTimeout/3（默认 10s）续期一次，持锁进程崩溃后约 30s 自动释放。
+ * 原实现固定 30s 租期在大会表/慢 IO 下会在扫描【中途】静默过期，下一轮或另一副本
+ * 于是与本轮重叠处理；而解锁点后又挪到了事务完成之后，30s 租期可能短于"业务 + 提交"
+ * 总耗时，属必现风险。任务本身幂等（按 phase + closesAt 过滤，处理过的行不再命中），
+ * 诉求只是"同一时刻一个写入者"，看门狗恰好给这个保证；代价是一次超长扫描会推迟
+ * 本实例的下一轮整点任务（Spring 默认单线程调度器不会自相重叠）。</p>
  */
 @Profile("real")
 @Component
@@ -100,18 +111,29 @@ public class TempChatCleanupService {
      *       时间依赖应用启动时间，cron 则固定整点执行，便于运维排查。</li>
      *   <li>任务由 {@code @EnableScheduling}（已在 CampusLoveApplication 启用）调度。</li>
      *   <li>异常处理：捕获所有异常并记录日志，避免定时任务因单次失败而停止后续调度。</li>
-     *   <li>修复（FIN-00061/MED-50）：tryLock 成功后必须在 finally 中 unlock，
+     *   <li>修复（FIN-00061/MED-50）：tryLock 成功后必须释放锁，
      *       避免持锁线程崩溃或提前 return 导致锁长期不释放。</li>
+     *   <li>修复（2026-10-31，对齐 {@code AutoRenewService} 的 R4-00317）：锁的释放点从方法
+     *       {@code finally} 挪到【事务提交/回滚之后】。本方法带 {@code @Transactional}，
+     *       finally 早于代理层提交执行：第二个 JVM 拿到锁后重读到的还是未提交状态，
+     *       同一批过期会话会被两个实例各处理一次（重复标记/重复计数）。
+     *       现在 {@code unlock} 由 {@link TransactionSynchronization#afterCompletion(int)} 触发；
+     *       无活动事务时（本地直跑、单测直连构造）退化为方法返回时立即释放。</li>
+     *   <li>租约：不再显式传 30s leaseTime，改用 Redisson 看门狗续期，
+     *       见类注释「租约策略」——固定短租期会在大会表扫描中途静默过期，
+     *       让下一轮/另一副本与本轮重叠处理。</li>
      * </ul>
      */
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
     public void cleanupExpiredSessions() {
         // FIN-00061: 分布式锁确保多实例部署时仅一个实例执行清理任务
+        String lockKey = "scheduled:tempChatCleanup";
+        org.redisson.api.RLock lock = redissonClient.getLock(lockKey);
         boolean locked = false;
-        org.redisson.api.RLock lock = redissonClient.getLock("scheduled:tempChatCleanup");
         try {
-            locked = lock.tryLock(0, 30, TimeUnit.SECONDS);
+            // 只传等待时间（0=不等待）、不传租期 → Redisson 看门狗负责续期，见类注释「租约策略」
+            locked = lock.tryLock(0, TimeUnit.SECONDS);
             if (!locked) {
                 log.debug("tempChatCleanup 定时任务已被其他实例持有，跳过本次执行");
                 return;
@@ -121,6 +143,9 @@ public class TempChatCleanupService {
             log.warn("tempChatCleanup 获取分布式锁被中断");
             return;
         }
+        // 锁交给事务同步在提交/回滚后释放；返回 false 表示当前线程没有活动事务，
+        // 只能退回"方法返回时立即释放"（此时提前解锁也不会有人读到未提交数据）。
+        boolean unlockDeferredToTransaction = registerUnlockAfterTransactionCompletion(lock, lockKey);
         try {
             LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
             int cleaned = 0;
@@ -149,14 +174,10 @@ public class TempChatCleanupService {
                 log.info("SubTask 5.3.1 定时清理过期临时聊天会话完成: 共清理 {} 个会话", cleaned);
             }
         } finally {
-            // FIN MED-50：finally 中释放锁，确保所有路径（正常/异常/提前 return）均解锁
-            if (locked && lock.isHeldByCurrentThread()) {
-                try {
-                    lock.unlock();
-                } catch (IllegalMonitorStateException e) {
-                    // 锁已被自动释放（持锁超时），忽略
-                    log.debug("锁已被自动释放: scheduled:tempChatCleanup");
-                }
+            // FIN MED-50 + 2026-10-31：只有【没有】委托给事务同步时才在这里立即释放锁，
+            // 正常路径（有事务）由 afterCompletion 在提交/回滚后释放。
+            if (!unlockDeferredToTransaction) {
+                releaseLockQuietly(lock, lockKey);
             }
         }
     }
@@ -166,6 +187,10 @@ public class TempChatCleanupService {
      *
      * <p>每小时 :30 执行：删除已过保留期（closesAt + 宽限）的会话消息与 TEMP_CHAT 媒体文件；
      * hold_until 未到期的举报取证资产跳过。会话行保留为墓碑，不保留内容。</p>
+     *
+     * <p>锁边界与租约同 {@link #cleanupExpiredSessions()}：不传租期（看门狗续期），
+     * 释放点后移到事务提交/回滚之后——本方法 {@code @Transactional}，若在 finally 里解锁，
+     * 另一实例可在删除语句提交前拿到锁并重删同一批行（重复删文件 + 重复标记资产）。</p>
      */
     @Scheduled(cron = "0 30 * * * *")
     @Transactional
@@ -183,10 +208,12 @@ public class TempChatCleanupService {
     }
 
     private CleanupResult doCleanupRetainedMaterials() {
+        String lockKey = "scheduled:tempChatMaterialCleanup";
+        org.redisson.api.RLock lock = redissonClient.getLock(lockKey);
         boolean locked = false;
-        org.redisson.api.RLock lock = redissonClient.getLock("scheduled:tempChatMaterialCleanup");
         try {
-            locked = lock.tryLock(0, 30, TimeUnit.SECONDS);
+            // 只传等待时间、不传租期 → 看门狗续期，避免 30s 固定租期在删除大批资产时中途过期
+            locked = lock.tryLock(0, TimeUnit.SECONDS);
             if (!locked) {
                 return new CleanupResult(0, 0, false);
             }
@@ -194,6 +221,7 @@ public class TempChatCleanupService {
             Thread.currentThread().interrupt();
             return new CleanupResult(0, 0, false);
         }
+        boolean unlockDeferredToTransaction = registerUnlockAfterTransactionCompletion(lock, lockKey);
         try {
             LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
             int assetsDeleted = 0;
@@ -238,13 +266,57 @@ public class TempChatCleanupService {
             }
             return new CleanupResult(assetsDeleted, messagesDeleted, true);
         } finally {
-            if (locked && lock.isHeldByCurrentThread()) {
-                try {
-                    lock.unlock();
-                } catch (IllegalMonitorStateException ignored) {
-                    log.debug("锁已被自动释放: scheduled:tempChatMaterialCleanup");
-                }
+            // 正常路径（有事务）由 afterCompletion 在提交/回滚后释放；仅无事务时在此立即释放
+            if (!unlockDeferredToTransaction) {
+                releaseLockQuietly(lock, lockKey);
             }
+        }
+    }
+
+    /**
+     * 把分布式锁的释放挂到【事务完成之后】（2026-10-31，与 AutoRenewService R4-00317 同一模式）。
+     *
+     * <p>为什么不能留在 {@code finally}：{@code @Transactional} 由代理在方法返回【之后】才提交，
+     * finally 里的 {@code unlock} 早于提交执行——第二个实例立刻拿到锁、读到同一批还没变成
+     * expired/deleted 的行，于是重复标记、重复删除消息与媒体文件。</p>
+     *
+     * @param lock    已持有的锁
+     * @param lockKey 锁名（仅日志用）
+     * @return {@code true} 表示释放已交由事务同步（提交或回滚后都会执行，含回滚场景）；
+     *         {@code false} 表示当前线程没有活动事务（本地直跑、单测直连 new 出来的对象），
+     *         调用方必须退回"方法返回时立即释放"的旧行为，否则锁永远不释放
+     */
+    private boolean registerUnlockAfterTransactionCompletion(org.redisson.api.RLock lock, String lockKey) {
+        try {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCompletion(int status) {
+                    releaseLockQuietly(lock, lockKey);
+                }
+            });
+            return true;
+        } catch (IllegalStateException e) {
+            // TransactionSynchronizationManager 在无同步（无事务）线程上注册会抛这个异常
+            log.warn("无活动事务，退化为方法返回时释放清理锁: lockKey={}", lockKey);
+            return false;
+        }
+    }
+
+    /**
+     * 安静释放锁：仅当当前线程仍持有时解锁，异常只记日志不外抛。
+     * afterCompletion 回调里抛异常会被 Spring 吞掉并污染后续同步，故必须安静。
+     */
+    private void releaseLockQuietly(org.redisson.api.RLock lock, String lockKey) {
+        try {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+                log.debug("清理任务锁已释放（事务完成后）: lockKey={}", lockKey);
+            }
+        } catch (IllegalMonitorStateException e) {
+            // 锁已被看门狗/超时释放（持锁进程早已不在），忽略
+            log.debug("锁已被自动释放: lockKey={}", lockKey);
+        } catch (RuntimeException e) {
+            log.warn("释放清理任务锁异常（不影响业务结果）: lockKey={}, error={}", lockKey, e.getMessage());
         }
     }
 

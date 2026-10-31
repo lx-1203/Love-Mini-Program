@@ -70,6 +70,15 @@ public class VipOrderService {
     /** 金额对账容差：1 分（与 BillingService 原回调逻辑一致） */
     private static final int AMOUNT_TOLERANCE_CENTS = 1;
 
+    /**
+     * 超时关单的扫描级互斥锁 key（2026-10-31 P2）：多副本部署时每轮关单只允许一个副本执行。
+     * 不加日期后缀——关单每 60s 一轮、结束即释放，固定 key 只表达"当前有人在关单"。
+     */
+    private static final String CLOSE_SWEEP_LOCK_KEY = "scheduled:vipOrderCloseExpired";
+
+    /** 关单扫描锁等待时间（秒）：0 = 不等待，抢不到就跳过本轮（另一副本正在做同一件事）。 */
+    private static final long CLOSE_SWEEP_LOCK_WAIT_SECONDS = 0L;
+
     /** orderNo 前缀 + 时间戳 + 短随机串（总长 ≤32，微信 out_trade_no 上限 6-32 位） */
     private static final DateTimeFormatter ORDER_NO_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
@@ -112,6 +121,17 @@ public class VipOrderService {
     /** 支付回调耗时指标（real profile 注入；单元测试可为 null） */
     @Autowired(required = false)
     private PaymentMetrics paymentMetrics;
+
+    /**
+     * Redisson 分布式锁客户端（2026-10-31 P2：仅用于 {@link #closeExpiredOrders()} 的扫描级互斥）。
+     *
+     * <p>real profile 下容器必有该 bean（{@code AutoRenewService} / 各定时任务都依赖它）；
+     * 声明为可选注入只为保留"单测直接 new 本类"的既有用法——为 null 时退化为无锁扫描
+     * （关单本身仍安全，理由见 {@link #closeExpiredOrders()} 注释）。
+     * 用 {@code ReflectionTestUtils.setField} 注入的测试可验证加锁路径。</p>
+     */
+    @Autowired(required = false)
+    private org.redisson.api.RedissonClient redissonClient;
 
     public VipOrderService(VipOrderRepository vipOrderRepository,
                            BillingService billingService,
@@ -658,13 +678,61 @@ public class VipOrderService {
      * 时间，二是第 50 张单写库失败会把前 49 张一起回滚（下一轮又重复关单、重复调微信）。
      * 现按单提交，失败的只影响自己。</p>
      *
-     * <p><b>多实例部署前需补分布式锁</b>：本方法无互斥，两个实例会同时扫到同一批订单
-     * 并各自调用微信关单（微信侧幂等，但白白多打一轮）。见优化方案 B3 第 4 条。</p>
+     * <p><b>扫描级互斥（2026-10-31 P2 修复，替代原"多实例部署前需补分布式锁"待办）</b>：
+     * 本轮扫描由 {@code scheduled:vipOrderCloseExpired} 保护，抢不到（另一副本正在关单）
+     * 直接返回 0，一行都不查、一次微信都不调。<b>决策依据</b>：本方法唯一被证实的重复副作用
+     * 是外部 {@code wxPayJsapiService.closeOrder} 调用——库里那一步本来就有双重保护
+     * （每张单在短事务里重新装载 + {@code STATUS_CLOSED} 终态守卫 + version 乐观锁），
+     * 两个副本同时扫不会写出两条关单。所以这里"补锁"而不是"容忍重复调用"：
+     * 加锁把 N 次重复 HTTP 压成 0 次，同时避免两副本互相把对方刚推进的单再关一遍的
+     * 无谓往返。锁不等待（waitTime=0）、不传租期（只传等待时间的 tryLock 走 Redisson 看门狗：
+     * 持锁进程存活期间自动续期，进程崩溃后约 30s 释放）：
+     * 固定 30s 租期在批量关单超过 30 秒时会静默过期，正是要防的重叠场景。</p>
      *
-     * @return 本次关单数量
+     * <p><b>锁失效时的兜底（为什么不担心双关）</b>：Redis 故障/主从切换丢锁时，最坏情况退回
+     * 修复前的行为——两副本对同一单各调一次 {@code closeOrder}。微信关单接口按 out_trade_no
+     * 幂等：对已关闭或已成功支付的交易重复关单只返回业务错误码，不会改变交易状态、不产生
+     * 资金动作；本地那一步仍由"重载 + STATUS_CLOSED 守卫"挡住，因此不会出现假账或重复扣款。
+     * 换句话说这把锁省的是无谓的外部调用与日志噪音，而不是资金正确性的最后一道闸。</p>
+     *
+     * @return 本次关单数量；未取到扫描锁（另一副本正在关单）时为 0
      */
     @Scheduled(fixedDelay = 60_000, initialDelay = 120_000)
     public int closeExpiredOrders() {
+        // 单测直接 new 本类时 redissonClient 为 null：退化为无锁扫描（见字段注释与本方法注释的兜底说明）
+        org.redisson.api.RLock sweepLock = null;
+        if (redissonClient != null) {
+            sweepLock = redissonClient.getLock(CLOSE_SWEEP_LOCK_KEY);
+        }
+        boolean sweepLocked = false;
+        if (sweepLock != null) {
+            try {
+                sweepLocked = sweepLock.tryLock(CLOSE_SWEEP_LOCK_WAIT_SECONDS, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("VIP 关单扫描获取分布式锁被中断，放弃本轮：lockKey={}", CLOSE_SWEEP_LOCK_KEY);
+                return 0;
+            }
+            if (!sweepLocked) {
+                log.info("VIP 关单扫描已由其他副本执行（分布式锁未获取），跳过本轮：lockKey={}",
+                        CLOSE_SWEEP_LOCK_KEY);
+                return 0;
+            }
+        }
+        try {
+            return doCloseExpiredOrders();
+        } finally {
+            // 本方法没有外层事务（每单一个独立短事务，提交完才返回），因此可以在此立即释放；
+            // 与 AutoRenewService 的资金锁（必须等事务完成，R4-00317）不同，那层延迟释放
+            // 仍保留在 renewVip 里，这里没有未提交数据可被后来者读到。
+            if (sweepLocked) {
+                releaseCloseSweepLock(sweepLock);
+            }
+        }
+    }
+
+    /** 关单扫描主体：已被 {@link #closeExpiredOrders()} 的扫描级锁串行化。 */
+    private int doCloseExpiredOrders() {
         List<VipOrder> expired = vipOrderRepository.findByStatusInAndExpireAtBefore(
                 List.of(VipOrder.STATUS_PENDING, VipOrder.STATUS_PAYING),
                 LocalDateTime.now(TimeZones.BUSINESS));
@@ -709,6 +777,25 @@ public class VipOrderService {
             log.info("超时订单已关单：orderNo={}, userId={}", orderNo, userId);
         }
         return closed;
+    }
+
+    /**
+     * 安静释放关单扫描锁：仅当当前线程仍持有时解锁，异常只记日志不外抛。
+     *
+     * <p>解锁失败不改写本轮关单结果——订单状态已按单提交，锁最迟在 Redisson 看门狗
+     * 停止续期后（默认约 30s）自动过期，不会把后续轮次永久挡在门外。</p>
+     */
+    private void releaseCloseSweepLock(org.redisson.api.RLock sweepLock) {
+        try {
+            if (sweepLock.isHeldByCurrentThread()) {
+                sweepLock.unlock();
+            }
+        } catch (IllegalMonitorStateException e) {
+            log.debug("关单扫描锁已自动释放：lockKey={}", CLOSE_SWEEP_LOCK_KEY);
+        } catch (RuntimeException e) {
+            log.warn("释放关单扫描锁异常（不影响关单结果）：lockKey={}, error={}",
+                    CLOSE_SWEEP_LOCK_KEY, e.getMessage());
+        }
     }
 
     /* ==================== 状态机 ==================== */

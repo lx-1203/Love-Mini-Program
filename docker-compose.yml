@@ -223,10 +223,20 @@ services:
       FLYWAY_VALIDATE_MIGRATION_NAMING: "true"
       FLYWAY_BASELINE_ON_MIGRATE: "false"
       # 占位符：CLI 路径与 Spring 路径必须注入【同一份值】（见 flyway.toml R4-00410 注释）。
-      # admin_openid / admin_password_hash 无默认值——缺失即迁移失败（fail-fast，杜绝弱账号）。
-      FLYWAY_PLACEHOLDERS_ADMIN_OPENID: ${ADMIN_OPENID:-}
+      # ---- 2026-10-31 复审（P1）：凭据类占位符改为 ${VAR:?}，真正 fail-fast ----
+      # 原写法 `${ADMIN_OPENID:-}` / `${ADMIN_INITIAL_PASSWORD_HASH:-}` 展开成【空字符串】，
+      # 而空串对 Flyway 来说是"已配置的值"：迁移照常执行，插入一行 openid=''、password='' 的
+      # ADMIN（users.openid/password 为 NOT NULL，'' 满足约束，见 V2026.05.18.0001:5）。
+      # 也就是说 api 进程的 AdminOpenidValidator / AdminPasswordValidator 还没轮到跑，
+      # 脏数据已经落库——本服务先于 api 完成，更没人拦得住。
+      # `${VAR:?msg}` 在 VAR 未设置【或为空】时让 compose 直接中止，一行迁移都不会跑。
+      # 注意 .env.example 里 ADMIN_OPENID= 是空值，复制后必须填写，否则 compose 报错即预期行为。
+      FLYWAY_PLACEHOLDERS_ADMIN_OPENID: ${ADMIN_OPENID:?ADMIN_OPENID is required - no default, see .env.example}
+      # 昵称是展示字段、不是凭据：保留与 application-real.yml 完全一致的非空默认值，
+      # 避免两条路径给同一行写入不同昵称（独立 CLI 侧仍要求显式注入，见 flyway.toml）。
       FLYWAY_PLACEHOLDERS_ADMIN_NICKNAME: ${ADMIN_NICKNAME:-系统管理员}
-      FLYWAY_PLACEHOLDERS_ADMIN_PASSWORD_HASH: ${ADMIN_INITIAL_PASSWORD_HASH:-}
+      FLYWAY_PLACEHOLDERS_ADMIN_PASSWORD_HASH: ${ADMIN_INITIAL_PASSWORD_HASH:?ADMIN_INITIAL_PASSWORD_HASH is required - no default BCrypt hash, see .env.example}
+      # DEMO_SEED=false 是 fail-closed 的安全侧（漏配即不灌演示数据），不属于"空默认值冒充已配置"。
       FLYWAY_PLACEHOLDERS_DEMO_SEED: ${DEMO_SEED:-false}
     volumes:
       - ./database/flyway/sql:/flyway/sql:ro
@@ -309,10 +319,17 @@ services:
       AGNES_TIMEOUT_MS: ${AGNES_TIMEOUT_MS:-30000}
       # ---------- 管理员初始化 ----------
       # infra #8：移除公开默认值 admin-default-openid-change-me（可被冒充登录）。
-      # 生产部署必须在 .env 中配置 ADMIN_OPENID（详见 .env.example）
-      ADMIN_OPENID: ${ADMIN_OPENID:-}
+      # ---- 2026-10-31 复审（P1）----
+      # 这里原来是 `${ADMIN_OPENID:-}` / `${ADMIN_INITIAL_PASSWORD_HASH:-}`：注入空串。
+      # application-real.yml 的 spring.flyway.placeholders 现在写成不带默认值的
+      # ${ADMIN_OPENID} / ${ADMIN_INITIAL_PASSWORD_HASH}，而空串是"有值"——compose 若继续
+      # 传空串，就会绕过 Spring 的占位符解析失败，把一行空凭据 ADMIN 直接种进库
+      # （单容器开发 FLYWAY_ENABLED=true 时正是这条路径）。故与本文件 migrate 服务、
+      # 以及 MYSQL_PASSWORD / JWT_SECRET / APP_AES_SECRET 同样改用 ${VAR:?}：未设置或为空即中止。
+      ADMIN_OPENID: ${ADMIN_OPENID:?ADMIN_OPENID is required - no default, see .env.example}
+      # 非凭据展示字段，与 migrate 服务、application-real.yml 共用同一个默认值，保证行内容一致。
       ADMIN_NICKNAME: ${ADMIN_NICKNAME:-系统管理员}
-      ADMIN_INITIAL_PASSWORD_HASH: ${ADMIN_INITIAL_PASSWORD_HASH:-}
+      ADMIN_INITIAL_PASSWORD_HASH: ${ADMIN_INITIAL_PASSWORD_HASH:?ADMIN_INITIAL_PASSWORD_HASH is required - no default BCrypt hash, see .env.example}
       # ---------- Flyway ----------
       # infra R2-00001:迁移目录已单源化(database/flyway/sql 含全部迁移,
       # 原 classpath 的 4 个 Phase A 迁移已并入主链重编号为 V2026.07.24.0001~0004,

@@ -17,12 +17,33 @@ baselineOnMigrate = false
 #   1. CLI 参数：flyway -placeholders.admin_openid='oXxxx' -placeholders.admin_nickname='系统管理员' migrate
 #   2. 环境变量：export FLYWAY_PLACEHOLDERS_ADMIN_OPENID='oXxxx' FLYWAY_PLACEHOLDERS_ADMIN_NICKNAME='系统管理员'
 # ⚠️ 未设置时 flyway migrate 将失败（预期行为，杜绝弱默认账号）。
-# 注（R4-00410 占位符单一来源对齐）：Spring Boot 启动路径由 application-real.yml 的
-# ${ADMIN_OPENID:...} 注入，独立 CLI 走本文件 [flyway.placeholders]（通过
-# FLYWAY_PLACEHOLDERS_ADMIN_OPENID 等环境变量注入）。两条路径必须注入【同一份值】
-# （建议在 .env / docker-compose 中统一定义 ADMIN_OPENID，并映射为
-# FLYWAY_PLACEHOLDERS_ADMIN_OPENID），保证两种方式跑迁移得到的管理员 openid 一致。
-# 两处均已 fail-fast（无默认值），不会出现"一处有值一处用占位"的静默差异。
+#
+# ---- 2026-10-31 复审（P1）：更正"两处均已 fail-fast"这句结论 ----
+# 本文件这一侧（独立 CLI）确实是 fail-fast：flyway.toml 不定义 admin_openid /
+# admin_nickname / admin_password_hash，SQL 里的 ${...} 未被替换 → migrate 直接失败。
+# 但此前另一侧【并不是】，原注释与 application-real.yml 的注释都写错了：
+#   * application-real.yml 曾写 `admin_openid: ${ADMIN_OPENID:admin-default-openid-change-me}`
+#     ——带弱默认值，漏配即种出可预测 openid 的 ADMIN；
+#   * 同一文件曾写 `admin_password_hash: ${ADMIN_INITIAL_PASSWORD_HASH:}`、
+#     docker-compose.yml 曾写 `${ADMIN_OPENID:-}` / `${ADMIN_INITIAL_PASSWORD_HASH:-}`
+#     ——冒号后为空会展开成【空字符串】，而空串对 Flyway 而言是"已配置的值"：
+#     users.openid / users.password 只是 NOT NULL（见 V2026.05.18.0001:5），'' 满足约束，
+#     迁移成功、落库一行空凭据管理员。api 进程里的 AdminOpenidValidator /
+#     AdminPasswordValidator 只拒绝"启动"，撤回不了已经写进库的那一行。
+# 三条路径的真实口径（现已全部做到无可用默认值，注释与代码一致）：
+#   1) 独立 CLI（本文件 + scripts/launcher/run-flyway.ps1）：占位符缺失 → migrate 失败；
+#      flyway.toml 不给任何默认值，包括展示用的 admin_nickname（CLI 必须显式传）。
+#   2) docker-compose（一次性 migrate 服务 + api 服务）：${ADMIN_OPENID:?...} /
+#      ${ADMIN_INITIAL_PASSWORD_HASH:?...}，未设置或为空 → compose 层中止，容器根本不启动。
+#   3) Spring Boot 启动时迁移（application-real.yml）：${ADMIN_OPENID} /
+#      ${ADMIN_INITIAL_PASSWORD_HASH} 不带 `:默认值`，变量缺失 → 占位符解析异常 → 上下文启动失败。
+# 注（R4-00410 占位符单一来源对齐）：方式 2/3 的取值都来自同一对环境变量
+# ADMIN_OPENID / ADMIN_INITIAL_PASSWORD_HASH，方式 1 用 FLYWAY_PLACEHOLDERS_* 前缀的等价变量；
+# 三者必须注入【同一份值】，否则同一迁移在不同路径跑出的管理员行不同。
+# 唯一允许默认值的占位符是下面这两个，且都不是"空串冒充已配置"：
+#   * demo_seed："false" 是 fail-closed 的安全侧（漏配不灌演示数据），只有显式 true 才放开；
+#   * admin_nickname（仅 Spring/compose 侧）：展示昵称、非凭据，两条路径共用同一个非空默认值，
+#     独立 CLI 侧仍要求显式传入（严格度差异，不产生凭据风险）。
 # R4-00420/00422/00423：演示种子数据环境守卫——虚拟用户/演示私信/画像随机种子等
 # 迁移仅在 demo_seed=true 时写入数据（默认 false，生产不会灌入虚拟用户/演示数据）。
 # CLI 运行时可覆盖：flyway -placeholders.demo_seed=true migrate
@@ -35,5 +56,5 @@ demo_seed = "false"
 #   2. 环境变量：export FLYWAY_PLACEHOLDERS_ADMIN_PASSWORD_HASH='$2a$10$...'
 # 生成方法：python -c "import bcrypt; print(bcrypt.hashpw(b'YOUR-PASSWORD', bcrypt.gensalt(10)).decode())"
 # ⚠️ 未设置环境变量时，flyway migrate 将因占位符缺失而失败（这是预期行为，避免使用弱默认值上线）。
-# 注：Spring Boot 启动时通过 application-real.yml 中的 ${ADMIN_INITIAL_PASSWORD_HASH:...} 注入，
-# 与本文件（独立 flyway CLI 用途）独立。
+# 注：Spring Boot 启动路径由 application-real.yml 的 ${ADMIN_INITIAL_PASSWORD_HASH}（无默认值）注入，
+# 与本文件（独立 flyway CLI 用途）互不覆盖，两侧现在都是"缺失即失败"。

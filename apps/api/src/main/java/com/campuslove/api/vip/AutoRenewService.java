@@ -11,6 +11,7 @@ import com.campuslove.api.repository.VipBillRepository;
 import com.campuslove.api.wallet.InsufficientBalanceException;
 import com.campuslove.api.wallet.WalletService;
 import com.campuslove.api.wallet.WalletTransactionLog;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -54,6 +55,12 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * 避免定时任务重复触发或用户手动续费与定时任务并发导致多扣费。
  * 锁超时 30 秒，避免持锁线程崩溃导致死锁。</p>
  *
+ * <p>并发控制（2026-10-31 P2）：定时扫描 {@link #runRenewScan} 另有一把<b>扫描级</b>锁
+ * （key = scheduled:autoRenewScan:&lt;业务日&gt;，不等待、抢不到整轮跳过）。逐用户锁是资金闸门、
+ * 必须保留；扫描级锁解决的是"多副本同时扫描"时第二个副本对窗口内每个用户等满 5 秒、
+ * 再各写一条 FAILED 流水——FAILED 流水刻意走 REQUIRES_NEW 独立提交、不随主事务回滚
+ * （见 {@link #writeBillingLog}），所以这些假失败会真的留在账上污染对账与告警。</p>
+ *
  * <p>对账支持（Task 12.2）：每次续费（无论成功/失败）写入 vip_billing_log 流水，
  * 用于核对支付渠道侧扣款与系统侧续费次数是否一致。</p>
  *
@@ -80,6 +87,36 @@ public class AutoRenewService {
      * 同一用户重复触发续费时，后到的请求快速失败而不是堆积。</p>
      */
     private static final long LOCK_WAIT_SECONDS = 5L;
+
+    /**
+     * 扫描级互斥锁 key（2026-10-31 P2 修复）。
+     *
+     * <p>与 {@code auto-renew:{userId}} 是两层不同职责的锁：</p>
+     * <ul>
+     *   <li>{@code auto-renew:{userId}}（每 6 小时扫描里的逐用户锁）是<b>资金</b>闸门，保留不动；</li>
+     *   <li>本 key 是<b>扫描</b>闸门：多副本部署时只允许一个副本去扫全表。</li>
+     * </ul>
+     *
+     * <p>为什么必须有它：逐用户锁的等待时间是 5 秒，两个副本同时扫描时，第二个副本对
+     * 窗口内<b>每一个</b>用户都会等满 5 秒、然后走「未获取到锁」分支写一条 FAILED 流水。
+     * 而 FAILED 流水自今天起是刻意用 {@code REQUIRES_NEW} 独立提交、<b>故意不随主事务回滚</b>的
+     * （见 {@link #writeBillingLog}：失败证据必须留下来供对账与告警看见）。于是这些
+     * 纯并发产生的假失败每 6 小时成批落进 vip_billing_logs：污染对账口径、
+     * 并把任何建立在 FAILED 计数上的告警变成常态噪音。用扫描级锁让第二个副本
+     * 直接跳过本轮，假流水从源头消失。</p>
+     *
+     * <p>按天分片（{@code yyyy-MM-dd}，业务时区）：与 6 小时的 cron 节奏对齐，
+     * 同一天的四轮扫描串行、不同天互不影响；锁在每轮结束时主动释放，
+     * 所以 key 按天命名只是让运维在 Redis 里好认，不构成"一天只跑一次"。</p>
+     */
+    private static final String SWEEP_LOCK_KEY_PREFIX = "scheduled:autoRenewScan:";
+
+    /**
+     * 扫描级锁的等待时间（秒）：0 = 不等待。
+     * <p>抢不到就说明已有一个副本在扫，本轮直接放弃——这正是本修复的目的：
+     * 逐用户锁那里"等 5 秒再失败"会留下假流水，扫描锁这里连等都不等。</p>
+     */
+    private static final long SWEEP_LOCK_WAIT_SECONDS = 0L;
 
     /**
      * 未产生（或无法确定）扣款额的流水金额（分）。
@@ -166,14 +203,55 @@ public class AutoRenewService {
      * 内（含已过期）」的用户逐个触发 {@link #renewVip}（经 self 代理保证事务生效）。
      * 单用户续费失败（余额不足等）仅记录日志，不阻断其他用户。</p>
      *
+     * <p>扫描级互斥（2026-10-31 P2）：整个方法由按天分片的扫描锁（key 前缀
+     * {@link #SWEEP_LOCK_KEY_PREFIX} + ISO 业务日期）保护，抢不到就立刻返回空结果。
+     * 资金幂等仍由逐用户锁 {@code auto-renew:userId} +
+     * 确定性订单号兜底，本锁只负责"别让更多副本同时去扫"，理由见
+     * {@link #SWEEP_LOCK_KEY_PREFIX}（FAILED 流水现在刻意独立提交、不回滚，
+     * 并发扫描会成批造出假失败账目）。</p>
+     *
+     * <p>锁的释放点与 {@link #renewVip} 不同，这里刻意留在 {@code finally} 立即释放：
+     * 本方法【没有】 {@code @Transactional}，每一笔扣款/顺延/流水都在 {@code self.renewVip}
+     * 自己的事务里提交完成后才返回，返回时已经没有"未提交数据"可被后来者读到；
+     * R4-00317 需要延迟释放的是资金锁，不是这把扫描锁。
+     * 租期同样不显式设置（看门狗续期），避免扫描用户数多、单轮超过固定 30 秒租期后
+     * 锁静默过期，放第二个副本进来批量造 FAILED 流水。</p>
+     *
      * <p>幂等说明：续费成功后 VIP 到期时间按目录套餐天数顺延（月 30 / 季 90 / 年 365），
      * 自然移出扫描窗口，不会因每 6 小时扫描而重复扣费；失败用户留在窗口内下次重试
      * （失败不扣费）。订阅套餐无法按目录定价的用户同样留在「不扣款」一侧，
      * 直到其订阅数据被修正或下架套餐重新可售（fail-closed，不猜测金额）。</p>
      *
-     * @return 扫描结果汇总（scanned 扫描数 / renewed 续费成功数 / failed 失败数 / skipped 幂等跳过数）
+     * @return 扫描结果汇总（scanned 扫描数 / renewed 续费成功数 / failed 失败数 / skipped 幂等跳过数）；
+     *         未取得扫描锁（另一副本正在扫描）时返回全 0，不写任何流水
      */
     public RenewScanResult runRenewScan() {
+        String sweepLockKey = SWEEP_LOCK_KEY_PREFIX + LocalDate.now(TimeZones.BUSINESS);
+        RLock sweepLock = redissonClient.getLock(sweepLockKey);
+        boolean sweepLocked;
+        try {
+            sweepLocked = sweepLock.tryLock(SWEEP_LOCK_WAIT_SECONDS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.warn("自动续费扫描获取扫描级锁被中断，放弃本轮：lockKey={}", sweepLockKey);
+            return new RenewScanResult(0, 0, 0, 0);
+        }
+        if (!sweepLocked) {
+            // 关键行为变更（2026-10-31）：修复前第二个副本会继续往下走，对窗口内每个用户
+            // 等满 5 秒逐用户锁、再各写一条 FAILED 流水；现在整轮直接跳过，一条流水都不写。
+            log.info("自动续费扫描已由其他副本执行（扫描级锁未获取），跳过本轮：lockKey={}", sweepLockKey);
+            return new RenewScanResult(0, 0, 0, 0);
+        }
+        try {
+            return doRunRenewScan();
+        } finally {
+            // 本方法无事务，逐用户续费已在各自事务内提交完毕，立即释放扫描锁是安全的（见方法注释）
+            releaseSweepLockQuietly(sweepLock, sweepLockKey);
+        }
+    }
+
+    /** 扫描主体：已被 {@link #runRenewScan()} 的扫描级锁串行化，同一时刻只有一个副本在跑。 */
+    private RenewScanResult doRunRenewScan() {
         List<User> users;
         try {
             users = userRepository.findByAutoRenewEnabledTrue();
@@ -570,6 +648,25 @@ public class AutoRenewService {
             log.debug("锁已被自动释放：lockKey={}", lockKey);
         } catch (RuntimeException e) {
             log.warn("释放自动续费锁异常（不影响业务结果）：lockKey={}, error={}", lockKey, e.getMessage());
+        }
+    }
+
+    /**
+     * 安静释放扫描级锁（{@link #runRenewScan()} 专用）。
+     *
+     * <p>与 {@link #releaseLockQuietly} 分开写只为日志语义清楚：这里是"本轮扫描结束"，
+     * 那里是"某用户续费事务结束"。异常一律吞掉——扫描结果已经确定，不该被解锁失败改写。</p>
+     */
+    private void releaseSweepLockQuietly(RLock lock, String lockKey) {
+        try {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+                log.debug("自动续费扫描锁已释放：lockKey={}", lockKey);
+            }
+        } catch (IllegalMonitorStateException e) {
+            log.debug("扫描锁已被自动释放：lockKey={}", lockKey);
+        } catch (RuntimeException e) {
+            log.warn("释放自动续费扫描锁异常（不影响扫描结果）：lockKey={}, error={}", lockKey, e.getMessage());
         }
     }
 

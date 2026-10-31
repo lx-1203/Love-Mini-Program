@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -257,6 +258,85 @@ class AutoRenewOrderIdempotencyTest {
             Field field = AutoRenewService.class.getDeclaredField("self");
             field.setAccessible(true);
             field.set(service, proxy);
+        }
+    }
+
+    @Nested
+    @DisplayName("扫描级互斥（2026-10-31 P2）")
+    class SweepLock {
+
+        /** 扫描锁与逐用户锁是两把不同的锁：这里只关心 scheduled:autoRenewScan:* 那把。 */
+        private final RLock sweepLock = mock(RLock.class);
+
+        private void stubSweepLock(boolean acquirable) throws InterruptedException {
+            when(redissonClient.getLock(startsWith("scheduled:autoRenewScan:"))).thenReturn(sweepLock);
+            when(sweepLock.tryLock(anyLong(), any(TimeUnit.class))).thenReturn(acquirable);
+            when(sweepLock.isHeldByCurrentThread()).thenReturn(acquirable);
+        }
+
+        /** 单测里 self 注入实现本体，等价于「扫描真的会去逐个调用 renewVip」。 */
+        private AutoRenewService serviceWithSelf() throws Exception {
+            AutoRenewService service = newService();
+            Field field = AutoRenewService.class.getDeclaredField("self");
+            field.setAccessible(true);
+            field.set(service, service);
+            return service;
+        }
+
+        @Test
+        @DisplayName("行为变更：另一副本正在扫描时，本轮整轮跳过，一条 FAILED 流水都不写")
+        void secondSweepWritesNoFailedLedger() throws Exception {
+            stubSweepLock(false);
+            // 修复前的复现条件：扫描没有互斥 ⇒ 本副本照旧逐用户 renewVip，
+            // 而逐用户锁被第一个副本占着 ⇒ 等满 5 秒后走「未获取到锁」分支写 FAILED。
+            // FAILED 流水自今天起 REQUIRES_NEW 独立提交、不随主事务回滚，于是这些
+            // 纯并发造出来的假失败会真的留在账上，污染对账与 FAILED 计数告警。
+            when(rLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(false);
+            givenSubscriptionEndingAt(LocalDateTime.now().minusDays(1));
+            when(userRepository.findByAutoRenewEnabledTrue()).thenReturn(List.of(autoRenewUser()));
+
+            AutoRenewService.RenewScanResult result = serviceWithSelf().runRenewScan();
+
+            assertEquals(0, result.scanned(), "未抢到扫描锁 ⇒ 一个用户都不该被扫描");
+            assertEquals(0, result.failed());
+            verify(userRepository, never()).findByAutoRenewEnabledTrue();
+            verify(vipBillingLogRepository, never()).save(any(VipBillingLog.class));
+            verify(walletService, never()).deduct(anyLong(), anyLong(), anyString(), anyString(), anyString());
+            // 没拿到锁却去解锁 = 解掉别人的锁，绝对不允许
+            verify(sweepLock, never()).unlock();
+        }
+
+        @Test
+        @DisplayName("扫描锁取得后：正常完成一轮并把锁释放（不传固定租期，交看门狗续期）")
+        void sweepRunsAndReleasesLock() throws Exception {
+            stubSweepLock(true);
+            givenSubscriptionEndingAt(LocalDateTime.now().minusDays(1));
+            when(userRepository.findByAutoRenewEnabledTrue()).thenReturn(List.of(autoRenewUser()));
+
+            AutoRenewService.RenewScanResult result = serviceWithSelf().runRenewScan();
+
+            assertEquals(1, result.scanned());
+            assertEquals(1, result.renewed());
+            verify(sweepLock).tryLock(0L, TimeUnit.SECONDS);
+            verify(sweepLock, never()).tryLock(anyLong(), anyLong(), any(TimeUnit.class));
+            verify(sweepLock).unlock();
+        }
+
+        @Test
+        @DisplayName("逐用户锁仍是资金闸门：真并发竞争照样留下 FAILED 证据（未被扫描锁削弱）")
+        void perUserLockContentionStillWritesFailedLedger() throws Exception {
+            stubSweepLock(true);
+            when(rLock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(false);
+            givenSubscriptionEndingAt(LocalDateTime.now().minusDays(1));
+            when(userRepository.findByAutoRenewEnabledTrue()).thenReturn(List.of(autoRenewUser()));
+
+            AutoRenewService.RenewScanResult result = serviceWithSelf().runRenewScan();
+
+            assertEquals(1, result.failed(), "同用户真实竞争（手动续费/重放）仍必须计入失败");
+            ArgumentCaptor<VipBillingLog> saved = ArgumentCaptor.forClass(VipBillingLog.class);
+            verify(vipBillingLogRepository).save(saved.capture());
+            assertEquals("FAILED", saved.getValue().getStatus());
+            assertEquals(Integer.valueOf(0), saved.getValue().getAmount(), "未扣款则流水金额为 0");
         }
     }
 }

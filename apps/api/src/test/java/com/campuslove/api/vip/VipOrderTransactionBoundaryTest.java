@@ -10,6 +10,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,10 +26,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
@@ -333,6 +337,69 @@ class VipOrderTransactionBoundaryTest {
             assertEquals(0, service.closeExpiredOrders());
             assertEquals(List.of("wx-close"), events);
             verify(vipOrderRepository, never()).save(any(VipOrder.class));
+        }
+
+        /* ---------- 2026-10-31 P2：关单扫描级互斥 ---------- */
+
+        /** 注入 mock RedissonClient 并返回扫描锁（tryLock 行为由用例自己打桩）。 */
+        private RLock stubSweepLock() {
+            RedissonClient redissonClient = mock(RedissonClient.class);
+            RLock sweepLock = mock(RLock.class);
+            when(redissonClient.getLock(anyString())).thenReturn(sweepLock);
+            when(sweepLock.isHeldByCurrentThread()).thenReturn(true);
+            ReflectionTestUtils.setField(service, "redissonClient", redissonClient);
+            return sweepLock;
+        }
+
+        @Test
+        @DisplayName("扫描锁被另一副本占着：整轮跳过——不查库、不调微信、不解别人的锁")
+        void shouldSkipWholeSweepWhenAnotherReplicaHoldsLock() throws InterruptedException {
+            stubRepositorySave();
+            RLock sweepLock = stubSweepLock();
+            when(sweepLock.tryLock(anyLong(), any(TimeUnit.class))).thenReturn(false);
+            VipOrder a = orderIn(VipOrder.STATUS_PAYING, ORDER_NO);
+            when(vipOrderRepository.findByStatusInAndExpireAtBefore(any(), any())).thenReturn(List.of(a));
+
+            assertEquals(0, service.closeExpiredOrders());
+
+            assertEquals(List.of(), events, "抢不到扫描锁连扫描都不该发起");
+            verify(vipOrderRepository, never()).findByStatusInAndExpireAtBefore(any(), any());
+            verify(wxPayJsapiService, never()).closeOrder(anyString());
+            verify(sweepLock, never()).unlock();
+        }
+
+        @Test
+        @DisplayName("两副本各持一份 PAYING 快照：微信关单只被打一次（修复前的重复外部调用消失）")
+        void sweepLockPreventsDuplicateWechatClose() throws InterruptedException {
+            stubRepositorySave();
+            RLock sweepLock = stubSweepLock();
+            when(sweepLock.tryLock(anyLong(), any(TimeUnit.class))).thenReturn(true, false);
+            // 库里真实那两行：第一轮短事务把它们推进为 CLOSED
+            VipOrder dbA = orderIn(VipOrder.STATUS_PAYING, ORDER_NO + "A");
+            VipOrder dbB = orderIn(VipOrder.STATUS_PAYING, ORDER_NO + "B");
+            when(vipOrderRepository.findByOrderNo(anyString()))
+                    .thenAnswer(inv -> Optional.of(
+                            (ORDER_NO + "A").equals(inv.getArgument(0)) ? dbA : dbB));
+            // 每轮扫描都读到"仍是 PAYING"的快照——这正是并发副本会重复调微信的前提
+            when(vipOrderRepository.findByStatusInAndExpireAtBefore(any(), any())).thenAnswer(inv -> List.of(
+                    orderIn(VipOrder.STATUS_PAYING, ORDER_NO + "A"),
+                    orderIn(VipOrder.STATUS_PAYING, ORDER_NO + "B")));
+            org.mockito.Mockito.doAnswer(inv -> {
+                assertNoTransactionActive("关单");
+                events.add("wx-close:" + inv.getArgument(0));
+                return null;
+            }).when(wxPayJsapiService).closeOrder(anyString());
+
+            assertEquals(2, service.closeExpiredOrders(), "副本 A 拿到扫描锁，正常关两单");
+            assertEquals(0, service.closeExpiredOrders(), "副本 B 抢不到扫描锁，整轮跳过");
+
+            assertEquals(List.of(
+                    "wx-close:" + ORDER_NO + "A", "tx-begin", "save:CLOSED", "tx-commit",
+                    "wx-close:" + ORDER_NO + "B", "tx-begin", "save:CLOSED", "tx-commit"), events,
+                    "修复前：无扫描锁 ⇒ 第二轮会对同一批单再打两次 closeOrder（本列表会多出 2 条 wx-close）");
+            verify(wxPayJsapiService, times(1)).closeOrder(ORDER_NO + "A");
+            verify(wxPayJsapiService, times(1)).closeOrder(ORDER_NO + "B");
+            verify(sweepLock, times(1)).unlock();
         }
     }
 }
