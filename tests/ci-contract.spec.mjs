@@ -207,6 +207,33 @@ assert.match(
   "real-stack-smoke.spec.ts 必须在非 real 模式自跳过，避免污染 mock E2E",
 );
 
+// 「只在 real 模式跑」的 e2e spec 必须在 CI 里被点名过。
+// 这一条是本轮查出来的：五条业务流程 spec 都以 E2E_API_MODE !== 'real' 顶层自跳过，
+// 而 mock 的 e2e job 不设 real、唯一的 real job 又用文件名过滤只跑 smoke ⇒
+// 这五个文件写出来运行次数恒为 0（VIP 下单 403、越权 403 都在里面）。
+// 判点是结构对账，不是"我记得加过"：新增一条 real-only spec 而没在 CI 点名，本条即红。
+const realOnlySpecs = [];
+for (const entry of readdirSync(resolve(REPO, "tests/e2e/specs"))) {
+  if (!entry.endsWith(".spec.ts")) continue;
+  const text = readFileSync(resolve(REPO, "tests/e2e/specs", entry), "utf8");
+  // 两种写法都要抓：`!== 'real'`（skip 条件）与 `=== 'real'`（先取反存成常量再 skip）。
+  // 只匹配前者会漏掉 flow-privilege-403.spec.ts，那正是"判点数静默变少"的形态。
+  if (/E2E_API_MODE\s*(?:!==|!=|===|==)\s*['"]real['"]/u.test(text)) realOnlySpecs.push(entry);
+}
+assert.ok(
+  realOnlySpecs.length >= 4,
+  `real-only e2e spec 至少应有 4 条（当前 ${realOnlySpecs.length}）——数字掉了说明是自跳过条件被改写，不是流程变好了`,
+);
+const everyCiRun = Object.values(jobs)
+  .flatMap((job) => (job?.steps ?? []).map((step) => String(step.run ?? "")))
+  .join("\n");
+const unrunRealSpecs = realOnlySpecs.filter((name) => !everyCiRun.includes(name));
+assert.deepEqual(
+  unrunRealSpecs,
+  [],
+  `这些 spec 只在 E2E_API_MODE=real 时执行，但 CI 从没点名它们：${unrunRealSpecs.join(", ")}`,
+);
+
 // metadata 只产生单一 tag；多 tag 会让 image-ref 变成逗号串。
 assert.doesNotMatch(ci, /type=sha/u, "metadata must not add a second tag when scan uses outputs.tags");
 assert.equal(

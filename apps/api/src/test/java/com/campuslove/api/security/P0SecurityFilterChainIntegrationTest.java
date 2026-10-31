@@ -333,6 +333,6 @@ class P0SecurityFilterChainIntegrationTest {
         // 默认返回空响应体。完整 JSON 错误体验证由以下两处共同保证：
         //   1. JwtAccessDeniedHandlerTest（单元测试，验证 handler 输出格式）
         //   2. real profile 端到端集成测试（RealProfileAuthChainIntegrationTest，
-        //      由 -Dreal.it.test=true 在 CI 的 db-integration/e2e-real job 中真实执行）
+        //      由 CI 的 db-integration job 传 -Dreal.it.test=true 真实执行；只有它传）
     }
 }

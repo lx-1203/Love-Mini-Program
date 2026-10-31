@@ -90,7 +90,8 @@ import org.springframework.web.servlet.HandlerMapping;
  * 需在具备外部依赖的 CI 环境中执行。本测试类内原 {@code @Nested RealProfileEndToEndTests}
  * 只是一份空判点的骨架（真实断言全部被注释），real profile 的鉴权链此前从未被真正执行；
  * 现已迁移并落地为独立顶层测试类 {@link RealProfileAuthChainIntegrationTest}，
- * 由 {@code -Dreal.it.test=true} 在 CI 的 db-integration / e2e-real job 中真实运行。</p>
+ * 由 {@code -Dreal.it.test=true} 在 CI 的 db-integration job 中真实运行
+ * （只有 db-integration 传这个属性；e2e-real 跑的是 Playwright 真实栈业务流程，不跑本类）。</p>
  *
  * <p><b>关联任务</b>：</p>
  * <ul>
@@ -786,7 +787,8 @@ class P0SecurityIntegrationTest {
     //      JUnit 5 下导致 ApplicationContext 加载失败（JPA Repository 未注册），无法在
     //      @Nested 里跑真实的 @SpringBootTest（参考段一同款迁移与 SecurityConfigTest 先例）。
     // 现改为顶层 @SpringBootTest + @AutoConfigureMockMvc + @ActiveProfiles("real") +
-    // @EnabledIfSystemProperty("real.it.test=true")，断言全部落地。CI 的 db-integration /
-    // e2e-real job 传 -Dreal.it.test=true 时真实执行。
+    // @EnabledIfSystemProperty("real.it.test=true")，断言全部落地。
+    // CI 里只有 db-integration job 传 -Dreal.it.test=true（e2e-real 不跑 mvn test，
+    // 它跑的是 Playwright 真实栈流程）——第四轮审查把这句写进代码时它还不准。
     // ========================================================================
 }

@@ -28,8 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 三个「空断言骨架」替换为真实可执行断言。骨架的三个 {@code @Test} 方法体里所有判点
  * 都被注释掉（{@code // CI 环境就绪后启用:}），也就是说 real profile 的鉴权链
  * （401 未认证 / 403 非管理员 / 登出后令牌失效）此前在任何环境里都没有被真正跑过——
- * 属于「覆盖率是假的」的典型形态。本类补上真实断言，CI 的 db-integration / e2e-real job
- * 传 {@code -Dreal.it.test=true} 时执行。</p>
+ * 属于「覆盖率是假的」的典型形态。本类补上真实断言，由 CI 的 db-integration job
+ * 传 {@code -Dreal.it.test=true} 时执行（只有它传；e2e-real 跑 Playwright 流程，不跑本类）。</p>
  *
  * <p><b>为什么必须是顶层类</b>：{@code @Nested} + {@code @SpringBootTest} +
  * {@code @TestInstance(PER_CLASS)} 组合在 Spring Boot 3.3 + JUnit 5 下会导致

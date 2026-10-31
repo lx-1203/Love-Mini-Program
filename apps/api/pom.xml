@@ -238,6 +238,13 @@
       <plugin>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-maven-plugin</artifactId>
+        <!-- 版本必须显式钉住：spring-boot-starter-parent 3.3.1 的 pluginManagement 里
+             【没有】flyway 条目（只通过 BOM 管 flyway-core=10.10.0），不写版本时 Maven
+             会从 central metadata 取"最新发行版" ⇒ 命令行迁移工具与 app 运行时、
+             compose 里 pin 的 flyway/flyway:10.10.0-alpine 三方各走各的大版本
+             （校验和算法、历史表结构、MySQL 支持模块都有行为差异）。
+             ${flyway.version} 由 spring-boot-dependencies 定义，与 flyway-core 同源。 -->
+        <version>${flyway.version}</version>
         <configuration>
           <url>${env.DB_URL}</url>
           <user>${env.DB_USERNAME}</user>

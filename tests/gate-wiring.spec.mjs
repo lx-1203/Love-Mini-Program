@@ -97,4 +97,61 @@ for (const match of ci.matchAll(/mvn -B -f apps\/api\/pom\.xml test\b/gu)) {
   );
 }
 
+// 根脚本里每一条 test:* 必须真的有人跑：要么在 test:contracts 链内，要么被 CI 按名整词点到。
+// 上面那段磁盘对账只覆盖 tests/*.spec.mjs，看不见 scripts/qa/ 下的门——
+// 第四轮审查正是从这里查出缺口：test:fidelity-manifest 定义了、却只被人工脚本
+// scripts/qa/run-final-verify-v33.sh 调过，CI 全文没有它（同族的四条 :self-test 也一样）。
+// 例外必须逐条写理由，且基线只减不增：接上线却不划掉例外，本条同样红。
+const TEST_EXECUTION_BASELINE = {
+  // 组合糖：generate:openapi + apps/client 的 test:unit，CI 的 client-test job 分别执行了等价命令
+  "test:client": "组合糖，等价命令已在 CI 的 client-test job 里分别执行",
+  // 盘上真读数在 CI 必假红：CI 检出树里两个盘上根都被 .gitignore 的 *.png/*.jpg/... 挡掉大半
+  // （本机实测 495/1354、613/1496 进了 git），那是检出面缺口而不是产品缺陷。
+  // CI 跑的是它的 :self-test（已在 contracts 链里，且由 ci-contract 钉住"恰有一发"）；
+  // 真读数只在有完整盘上资产的本地跑。
+  "test:asset-coverage:source": "CI 检出树缺 gitignore 的二进制资产 ⇒ 真读数在 CI 恒假红，只在本地跑；CI 跑它的 :self-test",
+};
+const escGateName = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const chainText = contracts;
+const normGate = (value) => String(value ?? "").replace(/\s+/gu, " ").trim();
+const ciNormalized = normGate(ci);
+const unwired = [];
+for (const [name, body] of Object.entries(rootPkg.scripts)) {
+  if (!name.startsWith("test:") || name === "test:contracts" || name === "test") continue;
+  // 同样要求整名：`npm run test:admin` 不能靠链里的 test:admin-scope-leak 蒙成已接线
+  const inChain = new RegExp(`npm run ${escGateName(name)}(?![\\w:.-])`).test(chainText);
+  // CI 侧要求"整名"：后面不能再跟 [\w:.-]，否则 test:admin 会被 test:admin-scope-leak 冒充成已接线
+  const inCi = new RegExp(`\\b${escGateName(name)}(?![\\w:.-])`).test(ci);
+  // 第三条通道：CI 逐字执行了这条脚本的【命令本体】。很多根脚本只是 pnpm --filter 的别名，
+  // CI 直接写全命令而不按脚本名调用——只按名字判定会把 test:admin 这类误报成"没人跑"
+  // （本门首跑就是这样误报了一次，判据必须能区分"真没接线"与"换了个写法"）。
+  // 带 && 的复合命令不作此等价判断：CI 分开跑两条不等于跑过这个组合。
+  // 还要挡住"前缀冒充"：CI 里的 `… --source-only --selftest` 并不等于执行了
+  // `… --source-only`（自证跑 ≠ 真读数），所以匹配位置后面不能再跟一个参数。
+  let bodyInCi = false;
+  if (!body.includes("&&")) {
+    const at = ciNormalized.indexOf(normGate(body));
+    if (at >= 0) {
+      const after = ciNormalized.slice(at + normGate(body).length);
+      // 只挡"再跟一个参数"的情形（如 --selftest / -q）：`^ --?[^ ]`。
+      // YAML 折叠后下一步骤会以 " - name: …" 开头，那是步骤边界、不是参数，不能误判。
+      bodyInCi = !/^ --?[^ ]/u.test(after);
+    }
+  }
+  if (!inChain && !inCi && !bodyInCi) unwired.push(name);
+}
+for (const name of unwired) {
+  assert.ok(
+    TEST_EXECUTION_BASELINE[name],
+    `根脚本 ${name}（${String(rootPkg.scripts[name]).slice(0, 60)}…）` +
+      "既不在 test:contracts 链里、也不被 CI 按名整词执行 = 建了没人跑",
+  );
+}
+for (const name of Object.keys(TEST_EXECUTION_BASELINE)) {
+  assert.ok(
+    unwired.includes(name),
+    `例外 ${name} 现在已经接线了，必须从 TEST_EXECUTION_BASELINE 划掉（基线只减不增）`,
+  );
+}
+
 console.log("test gate wiring contract ok");

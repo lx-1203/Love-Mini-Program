@@ -174,7 +174,9 @@ test.describe('核心旅程：注册 → 匹配 → 聊天 @core-journey', () =>
 
     const firstSession = page.locator('.chat-session-item, [data-testid="chat-session"]').first();
     if (!(await firstSession.isVisible({ timeout: 5_000 }).catch(() => false))) {
-      test.skip();
+      // 必须是"带理由的跳过"，不能是裸 test.skip()：裸跳过在报告里与"这条本来就不该跑"
+      // 长得一样，聊天 UI 回归或数据没播种都会把判点降解成静默缺席（第四轮审查查出）。
+      test.skip(true, 'NOT-EVIDENCED: 会话列表 5s 内没出现可点行（真实栈未播种聊天数据，或会话项选择器已失效）');
       return;
     }
 
