@@ -102,7 +102,7 @@ public class MediaUploadController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "413", description = "PAYLOAD_TOO_LARGE：文件超过大小限制", content = @Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "RATE_LIMITED：触发限流", content = @Content)
     })
-    @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
     @Idempotent
     public ApiResponse<UploadResponse> upload(
             @Parameter(in = ParameterIn.QUERY, description = "multipart 文件", required = true,
@@ -157,7 +157,7 @@ public class MediaUploadController {
      */
     @PostMapping("/temp/upload")
     @PreAuthorize("hasRole('USER')")
-    @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
     @Idempotent
     public ApiResponse<UploadResponse> uploadTemp(
             @RequestParam("file") MultipartFile file,

@@ -42,7 +42,7 @@ public class LocationController {
      * 节流：5 分钟内重复上报忽略。
      */
     @PostMapping("/report")
-    @RateLimit(capacity = 10, refillTokens = 0.2, key = "#request.remoteAddr")
+    @RateLimit(capacity = 10, refillTokens = 0.2, key = "#clientIp")
     public ApiResponse<Void> reportLocation(@RequestBody LocationReportRequest body,
                                             HttpServletRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -71,7 +71,7 @@ public class LocationController {
      * @param radiusKm 搜索半径（km，1-20，默认 5）
      */
     @GetMapping("/nearby")
-    @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
     public ApiResponse<List<GeoService.NearbyPerson>> getNearby(
             @RequestParam BigDecimal lat,
             @RequestParam BigDecimal lng,

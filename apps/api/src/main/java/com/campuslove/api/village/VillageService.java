@@ -161,6 +161,26 @@ public interface VillageService {
     }
 
     /**
+     * 删除<b>自己</b>的帖子（2026-10-31 用户内容生命周期补齐：软删除）。
+     *
+     * <p>real 实现（{@link RealVillageService} → {@link VillagePostService#deletePost}）
+     * 把 {@code posts.status} 置为 {@code deleted}，与后台删除同一套状态词汇。</p>
+     *
+     * <p>默认实现为什么是「显式失败」而不是空操作：mock 档演示数据不落库，
+     * 空实现会让 {@code DELETE /api/v1/posts/{id}} 返回 200 而帖子仍在列表里——
+     * 那是「假装成功的静默缺陷」，与本轮要修的缺陷同源，所以宁可回 422。
+     * 需要 mock 档可演示时，请在 {@code mock/MockVillageService} 覆写本方法
+     * （从内存列表移除），不在本次改动范围内。</p>
+     *
+     * @param userId 当前登录用户 ID（JWT 上下文）
+     * @param postId 目标帖子 ID
+     */
+    default void deletePost(Long userId, Long postId) {
+        throw new com.campuslove.api.common.InvalidOperationException(
+                "当前后端档位（mock 演示数据不落库）不支持删除帖子");
+    }
+
+    /**
      * 点赞帖子（切换点赞状态）。
      *
      * @param userId 当前用户 ID

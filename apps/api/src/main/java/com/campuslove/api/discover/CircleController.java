@@ -161,7 +161,7 @@ public class CircleController {
    * 按客户端 IP 限流，防止话题刷屏。</p>
    */
   @PostMapping("/{id}/topics")
-  @RateLimit(capacity = 20, refillTokens = 0.5, key = "#request.remoteAddr")
+  @RateLimit(capacity = 20, refillTokens = 0.5, key = "#clientIp")
   @Idempotent
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<CircleTopicView> createTopic(
@@ -204,7 +204,7 @@ public class CircleController {
    * 防止回复刷屏与垃圾内容。</p>
    */
   @PostMapping("/topics/{id}/replies")
-  @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+  @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
   @Idempotent
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<CircleReplyView> createReply(

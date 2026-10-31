@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.campuslove.api.campus.CampusCertificationService;
@@ -228,7 +230,8 @@ class ProfileQueryServiceTest {
         Post post2 = createPost(11L, userId);
         Post post3 = createPost(12L, userId);
 
-        when(postRepository.findByAuthorId(userId)).thenReturn(List.of(post1, post2, post3));
+        when(postRepository.findByAuthorIdAndStatusNot(userId, Post.PostStatus.deleted))
+                .thenReturn(List.of(post1, post2, post3));
         when(postLikeRepository.countByPostId(10L)).thenReturn(5L);
         when(postLikeRepository.countByPostId(11L)).thenReturn(10L);
         when(postLikeRepository.countByPostId(12L)).thenReturn(0L);
@@ -244,11 +247,40 @@ class ProfileQueryServiceTest {
     @Test
     void calculateTotalLikesCount_noPosts_returnsZero() {
         Long userId = 2L;
-        when(postRepository.findByAuthorId(userId)).thenReturn(List.of());
+        when(postRepository.findByAuthorIdAndStatusNot(userId, Post.PostStatus.deleted))
+                .thenReturn(List.of());
 
         int total = queryService.calculateTotalLikesCount(userId);
 
         assertEquals(0, total);
+    }
+
+    /**
+     * S3-D（2026-10-31）防回归：公开主页「总获赞数」必须以【排除 deleted 墓碑】的
+     * 查询入口取帖子列表。
+     *
+     * <p>为什么这条测试「把过滤器删掉就会红」：如果把
+     * {@code calculateTotalLikesCount} 改回 {@code findByAuthorId(userId)}
+     * （不过滤软删除，实测 campus_love 里 {@code posts.status='deleted'} 有 5 行），
+     * 则 {@code findByAuthorIdAndStatusNot} 上登记的这个 stub 不会被调用，
+     * Mockito 的 strict stubs 在tearDown 时报 UnnecessaryStubbingException，
+     * 同时下面的 {@code verify(...)} 直接失败——两处都是硬失败，不是静默通过。
+     * 反过来若有人把排除参数从 deleted 改成别的值，stub 参数不匹配同样失败。</p>
+     */
+    @Test
+    void calculateTotalLikesCount_excludesDeletedPostTombstones() {
+        Long userId = 3L;
+        Post kept = createPost(30L, userId);
+
+        when(postRepository.findByAuthorIdAndStatusNot(userId, Post.PostStatus.deleted))
+                .thenReturn(List.of(kept));
+        when(postLikeRepository.countByPostId(30L)).thenReturn(4L);
+
+        int total = queryService.calculateTotalLikesCount(userId);
+
+        assertEquals(4, total);
+        verify(postRepository).findByAuthorIdAndStatusNot(userId, Post.PostStatus.deleted);
+        verify(postRepository, never()).findByAuthorId(anyLong());
     }
 
     // ---- getFollowers ----

@@ -59,7 +59,7 @@ public class FeedbackController {
    */
   @PostMapping("/api/v1/feedback/issues")
   @ResponseStatus(HttpStatus.ACCEPTED)
-  @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
+  @RateLimit(capacity = 10, refillTokens = 0.1, key = "#clientIp")
   @Idempotent
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<SubmissionRecordView> createIssue(@Valid @RequestBody FeedbackSubmissionRequest request) {
@@ -75,7 +75,7 @@ public class FeedbackController {
    */
   @PostMapping("/api/v1/feedback/suggestions")
   @ResponseStatus(HttpStatus.ACCEPTED)
-  @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
+  @RateLimit(capacity = 10, refillTokens = 0.1, key = "#clientIp")
   @Idempotent
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<SubmissionRecordView> createSuggestion(@Valid @RequestBody FeedbackSubmissionRequest request) {
@@ -91,7 +91,7 @@ public class FeedbackController {
    */
   @PostMapping("/api/v1/feedback/activity-proposals")
   @ResponseStatus(HttpStatus.ACCEPTED)
-  @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
+  @RateLimit(capacity = 10, refillTokens = 0.1, key = "#clientIp")
   @Idempotent
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<SubmissionRecordView> createActivityProposal(@Valid @RequestBody FeedbackSubmissionRequest request) {

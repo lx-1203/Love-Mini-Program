@@ -65,7 +65,7 @@ public class ErrorReportController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @RateLimit(capacity = 20, refillTokens = 2, key = "#request.remoteAddr")
+    @RateLimit(capacity = 20, refillTokens = 2, key = "#clientIp")
     public ApiResponse<ErrorReportView> createReport(@Valid @RequestBody ErrorReportCreateRequest req) {
         ErrorReport report = new ErrorReport();
         report.setMessage(req.message());

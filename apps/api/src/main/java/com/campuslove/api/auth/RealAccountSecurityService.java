@@ -9,6 +9,7 @@ import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.AesEncryptor;
 import com.campuslove.api.config.JwtTokenProvider;
 import com.campuslove.api.entity.User;
+import com.campuslove.api.privacy.PhoneColumnCodec;
 import com.campuslove.api.repository.UserRepository;
 import io.jsonwebtoken.JwtException;
 import java.nio.charset.StandardCharsets;
@@ -51,11 +52,16 @@ public class RealAccountSecurityService implements AccountSecurityService {
     private final AesEncryptor aesEncryptor;
 
     /**
-     * 实名认证照片清除服务（2026-10-05 合规接线：注销时同步删除该用户实名照片文件与引用）。
-     * 字段注入（required=false）兼容既有单测构造器；为 null 时跳过照片清除。
+     * 注销数据清除服务（P0 2026-10-31：注销必须真的删）。
+     *
+     * <p>字段注入（required=false）兼容既有单测构造器：为 null 时仅退化为「users 墓碑」，
+     * 生产装配 real profile 时必定存在。原先这里注入的是
+     * {@code RealNameMediaPurgeService}（只删实名照片文件），其职责已被
+     * {@link com.campuslove.api.privacy.AccountErasureService} 完全覆盖并扩展
+     * （实名记录整行删除 + 实名/学生证/相册/背景等文件在事务提交后物理删除）。</p>
      */
     @Autowired(required = false)
-    private com.campuslove.api.verification.RealNameMediaPurgeService realNameMediaPurgeService;
+    private com.campuslove.api.privacy.AccountErasureService accountErasureService;
 
     public RealAccountSecurityService(
             UserRepository userRepository,
@@ -135,7 +141,7 @@ public class RealAccountSecurityService implements AccountSecurityService {
         }
 
         // 新手机号占用校验（与 registerUser 同一加密口径：先密文后明文，兼容历史数据）
-        String newPhoneCipher = aesEncryptor != null ? aesEncryptor.encrypt(newPhone) : newPhone;
+        String newPhoneCipher = PhoneColumnCodec.store(aesEncryptor, newPhone);
         boolean occupied = userRepository.findByPhone(newPhoneCipher)
                 .or(() -> userRepository.findByPhone(newPhone))
                 .isPresent();
@@ -156,57 +162,97 @@ public class RealAccountSecurityService implements AccountSecurityService {
     }
 
     /**
-     * 注销账号（幂等）。
+     * 注销账号（幂等、可重跑）。
      * <ul>
-     *   <li>已注销（status=deactivated）→ 幂等成功（不重复处理）</li>
+     *   <li>已注销（status=deactivated）→ <b>不再直接返回</b>：跳过凭据复验（密码散列本身已被销毁，
+     *       复验必然失败），但仍然把清除清单重跑一遍——上一次若在清单中途失败并回滚，
+     *       会出现「users 已是墓碑、实名记录还在库里」的状态，重跑必须能补齐。</li>
      *   <li>有密码账号：校验旧密码；无密码账号：校验 confirmationText 非空（替代密码）</li>
-     *   <li>匿名化：昵称→「已注销用户」、头像置空、手机号脱敏（置为不可登录的脱敏占位）</li>
+     *   <li>数据清除：{@link com.campuslove.api.privacy.AccountErasureService#erase(Long)}
+     *       按 {@code PersonalDataTables} 清单删除/匿名化主体的全部关联数据（40+ 项），
+     *       再 {@code tombstone(user)} 写 users 行的身份列墓碑</li>
      *   <li>吊销该用户全部 token（含当前 token）</li>
      * </ul>
+     *
+     * <p>users 墓碑的两个关键值：{@code openid} 写
+     * {@code erased:<UUIDv4>}（满足 NOT NULL + uk_users_openid 唯一，与真实微信 openid /
+     * {@code phone:} / {@code guest:} 前缀都不冲突，两个账号同秒注销也不互撞）；
+     * {@code phone} 写 <b>NULL</b>（旧实现写 {@code "1****"+userId} 是含 userId 的稳定化名，
+     * 既没删除也可反推，同时把「明文哨兵」混进了本应存 AES 密文的列——见
+     * {@link com.campuslove.api.privacy.PhoneColumnCodec}）。</p>
      */
     @Override
     @Transactional
     public void deactivateAccount(Long userId, String password, String confirmationText, String currentToken) {
         User user = findUserOrThrow(userId);
 
-        // 幂等：已注销账号重复注销直接成功
-        if ("deactivated".equalsIgnoreCase(user.getStatus())) {
-            log.info("账号已处于注销状态，重复注销幂等返回: userId={}", userId);
-            return;
-        }
-
-        boolean hasPassword = user.getPassword() != null && !user.getPassword().isBlank();
-        if (hasPassword) {
-            if (password == null || !passwordEncoder.matches(password, user.getPassword())) {
-                log.warn("注销账号失败：旧密码错误, userId={}", userId);
-                throw new OperationForbiddenException(ErrorMessages.OLD_PASSWORD_WRONG);
+        boolean alreadyDeactivated = "deactivated".equalsIgnoreCase(user.getStatus());
+        if (!alreadyDeactivated) {
+            boolean hasPassword = user.getPassword() != null && !user.getPassword().isBlank();
+            if (hasPassword) {
+                if (password == null || !passwordEncoder.matches(password, user.getPassword())) {
+                    log.warn("注销账号失败：旧密码错误, userId={}", userId);
+                    throw new OperationForbiddenException(ErrorMessages.OLD_PASSWORD_WRONG);
+                }
+            } else {
+                // 无密码账号：以注销确认文本替代密码校验
+                if (confirmationText == null || confirmationText.isBlank()) {
+                    throw new OperationForbiddenException(ErrorMessages.CONFIRMATION_TEXT_REQUIRED);
+                }
+                log.info("无密码账号注销：confirmationText 已确认, userId={}", userId);
             }
         } else {
-            // 无密码账号：以注销确认文本替代密码校验
-            if (confirmationText == null || confirmationText.isBlank()) {
-                throw new OperationForbiddenException(ErrorMessages.CONFIRMATION_TEXT_REQUIRED);
-            }
-            log.info("无密码账号注销：confirmationText 已确认, userId={}", userId);
+            log.info("账号已是注销墓碑，重跑清除清单以修复可能的半成品状态: userId={}", userId);
         }
 
-        // 个人数据匿名化（昵称/头像/手机号）
-        user.setStatus("deactivated");
-        user.setNickname("已注销用户");
-        user.setAvatarUrl(null);
-        // 手机号脱敏：置为不可登录的脱敏占位（含用户 ID 保证 uk_users_phone 唯一）
-        user.setPhone(maskPhone(userId));
-        user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        // 1) 关联数据清除（原生 SQL 逐表 DELETE/匿名化，与 PIPL 导出清单同源；含证件照/相册文件 URL 收集）
+        if (accountErasureService != null) {
+            accountErasureService.erase(userId);
+        } else {
+            // 生产装配不会走到这里（real profile 下必然存在）；退化为仅墓碑，并把缺口显式打出来
+            log.error("注销缺少 AccountErasureService 装配，仅写了 users 墓碑——"
+                    + "实名/校园认证/聊天/行为数据未清除, userId={}", userId);
+        }
+
+        // 2) users 行墓碑（身份列全部销毁；openid 非空且唯一，phone 置 NULL）
+        String erasedOpenid = accountErasureService != null
+                ? accountErasureService.tombstone(user)
+                : manualTombstone(user);
         userRepository.save(user);
-        log.info("账号已注销并匿名化, userId={}", userId);
+        log.info("账号已注销，users 行已墓碑化（openid 已换为一次性随机墓碑值）, userId={}", userId);
 
-        // 2026-10-05 合规接线：注销时同步删除该用户实名认证照片文件与引用
-        // （身份证照片属高敏个人信息，注销后不得留存；清除失败仅记日志不阻断注销主流程）
-        if (realNameMediaPurgeService != null) {
-            realNameMediaPurgeService.purgeByUserId(userId);
-        }
-
-        // 吊销该用户全部 token（含当前请求 token）
+        // 3) 吊销该用户全部 token（含当前请求 token）
         revokeAllTokens(userId, currentToken);
+    }
+
+    /**
+     * 装配缺失时的兜底墓碑（列集与 {@code AccountErasureService#tombstone} 保持一致）。
+     * 仅本地/测试窄场景使用；生产路径由清除服务写墓碑。
+     */
+    private String manualTombstone(User user) {
+        String erasedOpenid = com.campuslove.api.privacy.ErasedValues.erasedOpenid();
+        user.setOpenid(erasedOpenid);
+        user.setNickname(com.campuslove.api.privacy.ErasedValues.NICKNAME);
+        user.setAvatarUrl(null);
+        user.setBio(null);
+        user.setGradeLabel(null);
+        user.setPronouns(null);
+        user.setPhone(com.campuslove.api.privacy.PhoneColumnCodec.ERASED_VALUE);
+        user.setBirthDate(null);
+        user.setCampusName(null);
+        user.setCirclePath(null);
+        user.setPassword(null);
+        user.setLatitude(null);
+        user.setLongitude(null);
+        user.setGeoUpdatedAt(null);
+        user.setRole("USER");
+        user.setStatus("deactivated");
+        user.setAutoRenewEnabled(false);
+        user.setProfileCompletion(0);
+        user.setFollowingCount(0);
+        user.setFollowersCount(0);
+        user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        return erasedOpenid;
     }
 
     // ---- 私有辅助方法 ----
@@ -243,13 +289,6 @@ public class RealAccountSecurityService implements AccountSecurityService {
             // 当前 token 解析失败（异常 token）不影响主流程
             log.debug("吊销当前 token 失败: {}", ex.getMessage());
         }
-    }
-
-    /**
-     * 手机号脱敏：置为不可登录的脱敏占位，含用户 ID 保证唯一约束不冲突。
-     */
-    private String maskPhone(Long userId) {
-        return "1****" + userId;
     }
 
     /**

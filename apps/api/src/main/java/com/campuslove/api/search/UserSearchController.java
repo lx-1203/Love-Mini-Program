@@ -46,7 +46,7 @@ public class UserSearchController {
      * @return 分页搜索结果
      */
     @GetMapping("/users")
-    @RateLimit(capacity = 30, refillTokens = 2, key = "#request.remoteAddr")
+    @RateLimit(capacity = 30, refillTokens = 2, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<Page<UserSearchView>> searchUsers(
             @RequestParam("keyword") @Size(min = 1, max = 20) String keyword,

@@ -27,40 +27,6 @@ public class MockPushSummaryService implements PushSummaryService {
     private final ConcurrentHashMap<Long, PushSummary> summaryCache = new ConcurrentHashMap<>();
 
     @Override
-    public PushSummary generateSocialDigest(Long userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("userId is required");
-        }
-
-        // 检查今日是否已有 mock 摘要（通过缓存中相同 userId + social_digest 判断）
-        boolean alreadyGenerated = summaryCache.values().stream()
-                .anyMatch(s -> s.getUserId().equals(userId)
-                        && "social_digest".equals(s.getSummaryType()));
-        if (alreadyGenerated) {
-            log.debug("Mock: 用户[{}]今日已生成社交动态摘要，返回已有记录", userId);
-            return summaryCache.values().stream()
-                    .filter(s -> s.getUserId().equals(userId)
-                            && "social_digest".equals(s.getSummaryType()))
-                    .findFirst().orElse(null);
-        }
-
-        Long summaryId = summaryIdSeq.incrementAndGet();
-        PushSummary summary = new PushSummary();
-        summary.setId(summaryId);
-        summary.setUserId(userId);
-        summary.setSummaryType("social_digest");
-        summary.setTitle("你收到了新的社交动态");
-        summary.setContent("3 人查看了你的主页，1 人喜欢了你，帖子获得 5 次互动");
-        summary.setActionUrl("/pages/likes/index");
-        summary.setIsSent(false);
-        summary.setGeneratedAt(LocalDateTime.now(TimeZones.BUSINESS));
-
-        summaryCache.put(summaryId, summary);
-        log.debug("Mock: 用户[{}]社交动态摘要已生成", userId);
-        return summary;
-    }
-
-    @Override
     public PushSummary generateRecommendRefresh(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");

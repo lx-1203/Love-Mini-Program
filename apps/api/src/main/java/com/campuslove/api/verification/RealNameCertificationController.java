@@ -67,7 +67,7 @@ public class RealNameCertificationController {
      */
     @PostMapping
     @Operation(summary = "提交实名认证申请", description = "提交姓名、身份证号与正反面照片；未满 18 周岁或已认证（APPROVED）时返回业务错误")
-    @RateLimit(capacity = 5, refillTokens = 0.05, key = "#request.remoteAddr")
+    @RateLimit(capacity = 5, refillTokens = 0.05, key = "#clientIp")
     @Idempotent
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<RealNameCertificationView> submit(@Valid @RequestBody RealNameCertificationRequest request) {

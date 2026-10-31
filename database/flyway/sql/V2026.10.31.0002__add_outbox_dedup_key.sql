@@ -63,24 +63,86 @@
 --   ALTER TABLE outbox_event DROP COLUMN dedup_key, DROP COLUMN claimed_at;
 --   （回滚前先把 status='IN_PROGRESS' 的行置回 PENDING，否则僵尸行无人认领：
 --     UPDATE outbox_event SET status='PENDING', claimed_at=NULL WHERE status='IN_PROGRESS';）
+--
+-- ============================================================
+-- 可重放性（S3-A，2026-10-31 重写；本文件此前从未进入 flyway_schema_history，
+--   实测 SELECT version FROM flyway_schema_history WHERE version='2026.10.31.0002' 返回 0 行，
+--   故重写不改校验和语义、不影响任何已应用环境）：
+--   MySQL 对 DDL 是【隐式提交】的——每条 ALTER/CREATE INDEX 落盘即永久生效，
+--   与原子的 DML 混在同一个 V 文件里时，若中途报错，Flyway 只能把整行标为 success=0；
+--   `flyway repair` 后重放会重新执行已经成功的那些语句 ⇒
+--     ALTER TABLE … ADD COLUMN dedup_key → ERROR 1060 Duplicate column name
+--     CREATE UNIQUE INDEX uk_outbox_dedup_key → ERROR 1061 Duplicate key name
+--   于是链条卡死在这一条上，后面的迁移全部无法推进。
+--   本文件因此改成【全语句 guarded】形态：每条 DDL 先查 information_schema 再决定是否执行，
+--   重放到哪一步都收敛到同一终态（沿用 V2026.07.26.0002 已确立的存储过程口径）。
+--   回填 UPDATE 原本就带 WHERE dedup_key IS NULL，天然幂等，保持不变。
+--   唯一索引改成「先查 STATISTICS 再建」，且仍在回填之后建，fail-fast 语义不变。
 -- ============================================================
 
-ALTER TABLE outbox_event
-    ADD COLUMN dedup_key VARCHAR(64) DEFAULT NULL COMMENT '业务事件幂等键（生产者 eventId；legacy- 前缀为存量行回填，不参与跨行去重）' AFTER payload_json,
-    ADD COLUMN claimed_at DATETIME DEFAULT NULL COMMENT '补偿任务认领该行的时间（用于回收认领后进程崩溃的僵尸行）' AFTER sent_at;
+DROP PROCEDURE IF EXISTS add_outbox_dedup_key_guarded;
+DELIMITER $$
+CREATE PROCEDURE add_outbox_dedup_key_guarded()
+BEGIN
+    -- 1) dedup_key：缺列才加
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE table_schema = DATABASE()
+          AND table_name = 'outbox_event'
+          AND column_name = 'dedup_key'
+    ) THEN
+        ALTER TABLE outbox_event
+            ADD COLUMN dedup_key VARCHAR(64) DEFAULT NULL
+                COMMENT '业务事件幂等键（生产者 eventId；legacy- 前缀为存量行回填，不参与跨行去重）'
+                AFTER payload_json;
+    END IF;
 
--- 存量行确定性回填：WHERE dedup_key IS NULL 使本语句可安全重放（幂等）。
-UPDATE outbox_event
-   SET dedup_key = CONCAT(
-         'legacy-',
-         LPAD(id, 20, '0'),
-         '-',
-         LEFT(SHA2(CONCAT(queue_type, '|', routing_key, '|', payload_json), 256), 24)
-       )
- WHERE dedup_key IS NULL;
+    -- 2) claimed_at：缺列才加
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE table_schema = DATABASE()
+          AND table_name = 'outbox_event'
+          AND column_name = 'claimed_at'
+    ) THEN
+        ALTER TABLE outbox_event
+            ADD COLUMN claimed_at DATETIME DEFAULT NULL
+                COMMENT '补偿任务认领该行的时间（用于回收认领后进程崩溃的僵尸行）'
+                AFTER sent_at;
+    END IF;
 
--- 回填完成后再建唯一索引：若上面「不合并」的假设被现实推翻（出现重复键），
--- 这里会直接报错而不是静默丢事件，符合 fail-fast 口径。
-CREATE UNIQUE INDEX uk_outbox_dedup_key ON outbox_event (dedup_key);
+    -- 3) 存量行确定性回填：WHERE dedup_key IS NULL 使其本身可重放
+    UPDATE outbox_event
+       SET dedup_key = CONCAT(
+             'legacy-',
+             LPAD(id, 20, '0'),
+             '-',
+             LEFT(SHA2(CONCAT(queue_type, '|', routing_key, '|', payload_json), 256), 24)
+           )
+     WHERE dedup_key IS NULL;
 
-CREATE INDEX idx_outbox_claim ON outbox_event (status, claimed_at);
+    -- 4) 唯一索引：回填完成后才建；已存在则跳过（重放安全）
+    --    若「不合并」假设被现实推翻（存在重复键），这里仍会因列中已有重复值而
+    --    在首次创建时报 1062 直接失败，不会被静默跳过——只有【索引已建好】时才跳过。
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.STATISTICS
+        WHERE table_schema = DATABASE()
+          AND table_name = 'outbox_event'
+          AND index_name = 'uk_outbox_dedup_key'
+    ) THEN
+        CREATE UNIQUE INDEX uk_outbox_dedup_key ON outbox_event (dedup_key);
+    END IF;
+
+    -- 5) 认领扫描索引：已存在则跳过
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.STATISTICS
+        WHERE table_schema = DATABASE()
+          AND table_name = 'outbox_event'
+          AND index_name = 'idx_outbox_claim'
+    ) THEN
+        CREATE INDEX idx_outbox_claim ON outbox_event (status, claimed_at);
+    END IF;
+END$$
+DELIMITER ;
+
+CALL add_outbox_dedup_key_guarded();
+DROP PROCEDURE IF EXISTS add_outbox_dedup_key_guarded;

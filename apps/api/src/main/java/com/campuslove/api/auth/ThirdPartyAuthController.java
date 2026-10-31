@@ -68,7 +68,7 @@ public class ThirdPartyAuthController {
      * @return 用户会话视图（包含 JWT 令牌）
      */
     @PostMapping("/wechat")
-    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#clientIp")
     public UserSessionView loginWithWechat(@Valid @RequestBody WechatThirdPartyLoginRequest request) {
         return thirdPartyAuthService.loginWithWechat(request.code(), request.deviceId());
     }
@@ -84,7 +84,7 @@ public class ThirdPartyAuthController {
      * @return 用户会话视图（包含 JWT 令牌）
      */
     @PostMapping("/apple")
-    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#clientIp")
     public UserSessionView loginWithApple(@Valid @RequestBody AppleLoginRequest request) {
         return thirdPartyAuthService.loginWithApple(request.identityToken(), request.deviceId());
     }

@@ -87,7 +87,7 @@ public class WechatAuthController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "RATE_LIMITED：触发登录接口限流", content = @Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502", description = "WECHAT_API_ERROR：微信 API 调用失败（网络异常或 errcode 非 0）", content = @Content)
     })
-    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#clientIp")
     public UserSessionView loginWithWechat(
             @Parameter(description = "微信登录请求体，包含 wx.login() 返回的 code（不可为空）", required = true)
             @Valid @RequestBody WechatLoginRequest request) {

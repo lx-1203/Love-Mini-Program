@@ -532,7 +532,7 @@ public class MediaAccessController {
         if (mediaAssetRepository != null) {
             String url = APP_ASSET_URL_PREFIX + subPath;
             boolean registeredAndApproved = mediaAssetRepository
-                    .findByUrlAndType(url, TYPE_APP_ASSET)
+                    .findByUrlAndTypeAndDeletedAtIsNull(url, TYPE_APP_ASSET)
                     .map(MediaAsset::getAuditStatus)
                     .map(AUDIT_STATUS_APPROVED::equals)
                     .orElse(false);

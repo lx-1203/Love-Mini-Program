@@ -91,13 +91,44 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             List<Long> authorIds, PostCategory category, PostStatus status, Pageable pageable);
 
     /**
-     * 根据作者 ID 查询该用户的所有帖子。
-     * 用于统计用户帖子总获赞数等场景。
+     * 根据作者 ID 查询该用户的【全部】帖子，含 {@code status='deleted'} 的墓碑行。
+     *
+     * <p>S3-D（2026-10-31）明确：本方法【不过滤软删除】，只能用于「数据主体本人查阅自己
+     * 的全部记录」这类必须看见墓碑的场景。现存的合法调用方（逐个点名）：</p>
+     * <ul>
+     *   <li>{@code PersonalDataService.postCategory}——个人信息查阅导出，
+     *       其注释本身写明「含已删除/隐藏状态，查阅权覆盖自己的全部记录」，
+     *       这是 PIPL 意义上的数据主体访问权，墓碑【必须】保留；</li>
+     *   <li>{@code UserProfileController.buildPosts(userId, isSelf=true)}——
+     *       作者本人视角的「我的动态」区块，同属本人查阅。</li>
+     * </ul>
+     *
+     * <p>【禁止】用于任何对外展示/聚合口径：删除帖子的获赞数、评论数若计入这里，
+     * 会让公开主页的社交证明被已删内容虚增。聚合请用
+     * {@link #findByAuthorIdAndStatusNot}。</p>
      *
      * @param authorId 作者 ID
-     * @return 该作者的所有帖子列表
+     * @return 该作者的所有帖子列表（含 deleted 墓碑）
      */
     List<Post> findByAuthorId(Long authorId);
+
+    /**
+     * 根据作者 ID 查询【排除某一状态】的帖子（S3-D，2026-10-31）。
+     *
+     * <p>存在的理由（实测 campus_love）：{@code SELECT COUNT(*) FROM posts WHERE status='deleted'}
+     * = 5 行，而唯一的聚合入口 {@code findByAuthorId} 不过滤它们 ⇒
+     * {@code ProfileQueryService.calculateTotalLikesCount}（公开主页「总获赞数」）
+     * 会把已删帖的获赞算进去。传入 {@code PostStatus.deleted} 即为正确口径。</p>
+     *
+     * <p>不用 {@code StatusIn(active,...)} 白名单而用 NOT deleted：与
+     * {@code findVisiblePosts} 的 status='active' 口径相比，这里保留 pending/hidden 等
+     * 中间态，改动面最小；「已删除」是唯一必须剔除的终态。</p>
+     *
+     * @param authorId 作者 ID
+     * @param status   要排除的状态（调用方传 deleted）
+     * @return 排除该状态后的帖子列表
+     */
+    List<Post> findByAuthorIdAndStatusNot(Long authorId, PostStatus status);
 
     /**
      * R16（2026-09-07）：我的「日常」（visibility=friends）最近 12 条，
@@ -686,7 +717,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                   OR (p.visibility = :friendsVis AND EXISTS (SELECT 1 FROM UserFollow f
                                   WHERE f.followingId = p.authorId AND f.followerId = :currentUserId))
               )
-            ORDER BY p.isPinned DESC, p.createdAt DESC
+            ORDER BY p.isPinned DESC, p.createdAt DESC, p.id DESC
             """)
     Page<Post> findVisiblePosts(
             @Param("status") PostStatus status,
@@ -730,7 +761,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                   OR (p.visibility = :friendsVis AND EXISTS (SELECT 1 FROM UserFollow f
                                   WHERE f.followingId = p.authorId AND f.followerId = :currentUserId))
               )
-            ORDER BY p.isPinned DESC, p.createdAt DESC
+            ORDER BY p.isPinned DESC, p.createdAt DESC, p.id DESC
             """)
     Page<Post> findVisiblePostsByCategory(
             @Param("status") PostStatus status,

@@ -81,7 +81,7 @@ public class AiVideoController {
     @PostMapping("/video/generate")
     @PreAuthorize("hasRole('USER')")
     // infra R2-00257: AI 生成接口按 IP 限流，防止登录用户无限调用付费上游（成本控制）
-    @RateLimit(capacity = 20, refillTokens = 0.2, key = "#request.remoteAddr")
+    @RateLimit(capacity = 20, refillTokens = 0.2, key = "#clientIp")
     public Map<String, Object> generateVideo(@Valid @RequestBody Map<String, Object> params) {
         // infra R2-00258: 限制请求体字段数量
         validateParams(params);
@@ -101,7 +101,7 @@ public class AiVideoController {
     @PostMapping("/image/generate")
     @PreAuthorize("hasRole('USER')")
     // infra R2-00257: 同上，图片生成接口同样限流
-    @RateLimit(capacity = 20, refillTokens = 0.2, key = "#request.remoteAddr")
+    @RateLimit(capacity = 20, refillTokens = 0.2, key = "#clientIp")
     public Map<String, Object> generateImage(@Valid @RequestBody Map<String, Object> params) {
         validateParams(params);
         // R4-00343：用户级每日配额（与视频生成共享同一配额）

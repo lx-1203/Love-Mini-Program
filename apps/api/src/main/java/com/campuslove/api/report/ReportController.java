@@ -67,7 +67,7 @@ public class ReportController {
     @ResponseStatus(HttpStatus.CREATED)
     @Idempotent
     // infra R2-00259: 举报接口按 IP 限流 + 每日限额，防止无限骚扰审核队列
-    @RateLimit(capacity = 5, refillTokens = 0.5, key = "#request.remoteAddr")
+    @RateLimit(capacity = 5, refillTokens = 0.5, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<ReportView> createReport(@Valid @RequestBody ReportCreateRequest req) {
         Long reporterId = SecurityUtils.getCurrentUserId();

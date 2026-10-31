@@ -150,7 +150,7 @@ public class VillageController {
    * 按客户端 IP 限流，防止垃圾帖子批量发布。</p>
    */
   @PostMapping
-  @RateLimit(capacity = 20, refillTokens = 0.5, key = "#request.remoteAddr")
+  @RateLimit(capacity = 20, refillTokens = 0.5, key = "#clientIp")
   @Idempotent
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<PostDetailView> createPost(
@@ -192,7 +192,7 @@ public class VillageController {
    * 帖子推荐流（2026-08-11 贴吧式推流）：关注新帖 + 同校热帖 + 兴趣帖混合。
    */
   @GetMapping("/recommend")
-  @RateLimit(capacity = 30, refillTokens = 2, key = "#request.remoteAddr")
+  @RateLimit(capacity = 30, refillTokens = 2, key = "#clientIp")
   public PostListResponse getPostRecommend(
       @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
       @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize) {
@@ -207,6 +207,59 @@ public class VillageController {
     return ApiResponse.ok(villageService.getPostDetail(id));
   }
 
+  // ---------- 删除（作者自助） ----------
+
+  /**
+   * 作者删除<b>自己</b>的村口帖子（软删除，2026-10-31 补齐用户内容生命周期）。
+   *
+   * <p>契约：</p>
+   * <ul>
+   *   <li>200 + {@code ApiResponse<Void>}：作者删除成功；<b>重复删除同样 200 且零写入</b>
+   *       （DELETE 依 RFC 9110 本应幂等；口径与判定见
+   *       {@link VillagePostService#deletePost}）</li>
+   *   <li>403 {@code OPERATION_FORBIDDEN}「无权删除该帖子」：调用者不是作者，
+   *       数据一行未动（作者校验在读之后、写之前）</li>
+   *   <li>404 {@code RESOURCE_NOT_FOUND}：帖子不存在，文案复用
+   *       {@link ErrorMessages#POST_NOT_FOUND_OR_DELETED}</li>
+   *   <li>401：未登录（{@code @PreAuthorize("hasRole('USER')")}，同兄弟写端点）</li>
+   * </ul>
+   *
+   * <p>软删后帖子在各 feed/热度/计数按 {@code status <> 'deleted'} 排除、详情与本帖评论
+   * 列表（{@link RealVillageService#getComments}）一律 404，评论区不会单独残留。</p>
+   *
+   * <p><b>限流键为什么用 {@code T(...SecurityUtils).getCurrentUserId()}（2026-10-31）</b>：
+   * 限流子系统当前有 P0——{@code RateLimitAspect} 会把 SpEL 变量 {@code #request} 用
+   * {@code HttpServletRequest} 覆盖，凡 {@code "#request.xxx()"} 形态的键表达式都可能
+   * 解析失败并被降级成「类名#方法名:fallback」，即<b>全站共用一个桶</b>（修复在并行轨道）。
+   * 本端点因此<b>不写任何 {@code #request} 维度的键</b>：
+   * ① 排除兄弟端点惯用的 {@code key = "#clientIp"}——那正是踩 P0 的写法，
+   * 而且校园 NAT/宿舍共享出口 IP 会误伤真人；
+   * ② 排除 {@code key = ""}（方法默认桶）——它是「全端点一个桶」，一个用户刷删除
+   * 会让所有人删不掉自己的帖子，破坏性操作不能这么限；
+   * ③ 排除 {@code key = "#userId"}——本方法签名里没有 userId 形参（用户 ID 只存在于
+   * JWT 上下文），SpEL 取不到会走 fallback；
+   * ④ 排除 {@code key = "#id"}（帖子 ID）——不依赖 {@code #request}，但攻击者可换 ID
+   * 绕过，且守不住「单个用户批量删」这一真实滥用面。
+   * 选 T(...) 静态调用 {@code SecurityUtils.getCurrentUserId()} 的理由：键里不含
+   * {@code #request}，与上述 P0 完全无关；不依赖编译期参数名；按<b>用户</b>分桶正好匹配
+   * 这条「只对作者生效」的写路径。未登录时该调用抛的 401 会原样透出（不是
+   * ExpressionException，不会被静默降级），与 {@code @PreAuthorize} 的结果一致。
+   * 待 {@code #request} 覆盖问题解决、且限流侧提供官方 HTTP 维度别名后，可再评估
+   * 叠加 {@code #httpRequest} 形式的双维键（本轮不预置，避免再次落进同一个坑）。</p>
+   *
+   * @param id 帖子 ID（必须为正整数）
+   * @return {@code ApiResponse<Void>}（成功恒 200）
+   */
+  @DeleteMapping("/{id}")
+  @RateLimit(capacity = 10, refillTokens = 0.5,
+      key = "T(com.campuslove.api.config.SecurityUtils).getCurrentUserId()")
+  @PreAuthorize("hasRole('USER')")
+  public ApiResponse<Void> deletePost(@PathVariable("id") @Positive Long id) {
+    Long userId = SecurityUtils.getCurrentUserId();
+    villageService.deletePost(userId, id);
+    return ApiResponse.ok(null);
+  }
+
   // ---------- 收藏 ----------
 
   /**
@@ -216,7 +269,7 @@ public class VillageController {
    * 与点赞端点同口径，防止自动化脚本批量刷收藏。</p>
    */
   @PostMapping("/{id}/favorite")
-  @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
+  @RateLimit(capacity = 60, refillTokens = 2, key = "#clientIp")
   @Idempotent
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<FavoriteResponse> toggleFavorite(@PathVariable("id") @Positive Long id) {
@@ -233,7 +286,7 @@ public class VillageController {
    * 防止自动化脚本批量刷点赞。</p>
    */
   @PostMapping("/{id}/like")
-  @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
+  @RateLimit(capacity = 60, refillTokens = 2, key = "#clientIp")
   // 2026-09-07 R16：点赞为 toggle 语义，移除 @Idempotent——稳定幂等键会拦截第二次点击（409），导致无法取消点赞
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<PostLikeResponse> likePost(@PathVariable("id") @Positive Long id) {
@@ -270,7 +323,7 @@ public class VillageController {
    * 防止评论刷屏与垃圾内容。</p>
    */
   @PostMapping("/{id}/comments")
-  @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+  @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
   @Idempotent
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<CommentItemView> createComment(
@@ -300,7 +353,7 @@ public class VillageController {
    * 防止自动化脚本批量刷评论点赞。</p>
    */
   @PostMapping("/comments/{commentId}/like")
-  @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
+  @RateLimit(capacity = 60, refillTokens = 2, key = "#clientIp")
   // 2026-09-07 R16：点赞为 toggle 语义，移除 @Idempotent——稳定幂等键会拦截第二次点击（409），导致无法取消点赞
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<PostLikeResponse> likeComment(@PathVariable("commentId") @Positive Long commentId) {
@@ -318,7 +371,7 @@ public class VillageController {
    * 防止刷转发与垃圾引流。</p>
    */
   @PostMapping("/{id}/share")
-  @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+  @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
   @Idempotent
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<ShareView> sharePost(

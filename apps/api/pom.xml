@@ -252,6 +252,10 @@
           <locations>
             <location>filesystem:${project.basedir}/../../database/flyway/sql</location>
           </locations>
+          <!-- 与 application-real.yml / flyway.toml 同口径：V2026.10.13.0001 编号低于
+               引用那两张表的迁移，在已迁移过的库上恒为 Ignored，而 migrate 先 validate，
+               默认会让运维照文档跑的第一条命令直接失败。只放过 Ignored，不开 outOfOrder。 -->
+          <ignoreMigrationPatterns>*:ignored</ignoreMigrationPatterns>
         </configuration>
       </plugin>
       <!-- maven-surefire-plugin：JDK 21 兼容性配置。

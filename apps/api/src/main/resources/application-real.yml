@@ -84,6 +84,29 @@ spring:
     #   docker 环境通过 APP_FLYWAY_LOCATIONS 覆盖为 filesystem:/app/db/migration。
     locations: ${APP_FLYWAY_LOCATIONS:filesystem:../../database/flyway/sql}
     baseline-on-migrate: false
+    # ============ 2026-10-31：validate 与"补建缺表的低版本迁移"的冲突（我自己引入的回归） ============
+    # V2026.10.13.0001__create_circle_layer_and_admin_layer.sql 的编号【必须】低于
+    # 引用这两张表的 V2026.10.14.0005/.0006/.0007，否则空库按链建库仍然炸在 0005。
+    # 代价是：在已经迁移过的库上，它是"低于 head 且未应用"的迁移 ⇒ 状态为 Ignored。
+    # `flyway:info` 只列出状态，看着无害（Ignored 一行）；但 `migrate` 会先 validate，
+    # validateOnMigrate 默认为 true，于是直接抛
+    #   FlywayValidateException: Detected resolved migration not applied to database: 2026.10.13.0001
+    # 也就是说：本机 dev 库、以及任何【已经部署过】的库，api 一起来就死。
+    # CI 的两个真实栈 job 都碰不到这件事——它们用的是一座【新空库】，
+    # 在那里 0013 按序执行、没有 out-of-order 状态。这是"fresh-schema 证明不了
+    # 升级路径"的实例，判点补在下面第 6 步的 db-integration 注释之外，另记台账。
+    # 选择 `*:ignored` 而不是 out-of-order=true：
+    #   * out-of-order=true 会真的把 0013 在老库上补跑一遍（CREATE TABLE IF NOT EXISTS，
+    #     结果为 no-op 并写入 history），代价是把"允许乱序执行"变成全局长期策略，
+    #     以后任何人插错编号都会被静默吞掉——正是本轮想根治的那类债；
+    #   * `*:ignored` 只让 validate 放过 Ignored 状态，绝不乱序执行；
+    #     在前的 0002/0003/0004 照常按序应用，未来把新迁移插错位置依旧会红。
+    # 残留风险如实写下：放过 Ignored 意味着"某个低于 head 的迁移在老库上永远不会执行"，
+    # 若哪天有人往这种低版本迁移里塞【必须生效的 DML】，老库会漏掉它。
+    # 静态判点 tests/entity-ddl-drift.spec.mjs 已经盯住"引用先于创建"这一类，
+    # 但盯不住"低版本迁移里的 DML 在老库不生效"，所以本轮所有补数据动作都写成
+    # 前向迁移（V2026.10.31.0003 一类），不依赖 out-of-order。
+    ignore-migration-patterns: "*:ignored"
     # 使用 Flyway 默认 ${...} 占位符语法（Spring 属性风格），
     # 迁移脚本中引用（见 V2026.06.25.0002）：${admin_password_hash} ← admin_password_hash，
     # 由 ADMIN_INITIAL_PASSWORD_HASH 环境变量注入。

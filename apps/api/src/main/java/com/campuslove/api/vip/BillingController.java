@@ -233,14 +233,27 @@ public class BillingController {
     // 又是每次新 UUID（BillingService.purchaseVip），所以两次点击会各自扣款一次、
     // 各自顺延一次。钱包余额是用户资产，这里按 60 秒 1 次/用户+套餐收紧：
     // 误点的第二次立即 429，真想买第二次（续期）等一分钟即可，不构成业务阻碍。
+    //
+    // 2026-10-31 限流轨 P0 修复：键表达式原写作
+    //   "T(...SecurityUtils).getCurrentUserId() + ':' + #request.planId()"
+    // 而方法参数恰好叫 request —— RateLimitAspect 曾把 HttpServletRequest 注入到
+    // 名为 request 的 SpEL 变量上，覆盖了方法参数，于是 #request 解析成
+    // HttpServletRequest（没有 planId()）→ SpEL 抛异常 → 走降级 → 键变成
+    // BillingController#purchase:fallback，<b>全站共用一个 1 次/60 秒的桶</b>：
+    // 用户 A 买完的 60 秒内用户 B 被 429（付费路径误伤）。
+    // 现在（1）切面不再注入名为 request 的变量，（2）方法参数改名 purchaseRequest，
+    // （3）RateLimitKeyAuditTest 逐注解求值，任何表达式抛异常/落降级即 CI 红。
     @com.campuslove.api.ratelimit.RateLimit(
             capacity = 1,
             refillTokens = 1.0 / 60.0,
-            key = "T(com.campuslove.api.config.SecurityUtils).getCurrentUserId() + ':' + #request.planId()")
+            key = "T(com.campuslove.api.config.SecurityUtils).getCurrentUserId()"
+                    + " + ':' + #purchaseRequest.planId()")
     @PreAuthorize("hasRole('USER')")
-    public BillingService.PurchaseResultView purchase(@Valid @RequestBody VipPurchaseRequest request) {
+    public BillingService.PurchaseResultView purchase(
+            @Valid @RequestBody VipPurchaseRequest purchaseRequest) {
         Long userId = SecurityUtils.getCurrentUserId();
-        return billingService.purchaseVip(userId, request.planId(), request.promoCode());
+        return billingService.purchaseVip(userId, purchaseRequest.planId(),
+                purchaseRequest.promoCode());
     }
 
     /** 关键请求头快照（留痕 JSON，不含签名原文——签名已由验签环节校验）。 */

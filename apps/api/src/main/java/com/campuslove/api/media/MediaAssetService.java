@@ -112,37 +112,56 @@ public class MediaAssetService {
     }
 
     /**
-     * 按 URL 集合批量查询（读取侧过滤用，防 N+1）。
+     * 按 URL 集合批量查询【未软删除】资产（读取侧过滤用，防 N+1）。
+     *
+     * <p>S3-D（2026-10-31）：改为 {@code findByUrlInAndDeletedAtIsNull}。
+     * 原实现走不过滤墓碑的 {@code findByUrlIn}，而 {@link #markTempDeleted} 是
+     * 「物理删文件、留行做审计墓碑」的口径 ⇒ 下游（推荐位照片墙
+     * {@code RecommendationRanker}、公开主页相册/头像审核状态
+     * {@code ProfileQueryService}）会继续把已删资产当成有效资产渲染并展示其审核状态。</p>
      *
      * @param urls 媒体 URL 集合
-     * @return URL → 资产记录 映射（仅含查得到的记录；空集合返回空映射）
+     * @return URL → 资产记录 映射（仅含未删除且查得到的记录；空集合返回空映射）
      */
     @Transactional(readOnly = true)
     public Map<String, MediaAsset> findByUrls(Collection<String> urls) {
         if (urls == null || urls.isEmpty()) {
             return Collections.emptyMap();
         }
-        return mediaAssetRepository.findByUrlIn(urls).stream()
+        return mediaAssetRepository.findByUrlInAndDeletedAtIsNull(urls).stream()
+                // 第二道防线：过滤口径主要由查询名承担，这里再挡一次，
+                // 保证「已软删除资产不会被展示」是本服务的不变量，
+                // 而不是某条派生查询名的性质（有人换回 findByUrlIn 时不至于静默泄漏）。
+                .filter(asset -> asset.getDeletedAt() == null)
                 .collect(Collectors.toMap(MediaAsset::getUrl, Function.identity(), (a, b) -> a));
     }
 
     /**
-     * 按 URL 查询单条资产。
+     * 按 URL 查询单条【未软删除】资产。
+     *
+     * <p>S3-D（2026-10-31）：口径同 {@link #findByUrls}。头像审核状态读的是本方法，
+     * 已删资产不应再决定头像的展示/审核判定。</p>
      *
      * @param url 媒体 URL
-     * @return 资产记录（不存在返回 empty）
+     * @return 资产记录（不存在或已软删除返回 empty）
      */
     @Transactional(readOnly = true)
     public Optional<MediaAsset> findByUrl(String url) {
         if (url == null || url.isBlank()) {
             return Optional.empty();
         }
-        return mediaAssetRepository.findByUrlIn(java.util.List.of(url)).stream().findFirst();
+        return mediaAssetRepository.findByUrlInAndDeletedAtIsNull(java.util.List.of(url)).stream()
+                .filter(asset -> asset.getDeletedAt() == null)
+                .findFirst();
     }
 
     /**
      * 物理删除指定 URL 的资产记录（覆盖/删除照片墙时清理旧记录）。
      * null / 空串 / 非受管 URL 静默跳过（沿用 deleteOldMediaQuietly 容错哲学）。
+     *
+     * <p>S3-D（2026-10-31）：本方法【必须】继续用含墓碑的 {@code findByUrlIn}，
+     * 不要顺手换成 {@code ...AndDeletedAtIsNull}——墓碑行正是这里要清掉的行，
+     * 加了过滤会让 {@link #markTempDeleted} 登记过的行永久残留。</p>
      *
      * @param url 媒体 URL
      */

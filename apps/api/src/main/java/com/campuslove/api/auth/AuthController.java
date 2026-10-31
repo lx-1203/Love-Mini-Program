@@ -116,7 +116,7 @@ public class AuthController {
             description = "R4-00264：公开端点补 @RateLimit（桶容量 10，每 10 秒补充 1 个令牌，按客户端 IP 限流）——与 phone-login/wechat-login/admin/login 限流口径一致，防止注册接口被批量刷量/手机号探测。",
             operationId = "register"
     )
-    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#clientIp")
     public UserSessionView register(@Valid @RequestBody RegisterRequest request) {
         return authService.registerUser(
                 request.phone(), request.password(), request.nickname(),
@@ -135,7 +135,7 @@ public class AuthController {
      * @return 用户会话视图(包含 JWT 令牌)
      */
     @PostMapping("/phone-login")
-    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#clientIp")
     public UserSessionView phoneLogin(@Valid @RequestBody PhoneLoginRequest request) {
         return authService.loginWithPhone(request.phone(), request.password(), request.deviceId());
     }
@@ -161,7 +161,7 @@ public class AuthController {
      * @return 用户会话视图(包含 JWT 令牌)
      */
     @PostMapping("/guest-login")
-    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#clientIp")
     public UserSessionView guestLogin(
             @Parameter(description = "客户端设备标识（可选，用于设备管理；缺失时后端记为 unknown）", required = false)
             @org.springframework.web.bind.annotation.RequestParam(name = "deviceId", required = false) String deviceId) {
@@ -183,7 +183,7 @@ public class AuthController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "RATE_LIMITED：触发登录接口限流", content = @Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "502", description = "WECHAT_API_ERROR：微信 API 调用失败", content = @Content)
     })
-    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#clientIp")
     public UserSessionView loginWithWechat(
             @Parameter(description = "微信登录请求体，包含 wx.login() 返回的 code", required = true)
             @Valid @RequestBody WechatLoginRequest request) {
@@ -214,7 +214,7 @@ public class AuthController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "原令牌无效或已撤销", content = @Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "触发限流", content = @Content)
     })
-    @RateLimit(capacity = 20, refillTokens = 0.5, key = "#request.remoteAddr")
+    @RateLimit(capacity = 20, refillTokens = 0.5, key = "#clientIp")
     @Idempotent
     public UserSessionView refreshToken(
             @Parameter(name = "Authorization", description = "JWT Bearer Token，格式 'Bearer {token}'", required = true)
@@ -280,7 +280,7 @@ public class AuthController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "ADMIN_DISABLED：管理员账号已被禁用", content = @Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "RATE_LIMITED：触发登录接口限流", content = @Content)
     })
-    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 10, refillTokens = 0.1, key = "#clientIp")
     @Idempotent
     public ApiResponse<AdminLoginView> loginAsAdmin(
             @Parameter(description = "管理员登录请求体（username + password）", required = true)

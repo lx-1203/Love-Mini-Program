@@ -164,7 +164,7 @@ public class CampusController {
      * 防止话题刷屏。</p>
      */
     @PostMapping("/topics")
-    @RateLimit(capacity = 20, refillTokens = 0.5, key = "#request.remoteAddr")
+    @RateLimit(capacity = 20, refillTokens = 0.5, key = "#clientIp")
     @Idempotent
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<CampusTopicView> createTopic(
@@ -228,7 +228,7 @@ public class CampusController {
      * 防止回复刷屏。</p>
      */
     @PostMapping("/topics/{id}/replies")
-    @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
     @Idempotent
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<CampusTopicReplyView> createReply(
@@ -265,7 +265,7 @@ public class CampusController {
      * 实际 refillTokens 取 0.05（每 20 秒补充 1 个），兼顾用户体验与防滥用。</p>
      */
     @PostMapping("/certification")
-    @RateLimit(capacity = 5, refillTokens = 0.05, key = "#request.remoteAddr")
+    @RateLimit(capacity = 5, refillTokens = 0.05, key = "#clientIp")
     @Idempotent
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<CampusCertificationView> submitCertification(

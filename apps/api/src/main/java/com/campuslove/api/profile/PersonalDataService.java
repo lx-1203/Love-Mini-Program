@@ -38,6 +38,8 @@ import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
 import com.campuslove.api.repository.VipBillRepository;
 import com.campuslove.api.repository.VipBillingLogRepository;
+import com.campuslove.api.privacy.PersonalDataTables;
+import com.campuslove.api.privacy.PhoneColumnCodec;
 import com.campuslove.api.utils.SensitiveDataMasker;
 import com.campuslove.api.verification.RealNameCertificationService;
 import com.campuslove.api.verification.RealNameCertificationView;
@@ -51,6 +53,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -126,6 +129,15 @@ public class PersonalDataService {
     private final TaskClaimRepository taskClaimRepository;
     private final UserAgreementConsentRepository userAgreementConsentRepository;
     private final AuditLogRepository auditLogRepository;
+
+    /**
+     * AES 加密器（可选装配）：{@code users.phone} 列里存的是 AES-GCM 密文，
+     * 导出时必须先解出明文再掩码，否则「掩码手机号」其实是掩码后的 Base64 片段
+     * （看着像脱敏、其实是把密文切了个头尾给本人看）。
+     * 字段注入（required=false）以保持既有构造器签名不变，单测里为 null 时退化为按明文掩码。
+     */
+    @Autowired(required = false)
+    private com.campuslove.api.config.AesEncryptor aesEncryptor;
 
     public PersonalDataService(
             UserRepository userRepository,
@@ -246,6 +258,11 @@ public class PersonalDataService {
         categories.add(consentCategory(userId));
         categories.add(auditLogCategory(userId));
         validateColumnWidths(categories);
+        // 与注销清除清单同源自检：导出的类别集合必须与 PersonalDataTables 声明的完全一致。
+        // 谁给导出加了新表却没登记删除策略（或反过来），这里立刻炸，而不是让用户
+        // 「能导出、删不掉」——2026-10-31 那次 P0（注销只改 users 三列）的结构性根因。
+        PersonalDataTables.assertMatchesExportCategories(
+                categories.stream().map(PersonalDataCategory::name).toList());
         return new PersonalDataExport(userId, LocalDateTime.now(TimeZones.BUSINESS).toString(),
                 List.copyOf(categories));
     }
@@ -255,10 +272,11 @@ public class PersonalDataService {
     /**
      * 账号主记录（users 表）。
      *
-     * <p>脱敏：{@code phone} 走 {@link SensitiveDataMasker#maskPhone(String)}、
-     * {@code openid} 走 {@link SensitiveDataMasker#mask(String)}；
-     * {@code password}（BCrypt 散列）不在列——导出接口不是凭据备份接口，
-     * 散列外流即可离线爆破。</p>
+     * <p>脱敏：{@code phone} 走 {@link PhoneColumnCodec#displayMasked}
+     * ——该列在库里的合法取值是「AES 密文 / 历史明文 / NULL」三态（见 PhoneColumnCodec），
+     * 必须先按密文解开再掩码，注销后的 NULL 则渲染成空串；{@code openid} 走
+     * {@link SensitiveDataMasker#mask(String)}；{@code password}（BCrypt 散列）不在列——
+     * 导出接口不是凭据备份接口，散列外流即可离线爆破。</p>
      */
     private PersonalDataCategory accountCategory(Long userId) {
         List<String> columns = List.of("id", "nickname", "phone", "openid", "role", "status",
@@ -267,7 +285,7 @@ public class PersonalDataService {
                 "latitude", "longitude", "geo_updated_at", "created_at", "updated_at");
         List<List<String>> rows = userRepository.findById(userId)
                 .map(user -> List.of(row(user.getId(), user.getNickname(),
-                        SensitiveDataMasker.maskPhone(user.getPhone()),
+                        PhoneColumnCodec.displayMasked(aesEncryptor, user.getPhone()),
                         SensitiveDataMasker.mask(user.getOpenid()),
                         user.getRole(), user.getStatus(), user.getCampusName(), user.getBio(),
                         user.getGradeLabel(), user.getPronouns(), user.getAvatarUrl(),

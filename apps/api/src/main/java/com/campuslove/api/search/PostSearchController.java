@@ -44,7 +44,7 @@ public class PostSearchController {
      * GET /api/v1/search/posts?keyword=&page=&size=
      */
     @GetMapping("/posts")
-    @RateLimit(capacity = 30, refillTokens = 2, key = "#request.remoteAddr")
+    @RateLimit(capacity = 30, refillTokens = 2, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<Page<PostSearchView>> searchPosts(
             @RequestParam("keyword") @Size(min = 1, max = 20) String keyword,
@@ -60,7 +60,7 @@ public class PostSearchController {
      * GET /api/v1/search/hot?limit=10
      */
     @GetMapping("/hot")
-    @RateLimit(capacity = 60, refillTokens = 4, key = "#request.remoteAddr")
+    @RateLimit(capacity = 60, refillTokens = 4, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<java.util.List<HotSearchView>> getHotSearches(
             @RequestParam(name = "limit", defaultValue = "10") @Min(1) @Max(20) int limit) {

@@ -289,6 +289,15 @@ app:
   # 保留审核结论与身份证号密文作为核验依据（隐私最小化）。
   verification:
     photo-retention-days: ${PHOTO_RETENTION_DAYS:30}
+  # S3-F（2026-10-31）：数据留存清理开关。目前【只有】error_reports 被判定为
+  # 可自动清理（纯运维遥测、无任何读路径），保留 180 天。
+  # audit_log / private_messages / notifications / interaction_events / 访客记录 /
+  # 四张资金表一律【不得自动清理】，逐表依据见
+  # com.campuslove.api.report.ErrorReportRetentionService 的类注释与
+  # scripts/qa/data-layer-decisions-2026-10-31.md。
+  # 设为 0 或负数即关闭本任务（运维总开关）。
+  retention:
+    error-report-days: ${ERROR_REPORT_RETENTION_DAYS:180}
   wechat:
     # Task 0.6.3：微信小程序 AppID/AppSecret 通过环境变量注入
     # 环境变量命名规范：全大写 + 下划线（与 .env.example 保持一致）

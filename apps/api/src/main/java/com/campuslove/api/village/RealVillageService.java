@@ -104,6 +104,16 @@ public class RealVillageService implements VillageService {
     @Override
     @Transactional(readOnly = true)
     public CommentListResponse getComments(Long postId, int page, int pageSize) {
+        // 2026-10-31 墓碑帖的评论区不得单独可达：GET /posts/{id} 已对 status != active 返回 404
+        // （见本类 getPost 与 VillageQueryService#getPost），但 queryService.getComments 是按
+        // postId 直查 comments 表、不看帖子状态——作者删帖后若该路由仍返回评论列表，
+        // 内容就等于没删（PIPL 删除权的实质缺口）。本方法在 real 门面补上同一口径的 404，
+        // 复用 findPostOrThrow 与既有异常/文案，不改查询服务的分页实现。
+        Post post = queryService.findPostOrThrow(postId);
+        if (post.getStatus() == Post.PostStatus.deleted) {
+            throw new com.campuslove.api.common.ResourceNotFoundException(
+                    com.campuslove.api.common.ErrorMessages.POST_NOT_FOUND_OR_DELETED);
+        }
         return queryService.getComments(postId, page, pageSize);
     }
 
@@ -174,6 +184,19 @@ public class RealVillageService implements VillageService {
                                      String targetType, Long targetId, List<Long> mentionedUserIds) {
         return postService.createPost(userId, title, content, images, tags, category, activityId,
                 targetType, targetId, mentionedUserIds);
+    }
+
+    /**
+     * 作者删除自己的帖子（2026-10-31，软删除）。
+     *
+     * <p>与 createPost 不同，本方法没有任何外部调用（无微信内容安全外呼），
+     * 因此沿用声明式事务：读—校验—写在同一个短事务里原子提交；真正的判定逻辑
+     * 在 {@link VillagePostService#deletePost}（作者校验先于写入、非作者零写入）。</p>
+     */
+    @Override
+    @Transactional
+    public void deletePost(Long userId, Long postId) {
+        postService.deletePost(userId, postId);
     }
 
     @Override

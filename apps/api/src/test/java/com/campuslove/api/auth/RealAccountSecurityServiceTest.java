@@ -31,7 +31,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
  * <ul>
  *   <li>3-B：成功修改（BCrypt 更新 + 吊销全部 token）、旧密码错误、无密码账号拒绝</li>
  *   <li>3-C：新手机号冲突（409）、格式非法、成功更换（加密存储 + 派生 openid 同步）</li>
- *   <li>3-E：成功注销（status=deactivated + 匿名化 + 吊销 token）、幂等、无密码账号 confirmationText 路径</li>
+ *   <li>3-E：成功注销（users 身份列全部墓碑化 + 委托 AccountErasureService 跑清除清单 +
+ *       吊销 token）、已注销态复跑不抛且重跑清单、无密码账号 confirmationText 路径</li>
  * </ul>
  */
 class RealAccountSecurityServiceTest {
@@ -152,10 +153,16 @@ class RealAccountSecurityServiceTest {
     // ---- 3-E 注销账号 ----
 
     @Test
-    void deactivate_success_anonymizesAndRevokesTokens() {
+    void deactivate_success_erasesInventoryAndWritesUsersTombstone() {
         User user = buildUser(100L, passwordEncoder.encode(RAW_PASSWORD), "active");
         user.setAvatarUrl("/uploads/avatar.jpg");
         user.setPhone("cipher-phone");
+        user.setOpenid("phone:d3b07384d113edec49eaa6238ad5ff00");
+        user.setBirthDate(java.time.LocalDate.of(2004, 1, 1));
+        user.setLatitude(java.math.BigDecimal.ONE);
+        user.setLongitude(java.math.BigDecimal.valueOf(116.4074));
+        user.setCampusName("北京大学");
+        user.setAutoRenewEnabled(true);
         when(userRepository.findById(100L)).thenReturn(Optional.of(user));
         when(jwtTokenProvider.getJtiFromToken("cur-token")).thenReturn("cur-jti");
         when(jwtTokenProvider.getRemainingTtlSeconds("cur-token")).thenReturn(3600L);
@@ -165,21 +172,65 @@ class RealAccountSecurityServiceTest {
         assertEquals("deactivated", user.getStatus(), "状态应为 deactivated");
         assertEquals("已注销用户", user.getNickname(), "昵称应匿名化");
         assertNull(user.getAvatarUrl(), "头像应置空");
-        assertEquals("1****100", user.getPhone(), "手机号应脱敏（含用户 ID 保证唯一）");
+        // 手机号列的唯一「已注销」表示是 NULL：旧的 "1****"+userId 是含 userId 的稳定化名，
+        // 且把明文形态混进了本应存 AES 密文的列（P0 2026-10-31）
+        assertNull(user.getPhone(), "手机号应写 NULL，而不是任何哨兵字符串");
+        org.junit.jupiter.api.Assertions.assertTrue(user.getOpenid().startsWith("erased:"),
+                "openid 应换成随机墓碑");
+        org.junit.jupiter.api.Assertions.assertFalse(user.getOpenid().contains("d3b07384"),
+                "phone:<SHA-256> 派生键必须被覆盖（11 位手机号空间可穷举反推）");
+        org.junit.jupiter.api.Assertions.assertFalse(user.getOpenid().contains("100"),
+                "墓碑值不得含 userId");
+        assertNull(user.getBirthDate(), "出生日期应删除");
+        assertNull(user.getLatitude(), "纬度应删除");
+        assertNull(user.getLongitude(), "经度应删除");
+        assertNull(user.getCampusName(), "校区名应删除");
+        assertNull(user.getPassword(), "密码散列应销毁");
+        assertEquals("USER", user.getRole(), "角色应降级为 USER");
+        assertEquals(Boolean.FALSE, user.getAutoRenewEnabled(),
+                "自动续费必须关闭：否则 AutoRenewService 的 6 小时扫描会在注销后写出新的 vip_order/vip_bills");
         verify(deviceSessionService).revokeAllUserTokens(100L);
         verify(tokenBlacklistService).revoke(eq("cur-jti"), eq(3600L));
     }
 
     @Test
-    void deactivate_alreadyDeactivated_isIdempotent() {
+    void deactivate_delegatesFullErasureSweepToAccountErasureService() throws Exception {
+        User user = buildUser(100L, passwordEncoder.encode(RAW_PASSWORD), "active");
+        when(userRepository.findById(100L)).thenReturn(Optional.of(user));
+        com.campuslove.api.privacy.AccountErasureService erasure =
+                mock(com.campuslove.api.privacy.AccountErasureService.class);
+        // 替身要真的把墓碑写到实体上（Mockito 默认不改动入参），否则下面的断言无从成立
+        when(erasure.tombstone(any(User.class))).thenAnswer(invocation -> {
+            User target = invocation.getArgument(0);
+            target.setOpenid("erased:aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+            target.setStatus("deactivated");
+            target.setPhone(null);
+            return target.getOpenid();
+        });
+        // 该协作者走 @Autowired(required=false) 字段注入，测试里同样反射塞入
+        java.lang.reflect.Field field = RealAccountSecurityService.class
+                .getDeclaredField("accountErasureService");
+        field.setAccessible(true);
+        field.set(service, erasure);
+
+        service.deactivateAccount(100L, RAW_PASSWORD, null, null);
+
+        verify(erasure).erase(100L);
+        verify(erasure).tombstone(user);
+        assertEquals("erased:aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", user.getOpenid());
+    }
+
+    @Test
+    void deactivate_alreadyDeactivated_rerunsSweepWithoutCredentialCheck() {
         User user = buildUser(100L, null, "deactivated");
         when(userRepository.findById(100L)).thenReturn(Optional.of(user));
 
-        service.deactivateAccount(100L, null, null, null);
-
-        // 幂等：不重新保存、不吊销
-        verify(userRepository, never()).save(any());
-        verify(deviceSessionService, never()).revokeAllUserTokens(anyLong());
+        // 不抛（密码散列本身已被销毁，复验必然失败）；但仍然重跑清除清单，
+        // 以便上一次中途回滚后「users 已墓碑、实名记录还在库里」的状态能被补齐
+        org.junit.jupiter.api.Assertions
+                .assertDoesNotThrow(() -> service.deactivateAccount(100L, null, null, null));
+        verify(userRepository).save(any());
+        assertNull(user.getPhone(), "复跑仍写 NULL，不得复活成哨兵");
     }
 
     @Test
@@ -194,6 +245,7 @@ class RealAccountSecurityServiceTest {
         // 有 confirmationText → 成功
         service.deactivateAccount(100L, null, "确认注销", null);
         assertEquals("deactivated", user.getStatus());
+        assertNull(user.getPhone());
     }
 
     /** SHA-256 hex（与 RealAccountSecurityService 内部实现同口径，用于断言）。 */

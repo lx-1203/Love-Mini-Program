@@ -382,9 +382,16 @@ public class ProfileQueryService {
      *
      * <p>FIN-00029 修复：原实现每帖一次 {@code countByPostId}（N+1），
      * 改为一次 IN 聚合查询后求和。</p>
+     *
+     * <p>S3-D（2026-10-31）：改用 {@code findByAuthorIdAndStatusNot(..., deleted)}。
+     * 原实现走不过滤软删除的 {@code findByAuthorId}，而实测 campus_love 里
+     * {@code posts.status='deleted'} 有 5 行 ⇒ 作者删帖后，公开主页展示的「总获赞数」
+     * 仍包含该帖收到的点赞，社交证明被已删内容虚增。
+     * 本方法是【对外展示】口径，墓碑不得计入（本人查阅自己全部记录走
+     * {@code PersonalDataService}，那里保留墓碑是有意的）。</p>
      */
     public int calculateTotalLikesCount(Long userId) {
-        List<Post> userPosts = postRepository.findByAuthorId(userId);
+        List<Post> userPosts = postRepository.findByAuthorIdAndStatusNot(userId, Post.PostStatus.deleted);
         if (userPosts.isEmpty()) {
             return 0;
         }

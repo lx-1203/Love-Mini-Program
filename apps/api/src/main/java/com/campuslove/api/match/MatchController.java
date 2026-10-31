@@ -155,7 +155,7 @@ public class MatchController {
           @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "targetUserId 缺失或非法", content = @Content),
           @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "触发限流", content = @Content)
   })
-  @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
+  @RateLimit(capacity = 60, refillTokens = 2, key = "#clientIp")
   @Idempotent
   public ApiResponse<HeartSignalView> likeUser(
           @Parameter(description = "喜欢目标请求体（targetUserId）", required = true)
@@ -209,7 +209,7 @@ public class MatchController {
           @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "targetUserId 缺失或非法", content = @Content),
           @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "429", description = "触发限流", content = @Content)
   })
-  @RateLimit(capacity = 60, refillTokens = 2, key = "#request.remoteAddr")
+  @RateLimit(capacity = 60, refillTokens = 2, key = "#clientIp")
   @Idempotent
   public ApiResponse<HeartSignalView> superLikeUser(
           @Parameter(description = "超级喜欢目标请求体（targetUserId）", required = true)

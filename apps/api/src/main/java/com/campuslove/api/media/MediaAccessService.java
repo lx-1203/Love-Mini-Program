@@ -538,6 +538,12 @@ public class MediaAccessService {
                 && subPath != null && !subPath.isBlank()) {
             try {
                 String url = MEDIA_URL_PREFIX + targetUserId + "/" + subPath;
+                // S3-D（2026-10-31）刻意使用【含墓碑】的 findByUrlIn，不要改成
+                // findByUrlInAndDeletedAtIsNull：下方逻辑是「DB 分类只收紧、不放松」，
+                // 丢掉已登记行的分类信号会让一张被判成 ID_CARD 的资产在回落到
+                // 路径推断时放松到 IMAGE 档。墓碑在此处保留可读是安全方向上的选择。
+                // 文件本体已由 MediaAssetService.markTempDeleted 物理删除，
+                // 落到这里的请求只会在后续存在性检查上 404，不会因本行分类而可访问。
                 List<MediaAsset> assets = mediaAssetRepository.findByUrlIn(List.of(url));
                 boolean registered = !assets.isEmpty();
                 String dbCategory = registered ? assets.get(0).getCategory() : null;

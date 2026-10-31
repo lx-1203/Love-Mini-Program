@@ -6,6 +6,7 @@ import com.campuslove.api.config.AesEncryptor;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.config.WeChatConfig;
 import com.campuslove.api.entity.User;
+import com.campuslove.api.privacy.PhoneColumnCodec;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.utils.SensitiveDataMasker;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -107,8 +108,9 @@ public class PhoneBindingController {
         // 3. 调用微信 getuserphonenumber 接口换取手机号
         String phoneNumber = getPhoneNumber(accessToken, request.code());
 
-        // 4. 加密存储手机号
-        String phoneCipher = aesEncryptor.encrypt(phoneNumber);
+        // 4. 加密存储手机号（users.phone 的唯一写入口径见 PhoneColumnCodec：
+        //    只允许 AES 密文或 NULL，注销后的行是 NULL，不允许任何含 userId 的明文哨兵）
+        String phoneCipher = PhoneColumnCodec.store(aesEncryptor, phoneNumber);
         user.setPhone(phoneCipher);
         user.setUpdatedAt(java.time.LocalDateTime.now(com.campuslove.api.common.TimeZones.BUSINESS));
         userRepository.save(user);

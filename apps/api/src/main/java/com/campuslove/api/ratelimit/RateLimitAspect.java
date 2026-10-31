@@ -1,7 +1,6 @@
 package com.campuslove.api.ratelimit;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletRequestWrapper;
 import java.lang.reflect.Method;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -21,20 +20,49 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 /**
  * 速率限制 AOP 切面。
  *
- * <p>拦截所有标注 {@link RateLimit} 注解的方法（含类级注解继承场景），完成以下流程：</p>
+ * <p>拦截所有标注 {@link RateLimit} 注解的方法，完成以下流程：</p>
  * <ol>
  *   <li>从注解中读取 {@code capacity}、{@code refillTokens}、{@code key} 配置</li>
- *   <li>解析 SpEL 表达式生成限流键：
+ *   <li>解析 SpEL 表达式生成限流键，可引用以下变量：
  *     <ul>
- *       <li>支持 {@code #request.remoteAddr}：自动注入当前 HttpServletRequest 作为 {@code request} 变量</li>
- *       <li>支持 {@code #userId} 等方法参数引用（要求编译时保留参数名，Spring 默认开启）</li>
- *       <li>支持 {@code T(com.campuslove.api.config.SecurityUtils).getCurrentUserId()} 静态方法调用</li>
+ *       <li>{@code #clientIp}：{@link ClientIpResolver} 解析出的客户端 IP（默认键，
+ *           绝大多数按 IP 限流的站点用这个，不再经过 HttpServletRequest 属性查找）</li>
+ *       <li>{@code #httpRequest}：当前 {@link HttpServletRequest} 本体
+ *           （如确需 header / requestURI 时使用）</li>
+ *       <li>方法参数名（如 {@code #userId}、{@code #payload.phone}）——
+ *           要求编译期保留参数名，spring-boot-starter-parent 默认开启 {@code -parameters}</li>
+ *       <li>{@code T(com.campuslove.api.config.SecurityUtils).getCurrentUserId()} 静态调用</li>
  *     </ul>
  *   </li>
  *   <li>调用 {@link RateLimitBucketRegistry#tryConsume} 尝试获取令牌</li>
  *   <li>获取失败时抛出 {@link RateLimitExceededException}，
  *       由 {@link com.campuslove.api.config.GlobalExceptionHandler} 转换为 HTTP 429 响应</li>
  * </ol>
+ *
+ * <h2>变量命名不变量（P0 缺陷 1 的根因，勿回退）</h2>
+ * <p>历史实现在 {@code MethodBasedEvaluationContext}（已按<b>方法参数名</b>注入变量）之上
+ * 再 {@code setVariable("request", httpServletRequest)}，于是
+ * {@code #request} 被<b>无条件覆盖</b>成 servlet 请求对象。{@code BillingController#purchase}
+ * 的键 {@code ... + #request.planId()} 本意是取入参 DTO 的 planId，实际取到
+ * {@code HttpServletRequest.planId()} → SpEL 抛异常 → 走降级 → 键变成
+ * {@code BillingController#purchase:fallback}，<b>全站共用一个 1 次/60 秒的桶</b>：
+ * 用户 A 买完 VIP 的 60 秒内，用户 B 的购买被 429 掉（付费路径误伤）。</p>
+ *
+ * <p>修复后的不变量：<b>切面注入的变量名不得与任何方法参数名同名</b>。
+ * 因此 servlet 请求改名为 {@code #httpRequest}，并且不再保留 {@code #request}
+ * 别名（别名会把同一类缺陷重新引入：只有"没有参数恰好叫 request"的方法才碰巧安全，
+ * 而这不是可以证明的性质——它是随签名变化的）。
+ * 该不变量由 {@code RateLimitKeyAuditTest} 逐注解守住：它枚举 main 源码里所有
+ * {@code @RateLimit}，用与本类完全相同的解析路径求值，任何表达式抛异常或落到
+ * 降级标记（{@link #MARKER_SPEL_FAILURE} / {@link #MARKER_NULL_VALUE} /
+ * 历史遗留的 {@code :fallback}）即测试失败。</p>
+ *
+ * <h2>降级不再是"共享全局桶"</h2>
+ * <p>SpEL 求值失败时，本类<b>不</b>回落到 {@code 类名#方法名} 这类所有用户共用的键，
+ * 而是回落到 {@code 类名#方法名:spel-failure:<clientIp>} —— 每个客户端各自一个桶，
+ * 一个坏表达式只影响它自己，不会让"用户 A 的流量把用户 B 挡在门外"；
+ * 同时打 ERROR 级日志（含表达式原文与解析出的键）作为可被告警采集的信号，
+ * 并把 {@code RateLimitKeyAuditTest} 作为 CI 侧的静态防线。</p>
  *
  * <p>限流键最终格式：{@code 类名#方法名:SpEL解析值}，确保不同接口即使使用相同 SpEL
  * 解析值（如同一个 IP）也会使用独立的桶。</p>
@@ -47,6 +75,22 @@ public class RateLimitAspect {
 
     private static final Logger log = LoggerFactory.getLogger(RateLimitAspect.class);
 
+    /**
+     * SpEL 求值失败时的降级键标记（后接客户端 IP，保证不产生全站共享桶）。
+     * 单测 {@code RateLimitKeyAuditTest} 断言真实注解的键里不出现该标记。
+     */
+    static final String MARKER_SPEL_FAILURE = ":spel-failure:";
+
+    /**
+     * SpEL 求值成功但结果为 null 时的键标记（同样按客户端 IP 分桶）。
+     * 例：匿名态下 {@code T(SecurityUtils).getCurrentUserId()} 返回 null，
+     * 若直接拼成 {@code :null} 就是"所有匿名请求共用一桶"。
+     */
+    static final String MARKER_NULL_VALUE = ":null-value:";
+
+    /** 历史遗留的降级标记（本实现不再产出；审计测试仍拦截，防回退）。 */
+    static final String LEGACY_FALLBACK_MARKER = ":fallback";
+
     /** SpEL 表达式解析器（线程安全，可复用）。 */
     private final ExpressionParser parser = new SpelExpressionParser();
 
@@ -58,93 +102,34 @@ public class RateLimitAspect {
     private final RateLimitBucketRegistry registry;
 
     /**
-     * R4-00378：可信代理 IP/CIDR 列表（配置 app.security.trusted-proxies，逗号分隔）。
-     *
-     * <p>空列表（默认）表示不信任任何代理——限流键直接使用直连 remoteAddr，
-     * 客户端伪造 X-Forwarded-For 头无法更换限流桶。部署在 Nginx/网关后时，
-     * 应将网关 IP 加入此列表（前提：网关负责清理/覆盖客户端传入的 XFF），
-     * 此时才信任 XFF 首地址作为客户端真实 IP。</p>
+     * R4-00378 + 本轮 P0：客户端 IP 解析器（可信代理名单来自
+     * {@code app.security.trusted-proxies}，空 = 不信任任何代理、忽略 XFF）。
      */
-    private final java.util.Set<String> trustedProxyIps;
-
-    /** R4-00378：可信代理 CIDR 条目（前缀 + 位数，如 10.0.0.0/8） */
-    private final java.util.List<CidrEntry> trustedProxyCidrs;
-
-    /** R4-00378：CIDR 条目（避免引入第三方元组依赖） */
-    private record CidrEntry(String prefix, int bits) {
-    }
+    private final ClientIpResolver clientIpResolver;
 
     /**
-     * 构造函数注入注册表与可信代理配置。
+     * 构造函数注入注册表与可信代理配置（保留的兼容签名，单测直接 new 时用）。
      *
      * @param registry       令牌桶注册表 Bean
      * @param trustedProxies 可信代理 IP/CIDR 列表（逗号分隔，空表示不信任任何代理）
      */
     public RateLimitAspect(RateLimitBucketRegistry registry, String trustedProxies) {
-        this.registry = registry;
-        java.util.Set<String> ips = new java.util.HashSet<>();
-        java.util.List<CidrEntry> cidrs = new java.util.ArrayList<>();
-        if (trustedProxies != null && !trustedProxies.isBlank()) {
-            for (String part : trustedProxies.split(",")) {
-                String entry = part.trim();
-                if (entry.isEmpty()) {
-                    continue;
-                }
-                int slash = entry.indexOf('/');
-                if (slash > 0) {
-                    try {
-                        cidrs.add(new CidrEntry(entry.substring(0, slash),
-                                Integer.parseInt(entry.substring(slash + 1))));
-                    } catch (NumberFormatException e) {
-                        log.warn("可信代理 CIDR 配置非法，忽略: {}", entry);
-                    }
-                } else {
-                    ips.add(entry);
-                }
-            }
-        }
-        this.trustedProxyIps = java.util.Collections.unmodifiableSet(ips);
-        this.trustedProxyCidrs = java.util.Collections.unmodifiableList(cidrs);
+        this(registry, new ClientIpResolver(trustedProxies));
     }
 
     /**
-     * R4-00378：判断直连来源 IP 是否为可信代理。
+     * 构造函数注入注册表与共享的客户端 IP 解析器（Spring 装配走这条）。
      *
-     * <p>仅当直连 remoteAddr 命中配置的可信代理（精确 IP 或 CIDR 前缀）时，
-     * 才允许信任 X-Forwarded-For 首地址；否则视为客户端直连，XFF 不可信。</p>
+     * <p>解析器由 {@link RateLimitConfig} 以单例 Bean 提供，确保切面内 {@code #clientIp}
+     * 与控制器里手工加的第二维度（如 {@code SmsCodeController} 的 IP 维度）
+     * 使用<b>同一套</b>可信代理判定——两套实现漂移就等于"一个维度可被绕过"。</p>
      *
-     * @param remoteAddr 直连来源 IP
-     * @return true 表示可信代理
+     * @param registry 令牌桶注册表 Bean
+     * @param resolver 客户端 IP 解析器
      */
-    private boolean isTrustedProxy(String remoteAddr) {
-        if (remoteAddr == null || remoteAddr.isBlank()) {
-            return false;
-        }
-        if (trustedProxyIps.contains(remoteAddr)) {
-            return true;
-        }
-        for (CidrEntry cidr : trustedProxyCidrs) {
-            if (remoteAddr.startsWith(cidr.prefix() + ".")) {
-                // 简化 CIDR 匹配：按 /8 /16 /24 前缀处理
-                int dotCount = (cidr.bits() + 7) / 8;
-                String[] remoteParts = remoteAddr.split("\\.");
-                String[] prefixParts = cidr.prefix().split("\\.");
-                if (remoteParts.length < dotCount || prefixParts.length < dotCount) {
-                    continue;
-                }
-                boolean match = true;
-                for (int i = 0; i < dotCount; i++) {
-                    if (!remoteParts[i].equals(prefixParts[i])) {
-                        match = false;
-                        break;
-                    }
-                }
-                if (match) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    public RateLimitAspect(RateLimitBucketRegistry registry, ClientIpResolver resolver) {
+        this.registry = registry;
+        this.clientIpResolver = resolver;
     }
 
     /**
@@ -198,23 +183,26 @@ public class RateLimitAspect {
     }
 
     /**
-     * 解析 SpEL 表达式生成限流键。
+     * 解析 SpEL 表达式生成限流键（包内可见，供审计单测按生产同一路径求值）。
      *
-     * <p>当 {@link RateLimit#key()} 为空时，使用"类名#方法名"作为默认键。
-     * 否则使用 SpEL 解析表达式，并自动注入以下变量：</p>
+     * <p>注入的变量：</p>
      * <ul>
-     *   <li>{@code request}：当前 HttpServletRequest（支持 {@code #request.remoteAddr}）</li>
+     *   <li>{@code clientIp}：{@link ClientIpResolver} 解析出的客户端 IP 字符串</li>
+     *   <li>{@code httpRequest}：当前 HttpServletRequest（<b>不叫 {@code request}</b>，
+     *       见类注释的命名不变量）</li>
      *   <li>所有方法参数（按参数名访问，如 {@code #userId}）</li>
      * </ul>
      *
-     * <p>最终返回的桶键为 {@code 类名#方法名:解析值}，确保不同接口使用独立桶。</p>
+     * <p>返回的桶键为 {@code 类名#方法名:解析值}；解析失败/为 null 时返回带
+     * {@link #MARKER_SPEL_FAILURE} / {@link #MARKER_NULL_VALUE} 且<b>仍按客户端 IP
+     * 分桶</b>的降级键，绝不产出跨用户共享的桶。</p>
      *
      * @param rateLimit 限流注解
      * @param method    当前方法
      * @param args      方法参数值
      * @return 限流键字符串
      */
-    private String resolveKey(RateLimit rateLimit, Method method, Object[] args) {
+    String resolveKey(RateLimit rateLimit, Method method, Object[] args) {
         String expressionStr = rateLimit.key();
         String methodQualifier = method.getDeclaringClass().getSimpleName()
                 + "#" + method.getName();
@@ -224,42 +212,57 @@ public class RateLimitAspect {
             return methodQualifier;
         }
 
+        HttpServletRequest request = currentRequest();
+        String clientIp = clientIpResolver.resolve(request);
+
         try {
             Expression expression = parser.parseExpression(expressionStr);
             // 使用 MethodBasedEvaluationContext 让 SpEL 可以按参数名引用方法入参
             MethodBasedEvaluationContext context = new MethodBasedEvaluationContext(
                     null, method, args, paramNameDiscoverer);
 
-            // 注入当前 HttpServletRequest 作为 "request" 变量，支持 #request.remoteAddr
-            HttpServletRequest request = currentRequest();
+            // 注入当前 HttpServletRequest（变量名 httpRequest）与解析后的客户端 IP
+            // （变量名 clientIp）。二者均不得与方法参数同名——由 RateLimitKeyAuditTest 保证。
             if (request != null) {
-                context.setVariable("request", request);
+                context.setVariable("httpRequest", request);
             }
+            context.setVariable("clientIp", clientIp);
 
             Object value = expression.getValue(context);
             if (value == null) {
-                return methodQualifier + ":null";
+                // 降级：按客户端 IP 分桶，不共享全局桶（见类注释）
+                log.error("限流键 SpEL 解析结果为 null，降级为按客户端 IP 分桶：expression={},"
+                        + " method={}, key={}{}{}（若持续出现说明 key 写错了，请修注解）",
+                        expressionStr, method.getName(), methodQualifier,
+                        MARKER_NULL_VALUE, clientIp);
+                return methodQualifier + MARKER_NULL_VALUE + clientIp;
             }
             return methodQualifier + ":" + value;
         } catch (org.springframework.expression.ExpressionException e) {
-            // SpEL 解析失败时降级为方法全限定名，避免限流失效或误伤
-            log.warn("SpEL 解析限流键失败，降级为方法全限定名：expression={}, method={}, error={}",
-                    expressionStr, method.getName(), e.getMessage());
-            return methodQualifier + ":fallback";
+            // 降级：绝不能再退化成"所有用户共用一个桶"（P0 缺陷 1 的根因）。
+            // 这里按客户端 IP 各自成桶——坏表达式只影响该客户端，
+            // 并以 ERROR 级日志 + 审计单测双重暴露，不允许静默降级。
+            log.error("限流键 SpEL 解析失败，降级为按客户端 IP 分桶（非共享桶）：expression={},"
+                    + " method={}, declaredKey={}{}{}, spelError={}",
+                    expressionStr, method.getName(), methodQualifier,
+                    MARKER_SPEL_FAILURE, clientIp, e.getMessage());
+            return methodQualifier + MARKER_SPEL_FAILURE + clientIp;
         }
     }
 
     /**
      * 从 Spring {@link RequestContextHolder} 获取当前 HttpServletRequest。
      *
-     * <p>在非 Web 上下文（如异步线程、定时任务）中可能返回 null。</p>
+     * <p>在非 Web 上下文（如异步线程、定时任务）中可能返回 null，
+     * 此时 {@link ClientIpResolver} 返回 {@link ClientIpResolver#UNKNOWN}，
+     * 限流仍按"方法 + unknown-ip"分桶（不会误共享业务用户的桶，也不会静默放行）。</p>
      *
-     * <p>infra R2-00229 + R4-00378：反向代理（Nginx/网关）部署时所有请求的
-     * {@code remoteAddr} 均为代理 IP，导致全站共享同一限流桶（误伤）。
-     * 包装器使 {@code getRemoteAddr()} 在<b>直连来源为配置的可信代理</b>
-     * （{@code app.security.trusted-proxies}）时优先返回 {@code X-Forwarded-For}
-     * 首地址（客户端真实 IP）；直连来源不可信时忽略 XFF，直接返回直连地址——
-     * 客户端伪造 XFF 头无法更换限流桶（R4-00378）。</p>
+     * <p>注意：本方法返回的是<b>原始</b>请求对象。客户端 IP 一律经
+     * {@link ClientIpResolver} 解析（只有直连来源在可信代理名单内时才读
+     * {@code X-Forwarded-For}，否则忽略，伪造 XFF 换不到限流桶），
+     * 不再用请求包装器改写 {@code getRemoteAddr()}——历史实现把包装后的
+     * {@code remoteAddr} 直接暴露为 {@code #request}，与同名方法参数冲突，
+     * 是 P0 缺陷 1 的放大器。详见 {@link ClientIpResolver} 的拓扑说明。</p>
      *
      * @return 当前 HttpServletRequest，无可用请求上下文时返回 null
      */
@@ -269,41 +272,11 @@ public class RateLimitAspect {
         if (attrs == null) {
             return null;
         }
-        return new ForwardedHeaderAwareRequestWrapper(attrs.getRequest(), this);
+        return attrs.getRequest();
     }
 
-    /**
-     * 使 {@code getRemoteAddr()} 在直连来源为可信代理时优先返回 X-Forwarded-For
-     * 首地址的请求包装器（R4-00378）；直连来源不可信或未携带 X-Forwarded-For 时
-     * 行为与原请求一致。
-     */
-    private static final class ForwardedHeaderAwareRequestWrapper extends HttpServletRequestWrapper {
-
-        private final RateLimitAspect aspect;
-
-        ForwardedHeaderAwareRequestWrapper(HttpServletRequest request, RateLimitAspect aspect) {
-            super(request);
-            this.aspect = aspect;
-        }
-
-        @Override
-        public String getRemoteAddr() {
-            HttpServletRequest original = (HttpServletRequest) getRequest();
-            String directAddr = super.getRemoteAddr();
-            // R4-00378：仅当直连来源为可信代理时才信任 XFF（网关已清理/覆盖
-            // 客户端 XFF 的前提下），否则客户端伪造 XFF 头即可更换限流桶
-            if (!aspect.isTrustedProxy(directAddr)) {
-                return directAddr;
-            }
-            String xff = original.getHeader("X-Forwarded-For");
-            if (xff != null && !xff.isBlank()) {
-                int comma = xff.indexOf(',');
-                String first = (comma >= 0 ? xff.substring(0, comma) : xff).trim();
-                if (!first.isEmpty()) {
-                    return first;
-                }
-            }
-            return directAddr;
-        }
+    /** 测试/诊断用：暴露 IP 解析器，便于断言可信代理配置解析结果。 */
+    ClientIpResolver clientIpResolver() {
+        return clientIpResolver;
     }
 }

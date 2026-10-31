@@ -326,8 +326,12 @@ class RateLimitIntegrationTest {
         /**
          * 模拟 FeedbackController.createIssue 的限流配置。
          * 桶容量 10，每 10 秒补 1 个令牌，按 IP 限流。
+         *
+         * <p>键写 {@code #clientIp} 而不是曾经的 {@code #request.remoteAddr}：
+         * 切面已不再注入 {@code #request}（它会遮蔽同名方法参数，见 RateLimitAspect 类注释），
+         * 留着旧写法的话本夹具会走【降级桶】通过——那等于在测兜底分支而不是被测行为。</p>
          */
-        @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")
+        @RateLimit(capacity = 10, refillTokens = 0.1, key = "#clientIp")
         String rateLimitedEndpoint() {
             return "ok";
         }

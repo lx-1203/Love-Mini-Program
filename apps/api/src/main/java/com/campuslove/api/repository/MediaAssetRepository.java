@@ -29,28 +29,62 @@ import org.springframework.stereotype.Repository;
 public interface MediaAssetRepository extends JpaRepository<MediaAsset, Long> {
 
     /**
-     * 根据用户 ID 和媒体类型查询资产列表。
+     * 根据用户 ID 和媒体类型查询【未软删除】的资产列表（S3-D，2026-10-31）。
+     *
+     * <p>原名 {@code findByUserIdAndType} 不带 {@code DeletedAtIsNull}，会把
+     * {@code markTempDeleted()} 留下的墓碑行一起返回。实测本仓 campus_love 里
+     * {@code media_asset.deleted_at IS NOT NULL} 目前是 0 行，所以这是一个
+     * 【尚无活数据、但一旦有人调用就会漏出已删资产】的地雷；
+     * 本方法同时是【当前无 main 调用方】的死方法——保留并加过滤器，
+     * 是因为删掉它不等于修好它（下一个人会重新写出来）。</p>
      *
      * @param userId 用户 ID
      * @param type   媒体类型（image/video/background）
-     * @return 资产列表（可能为空，不会返回 null）
+     * @return 资产列表（可能为空，不会返回 null；不含墓碑）
      */
-    List<MediaAsset> findByUserIdAndType(Long userId, String type);
+    List<MediaAsset> findByUserIdAndTypeAndDeletedAtIsNull(Long userId, String type);
 
     /**
-     * 根据用户 ID 查询全部资产，按创建时间倒序排列。
+     * 根据用户 ID 查询全部【未软删除】资产，按创建时间倒序排列（S3-D，2026-10-31）。
      * 用于个人主页媒体管理场景。
      *
+     * <p>同上：原 {@code findByUserIdOrderByCreatedAtDesc} 不过滤墓碑，
+     * 当前无 main 调用方，加过滤后保留。</p>
+     *
      * @param userId 用户 ID
-     * @return 资产列表（最新优先）
+     * @return 资产列表（最新优先；不含墓碑）
      */
-    List<MediaAsset> findByUserIdOrderByCreatedAtDesc(Long userId);
+    List<MediaAsset> findByUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long userId);
 
     /**
-     * 按 URL 集合批量查询（读取侧过滤审核状态用，避免 N+1）。
+     * 按 URL 集合批量查询【未软删除】的资产（读取侧过滤审核状态用，避免 N+1）。
+     *
+     * <p>S3-D（2026-10-31）：这是【面向用户展示】的读路径，必须排除墓碑。
+     * 调用方：{@code MediaAssetService.findByUrls}(→ RecommendationRanker 照片墙、
+     * ProfileQueryService 相册) 与 {@code MediaAssetService.findByUrl}(→ 头像审核状态)。</p>
      *
      * @param urls 媒体 URL 集合
-     * @return 匹配的资产列表（URL 在给定集合内）
+     * @return 匹配的资产列表（URL 在给定集合内且未被软删除）
+     */
+    List<MediaAsset> findByUrlInAndDeletedAtIsNull(Collection<String> urls);
+
+    /**
+     * 按 URL 集合查询资产，【含软删除墓碑】——仅限下面点名的两个调用方使用。
+     *
+     * <p>为什么这里【故意】不过滤 deleted_at（S3-D 的「有意可读」例外）：</p>
+     * <ol>
+     *   <li>{@code MediaAssetService.deleteByUrl}：物理清理旧记录。若跳过墓碑行，
+     *       {@code markTempDeleted()} 登记过的行将【永久无法删除】——过滤反而造成数据泄漏。</li>
+     *   <li>{@code MediaAccessService.resolveAccessProfile}：媒体访问分级。该方法的设计是
+     *       「DB 分类只收紧、不放松」；若把已删行的分类信号丢掉，被判成
+     *       {@code ID_CARD} 的资产会在回落到路径推断时【放松】到 IMAGE 档。
+     *       这里保留墓碑可读，是安全性上的刻意选择，不是遗漏。</li>
+     * </ol>
+     *
+     * <p>新代码请优先用 {@link #findByUrlInAndDeletedAtIsNull}。</p>
+     *
+     * @param urls 媒体 URL 集合
+     * @return 匹配的资产列表（含墓碑；见上方两个调用方）
      */
     List<MediaAsset> findByUrlIn(Collection<String> urls);
 
@@ -61,17 +95,27 @@ public interface MediaAssetRepository extends JpaRepository<MediaAsset, Long> {
      * 该 URL 存在 type=app_asset 且 audit_status=approved 的注册记录，
      * 使管理后台的「审核驳回」对应用资产同样生效（驳回后公开访问 404）。</p>
      *
+     * <p>S3-D（2026-10-31）：补 {@code DeletedAtIsNull}。本方法是「通过才放行」的门，
+     * 排除墓碑只会让判定【更严】（已删资产不再公开可读），方向上安全，
+     * 不存在 {@code findByUrlIn} 那种「丢掉收紧信号」的顾虑。</p>
+     *
      * @param url  媒体 URL（完整路径，如 /api/v1/media/app-assets/generated/images/campus/campus-gate.jpg）
      * @param type 媒体类型（app_asset）
-     * @return 匹配的资产记录（可能为空）
+     * @return 匹配的资产记录（未软删除；可能为空）
      */
-    Optional<MediaAsset> findByUrlAndType(String url, String type);
+    Optional<MediaAsset> findByUrlAndTypeAndDeletedAtIsNull(String url, String type);
 
     /**
      * 管理后台审核分页查询（2026-08-09，2026-08-10 增加 type 筛选）。
      *
      * 筛选条件：审核状态 / 媒体类型 / 上传者用户 ID / 校区名（校区隔离子查询）。
      * 排序：pending 优先，同状态按创建时间倒序。
+     *
+     * <p>S3-D（2026-10-31）：这里【故意不加】deleted_at 过滤——后台是「审核 / 清理取证」
+     * 视角，墓碑必须可见，否则管理员看不到「待审队列里被删过的是哪些」。
+     * 调用方（即「墓碑有意可读」的名单）：
+     * {@code AdminMediaAssetController} 的列表接口与
+     * {@code RealAdminStatsService} 的待审计数。</p>
      *
      * @param auditStatus 审核状态（pending/approved/rejected，null 为全部）
      * @param userId      上传者用户 ID（null 为全部）

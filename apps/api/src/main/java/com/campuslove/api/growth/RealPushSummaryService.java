@@ -3,22 +3,12 @@ package com.campuslove.api.growth;
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.SecurityUtils;
-import com.campuslove.api.entity.Comment;
-import com.campuslove.api.entity.Like;
-import com.campuslove.api.entity.Like.LikeStatus;
-import com.campuslove.api.entity.Post;
 import com.campuslove.api.entity.PushPreference;
 import com.campuslove.api.entity.PushSummary;
 import com.campuslove.api.entity.RecommendationPreference;
-import com.campuslove.api.entity.Visitor;
-import com.campuslove.api.repository.CommentRepository;
-import com.campuslove.api.repository.LikeRepository;
-import com.campuslove.api.repository.PostLikeRepository;
-import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.repository.PushPreferenceRepository;
 import com.campuslove.api.repository.PushSummaryRepository;
 import com.campuslove.api.repository.RecommendationPreferenceRepository;
-import com.campuslove.api.repository.VisitorRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -37,8 +27,26 @@ import org.springframework.web.client.HttpClientErrorException;
  * 真实推送摘要服务实现。
  * 在 real profile 下激活，使用各类 Repository 实现数据库持久化。
  * <p>
- * 提供社交动态摘要生成（汇总访客/喜欢/帖子互动）和推荐刷新通知生成两大数据摘要功能。
- * 同一用户在同一自然日内每种摘要类型只生成一条，避免重复推送。
+ * 提供推荐刷新通知生成。同一用户在同一自然日内每种摘要类型只生成一条，避免重复推送。
+ *
+ * <p>S3-E（2026-10-31）：删除了 {@code generateSocialDigest}。理由（全部实测/可复核，
+ * 不是「看起来没用」）：</p>
+ * <ul>
+ *   <li>该方法在 main 与 test 里【零调用方】——
+ *       {@code grep -rn "generateSocialDigest|PushSummaryService" apps/ tests/}
+ *       只命中接口声明与两个实现自身，整个 {@code PushSummaryService} 类型没有被
+ *       任何 Controller/Service/Scheduled 注入；</li>
+ *   <li>它是 N+1 的唯一来源：每个帖子各发一次
+ *       {@code postLikeRepository.countByPostId} 与
+ *       {@code commentRepository.findByPostIdOrderByCreatedAtDesc}（后者返回【无界】
+ *       {@code List<Comment>}，仅为在内存里数 24 小时内的条数）；</li>
+ *   <li>所以「优化它」= 给死代码建索引，正确动作是删掉。
+ *       删除同时带走了对不过滤软删除的 {@code postRepository.findByAuthorId} 的调用。</li>
+ * </ul>
+ *
+ * <p>【未】一并删除 {@code generateRecommendRefresh} / {@code markSent}：它们同样没有
+ * 调用方，但属于另一个产品决定（订阅消息推送链路是否还要做），已作为待决项上报，
+ * 不在本发现项里替产品拍板。</p>
  */
 @Profile("real")
 @Service
@@ -50,152 +58,22 @@ public class RealPushSummaryService implements PushSummaryService {
 
     private final PushSummaryRepository pushSummaryRepository;
     private final PushPreferenceRepository pushPreferenceRepository;
-    private final VisitorRepository visitorRepository;
-    private final LikeRepository likeRepository;
-    private final PostRepository postRepository;
-    private final PostLikeRepository postLikeRepository;
-    private final CommentRepository commentRepository;
     private final RecommendationPreferenceRepository recommendationPreferenceRepository;
 
     /**
      * 构造函数，注入所需的所有 Repository。
+     *
+     * <p>S3-E：原构造器还注入 VisitorRepository / LikeRepository / PostRepository /
+     * PostLikeRepository / CommentRepository 五个，仅被已删除的
+     * {@code generateSocialDigest} 使用，随之移除。</p>
      */
     public RealPushSummaryService(
             PushSummaryRepository pushSummaryRepository,
             PushPreferenceRepository pushPreferenceRepository,
-            VisitorRepository visitorRepository,
-            LikeRepository likeRepository,
-            PostRepository postRepository,
-            PostLikeRepository postLikeRepository,
-            CommentRepository commentRepository,
             RecommendationPreferenceRepository recommendationPreferenceRepository) {
         this.pushSummaryRepository = pushSummaryRepository;
         this.pushPreferenceRepository = pushPreferenceRepository;
-        this.visitorRepository = visitorRepository;
-        this.likeRepository = likeRepository;
-        this.postRepository = postRepository;
-        this.postLikeRepository = postLikeRepository;
-        this.commentRepository = commentRepository;
         this.recommendationPreferenceRepository = recommendationPreferenceRepository;
-    }
-
-    /**
-     * 为指定用户生成社交动态摘要。
-     * <p>
-     * 汇总最近 24 小时内的：
-     * <ul>
-     *   <li>访客记录数（谁来看过你）</li>
-     *   <li>喜欢记录数（谁喜欢了你）</li>
-     *   <li>帖子互动数（你的帖子被点赞 + 被评论的次数）</li>
-     * </ul>
-     * 生成可读的摘要文案。同一用户每天只生成一次，避免重复。
-     *
-     * @param userId 用户 ID
-     * @return 生成的推送摘要
-     */
-    @Override
-    @Transactional
-    public PushSummary generateSocialDigest(Long userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("userId is required");
-        }
-
-        // 检查推送偏好：是否启用推送
-        Optional<PushPreference> prefOpt = pushPreferenceRepository.findByUserId(userId);
-        if (prefOpt.isPresent() && !prefOpt.get().getPushEnabled()) {
-            log.debug("用户[{}]已关闭推送，跳过摘要生成", userId);
-            return null;
-        }
-
-        // 检查今日是否已生成过社交动态摘要，避免重复
-        LocalDate today = LocalDate.now(TimeZones.BUSINESS);
-        LocalDateTime todayStart = today.atStartOfDay();
-        List<PushSummary> todaySummaries = pushSummaryRepository
-                .findByUserIdAndGeneratedAtAfter(userId, todayStart);
-        boolean alreadyGenerated = todaySummaries.stream()
-                .anyMatch(s -> "social_digest".equals(s.getSummaryType()));
-        if (alreadyGenerated) {
-            log.debug("用户[{}]今日已生成社交动态摘要，跳过重复生成", userId);
-            return todaySummaries.stream()
-                    .filter(s -> "social_digest".equals(s.getSummaryType()))
-                    .findFirst().orElse(null);
-        }
-
-        // 计算最近 24 小时的起始时间
-        LocalDateTime since24h = LocalDateTime.now(TimeZones.BUSINESS).minusHours(24);
-
-        // 1. 统计最近 24 小时的访客数
-        List<Visitor> allVisitors = visitorRepository.findByVisitedUserIdOrderByCreatedAtDesc(userId);
-        long visitorCount = allVisitors.stream()
-                .filter(v -> v.getCreatedAt() != null && v.getCreatedAt().isAfter(since24h))
-                .count();
-
-        // 2. 统计最近 24 小时收到的喜欢数
-        List<Like> receivedLikes = likeRepository.findByTargetUserIdAndStatus(userId, LikeStatus.active);
-        long likeCount = receivedLikes.stream()
-                .filter(l -> l.getCreatedAt() != null && l.getCreatedAt().isAfter(since24h))
-                .count();
-
-        // 3. 统计最近 24 小时帖子互动数（点赞 + 评论）
-        long postInteractionCount = 0;
-        List<Post> userPosts = postRepository.findByAuthorId(userId);
-        for (Post post : userPosts) {
-            // 统计帖子在 24h 内的点赞数（使用 PostLike 总数近似，因为 countByPostId 不按时间过滤）
-            long postLikes = postLikeRepository.countByPostId(post.getId());
-            // 统计帖子在 24h 内的评论数
-            List<Comment> comments = commentRepository.findByPostIdOrderByCreatedAtDesc(post.getId());
-            long recentComments = comments.stream()
-                    .filter(c -> c.getCreatedAt() != null && c.getCreatedAt().isAfter(since24h))
-                    .count();
-            postInteractionCount += postLikes + recentComments;
-        }
-
-        // 构建摘要文案
-        String title;
-        StringBuilder contentBuilder = new StringBuilder();
-
-        if (visitorCount == 0 && likeCount == 0 && postInteractionCount == 0) {
-            title = "今天还没有新动态";
-            contentBuilder.append("去发现页看看，给心动的人点个赞吧");
-        } else {
-            title = "你收到了新的社交动态";
-
-            boolean hasPrevious = false;
-            if (visitorCount > 0) {
-                contentBuilder.append(visitorCount).append(" 人查看了你的主页");
-                hasPrevious = true;
-            }
-            if (likeCount > 0) {
-                if (hasPrevious) {
-                    contentBuilder.append("，");
-                }
-                contentBuilder.append(likeCount).append(" 人喜欢了你");
-                hasPrevious = true;
-            }
-            if (postInteractionCount > 0) {
-                if (hasPrevious) {
-                    contentBuilder.append("，");
-                }
-                contentBuilder.append("帖子获得 ").append(postInteractionCount).append(" 次互动");
-            }
-        }
-
-        // 构建跳转路径
-        String actionUrl = "/pages/likes/index";
-
-        PushSummary summary = new PushSummary();
-        summary.setUserId(userId);
-        summary.setSummaryType("social_digest");
-        summary.setTitle(title);
-        summary.setContent(contentBuilder.toString());
-        summary.setActionUrl(actionUrl);
-        summary.setIsSent(false);
-        summary.setGeneratedAt(LocalDateTime.now(TimeZones.BUSINESS));
-
-        PushSummary saved = pushSummaryRepository.save(summary);
-        log.info("用户[{}]社交动态摘要已生成: visitor={}, like={}, interaction={}",
-                userId, visitorCount, likeCount, postInteractionCount);
-        return saved;
     }
 
     /**

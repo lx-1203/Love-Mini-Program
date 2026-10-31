@@ -92,7 +92,7 @@ public class PrivateMessageController {
      * 按客户端 IP 限流，防止消息刷屏与垃圾内容轰炸。</p>
      */
     @PostMapping("/conversations/{id}/messages")
-    @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
     @Idempotent
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<MessageView> sendMessage(

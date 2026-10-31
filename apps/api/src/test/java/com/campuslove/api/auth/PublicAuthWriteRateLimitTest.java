@@ -81,7 +81,7 @@ class PublicAuthWriteRateLimitTest {
     private static void assertIpLimit(Method method) {
         RateLimit limit = method.getAnnotation(RateLimit.class);
         assertNotNull(limit, method.getName() + " 是公开写入口，必须挂 @RateLimit");
-        assertEquals("#request.remoteAddr", limit.key(),
+        assertEquals("#clientIp", limit.key(),
                 method.getName() + " 应按客户端 IP 限流");
         assertEquals(10, limit.capacity(), method.getName() + " 的桶容量应与 sibling 登录一致");
         assertEquals(0.1, limit.refillTokens(), 0.0001,

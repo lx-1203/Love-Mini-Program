@@ -17,10 +17,18 @@ import java.lang.annotation.Target;
  *   <li>{@link #refillTokens}：每秒补充的令牌数（支持小数，如 0.1 表示每 10 秒补充 1 个）。
  *       桶满时不再补充；桶空时请求会被拒绝并抛出 {@link RateLimitExceededException}。</li>
  *   <li>{@link #key}：SpEL 表达式，用于从方法参数或运行时上下文中动态生成限流键。
- *       默认 {@code "#request.remoteAddr"} 表示按客户端 IP 限流；
+ *       默认 {@code "#clientIp"} 表示按解析后的客户端 IP 限流（解析规则见
+ *       {@link ClientIpResolver}：直连来源不在可信代理名单内时忽略 X-Forwarded-For）；
  *       也可使用 {@code "#userId"} 按用户限流，或
  *       {@code "T(com.campuslove.api.config.SecurityUtils).getCurrentUserId()"} 调用静态方法。</li>
  * </ul>
+ *
+ * <p><b>可用变量清单（勿臆造其他名字）</b>：{@code #clientIp}（String，解析后的客户端 IP）、
+ * {@code #httpRequest}（HttpServletRequest 本体）、方法参数名。
+ * <b>不存在 {@code #request}</b>——切面刻意不用这个名字注入 servlet 请求，因为它会
+ * 覆盖同名方法参数：{@code BillingController#purchase(VipPurchaseRequest request)} 的
+ * {@code #request.planId()} 正是被这一点打成"全站共用一个 1 次/60 秒桶"（付费路径误伤），
+ * 详见 {@link RateLimitAspect} 类注释与 {@code RateLimitKeyAuditTest}。</p>
  *
  * <p>示例：</p>
  * <pre>
@@ -73,16 +81,23 @@ public @interface RateLimit {
      *
      * <p>支持以下形式：</p>
      * <ul>
-     *   <li>{@code "#request.remoteAddr"}：从当前 HttpServletRequest 获取客户端 IP（默认）</li>
+     *   <li>{@code "#clientIp"}：解析后的客户端 IP（默认）。直连来源不在
+     *       {@code app.security.trusted-proxies} 名单内时该值即直连 remoteAddr
+     *       （XFF 被忽略，伪造 header 换不到桶）；名单内时取 XFF 链中第一个
+     *       不可信条目，见 {@link ClientIpResolver}</li>
+     *   <li>{@code "#httpRequest.remoteAddr"}：直连地址本体（刻意不含 XFF 处理，
+     *       按 IP 限流请用 {@code "#clientIp"}）</li>
      *   <li>{@code "#userId"}：从方法参数 {@code userId} 中提取（要求方法有该参数）</li>
      *   <li>{@code "T(com.campuslove.api.config.SecurityUtils).getCurrentUserId()"}：
      *       调用静态方法获取当前登录用户 ID</li>
      *   <li>留空时使用"类名#方法名"作为默认键，等同全局限流</li>
      * </ul>
      *
-     * <p>最终桶键会被组合为 {@code 类名#方法名:SpEL解析值}，避免不同接口共用桶。</p>
+     * <p>最终桶键会被组合为 {@code 类名#方法名:SpEL解析值}，避免不同接口共用桶。
+     * 表达式求值失败或为 null 时，切面降级为 {@code 类名#方法名:<标记>:<clientIp>}
+     * （按客户端各自成桶 + ERROR 日志），<b>不会</b>退化成跨用户共享桶。</p>
      *
      * @return SpEL 表达式
      */
-    String key() default "#request.remoteAddr";
+    String key() default "#clientIp";
 }

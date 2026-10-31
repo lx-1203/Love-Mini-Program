@@ -27,23 +27,42 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 public class RateLimitConfig {
 
     /**
+     * 注册客户端 IP 解析器（可信代理判定唯一入口）。
+     *
+     * <p>R4-00378 + 本轮 P0 缺陷 2：{@code app.security.trusted-proxies}
+     * （环境变量 {@code APP_TRUSTED_PROXIES}）为空时不信任任何代理，
+     * {@code X-Forwarded-For} 一律忽略——伪造 header 换不到限流桶；
+     * 配置后按"从右往左第一个不可信条目"取真实客户端。规则与部署要求见
+     * {@link ClientIpResolver} 类注释。</p>
+     *
+     * @param trustedProxies 可信代理 IP/CIDR 列表（逗号分隔，空表示不信任任何代理）
+     * @return 客户端 IP 解析器单例
+     */
+    @Bean
+    public ClientIpResolver clientIpResolver(
+            @org.springframework.beans.factory.annotation.Value(
+                    "${app.security.trusted-proxies:}") String trustedProxies) {
+        return new ClientIpResolver(trustedProxies);
+    }
+
+    /**
      * 注册速率限制切面 Bean。
      *
      * <p>Spring 会自动注入 {@link RateLimitBucketRegistry}（基于 @Component 自动注册的单例）。
      * 切面在 {@code @Around} 通知中拦截所有标注 {@link RateLimit} 的方法。</p>
      *
      * <p>R4-00378：注入可信代理配置（{@code app.security.trusted-proxies}）——
-     * 限流键取 {@code X-Forwarded-For} 首地址前需校验直连来源为可信代理，防止客户端
-     * 伪造 XFF 头更换限流桶绕过 IP 限流。</p>
+     * 限流键取客户端 IP 前需校验直连来源为可信代理，防止客户端伪造 XFF 头
+     * 更换限流桶绕过 IP 限流。解析逻辑收敛到 {@link ClientIpResolver} 单例，
+     * 与控制器侧手工加的第二 IP 维度共用同一判定。</p>
      *
-     * @param registry       令牌桶注册表 Bean
-     * @param trustedProxies 可信代理 IP/CIDR 列表（逗号分隔，空表示不信任任何代理）
+     * @param registry 令牌桶注册表 Bean
+     * @param resolver 客户端 IP 解析器 Bean
      * @return 速率限制切面实例
      */
     @Bean
     public RateLimitAspect rateLimitAspect(RateLimitBucketRegistry registry,
-                                           @org.springframework.beans.factory.annotation.Value(
-                                                   "${app.security.trusted-proxies:}") String trustedProxies) {
-        return new RateLimitAspect(registry, trustedProxies);
+                                           ClientIpResolver resolver) {
+        return new RateLimitAspect(registry, resolver);
     }
 }

@@ -38,10 +38,16 @@ public interface AccountSecurityService {
     void changePhone(Long userId, String password, String newPhone);
 
     /**
-     * 注销账号（幂等）。
+     * 注销账号（PIPL 第 47 条删除权；幂等、可重跑）。
      *
      * <p>流程：校验旧密码（无密码账号校验 confirmationText 替代）→
-     * users.status=deactivated + 昵称/头像/手机号匿名化 → 吊销该用户全部 token。</p>
+     * 按 {@code PersonalDataTables} 清除清单删除/匿名化主体的全部关联数据
+     * （与 {@code PersonalDataService} 的导出清单同源，含实名与校园认证材料）→
+     * users 行墓碑化（openid 换随机墓碑、nickname 常量、phone 置 NULL、
+     * 出生日期/坐标/校区/密码散列全部销毁、自动续费关闭）→ 吊销该用户全部 token。</p>
+     *
+     * <p>重复调用不抛异常：清单里每条语句都是幂等的 DELETE/SET 常量，
+     * 用于「上一次中途失败、数据只删了一半」的修复路径。</p>
      *
      * @param userId           当前用户 ID
      * @param password         旧密码（有密码账号必填；无密码账号可空，由 confirmationText 替代）

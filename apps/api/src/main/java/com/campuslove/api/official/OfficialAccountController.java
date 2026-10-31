@@ -47,7 +47,7 @@ public class OfficialAccountController {
      * @return 账号视图列表（按 sortOrder 升序）
      */
     @GetMapping
-    @RateLimit(capacity = 60, refillTokens = 1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 60, refillTokens = 1, key = "#clientIp")
     public List<OfficialAccountView> getAccounts() {
         return officialAccountService.getAccounts();
     }
@@ -60,7 +60,7 @@ public class OfficialAccountController {
      * @return 消息视图列表（发布时间升序）；账号不存在或已下线时返回空列表
      */
     @GetMapping("/{code}/messages")
-    @RateLimit(capacity = 60, refillTokens = 1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 60, refillTokens = 1, key = "#clientIp")
     public ResponseEntity<List<OfficialMessageView>> getMessages(
             @PathVariable("code")
             @NotBlank(message = ErrorMessages.CODE_REQUIRED)
@@ -85,7 +85,7 @@ public class OfficialAccountController {
      * 消息落库并返回 [用户消息, 助手回复]（direction 区分）。
      */
     @PostMapping("/{code}/messages")
-    @RateLimit(capacity = 30, refillTokens = 1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<List<OfficialMessageView>> sendMessage(
             @PathVariable("code")

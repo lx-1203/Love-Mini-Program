@@ -2,6 +2,7 @@ package com.campuslove.api.village;
 
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.OperationForbiddenException;
+import com.campuslove.api.common.ResourceNotFoundException;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.ContentSecurityChecker;
@@ -493,5 +494,75 @@ public class VillagePostService {
         if (cert.isEmpty() || !"APPROVED".equals(cert.get().getStatus())) {
             throw new OperationForbiddenException(ErrorMessages.SCHOOL_CERT_REQUIRED_FOR_CAMPUS_POST);
         }
+    }
+
+    // ---- 2026-10-31 用户自助删除自己的帖子（软删除） ----
+
+    /**
+     * 作者删除<b>自己</b>的帖子：软删除（{@code posts.status = 'deleted'}），与后台删除同一套状态词汇。
+     *
+     * <p>为什么是软删而不是硬删：{@code status='deleted'} 是本库既有的墓碑口径
+     * （{@code AdminPostController#deletePost} 就是这么写的，
+     * {@link com.campuslove.api.repository.PostRepository} 的列表/计数查询也按
+     * {@code status <> 'deleted'} 排除），硬删会破坏审核留痕与帖子 ID 的外链引用。</p>
+     *
+     * <p><b>校验与写入的次序</b>（本方法的判点，测试按此证伪）：
+     * 读 → 作者校验 → 幂等判定 → 才允许写。非作者一律 403 且 {@code save} 一次都不调，
+     * 口径同 {@code chat.TempChatSessionService#requireParticipant}（非参与者 403、
+     * 会话不存在 404）。</p>
+     *
+     * <p><b>级联口径</b>：评论/点赞/收藏行<b>保持原样附着在墓碑帖上</b>，不做硬删。
+     * 它们随之不可见——列表与热度按 {@code status <> 'deleted'} 排除、详情
+     * （{@code VillageQueryService#getPost} / {@code RealVillageService#getPost}）对
+     * {@code status != active} 一律 404——因此不存在「孤儿可见」的用户侧出口；
+     * 与后台删除保持同一语义（{@code AdminPostController#deletePost} 的 infra R2-00270
+     * 更正注释即「评论通过帖子维度查询天然随帖子隐藏」）。剩余两处「墓碑仍可被写/读」
+     * 的窄口径见 {@code VillageController#deletePost} 的方法注释，属互动服务与查询服务的
+     * 地盘，本轮不改。</p>
+     *
+     * <p><b>幂等</b>：作者重复删除同一帖子返回成功且<b>零写入</b>（不改 updatedAt），
+     * 而不是 404/409。理由：① DELETE 在 RFC 9110 里本就要求幂等；② 客户端拿到 200 后
+     * 的期望状态（帖子从 feed 消失）与首次删除完全一致；③ 若返回「帖子不存在或已删除」，
+     * 网络抖动导致重试就会让用户看见一条报错 + 弹窗不关——正是本轮要避免的静默/误报形态。
+     * 「已删」对非作者不暴露：非作者的 403 判定先于幂等判定，不会因墓碑状态改变响应档位。</p>
+     *
+     * @param userId 当前登录用户 ID（由 Controller 从 JWT 上下文取出）
+     * @param postId 目标帖子 ID
+     * @throws IllegalArgumentException           userId/postId 缺失（400）
+     * @throws ResourceNotFoundException          帖子不存在（404，文案复用
+     *                                            {@link ErrorMessages#POST_NOT_FOUND_OR_DELETED}）
+     * @throws OperationForbiddenException        调用者不是作者（403，且数据未改动）
+     */
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
+    public void deletePost(Long userId, Long postId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+        if (postId == null) {
+            throw new IllegalArgumentException(ErrorMessages.POST_ID_INVALID);
+        }
+
+        // ① 读（不做任何写）——帖子不存在 → 404
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessages.POST_NOT_FOUND_OR_DELETED));
+
+        // ② 作者校验（写之前最后一道闸）——非作者 → 403，数据零改动
+        if (!userId.equals(post.getAuthorId())) {
+            log.warn("非作者尝试删除帖子，已拒绝: postId={}, authorId={}, callerId={}",
+                    postId, post.getAuthorId(), userId);
+            throw new OperationForbiddenException("无权删除该帖子");
+        }
+
+        // ③ 幂等判定——已是墓碑：成功返回，且不再写（updatedAt 不漂移，审计链干净）
+        if (post.getStatus() == PostStatus.deleted) {
+            log.info("帖子已是墓碑状态，删除请求按幂等成功处理: postId={}, callerId={}", postId, userId);
+            return;
+        }
+
+        // ④ 软删除：只改 status/updatedAt，与 AdminPostController#deletePost 逐字段同口径
+        post.setStatus(PostStatus.deleted);
+        post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        postRepository.save(post);
+        log.info("作者删除帖子（软删除）完成: postId={}, authorId={}", postId, userId);
     }
 }

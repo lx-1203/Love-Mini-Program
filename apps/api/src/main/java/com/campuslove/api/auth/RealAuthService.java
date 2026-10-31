@@ -610,7 +610,7 @@ public class RealAuthService implements AuthService {
         // 唯一性校验走确定性 openid 派生键（"phone:"+SHA-256(phone)）——
         // AES-GCM 随机 IV 导致同手机号每次密文不同，无法用密文精确查重；
         // 兼容历史明文数据：openid 派生键未命中时按明文 phone 兜底查询。
-        String phoneCipher = aesEncryptor != null ? aesEncryptor.encrypt(phone) : phone;
+        String phoneCipher = com.campuslove.api.privacy.PhoneColumnCodec.store(aesEncryptor, phone);
         String phoneDerivedOpenid = "phone:" + hashOpenid(phone);
         boolean phoneExists = userRepository.findByOpenid(phoneDerivedOpenid)
                 .or(() -> userRepository.findByPhone(phone))

@@ -26,7 +26,7 @@ public class MessageDashboardController {
      * GET /api/v1/messages/relationship-dashboard
      */
     @GetMapping("/relationship-dashboard")
-    @RateLimit(capacity = 60, refillTokens = 1, key = "#request.remoteAddr")
+    @RateLimit(capacity = 60, refillTokens = 1, key = "#clientIp")
     public MessageDashboardView getRelationshipDashboard() {
         Long userId = SecurityUtils.getCurrentUserId();
         return messageDashboardService.getDashboard(userId);

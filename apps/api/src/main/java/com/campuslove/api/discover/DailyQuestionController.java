@@ -59,7 +59,7 @@ public class DailyQuestionController {
    * 兼顾用户体验与防滥用。</p>
    */
   @PostMapping("/answer")
-  @RateLimit(capacity = 10, refillTokens = 0.2, key = "#request.remoteAddr")
+  @RateLimit(capacity = 10, refillTokens = 0.2, key = "#clientIp")
   @Idempotent
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<DailyAnswerView> submitAnswer(@Valid @RequestBody DailyAnswerRequest request) {

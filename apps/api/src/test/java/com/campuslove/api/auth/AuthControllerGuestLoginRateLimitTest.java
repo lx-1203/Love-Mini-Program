@@ -30,7 +30,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  * （users + 三份 profile + GuestDemoDataProvisioner 的私信/喜欢/访客/通知/悄悄话等，
  * 合计约 70 行），而 {@code guestLogin} 是公开 POST——兄弟公开认证写入口
  * （register / phone-login / wechat-login / admin-login）均已挂
- * {@code @RateLimit(capacity = 10, refillTokens = 0.1, key = "#request.remoteAddr")}，
+ * {@code @RateLimit(capacity = 10, refillTokens = 0.1, key = "#clientIp")}，
  * 唯独 guest-login 漏挂 ⇒ 无防护的公开写端点可被刷量把数据库撑爆。</p>
  *
  * <p>本测试以「真实注解 + 真实切面 + 真实令牌桶」驱动，既验注解（结构），
@@ -42,7 +42,7 @@ class AuthControllerGuestLoginRateLimitTest {
     /** 与兄弟公开认证写入口一致的保守 IP 桶口径（防爆破/防刷量）。 */
     private static final long EXPECTED_CAPACITY = 10L;
     private static final double EXPECTED_REFILL_PER_SECOND = 0.1;
-    private static final String EXPECTED_KEY = "#request.remoteAddr";
+    private static final String EXPECTED_KEY = "#clientIp";
 
     @AfterEach
     void clearRequestContext() {
@@ -71,7 +71,7 @@ class AuthControllerGuestLoginRateLimitTest {
         assertEquals(EXPECTED_REFILL_PER_SECOND, rateLimit.refillTokens(), 0.0001,
                 "guest-login 补充速率应与兄弟认证写入口一致（0.1/s = 每 10 秒 1 个令牌）");
         assertEquals(EXPECTED_KEY, rateLimit.key(),
-                "guest-login 应按客户端 IP 限流（#request.remoteAddr），不是全局桶也不是 deviceId");
+                "guest-login 应按客户端 IP 限流（#clientIp，由 ClientIpResolver 解析），不是全局桶也不是 deviceId");
     }
 
     @Test

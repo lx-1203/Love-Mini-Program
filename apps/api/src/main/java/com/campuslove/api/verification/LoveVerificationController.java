@@ -64,7 +64,7 @@ public class LoveVerificationController {
      */
     @PostMapping
     @Operation(summary = "提交恋爱认证申请", description = "提交学生证照片与身份信息；已认证（approved）时返回业务冲突错误")
-    @RateLimit(capacity = 5, refillTokens = 0.05, key = "#request.remoteAddr")
+    @RateLimit(capacity = 5, refillTokens = 0.05, key = "#clientIp")
     @Idempotent
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<LoveVerificationView> submit(@Valid @RequestBody LoveVerificationRequest request) {

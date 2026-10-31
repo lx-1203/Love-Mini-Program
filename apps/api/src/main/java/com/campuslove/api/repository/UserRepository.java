@@ -308,7 +308,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @param status   账号状态（active）
      * @param role     用户角色（USER）
      * @param pageable 分页参数
-     * @return 分页用户列表（按资料完整度降序、注册时间降序）
+     * @return 分页用户列表（按资料完整度降序、注册时间降序、ID 降序兜底）
      */
     @Query("""
             SELECT u FROM User u
@@ -316,7 +316,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                    OR u.campusName LIKE CONCAT('%', :keyword, '%'))
               AND u.status = :status
               AND u.role = :role
-            ORDER BY u.profileCompletion DESC, u.createdAt DESC
+            ORDER BY u.profileCompletion DESC, u.createdAt DESC, u.id DESC
             """)
     Page<User> searchByKeyword(
             @Param("keyword") String keyword,
