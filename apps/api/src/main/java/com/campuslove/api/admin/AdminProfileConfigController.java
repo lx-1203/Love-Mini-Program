@@ -7,6 +7,9 @@ import com.campuslove.api.profile.ProfileConfigView;
 import com.campuslove.api.repository.AdminAppConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,6 +37,8 @@ import com.campuslove.api.common.TimeZones;
 @PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'AUDITOR')")
 public class AdminProfileConfigController {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminProfileConfigController.class);
+
     private static final String CONFIG_KEY = "profile.config";
 
     private final AdminAppConfigRepository configRepository;
@@ -50,8 +55,11 @@ public class AdminProfileConfigController {
         if (config != null && config.getConfigValue() != null) {
             try {
                 return objectMapper.readValue(config.getConfigValue(), ProfileConfigView.class);
-            } catch (Exception ignored) {
-                // fallback default
+            } catch (Exception ex) {
+                // 静默回默认值会让「运营存的值读不出来」变成只有客户端知道的事；
+                // 默认值本身是对的（不能让后台首页 500），但必须留下一条可读的痕。
+                log.warn("profile.config 存的 JSON 解析失败，回默认值: configId={}, err={}",
+                        config.getId(), ex.getMessage());
             }
         }
         return new ProfileConfigView(true, true, true, 6, 90);
@@ -60,7 +68,7 @@ public class AdminProfileConfigController {
     @PutMapping
     @Transactional
     @CacheEvict(cacheNames = CacheNames.SYSTEM_CONFIG, key = "'all'")
-    public ProfileConfigView save(@RequestBody ProfileConfigView view) {
+    public ProfileConfigView save(@Valid @RequestBody ProfileConfigView view) {
         AdminAppConfig config = configRepository.findByConfigKey(CONFIG_KEY).orElseGet(() -> {
             AdminAppConfig created = new AdminAppConfig();
             created.setConfigKey(CONFIG_KEY);
