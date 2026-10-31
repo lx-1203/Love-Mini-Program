@@ -76,7 +76,7 @@ public class Notification {
 
     /** 通知类型 */
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false, columnDefinition = "ENUM('follow','like','comment','visitor','match')")
+    @Column(name = "type", nullable = false, length = 32)
     private NotificationType type;
 
     /** 触发通知的源用户 ID */
@@ -89,7 +89,7 @@ public class Notification {
 
     /** 关联实体类型 */
     @Enumerated(EnumType.STRING)
-    @Column(name = "reference_type", columnDefinition = "ENUM('post','comment','user')")
+    @Column(name = "reference_type", length = 32)
     private ReferenceType referenceType;
 
     /** 是否已读 */

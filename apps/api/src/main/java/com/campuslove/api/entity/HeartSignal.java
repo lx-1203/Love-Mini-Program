@@ -72,7 +72,7 @@ public class HeartSignal {
 
     /** 状态 */
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, columnDefinition = "ENUM('pending','accepted','expired','declined') DEFAULT 'pending'")
+    @Column(name = "status", nullable = false, length = 32)
     private SignalStatus status = SignalStatus.pending;
 
     /** 匹配类型（mutual_like-互相喜欢, topic-话题匹配, coffee-咖啡散步, study-自习搭子, quick-快速匹配） */

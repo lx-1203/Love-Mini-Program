@@ -56,7 +56,7 @@ public class TempChatSession {
 
     /** 会话阶段: matching / active / closed / expired */
     @Enumerated(EnumType.STRING)
-    @Column(name = "phase", nullable = false, columnDefinition = "ENUM('matching','active','closed','expired') DEFAULT 'matching'")
+    @Column(name = "phase", nullable = false, length = 32)
     private SessionPhase phase = SessionPhase.matching;
 
     /** 会话关闭时间（24h 后自动过期） */

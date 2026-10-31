@@ -122,7 +122,11 @@ public class Post {
 
     /** 分类 */
     @Enumerated(EnumType.STRING)
-    @Column(name = "category", nullable = false, columnDefinition = "ENUM('all','interest','sincere','hometown','anonymous','latest','campus','activity') DEFAULT 'all'")
+    // 枚举列在 V2026.07.27.0005__enum_to_varchar_check.sql 已改成 varchar，
+    // 这里绝不能再写 columnDefinition="ENUM(...)"：那份声明今天在 real profile
+    // （ddl-auto=validate）下无害，却会在任何人把 ddl-auto 切到 update 时
+    // 把这些列原地退回 ENUM。length 与库内实际 varchar(32) 对齐。
+    @Column(name = "category", nullable = false, length = 32)
     private PostCategory category = PostCategory.all;
 
     /** 点赞数 */
@@ -146,7 +150,7 @@ public class Post {
 
     /** 状态 */
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, columnDefinition = "ENUM('active','deleted','hidden') DEFAULT 'active'")
+    @Column(name = "status", nullable = false, length = 32)
     private PostStatus status = PostStatus.active;
 
     /**

@@ -79,7 +79,7 @@ public class Like {
 
     /** 状态: active / cancelled */
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, columnDefinition = "ENUM('active','cancelled') DEFAULT 'active'")
+    @Column(name = "status", nullable = false, length = 32)
     private LikeStatus status = LikeStatus.active;
 
     /** 记录创建时间（喜欢动作发生时间） */

@@ -87,8 +87,10 @@ public class User {
     @Column(name = "pronouns", length = 32)
     private String pronouns;
 
-    /** 手机号 */
-    @Column(name = "phone", length = 32)
+    /** 手机号：库里被 V2026.08.26.0001 放宽到 varchar(64)，实体必须跟住——
+     *  这里曾长期停在 32，任何 ddl-auto=update 环境都会把它缩回去，
+     *  而绑定流程写入的是 AES 密文（比明文长），32 会直接截断/报错。 */
+    @Column(name = "phone", length = 64)
     private String phone;
 
     /**

@@ -38,7 +38,7 @@ public class UserOnlineStatus {
 
     /** 在线状态: online / away / offline */
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, columnDefinition = "ENUM('online','away','offline') DEFAULT 'offline'")
+    @Column(name = "status", nullable = false, length = 32)
     private OnlineStatus status = OnlineStatus.offline;
 
     /** 设备类型（如 android / ios / web） */
