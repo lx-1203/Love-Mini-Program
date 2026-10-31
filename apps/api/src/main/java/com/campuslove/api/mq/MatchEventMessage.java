@@ -16,6 +16,11 @@ import java.time.Instant;
  *   <li>{@code targetUserId}：事件目标用户 ID</li>
  *   <li>{@code eventType}：事件类型（like 喜欢 / super_like 超级喜欢 / match 互相喜欢 / unmatch 取消匹配）</li>
  *   <li>{@code createdAt}：事件创建时间（ISO-8601 Instant）</li>
+ *   <li>{@code eventId}：事件幂等键（2026-10-31 P0）。调用方可留空，
+ *       {@code MessageProducer} 发送前会补一个 UUID，并以此写入
+ *       {@code outbox_event.dedup_key}（唯一索引）；消费端据此判重，
+ *       键随 payload_json 一起穿过 outbox 重投链路，因此「同一事件投两次」
+ *       能被识别。口径见 {@link EventDedupKeys}</li>
  * </ul>
  */
 public class MatchEventMessage implements Serializable {
@@ -33,6 +38,9 @@ public class MatchEventMessage implements Serializable {
 
     /** 事件创建时间（UTC Instant） */
     private Instant createdAt;
+
+    /** 事件幂等键（可为空；由 MessageProducer 发送前补齐，见类注释） */
+    private String eventId;
 
     /** 默认构造函数：Jackson 反序列化需要 */
     public MatchEventMessage() {
@@ -83,6 +91,14 @@ public class MatchEventMessage implements Serializable {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getEventId() {
+        return eventId;
+    }
+
+    public void setEventId(String eventId) {
+        this.eventId = eventId;
     }
 
     @Override

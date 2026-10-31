@@ -21,6 +21,12 @@ import java.time.Instant;
  *   <li>{@code referenceId}：关联业务实体 ID（R4-00371，如被点赞的帖子/动态 ID）</li>
  *   <li>{@code referenceType}：关联业务类型（R4-00371，user/post/comment 等，
  *       对应 Notification.ReferenceType）</li>
+ *   <li>{@code eventId}：事件幂等键（2026-10-31 P0）。调用方可留空，
+ *       {@code MessageProducer} 发送前补一个 UUID，并把它写入
+ *       {@code outbox_event.dedup_key}（唯一索引）；{@code NotificationConsumer}
+ *       据此跳过已处理过的投递，因此「同一事件被投两次」只会插一条通知、
+ *       只会发一次订阅消息（微信订阅消息是一次性配额，重复发送等于烧配额）。
+ *       键口径见 {@link EventDedupKeys}</li>
  * </ul>
  *
  * <p>实现 {@link Serializable} 以兼容 RabbitMQ 默认 Java 序列化机制
@@ -53,6 +59,9 @@ public class NotificationMessage implements Serializable {
 
     /** 关联业务类型（R4-00371：user/post/comment 等，对应 Notification.ReferenceType） */
     private String referenceType;
+
+    /** 事件幂等键（可为空；由 MessageProducer 发送前补齐，见类注释） */
+    private String eventId;
 
     /** 默认构造函数：Jackson 反序列化需要 */
     public NotificationMessage() {
@@ -161,9 +170,18 @@ public class NotificationMessage implements Serializable {
         this.referenceType = referenceType;
     }
 
+    public String getEventId() {
+        return eventId;
+    }
+
+    public void setEventId(String eventId) {
+        this.eventId = eventId;
+    }
+
     @Override
     public String toString() {
         return "NotificationMessage{userId=" + userId
-                + ", type='" + type + "', title='" + title + "'}";
+                + ", type='" + type + "', title='" + title + "'"
+                + ", eventId='" + eventId + "'}";
     }
 }

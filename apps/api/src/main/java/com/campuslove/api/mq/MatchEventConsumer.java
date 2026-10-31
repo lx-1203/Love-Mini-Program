@@ -28,7 +28,22 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>unmatch：持久化取消匹配通知</li>
  * </ul>
  *
- * <p>消费失败时不抛出异常（避免消息无限重投），仅记录错误日志。</p>
+ * <p><b>消费失败不再静默丢弃（P1，2026-10-31）</b>：原实现在这里
+ * {@code catch (RuntimeException) → log.warn}，异常被吞掉后消息被 ack，
+ * 事件从此消失——{@code spring.rabbitmq.listener.simple.retry.max-attempts: 3} 是死配置，
+ * 死信链路（{@code match.dlx} → {@code match.dlq}，见 RabbitConfig）也永远收不到东西。
+ * 现在<b>原样抛出</b>：容器按 yml 重试，耗尽后由
+ * {@code RabbitConfig#deadLetteringMessageRecoverer()} 拒绝并转死信，
+ * {@link DeadLetterListener} 打 ERROR。</p>
+ *
+ * <p><b>幂等（P0，2026-10-31）</b>：一次投递会写<b>两条</b>通知（match/unmatch 双方各一条），
+ * 所以去重发生在「一次投递」这一层而不是「一行通知」这一层——先向
+ * {@link ConsumerIdempotencyStore} 抢事件级登记，抢不到就直接跳过；
+ * 处理失败时撤销登记，让重试/死信重放仍能执行。键口径见 {@link EventDedupKeys}。</p>
+ *
+ * <p>WebSocket 推送的异常仍然就地 catch：它属于「不可重试」的旁路提醒
+ * （客户端不在线/会话已断，重试也不会送到），而且一次重投会让双方各收到两次
+ * 实时信号；站内通知的持久化才是本方法的职责并参与重试。</p>
  */
 @Component
 @Profile("real")
@@ -60,6 +75,10 @@ public class MatchEventConsumer {
     @Autowired(required = false)
     private UserRepository userRepository;
 
+    /** P0（2026-10-31）：消费幂等登记（mock/无 Redisson 时为 null，退化为不判重） */
+    @Autowired(required = false)
+    private ConsumerIdempotencyStore idempotencyStore;
+
     /**
      * 处理匹配事件消息。
      *
@@ -76,16 +95,28 @@ public class MatchEventConsumer {
     @Transactional
     public void handleMatchEvent(MatchEventMessage message) {
         if (message == null) {
-            log.warn("收到空匹配事件消息，跳过处理");
+            // 非可重试：空消息重投也仍是空消息，记录后 ack
+            log.warn("收到空匹配事件消息，跳过处理（非可重试）");
             return;
         }
 
-        log.info("收到匹配事件：userId={}, targetUserId={}, eventType={}",
-                message.getUserId(), message.getTargetUserId(), message.getEventType());
+        String dedupKey = EventDedupKeys.matchKey(message);
+        if (idempotencyStore != null && !idempotencyStore.claim(dedupKey)) {
+            log.info("匹配事件已处理过，跳过本次投递（幂等）：dedupKey={}, userId={}, eventType={}",
+                    dedupKey, message.getUserId(), message.getEventType());
+            return;
+        }
+
+        log.info("收到匹配事件：userId={}, targetUserId={}, eventType={}, dedupKey={}",
+                message.getUserId(), message.getTargetUserId(), message.getEventType(), dedupKey);
 
         String eventType = message.getEventType();
         if (eventType == null) {
-            log.warn("匹配事件类型为空，跳过处理：{}", message);
+            // 非可重试：字段缺失不会因重试变好；撤销登记后按「本事件已放弃」处理
+            log.warn("匹配事件类型为空，跳过处理（非可重试）：{}", message);
+            if (idempotencyStore != null) {
+                idempotencyStore.release(dedupKey);
+            }
             return;
         }
 
@@ -95,12 +126,22 @@ public class MatchEventConsumer {
                 case "like", "super_like" -> handleSingleLike(message);
                 case "visitor" -> handleVisitor(message);
                 case "unmatch" -> handleUnmatch(message);
-                default -> log.warn("未知的匹配事件类型：{}, message={}", eventType, message);
+                default -> {
+                    // 非可重试：未知类型永远未知。不再静默 warn 后 ack —— 抛出去，
+                    // 让它带 x-death 进 match.dlq 留案发现场（口径同 NotificationConsumer）。
+                    log.warn("未知的匹配事件类型，拒绝并转死信：eventType={}, message={}",
+                            eventType, message);
+                    throw new org.springframework.amqp.AmqpRejectAndDontRequeueException(
+                            "未知匹配事件类型，不可重试：eventType=" + eventType);
+                }
             }
         } catch (RuntimeException e) {
-            // 捕获所有异常，避免消息无限重投
-            log.warn("匹配事件处理失败，不抛出异常：message={}, error={}",
-                    message, e.getMessage(), e);
+            // 撤销幂等登记：本次没做成，必须允许 broker 重试与 DLQ 人工重放再走一遍
+            if (idempotencyStore != null) {
+                idempotencyStore.release(dedupKey);
+            }
+            // 原样抛出（不再 catch-and-swallow），否则重试与死信链路全成摆设
+            throw e;
         }
     }
 
@@ -253,7 +294,12 @@ public class MatchEventConsumer {
     }
 
     /**
-     * 持久化通知到 notifications 表（best effort）。
+     * 持久化通知到 notifications 表。
+     *
+     * <p><b>不 catch DB 异常</b>（P1，2026-10-31）：原实现 {@code catch
+     * (DataAccessException) → warn}，通知写失败会被 ack 掉、彻底消失。现在让它冒到
+     * 方法边界，由外层 {@link #handleMatchEvent} 撤销幂等登记并重新抛出，
+     * 交给容器重试 / {@code match.dlq}。</p>
      *
      * @param receiverId   通知接收者
      * @param sourceUserId 源用户 ID
@@ -270,21 +316,16 @@ public class MatchEventConsumer {
             return;
         }
 
-        try {
-            Notification entity = new Notification();
-            entity.setUserId(receiverId);
-            entity.setType(type);
-            entity.setSourceUserId(sourceUserId != null ? sourceUserId : SYSTEM_SOURCE_USER_ID);
-            entity.setReferenceType(ReferenceType.user);
-            entity.setIsRead(false);
-            entity.setCreatedAt(createdAt != null ? createdAt : LocalDateTime.now(TimeZones.BUSINESS));
-            notificationRepository.save(entity);
-            log.debug("匹配事件通知已持久化：receiverId={}, type={}, title={}",
-                    receiverId, type, title);
-        } catch (org.springframework.dao.DataAccessException e) {
-            log.warn("匹配事件通知持久化失败：receiverId={}, title={}, error={}",
-                    receiverId, title, e.getMessage());
-        }
+        Notification entity = new Notification();
+        entity.setUserId(receiverId);
+        entity.setType(type);
+        entity.setSourceUserId(sourceUserId != null ? sourceUserId : SYSTEM_SOURCE_USER_ID);
+        entity.setReferenceType(ReferenceType.user);
+        entity.setIsRead(false);
+        entity.setCreatedAt(createdAt != null ? createdAt : LocalDateTime.now(TimeZones.BUSINESS));
+        notificationRepository.save(entity);
+        log.debug("匹配事件通知已持久化：receiverId={}, type={}, title={}",
+                receiverId, type, title);
     }
 
     /**

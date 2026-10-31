@@ -24,7 +24,18 @@ import org.springframework.transaction.annotation.Transactional;
  *   <li>连续签到达成奖励通知（达到 7 天、14 天、30 天等里程碑时额外推送奖励通知）</li>
  * </ol>
  *
- * <p>消费失败时不抛出异常（避免消息无限重投），仅记录错误日志。</p>
+ * <p><b>消费失败不再静默丢弃（P1，2026-10-31）</b>：原实现
+ * {@code catch (RuntimeException) → log.warn}，异常被吞掉后消息被 ack，签到奖励通知
+ * 从此消失，{@code retry.max-attempts} 与死信链路（{@code checkin.dlx} →
+ * {@code checkin.dlq}）全部无从生效。现在<b>原样抛出</b>，重试耗尽后转死信并由
+ * {@link DeadLetterListener} 打 ERROR。</p>
+ *
+ * <p><b>幂等（P0，2026-10-31）</b>：重投递会让「签到成功」和「里程碑奖励」两条通知
+ * 各插两遍。先抢 {@link ConsumerIdempotencyStore} 的事件级登记，抢不到就跳过；
+ * 失败时撤销登记让重试/重放仍可执行。键含 {@code consecutiveDays}，
+ * 因此「第 7 天」与「第 8 天」不会被误判为同一事件（口径见 {@link EventDedupKeys}）。</p>
+ *
+ * <p>WebSocket 推送的异常就地 catch：客户端不在线时重试也不会送到，属于不可重试旁路。</p>
  */
 @Component
 @Profile("real")
@@ -66,13 +77,19 @@ public class CheckInEventConsumer {
     @Autowired(required = false)
     private SimpMessagingTemplate messagingTemplate;
 
+    /** P0（2026-10-31）：消费幂等登记（mock/无 Redisson 时为 null，退化为不判重） */
+    @Autowired(required = false)
+    private ConsumerIdempotencyStore idempotencyStore;
+
     /**
      * 处理签到事件消息。
      *
      * <p>处理流程：</p>
      * <ol>
+     *   <li>抢占事件级幂等登记（重投递直接跳过）</li>
      *   <li>推送签到成功通知（WebSocket + DB 持久化）</li>
      *   <li>检查是否达到连续签到奖励里程碑，达成则额外推送奖励通知</li>
+     *   <li>任一环节抛出时撤销登记并原样抛出（重试 → 死信）</li>
      * </ol>
      *
      * @param message 签到事件消息体
@@ -81,12 +98,21 @@ public class CheckInEventConsumer {
     @Transactional
     public void handleCheckInEvent(CheckInEventMessage message) {
         if (message == null) {
-            log.warn("收到空签到事件消息，跳过处理");
+            // 非可重试：空消息重投也仍是空消息，记录后 ack
+            log.warn("收到空签到事件消息，跳过处理（非可重试）");
             return;
         }
 
-        log.info("收到签到事件：userId={}, consecutiveDays={}, rewardPoints={}",
-                message.getUserId(), message.getConsecutiveDays(), message.getRewardPoints());
+        String dedupKey = EventDedupKeys.checkInKey(message);
+        if (idempotencyStore != null && !idempotencyStore.claim(dedupKey)) {
+            log.info("签到事件已处理过，跳过本次投递（幂等）：dedupKey={}, userId={}",
+                    dedupKey, message.getUserId());
+            return;
+        }
+
+        log.info("收到签到事件：userId={}, consecutiveDays={}, rewardPoints={}, dedupKey={}",
+                message.getUserId(), message.getConsecutiveDays(), message.getRewardPoints(),
+                dedupKey);
 
         try {
             // 1. 推送签到成功通知
@@ -95,9 +121,14 @@ public class CheckInEventConsumer {
             // 2. 检查并推送连续签到奖励通知
             checkAndPushRewardNotification(message);
         } catch (RuntimeException e) {
-            // 捕获所有异常，避免消息无限重投
-            log.warn("签到事件处理失败，不抛出异常：message={}, error={}",
-                    message, e.getMessage(), e);
+            // 撤销幂等登记：本次没做成，必须允许 broker 重试与 DLQ 人工重放再走一遍
+            if (idempotencyStore != null) {
+                idempotencyStore.release(dedupKey);
+            }
+            // 原样抛出（不再 catch-and-swallow），否则重试与死信链路全成摆设
+            log.warn("签到事件处理失败，抛出以触发重试/死信：message={}, error={}",
+                    message, e.getMessage());
+            throw e;
         }
     }
 
@@ -186,10 +217,13 @@ public class CheckInEventConsumer {
     }
 
     /**
-     * 持久化通知到 notifications 表（best effort）。
+     * 持久化通知到 notifications 表。
      *
      * <p>R4-00374：签到通知使用独立 {@link NotificationType#system} 类型
      * （schemas 已扩展 system 枚举值），不再复用 match 作为系统类通知兜底。</p>
+     *
+     * <p><b>不 catch DB 异常</b>（P1，2026-10-31）：写失败必须冒到方法边界触发重试/死信，
+     * 原实现的 {@code catch (DataAccessException) → warn} 会让奖励通知静默消失。</p>
      *
      * @param userId    接收通知的用户 ID
      * @param title     通知标题（仅用于日志）
@@ -203,22 +237,17 @@ public class CheckInEventConsumer {
             return;
         }
 
-        try {
-            Notification entity = new Notification();
-            entity.setUserId(userId);
-            // R4-00374：签到通知使用独立 system 类型（schemas 已扩展），
-            // 不再归入 match——签到成功通知此前在站内被展示为"匹配"语义
-            entity.setType(NotificationType.system);
-            entity.setSourceUserId(SYSTEM_SOURCE_USER_ID);
-            entity.setReferenceType(ReferenceType.user);
-            entity.setIsRead(false);
-            entity.setCreatedAt(createdAt != null ? createdAt : LocalDateTime.now(TimeZones.BUSINESS));
-            notificationRepository.save(entity);
-            log.debug("签到通知已持久化：userId={}, title={}", userId, title);
-        } catch (org.springframework.dao.DataAccessException e) {
-            log.warn("签到通知持久化失败：userId={}, title={}, error={}",
-                    userId, title, e.getMessage());
-        }
+        Notification entity = new Notification();
+        entity.setUserId(userId);
+        // R4-00374：签到通知使用独立 system 类型（schemas 已扩展），
+        // 不再归入 match——签到成功通知此前在站内被展示为"匹配"语义
+        entity.setType(NotificationType.system);
+        entity.setSourceUserId(SYSTEM_SOURCE_USER_ID);
+        entity.setReferenceType(ReferenceType.user);
+        entity.setIsRead(false);
+        entity.setCreatedAt(createdAt != null ? createdAt : LocalDateTime.now(TimeZones.BUSINESS));
+        notificationRepository.save(entity);
+        log.debug("签到通知已持久化：userId={}, title={}", userId, title);
     }
 
     /**

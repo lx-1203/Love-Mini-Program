@@ -15,6 +15,9 @@ import java.time.Instant;
  *   <li>{@code consecutiveDays}：连续签到天数</li>
  *   <li>{@code rewardPoints}：本次签到奖励积分</li>
  *   <li>{@code createdAt}：事件创建时间（ISO-8601 Instant）</li>
+ *   <li>{@code eventId}：事件幂等键（2026-10-31 P0）。调用方可留空，
+ *       {@code MessageProducer} 发送前补 UUID，消费端据此判重
+ *       （口径见 EventDedupKeys）</li>
  * </ul>
  */
 public class CheckInEventMessage implements Serializable {
@@ -32,6 +35,9 @@ public class CheckInEventMessage implements Serializable {
 
     /** 事件创建时间（UTC Instant） */
     private Instant createdAt;
+
+    /** 事件幂等键（可为空；由 MessageProducer 发送前补齐，见类注释） */
+    private String eventId;
 
     /** 默认构造函数：Jackson 反序列化需要 */
     public CheckInEventMessage() {
@@ -82,6 +88,14 @@ public class CheckInEventMessage implements Serializable {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getEventId() {
+        return eventId;
+    }
+
+    public void setEventId(String eventId) {
+        this.eventId = eventId;
     }
 
     @Override
