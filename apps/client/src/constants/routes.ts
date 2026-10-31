@@ -265,3 +265,92 @@ export const TAB_BAR_ROUTES: readonly string[] = [
   ROUTES.TAB.CHAT,
   ROUTES.TAB.PROFILE,
 ] as const;
+
+/* ================================================================
+   路由档位旗标（GAP 4 / round-3 缺口，2026-10-31）
+   ================================================================ */
+
+/**
+ * 路由档位旗标：这一页**只**属于哪一档构建。
+ *
+ * 背景（round-3 实测结论）：本表此前只是一叠字符串，没有任何「dev-only / showcase-only」
+ * 概念 ⇒ 凡是注册过的路由，在任何构建档里都可直达。编译期唯一的拦手是
+ * src/pages.json 里的 `// #ifdef DEV` / `// #ifdef SHOWCASE` 条件注册块，而它只对
+ * uni 编译器认得的那几条命令生效：DEV 档产物（build:mp-weixin / build:h5，
+ * 由 scripts/mark-build-band.mjs 标成「不可发布」的那一包）**不定义** DEV 符号，
+ * 于是 dev 调试页与 showcase 总控页在运行时是被编译进去的，此前只靠「页面上没入口」挡。
+ * 深链 / 历史分享卡片 / 开发者工具直接打开页面路径走的都不是入口。
+ *
+ * 在册资格（判据来自 pages.json，不许凭感觉加）：
+ * - ROUTES.DEV（/subpackages/setup/dev/index）—— 开发者调试页：读内存态、发任意
+ *   mock 请求、把 STOREAGE/接口原始响应打屏；#ifdef DEV 注册。
+ * - ROUTES.SHOWCASE（/subpackages/setup/showcase/index）—— 全功能展示总控：旁路
+ *   featureFlags 与门禁，只该存在于 showcase 包；#ifdef SHOWCASE 注册。
+ *
+ * ⚠️ 其余路由**一律不许**标：本页之外没有任何 pages.json 条件注册块，
+ * 把正常业务页标成 devOnly 等于在开发包里砍掉功能。这条不变量由
+ * src/tests/config/route-band-gate.spec.ts 与 pages.json 逐条对账（漏标/多标都红）。
+ */
+export interface RouteBandFlags {
+  /** 仅 DEV 构建档可达（release/showcase 档拒绝） */
+  devOnly?: boolean;
+  /** 仅 showcase 档可达（release/dev 档拒绝） */
+  showcaseOnly?: boolean;
+}
+
+/** 路径 → 档位旗标（键必须取自 ROUTES 常量，不许写裸字符串） */
+export const ROUTE_BAND_FLAGS: Readonly<Record<string, RouteBandFlags>> = {
+  [ROUTES.DEV]: { devOnly: true },
+  [ROUTES.SHOWCASE]: { showcaseOnly: true },
+};
+
+/**
+ * 查某一页的档位旗标（带 query 的 URL 按路径部分匹配）。
+ *
+ * @param path 页面路径（可带 query）
+ * @returns 旗标；未注册（= 全档位可达）返回 null
+ */
+export function routeBandFlagsOf(path: string): RouteBandFlags | null {
+  // split 恒返回至少一段，但 noUncheckedIndexedAccess 不知道 ⇒ 回退到原串，
+  // 而不是用 `!` 蒙过检查器（蒙过去就意味着真出意外时拿 undefined 去索引闸门表）。
+  const pure = path.split("?")[0] ?? path;
+  return ROUTE_BAND_FLAGS[pure] ?? null;
+}
+
+/**
+ * 档位闸门判定：这一页在给定构建档里可达吗？
+ *
+ * @param path 目标页面路径（可带 query）
+ * @param bands 构建档（通常传 currentBuildBands()；判点可显式打靶）
+ * @returns true = 可达；false = 本档不该存在这一页
+ */
+export function routeAvailableInBand(
+  path: string,
+  bands: { dev: boolean; showcase: boolean; release: boolean },
+): boolean {
+  return blockedByRouteBand(path, bands) === null;
+}
+
+/**
+ * 被档位闸门拦下时返回拒绝原因（可达则返回 null）。
+ * 文案是给 console.warn / fail 回调用的诊断串，不是用户可见文案（故不 i18n）。
+ *
+ * @param path 目标页面路径（可带 query）
+ * @param bands 构建档
+ * @returns 拒绝原因；可达时 null
+ */
+export function blockedByRouteBand(
+  path: string,
+  bands: { dev: boolean; showcase: boolean; release: boolean },
+): string | null {
+  const flags = routeBandFlagsOf(path);
+  if (!flags) return null;
+  const pure = path.split("?")[0];
+  if (flags.devOnly && !bands.dev) {
+    return `${pure} 是 devOnly 路由，当前构建档（dev=${bands.dev} showcase=${bands.showcase}）不可达`;
+  }
+  if (flags.showcaseOnly && !bands.showcase) {
+    return `${pure} 是 showcaseOnly 路由，当前构建档（dev=${bands.dev} showcase=${bands.showcase}）不可达`;
+  }
+  return null;
+}

@@ -163,7 +163,6 @@ const ORPHAN_BASELINE = new Set([
   "scripts/find_corrupted_entities.py",
   "scripts/qa/mini-audit-smoke.sh",
   "scripts/scan-chinese.mjs",
-  "tests/e2e/specs/real-stack-smoke.spec.ts",
 ]);
 let orphanScanned = 0;
 function walkOrphans(dirAbs, relDir, sink) {

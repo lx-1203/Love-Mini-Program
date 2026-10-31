@@ -4,7 +4,7 @@
  * 展示所有待处理/已接受/已过期的心动信号，支持接受/拒绝操作及倒计时
  */
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { onShow, onHide } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useLikesStore } from "../../../stores/likes";
@@ -119,6 +119,25 @@ const COUNTDOWN_REFRESH_MS = 30000;
 const countdownMap = ref<Record<string, string>>({});
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
+/**
+ * 启动倒计时轮询（幂等：已运行则不重复注册）。
+ *
+ * 与 onShow 配对调用——onShow 在首帧（onMounted 之后）与「从其他页面返回」时都会触发，
+ * 幂等保证返回时恢复轮询而首帧不会注册两个 interval。
+ */
+function startCountdownTimer(): void {
+  if (countdownTimer !== null) return;
+  countdownTimer = setInterval(updateCountdowns, COUNTDOWN_REFRESH_MS);
+}
+
+/** 停止倒计时轮询（幂等）。 */
+function stopCountdownTimer(): void {
+  if (countdownTimer !== null) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+}
+
 function updateCountdowns() {
   const now = Date.now();
   const map: Record<string, string> = {};
@@ -148,20 +167,28 @@ onMounted(() => {
     void likesStore.fetchHeartSignals();
   }
   updateCountdowns();
-  countdownTimer = setInterval(updateCountdowns, COUNTDOWN_REFRESH_MS);
+  startCountdownTimer();
 });
 
 onShow(() => {
   if (isUnlocked.value) {
     void likesStore.fetchHeartSignals();
   }
+  // P1 修复（2026-10-31）：与 onHide 配对恢复轮询。
+  // 小程序页面被压栈（push 下一页）时实例仍然存活、onUnmounted 不触发，
+  // 原实现只在 onUnmounted 清 timer ⇒ 页面藏在后台仍在每 30s 跑一次
+  // updateCountdowns()，持续改写 countdownMap 并持有本页作用域。
+  // 同 chat-session/index.vue 的 onHide/onShow 口径（见该文件倒计时/计时器清理）。
+  startCountdownTimer();
+});
+
+onHide(() => {
+  // 页面不可见（压栈 / 切后台）：停止倒计时轮询，回到 onShow 时恢复
+  stopCountdownTimer();
 });
 
 onUnmounted(() => {
-  if (countdownTimer) {
-    clearInterval(countdownTimer);
-    countdownTimer = null;
-  }
+  stopCountdownTimer();
 });
 
 async function handleAccept(signalId: string) {

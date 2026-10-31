@@ -45,15 +45,57 @@ export type UnlockScene = "MESSAGE" | "VISITORS" | "LIKES" | "WHISPER";
  * 修复（R4-00171）：扣费金额不得由调用方自定，统一按场景码从定价表读取：
  * - LIKES / VISITORS：后端提供 POST /wallet/unlock（服务端配置 app.unlock-price.*
  *   定价，见 application.yml），扣费金额以服务端为准，本表仅用于 UI 提示；
- * - MESSAGE / WHISPER：后端暂未提供解锁定价接口，金额取自本表（服务端定价口径的
- *   客户端镜像，与服务端默认价 300 分=3 元对齐）。
+ * - MESSAGE / WHISPER：后端暂未提供解锁定价查询接口，金额取自本表（服务端定价口径的
+ *   客户端镜像）。
+ *
+ * ⚠️ P2 修复（2026-10-31）：本表此前写着 MESSAGE=5 元（500 分），而服务端
+ * `app.wallet.price.MESSAGE_UNLOCK` 的定价是 **100 分 = 1 元**
+ * （apps/api/.../wallet/WalletController.java 的 @Value 默认值 + resolveServerPrice()，
+ * 该 key 未在 application.yml 里覆盖）⇒ 解锁私信的预检文案向用户报 5 元、实际扣 1 元。
+ * 现在：
+ * 1. 本表数值与服务端在册定价逐条对齐，并由 `src/tests/stores/server-price-mirror.spec.ts`
+ *    解析服务端声明（application.yml + WalletController 的 @Value）钉死 —— 镜像再漂移就红；
+ * 2. 扣费响应里服务端**已经**回传实际扣减金额（WalletDeductView.amountCents），
+ *    store 把它记进 `serverPrices` 并优先透出 ⇒ 一旦真的扣过费，展示价就是服务端价，
+ *    本表退化为「首次扣费前的兜底镜像」；
+ * 3. 消费方请改用 `unlockCostCents()` / `unlockCostYuan()`（定义见下，同一处派生），
+ *    不要再各自 `Math.round(UNLOCK_COST_YUAN.x * 100)`。
  */
 export const UNLOCK_COST_YUAN: Record<UnlockScene, number> = {
-  MESSAGE: 5,
+  MESSAGE: 1,
   VISITORS: 3,
   LIKES: 3,
   WHISPER: 2,
 };
+
+/**
+ * 单一派生处：场景 → 展示/预检用的扣费金额（分）。
+ *
+ * 取值优先级：服务端本次实际扣减额（`/wallet/deduct` 响应的 amountCents，资金权威）
+ * > 本地定价镜像表 UNLOCK_COST_YUAN。调用方不许再各自 *100 / 另写一份数字。
+ *
+ * @param scene 解锁场景
+ * @param serverObservedCents 服务端本次实际扣减额（分，可空；由 store 内部记录）
+ * @returns 扣费金额（分）
+ */
+export function unlockCostCents(
+  scene: UnlockScene,
+  serverObservedCents?: number | null,
+): number {
+  const observed = serverObservedCents;
+  if (typeof observed === "number" && Number.isFinite(observed) && observed > 0) {
+    return Math.round(observed);
+  }
+  return Math.round(UNLOCK_COST_YUAN[scene] * 100);
+}
+
+/** 场景 → 展示用金额（元），与 unlockCostCents 同一处派生（不另算第二遍）。 */
+export function unlockCostYuan(
+  scene: UnlockScene,
+  serverObservedCents?: number | null,
+): number {
+  return unlockCostCents(scene, serverObservedCents) / 100;
+}
 
 /**
  * 场景 → 后端 /wallet/unlock 的 targetType 映射（服务端定价路径）。
@@ -102,6 +144,25 @@ export const useCoinsStore = defineStore("coins", () => {
   /** 加载标志 */
   const loading = ref(false);
 
+  /**
+   * 服务端实际扣减额（分）按场景记录 —— P2 修复（2026-10-31）：
+   * `/wallet/deduct` 的响应 WalletDeductView.amountCents 一直是服务端**真正扣的钱**
+   * （客户端上送的 amountCents 自 2026-10-05 起只是建议值，见 WalletController.deduct
+   * 的「以服务端为准」分支），此前本 store 把它扔了、只读 balanceAfterCents。
+   * 现在收下并优先透出给展示层 ⇒ 扣过费之后页面报的是服务端价，不再是手抄镜像。
+   */
+  const serverPrices = ref<Partial<Record<UnlockScene, number>>>({});
+
+  /** 场景 → 展示/预检金额（分）：服务端实测价优先，回落到定价镜像表（同一处派生）。 */
+  function costCentsFor(scene: UnlockScene): number {
+    return unlockCostCents(scene, serverPrices.value[scene]);
+  }
+
+  /** 场景 → 展示/预检金额（元）：与 costCentsFor 同一处派生，不另算第二遍。 */
+  function costYuanFor(scene: UnlockScene): number {
+    return costCentsFor(scene) / 100;
+  }
+
   /** 余额（元，展示用） */
   const balanceYuan = computed<number>(() => balanceCents.value / 100);
 
@@ -148,7 +209,8 @@ export const useCoinsStore = defineStore("coins", () => {
    * - LIKES / VISITORS：有后端 /wallet/unlock 接口（服务端 app.unlock-price.* 定价），
    *   走服务端定价扣费，客户端不传金额，目标 ID 有效时优先此路径；
    * - MESSAGE / WHISPER 或目标 ID 无效（如列表级解锁）：无对应解锁接口，
-   *   金额取自 UNLOCK_COST_YUAN 定价镜像表（按场景码读，禁止调用方传任意金额）。
+   *   金额取自 costCentsFor()（服务端回传价优先，回落 UNLOCK_COST_YUAN 定价镜像表；
+   *   按场景码读，禁止调用方传任意金额）。
    * orderId 按后端契约规范生成（WalletController Javadoc：UNLOCK-{scene}-{targetUserId}）。
    *
    * @param scene 解锁场景
@@ -157,7 +219,9 @@ export const useCoinsStore = defineStore("coins", () => {
    */
   async function spend(scene: UnlockScene, targetId: string | number): Promise<number> {
     // R4-00171：金额仅从服务端定价或定价镜像表读取，不接受调用方金额参数
-    const amountCents = Math.round(UNLOCK_COST_YUAN[scene] * 100);
+    // P2 修复（2026-10-31）：本行不再直接吃 UNLOCK_COST_YUAN，改走 costCentsFor()
+    // —— 一旦本会话真的扣过费，服务端回传的实际扣减额就是这里的价格来源。
+    const amountCents = costCentsFor(scene);
     // R4-00171：orderId 按后端契约规范生成（UNLOCK-{scene}-{targetUserId}）
     // R4-00195：幂等 orderId 统一经 buildUnlockOrderId 生成（单一真相源）
     const orderId = buildUnlockOrderId(scene, targetId);
@@ -188,9 +252,9 @@ export const useCoinsStore = defineStore("coins", () => {
       return balanceCents.value;
     }
 
-    // 定价镜像路径：金额取自 UNLOCK_COST_YUAN（与服务端定价口径对齐）。
+    // 定价镜像路径：金额取自 costCentsFor()（服务端实测价优先，回落定价镜像表）。
     // 服务端 deduct 仍为最终扣费权威（余额不足 / 金额超限由后端校验）。
-    const result = await request<{ balanceAfterCents: number }, {
+    const result = await request<{ balanceAfterCents: number; amountCents?: number }, {
       amountCents: number;
       orderId: string;
       relatedType: string;
@@ -207,6 +271,11 @@ export const useCoinsStore = defineStore("coins", () => {
       headers: { "Idempotency-Key": orderId },
     });
     balanceCents.value = result?.balanceAfterCents ?? balanceCents.value;
+    // P2 修复：把服务端**实际扣减额**（WalletDeductView.amountCents）收下来，
+    // 之后这一场景的展示/预检价就以它为准，手抄镜像表不再是唯一来源。
+    if (typeof result?.amountCents === "number" && result.amountCents > 0) {
+      serverPrices.value = { ...serverPrices.value, [scene]: result.amountCents };
+    }
     loaded.value = true;
     return balanceCents.value;
   }
@@ -276,6 +345,9 @@ export const useCoinsStore = defineStore("coins", () => {
     balanceYuan,
     loaded,
     loading,
+    serverPrices,
+    costCentsFor,
+    costYuanFor,
     transactions,
     transactionsTotal,
     transactionsPage,

@@ -7,7 +7,7 @@
  * 解锁私信/访客/喜欢你/悄悄话均从此余额扣费（见 stores/coins.ts）。
  */
 import { ref, computed, watch } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import { useCoinsStore } from "../../../stores/coins";
 import { useAppConfigStore } from "../../../stores/app-config";
@@ -20,12 +20,33 @@ import { useMock } from "../../../stores/helpers/use-mock";
 import { isDev } from "../../../config/env";
 // R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+// P1 修复（2026-10-31）：本页此前**没有任何**访问守卫 —— 游客点进来即发
+// GET /wallet/balance + GET /wallet/transactions 两个必 401 的请求，在拿到
+// 「请先登录」toast 与 reLaunch 之前，余额卡与流水明细已经渲染过了。
+import { usePageAccess } from "../../../composables/usePageAccess";
+import { walletPageRequirements } from "../../../config/page-access";
+// 游客档由页面入口守卫先行处置（guard-then-fetch，与在册五组
+// subpackages/campus/campus/index.vue 等同源载具 guards/guest-access.ts）
+import { guideGuestToLogin } from "../../../guards/guest-access";
 const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 
 const { t } = useI18n();
 const coinsStore = useCoinsStore();
 const appConfig = useAppConfigStore();
+
+/** 会话层门槛（requiresAuth:true）：持失效 token 的会话由 usePageAccess 处置。 */
+usePageAccess(walletPageRequirements);
+
+/**
+ * 游客守卫旗标：`guideGuestToLogin()` 返回 true ⇒ 本页一律不再取数（P1 修复的核心是
+ * 「守卫先于请求」，而不是「请求先于弹走」）。uni-app 首帧时序 onLoad → onShow → onMounted，
+ * 所以 onShow / watch / 重试按钮走的都是同一个已置位的旗标。
+ */
+const guestGuarded = ref(false);
+onLoad(() => {
+  guestGuarded.value = guideGuestToLogin();
+});
 
 /**
  * 商业化封存（批次 A / ADR-2）：交友币属 commerce.coin 子闸管辖。
@@ -55,6 +76,9 @@ watch(commerceSealed, (sealed) => {
 const loadFailed = ref(false);
 
 async function refreshWallet(): Promise<void> {
+  // P1 守卫先行：游客（含正在被送往登录页的人）一律不发受保护请求。
+  // 这是本页唯一的取数入口（onShow / 解封补偿 / 失败重试三条腿都走它）。
+  if (guestGuarded.value) return;
   loading.value = true;
   loadFailed.value = false;
   try {
@@ -128,20 +152,37 @@ function goBack() {
  * P1-18：判断流水是否为收入。
  * 兼容两种取值：服务层流水类型为 CREDIT（收入）/ DEBIT（支出），
  * 种子/历史数据可能为 INCOME / EXPENSE，统一按收入/支出语义归类。
+ *
+ * ⚠️ 这一枚**只用于文案**（收入/支出标签），不参与符号渲染 —— 符号一律走 isDebitRow()，
+ * 否则「按 type 补一次符号、再按金额补一次」就会渲染出 `-¥-3.00` 这种双符号。
  */
 function isIncome(type?: string): boolean {
   return type === "CREDIT" || type === "INCOME";
 }
 
-/** 流水类型文案（收入/支出） */
-function typeLabel(type?: string): string {
-  return isIncome(type) ? t("wallet.income") : t("wallet.expense");
+/**
+ * 流水行的收支方向（**单一判定处**，P2 修复）。
+ *
+ * 原实现 `amountText()` 无条件按 `type` 补 +/−，而 `WalletTransactionItemView.amount`
+ * 一旦下发带符号值（负数=支出，账单类接口的常见形态），页面就会印出双符号。
+ * 现在的口径：符号只决定一次 —— 金额自带符号时以金额为准（后端是资金权威），
+ * 金额无符号（历史/种子数据恒正）时以 type 为准；展示的数字一律取绝对值，
+ * 所以两条来源不可能叠加成「-¥-3.00」。
+ */
+function isDebitRow(item: { type?: string; amount: number }): boolean {
+  if (item.amount < 0) return true;
+  return !isIncome(item.type);
 }
 
-/** 金额文本（收入 +，支出 -） */
+/** 流水类型文案（收入/支出）——与符号同一个判定（isDebitRow），不许各判一次 */
+function typeLabel(item: { type?: string; amount: number }): string {
+  return isDebitRow(item) ? t("wallet.expense") : t("wallet.income");
+}
+
+/** 金额文本（收入 +，支出 -；数字取绝对值 ⇒ 符号只出现一次） */
 function amountText(item: { type?: string; amount: number }): string {
-  const sign = isIncome(item.type) ? "+" : "-";
-  return `${sign}¥${(item.amount / 100).toFixed(2)}`;
+  const yuan = Math.abs(item.amount) / 100;
+  return `${isDebitRow(item) ? "-" : "+"}¥${yuan.toFixed(2)}`;
 }
 </script>
 
@@ -159,7 +200,8 @@ function amountText(item: { type?: string; amount: number }): string {
     </view>
 
     <!-- 批次 A / ADR-2：商业化封存态（commerce.coin=false）展示封存卡，隐藏余额/充值/明细 -->
-    <template v-if="!commerceSealed">
+    <!-- P1 修复：游客档（正被送往登录页）不渲染余额卡/流水/充值，也不冒充「封存卡」文案 -->
+    <template v-if="!guestGuarded && !commerceSealed">
       <!-- 余额卡 -->
       <view class="wallet__balance-card">
         <image class="wallet__balance-icon" :src="IMAGE_PATHS.ICONS_EMOJI.MONEY" mode="aspectFit" alt="" />
@@ -192,10 +234,10 @@ function amountText(item: { type?: string; amount: number }): string {
         <view v-if="transactions.length > 0" class="wallet__tx-list">
           <view v-for="tx in transactions" :key="tx.id" class="wallet__tx-item">
             <view class="wallet__tx-info">
-              <text class="wallet__tx-type">{{ typeLabel(tx.type) }}</text>
+              <text class="wallet__tx-type">{{ typeLabel(tx) }}</text>
               <text class="wallet__tx-remark">{{ tx.remark || tx.relatedType || '' }}</text>
             </view>
-            <text class="wallet__tx-amount" :class="{ 'wallet__tx-amount--income': isIncome(tx.type) }">
+            <text class="wallet__tx-amount" :class="{ 'wallet__tx-amount--income': !isDebitRow(tx) }">
               {{ amountText(tx) }}
             </text>
           </view>
@@ -208,8 +250,8 @@ function amountText(item: { type?: string; amount: number }): string {
       </view>
     </template>
 
-    <!-- 封存态卡（SVG 锁图标，禁 emoji） -->
-    <view v-else class="wallet__sealed" aria-live="polite">
+    <!-- 封存态卡（SVG 锁图标，禁 emoji）：游客档不展示（那不是「被封存」，是「没登录」） -->
+    <view v-else-if="!guestGuarded" class="wallet__sealed" aria-live="polite">
       <image class="wallet__sealed-icon" :src="IMAGE_PATHS.ICONS_COMMON.LOCK_SVG" mode="aspectFit" alt="" />
       <text class="wallet__sealed-title">{{ t('commerce.sealedTitle') }}</text>
       <text class="wallet__sealed-desc">{{ t('commerce.sealedDesc') }}</text>

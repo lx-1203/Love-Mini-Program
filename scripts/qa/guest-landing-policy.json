@@ -56,6 +56,41 @@
    "claim": "我的页落地判定用的类名锚点",
    "file": "apps/client/src/pages/profile/index.vue",
    "needle": "class=\"profile-page"
+  },
+  {
+   "claim": "guard-bounce 族的机制来源：游客在页面入口（onLoad）就被送去登录页，早于任何受保护请求 —— 与 guide-401「请求先打出去才弹」不是同一回事，所以必须另立一族",
+   "file": "apps/client/src/guards/guest-access.ts",
+   "needle": "uni.reLaunch({ url: ROUTES.LOGIN });"
+  },
+  {
+   "claim": "钱包页确实是守卫先行（onLoad 置旗标，取数入口唯一早退）",
+   "file": "apps/client/src/subpackages/market/wallet/index.vue",
+   "needle": "guestGuarded.value = guideGuestToLogin();"
+  },
+  {
+   "claim": "钱包页取数唯一入口在游客档直接早退（GET /wallet/balance + /wallet/transactions 都不再发）",
+   "file": "apps/client/src/subpackages/market/wallet/index.vue",
+   "needle": "if (guestGuarded.value) return;"
+  },
+  {
+   "claim": "安全中心页确实是守卫先行（onLoad 置旗标）",
+   "file": "apps/client/src/subpackages/tools/security/index.vue",
+   "needle": "guestGuarded.value = guideGuestToLogin();"
+  },
+  {
+   "claim": "安全中心页的 GET /auth/devices 在游客档直接早退（此前是无条件发 ⇒ 必 401 才弹人）",
+   "file": "apps/client/src/subpackages/tools/security/index.vue",
+   "needle": "if (guestGuarded.value) return;"
+  },
+  {
+   "claim": "安全中心的门槛不再复用「我的」Tab 那枚 requiresAuth:false（P1 根因）",
+   "file": "apps/client/src/subpackages/tools/security/index.vue",
+   "needle": "usePageAccess(securityCenterPageRequirements);"
+  },
+  {
+   "claim": "钱包页有自己的 requiresAuth:true（此前整页没有 usePageAccess）",
+   "file": "apps/client/src/subpackages/market/wallet/index.vue",
+   "needle": "usePageAccess(walletPageRequirements);"
   }
  ],
  "$basisKeys": {
@@ -64,6 +99,7 @@
   "delay": "apps/client/src/constants/app.ts 的 LOGIN_REDIRECT_DELAY_MS = 500 ⇒ 判定窗取 500+900ms",
   "loginMarker": "apps/client/src/pages/login/index.vue 的 class=\"login-page__brand\"",
   "profileMarker": "apps/client/src/pages/profile/index.vue 的 class=\"profile-page\"",
+  "guardBounce": "2026-10-31 P1 补的两行（subpackages/market/wallet/index、subpackages/tools/security/index）：机制与前 24 组**不同** —— 不是 http 401 兜底弹的，是页面 onLoad 的 guards/guest-access.ts#guideGuestToLogin() 在**任何请求之前**弹的（钱包此前整页没有 usePageAccess，安全中心此前复用 profilePageRequirements 的 requiresAuth:false）。落点/标记类与 guide-401 完全一致（登录页 + 默认态注册入口），因为裁定同一句：游客必须被引导到注册。区别只在成因族，故另立 guard-bounce，不混进 guide-401 里冒充 401 的证人。",
   "vipFlag": "apps/client/src/subpackages/vip/index.vue 的 featureFlags.membershipEnabled 为假 ⇒ switchTab 到我的页（ROUTES.TAB.PROFILE），与身份无关（2026-10-06 曾按行号重锚过一次；2026-10-27 起锚点改核标识符存在且唯一，行号不再参与判决 —— 同一类行号锚遇到源码增删行就把 7 条仍指得到标识符的依据整排打红，那才是假红）"
  },
  "rows": [
@@ -230,6 +266,20 @@
    "entry": "功能开关"
   },
   {
+   "page": "subpackages/market/wallet/index",
+   "landing": "pages/login/index",
+   "family": "guard-bounce",
+   "entry": "个人数据（余额/流水）",
+   "basis": "2026-10-31 P1 补进：本页此前整页没有 usePageAccess，onShow 直接 Promise.all([fetchBalance, listTransactions]) ⇒ 游客点「我的钱包」= 两个必 401 的请求 + 一次弹走，且弹走前余额卡/流水/充值按钮都渲染过了。修复后 onLoad 首句 guideGuestToLogin()，refreshWallet()（本页唯一取数入口，onShow/解封补偿/失败重试三条腿共用）见到旗标直接 return。判点与依据见 anchors 里 wallet 那三条与 apps/client/src/tests/pages/wallet-security-guest-gate.spec.ts。"
+  },
+  {
+   "page": "subpackages/tools/security/index",
+   "landing": "pages/login/index",
+   "family": "guard-bounce",
+   "entry": "账号内动作（改绑手机号/设备下线/注销账号）",
+   "basis": "2026-10-31 P1 补进：本页此前 usePageAccess(profilePageRequirements)，而那枚 requiresAuth:false（描述的是「我的」Tab 免登录可看）⇒ 安全中心在配置层是免登录页；real 档 onShow 无条件 GET /auth/devices（必 401），弹走前「更换手机号 / 注销账号」四张卡全在屏上。修复 = 独立一枚 securityCenterPageRequirements(requiresAuth:true) + onLoad 守卫先行 + 游客档不渲染账号级卡。"
+  },
+  {
    "page": "pages/nearby/index",
    "landing": "pages/login/index",
    "family": "guide-401",
@@ -281,6 +331,12 @@
    "markerSource": "apps/client/src/pages/profile/index.vue 的 class=\"profile-page",
    "registerEntry": null,
    "registerEntrySource": null
+  },
+  "guard-bounce": {
+   "landingMarker": ".login-page__brand",
+   "markerSource": "apps/client/src/pages/login/index.vue 的 class=\"login-page__brand\"（与 guide-401 同一落地页、同一标记类：成因不同但裁定同一句）",
+   "registerEntry": ".login-register-entry",
+   "registerEntrySource": "apps/client/src/pages/login/index.vue 的 .login-quick 默认分支（同 guide-401：被引导到注册就要求默认态露出注册入口）"
   }
  },
  "notFrameObservable": {

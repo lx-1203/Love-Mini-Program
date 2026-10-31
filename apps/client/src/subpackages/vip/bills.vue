@@ -15,7 +15,7 @@
 import { ref, computed } from "vue";
 import { onLoad, onPullDownRefresh, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
-import { useVipBillingStore, type BillType } from "../../stores/vip-billing";
+import { useVipBillingStore, type BillType, type BillStatus } from "../../stores/vip-billing";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import EmptyState from "../../components/common/EmptyState.vue";
@@ -98,9 +98,34 @@ onShow(() => {
   if (featureFlags.membershipEnabled) void loadBills();
 });
 
-/** 格式化金额（分 → 元） */
+/**
+ * 格式化金额（分 → 元，**只出绝对值**）。
+ * 用于「划线原价」这类不参与收支方向的数字；带符号的行金额一律走 formatSignedAmount()。
+ */
 function formatAmount(cents: number): string {
-  return (cents / 100).toFixed(2);
+  return (Math.abs(cents) / 100).toFixed(2);
+}
+
+/**
+ * 格式化账单金额（**符号 + 币种 + 数字，且符号只派生一次**，P2 修复）。
+ *
+ * 改前这里印的是裸的 `(cents/100).toFixed(2)`，模板在最前面硬拼一个 `¥`：
+ * REFUND 行因此显示成「¥18.00」——钱回来了和钱付出去了一个样子，读者分不清方向。
+ *
+ * 单一派生规则（谁都不会被叠两次符号）：
+ * 1. 数字一律取 `Math.abs()` ⇒ 即使后端哪天把 `BillView.amount` 改成有符号值，
+ *    也不会印出「¥--18.00」这种双符号（这正是 wallet 页同一族缺陷的形态）；
+ * 2. 符号只看一次：负数 = `-`；退款语义（type=REFUND 或 status=REFUNDED，
+ *    服务端 VipOrderService 写 REFUND 账单时上送的是订单原价分，恒正）= `+`；
+ *    其余（订阅/续费的实际支出）不补符号，保持原页面上的「¥18.00」观感。
+ */
+function formatSignedAmount(bill: {
+  amount: number;
+  type: BillType;
+  status: BillStatus;
+}): string {
+  const sign = bill.amount < 0 ? "-" : bill.type === "REFUND" || bill.status === "REFUNDED" ? "+" : "";
+  return `${sign}¥${formatAmount(bill.amount)}`;
 }
 
 /** 格式化日期 */
@@ -237,7 +262,8 @@ function goBack() {
           </view>
           <view class="bill-card__row">
             <text class="bill-card__label">{{ t('vip.billsCardAmount') }}</text>
-            <text class="bill-card__value bill-card__value--amount">¥{{ formatAmount(bill.amount) }}</text>
+            <!-- P2 修复：币种/符号由 formatSignedAmount 一处产出（模板不再硬拼 ¥ ⇒ 不可能双符号） -->
+            <text class="bill-card__value bill-card__value--amount">{{ formatSignedAmount(bill) }}</text>
           </view>
           <view v-if="bill.originalAmount" class="bill-card__row">
             <text class="bill-card__label">{{ t('vip.billsCardOriginal') }}</text>

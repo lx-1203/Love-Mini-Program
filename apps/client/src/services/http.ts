@@ -10,6 +10,11 @@ import {
   MAX_401_RETRY_COUNT,
 } from "../constants/api";
 import { STORAGE_KEYS, LOGIN_TOAST_DURATION_MS, LOGIN_REDIRECT_DELAY_MS } from "../constants/app";
+// 2026-10-31 P1：用户级存储键清单（登出/401 清扫的唯一键来源，由 storage-keys.ts 派生）
+import {
+  USER_SCOPED_STORAGE_KEYS,
+  USER_SCOPED_STORAGE_PREFIXES,
+} from "../constants/storage-keys";
 // Task 33：路由路径常量化，避免硬编码字符串
 import { ROUTES } from "../constants/routes";
 // R4-batch2: 错误/提示文案 i18n 化（apiErrors.* 键集）
@@ -194,7 +199,66 @@ export function setRefreshToken(token: string): void {
 }
 
 /**
+ * 枚举当前 storage 的全部键名（用于按前缀清除分会话的复合键）。
+ *
+ * 平台差异：`uni.getStorageInfoSync` 在 mp-weixin / H5 均提供；
+ * 个别环境（老基础库、被裁剪的测试桩）不可用时返回空数组——
+ * 此时精确键清单仍会被清除，只是复合草稿键退化为「按清单删除」。
+ */
+function enumerateStorageKeys(): string[] {
+  try {
+    const info = uni.getStorageInfoSync?.();
+    const keys = info && Array.isArray(info.keys) ? info.keys : [];
+    return keys.filter((key): key is string => typeof key === "string");
+  } catch (_e) {
+    // 枚举失败按「无复合键」处理：精确键清单仍会被清除，不能让登出流程抛错
+    return [];
+  }
+}
+
+/**
+ * 清除全部「用户级」本地存储（P1 修复，2026-10-31）。
+ *
+ * 背景：登出此前只清 token，于是同一台设备上的下一个账号会继承上一个账号的
+ * 未发送草稿、搜索历史、已删除消息 ID、已看过的人、签到缓存、定位城市等
+ * ——它们都由 constants/storage-keys.ts 登记。
+ *
+ * 键来源为 storage-keys.ts 的派生清单（USER_SCOPED_STORAGE_KEYS）：
+ * 新增 STORAGE_KEYS 条目**默认就会被清掉**，只有显式登记进
+ * DEVICE_SCOPED_STORAGE_KEYS（设备偏好豁免清单）才会保留，
+ * 因此「忘记清某个 key」这件事在结构上不成立。
+ * 分会话的复合键（`chat-session-draft:{sessionId}`）按 USER_SCOPED_STORAGE_PREFIXES 枚举清除。
+ *
+ * 单个 key 删除失败不影响其余（storage 在小程序侧可能超额/被锁）。
+ */
+export function clearUserScopedStorage(): void {
+  const targets = new Set<string>(USER_SCOPED_STORAGE_KEYS);
+  if (USER_SCOPED_STORAGE_PREFIXES.length > 0) {
+    for (const key of enumerateStorageKeys()) {
+      if (USER_SCOPED_STORAGE_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+        targets.add(key);
+      }
+    }
+  }
+  targets.forEach((key) => {
+    try {
+      uni.removeStorageSync(key);
+    } catch (_e) {
+      // 单键失败静默，不阻塞其余清理
+    }
+  });
+}
+
+/**
  * 清除所有 Token（登出时调用）。
+ *
+ * 修复（P1，2026-10-31）：本函数是**所有**结束会话路径的唯一收口
+ * （显式登出 clientApi.logout、401 强制跳登录 redirectToLogin、
+ * bootstrap 检测到失效 token、security 页改密/注销账号），因此把
+ * 「清内存态 TTL 缓存」与「清用户级本地存储」直接放进来，而不是放到各个调用点——
+ * 未来的新增调用点无法忘记这一步（此前 clearAllCaches 只在 setToken 里，
+ * 401 弹出后 TTL 缓存仍在，login/guest 页经 fetchWithStaleWhileRevalidate
+ * 的 stale 分支把上一账号的余额/消息/资料直接闪现在屏幕上）。
  */
 export function clearTokens(): void {
   try {
@@ -205,6 +269,17 @@ export function clearTokens(): void {
   } catch (_e) {
     // 清除失败时静默忽略
   }
+  // P1 修复 1（2026-10-31）：用户级本地存储整批清扫（聊天草稿/分会话草稿键、搜索历史、
+  // 已删除消息 ID、寻觅已看记录、签到缓存、定位城市、会话持久化字段……）。
+  // 放在 token 删除的 try 之外：token 键删除失败**不得**跳过账号数据清扫，
+  // 否则共享设备上下一账号会继承上一账号未发送的草稿与搜索历史。
+  // 键清单由 constants/storage-keys.ts 派生（新增 key 默认被清，设备级偏好显式豁免）。
+  clearUserScopedStorage();
+  // P1 修复 2（2026-10-31）：内存态 TTL/SWR 缓存失效。
+  // 此前 clearAllCaches 只在 setToken 里调用，401 弹回登录页后 TTL 缓存仍在，
+  // fetchWithStaleWhileRevalidate 走「有过期旧值 → 先返回旧值」分支，
+  // 于是 login/guest 页闪现上一账号的余额/消息/资料（含钱包余额）。
+  clearAllCaches();
 }
 
 /* ========== 默认请求拦截器：JWT Token 自动附加 ========== */

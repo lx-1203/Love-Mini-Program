@@ -18,8 +18,9 @@ import { useI18n } from "vue-i18n";
 import { usePromoCodeStore } from "../../stores/promo-code";
 import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
-// R4-00117：订单金额默认值从套餐配置取
-import { VIP_PLANS } from "../../config/vip-plans";
+// P2 修复（2026-10-31）：本页不再从 config/vip-plans.ts 的展示镜像取「订单金额」默认值
+// （原 R4-00117 的 `VIP_PLANS.find(...).price` 播种）—— 那个数字既不是用户要付的钱，
+// 也不是服务端目录价，却被直接换算成 baseAmount 上送并印成「应付 ¥X」。
 // P1-08：会员功能开关（false 时子页拦截返回）
 import { featureFlags } from "../../config/feature-flags";
 // R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
@@ -63,10 +64,16 @@ function readInputValue(e: Event): string {
 const codeInput = ref<string>("");
 
 /**
- * 订单金额输入（元）。
- * R4-00117：默认值从套餐配置取（VIP_PLANS 季卡 price），不再硬编码 48。
+ * 订单金额输入（元）—— **用户自填的折扣预览基数**，不是报价。
+ *
+ * P2 修复（2026-10-31）：此前这里用 `VIP_PLANS` 季卡的静态镜像价播种（48），
+ * 于是页面把一个与任何成交口径都无关的数字当成「订单金额」发给服务端
+ * （`baseAmount`）并印出「应付 ¥X」。服务端 `POST /vip/promo-codes/validate|redeem`
+ * 的 baseAmount 只做**本端折扣预览**（P0-3 B：PromoCodeController 的 Javadoc 与
+ * BillingService 的真实扣款都用 VipPlanCatalog 取价，客户端金额不参与成交），
+ * 所以现在：初始为空、必须由用户自己填，且页面上任何「应付/优惠」数字只准来自服务端响应。
  */
-const orderAmountInput = ref<string>(String(VIP_PLANS.find((p) => p.id === "quarterly")?.price ?? 48));
+const orderAmountInput = ref<string>("");
 
 /** 订单金额（分） */
 const orderAmountCents = computed(() => {
@@ -78,22 +85,69 @@ const orderAmountCents = computed(() => {
 /** 校验结果（来自 store） */
 const validationResult = computed(() => store.lastValidation);
 
-/** 优惠后金额（元） */
+/**
+ * 服务端字段名归一读取（P2 修复）。
+ *
+ * 在册契约差：后端 PromoCodeService 的 ValidateResultView 发的是 `finalAmount` / `valid`，
+ * RedeemResultView 发的是 `discountAmount` / `finalAmount`，
+ * 而客户端 stores/promo-code.ts 的视图类型写的是 `payableAmount` / `available`（mock 分支
+ * 自造的那套键名）。原实现 `validationResult.value.payableAmount ?? orderAmountCents.value`
+ * 在 real 档永远取不到 payableAmount ⇒ 静默回落到**客户端自算金额**，
+ * 于是「应付 ¥X」成了一个服务端从未报过的数。
+ *
+ * 现在的口径：只认服务端真的给了的字段（两个名字都查，契约名优先），
+ * 没给 ⇒ null ⇒ 该行不渲染。宁可不显示，不许编。
+ *
+ * @param view 服务端响应视图（可空）
+ * @param keys 依次尝试的响应字段名（服务端契约名在前）
+ * @returns 分值金额；服务端未下发布时返回 null
+ */
+function readCentsFromView(view: unknown, keys: string[]): number | null {
+  if (view === null || typeof view !== "object") return null;
+  const record = view as Record<string, unknown>;
+  for (const key of keys) {
+    const raw = record[key];
+    if (typeof raw === "number" && Number.isFinite(raw)) return raw;
+  }
+  return null;
+}
+
+/** 服务端是否判定该码可用（后端 `valid` / mock `available`，两口径都认） */
+function readAvailableFromView(view: unknown): boolean {
+  if (view === null || typeof view !== "object") return false;
+  const record = view as Record<string, unknown>;
+  return record.available === true || record.valid === true;
+}
+
+/** 优惠后金额（元，**仅取服务端报价**；服务端没报则为空串 ⇒ 该行不渲染） */
 const payableYuan = computed(() => {
-  if (!validationResult.value) return "";
-  const cents = validationResult.value.payableAmount ?? orderAmountCents.value;
-  return (cents / 100).toFixed(2);
+  const cents = readCentsFromView(validationResult.value, ["finalAmount", "payableAmount"]);
+  return cents === null ? "" : (cents / 100).toFixed(2);
 });
 
-/** 优惠金额（元） */
+/** 优惠金额（元，同上：只认服务端下发值，不用本地金额倒推） */
 const discountYuan = computed(() => {
-  if (!validationResult.value) return "";
-  const cents = validationResult.value.discountAmount ?? 0;
-  return (cents / 100).toFixed(2);
+  const cents = readCentsFromView(validationResult.value, ["discountAmount"]);
+  return cents === null ? "" : (cents / 100).toFixed(2);
 });
 
 /** 兑换结果 */
 const redeemResult = computed(() => store.lastRedeemResult);
+
+/** 服务端判定本码可用（模板唯一判点，不再直接读 mock 专有的 available） */
+const codeAvailable = computed(() => readAvailableFromView(validationResult.value));
+
+/** 兑换结果里的优惠金额（元，仅服务端下发值；没下发即空串 ⇒ 该行不渲染） */
+const redeemDiscountYuan = computed(() => {
+  const cents = readCentsFromView(redeemResult.value, ["discountAmount"]);
+  return cents === null ? "" : (cents / 100).toFixed(2);
+});
+
+/** 兑换结果里的应付金额（元，同上：后端契约名 finalAmount 优先） */
+const redeemPayableYuan = computed(() => {
+  const cents = readCentsFromView(redeemResult.value, ["finalAmount", "payableAmount"]);
+  return cents === null ? "" : (cents / 100).toFixed(2);
+});
 
 /** 校验优惠码 */
 async function handleValidate() {
@@ -117,7 +171,7 @@ async function handleValidate() {
       code: codeInput.value.trim(),
       baseAmount: orderAmountCents.value,
     });
-    if (result.available) {
+    if (readAvailableFromView(result)) {
       uni.showToast({
         title: t("vip.promoCodeValid", { discount: discountYuan.value }),
         icon: "success",
@@ -136,7 +190,7 @@ async function handleValidate() {
 
 /** 兑换优惠码 */
 async function handleRedeem() {
-  if (!validationResult.value?.available) {
+  if (!readAvailableFromView(validationResult.value)) {
     uni.showToast({ title: t("vip.promoCodeNotValidated"), icon: "none" });
     return;
   }
@@ -148,15 +202,24 @@ async function handleRedeem() {
       baseAmount: orderAmountCents.value,
     });
     if (result.success) {
-      uni.showModal({
-        title: t("vip.promoCodeRedeemSuccessTitle"),
-        content: t("vip.promoCodeRedeemSuccessContent", {
-          discount: (result.discountAmount / 100).toFixed(2),
-          payable: (result.payableAmount / 100).toFixed(2),
-        }),
-        showCancel: false,
-        confirmText: t("common.confirm"),
-      });
+      // P2 修复：弹窗里的两个数字同样只取服务端响应（后端契约名 finalAmount 优先）。
+      // 服务端两个值都报不出来时**不弹带金额的窗** —— 宁可只报「兑换成功」，
+      // 也不许在资金页面上印一个客户端自己算出来的「应付」。
+      const redeemDiscount = readCentsFromView(result, ["discountAmount"]);
+      const redeemPayable = readCentsFromView(result, ["finalAmount", "payableAmount"]);
+      if (redeemDiscount !== null && redeemPayable !== null) {
+        uni.showModal({
+          title: t("vip.promoCodeRedeemSuccessTitle"),
+          content: t("vip.promoCodeRedeemSuccessContent", {
+            discount: (redeemDiscount / 100).toFixed(2),
+            payable: (redeemPayable / 100).toFixed(2),
+          }),
+          showCancel: false,
+          confirmText: t("common.confirm"),
+        });
+      } else {
+        uni.showToast({ title: t("vip.promoCodeRedeemSuccess"), icon: "success" });
+      }
     } else {
       uni.showToast({
         title: result.reason || t("vip.promoCodeRedeemFailed"),
@@ -227,7 +290,11 @@ function goBack() {
       </view>
     </view>
 
-    <!-- 订单金额（仅用于演示优惠计算） -->
+    <!-- 订单金额：用户自填的**折扣预览基数**。
+         P2 修复说明（在册）：这个输入框不再是「套餐镜像价播种的报价」。服务端
+         POST /vip/promo-codes/validate|redeem 只用它算预览折扣（P0-3 B），真实成交取
+         VipPlanCatalog 的目录价；本页因此不预填任何数字，也不把输入值倒推成「应付」。
+         下面两行的数字只可能来自服务端响应字段。 -->
     <view class="section">
       <view class="section__title">
         <text class="section__title-text">{{ t('vip.promoCodeOrderAmountLabel') }}</text>
@@ -287,11 +354,11 @@ function goBack() {
           <text class="result-row__label">{{ t('vip.promoCodeResultDesc') }}</text>
           <text class="result-row__value">{{ validationResult.description }}</text>
         </view>
-        <view v-if="validationResult.available" class="result-row">
+        <view v-if="codeAvailable && discountYuan" class="result-row">
           <text class="result-row__label">{{ t('vip.promoCodeResultDiscount') }}</text>
           <text class="result-row__value result-row__value--accent">¥{{ discountYuan }}</text>
         </view>
-        <view v-if="validationResult.available" class="result-row">
+        <view v-if="codeAvailable && payableYuan" class="result-row">
           <text class="result-row__label">{{ t('vip.promoCodeResultPayable') }}</text>
           <text class="result-row__value result-row__value--accent">¥{{ payableYuan }}</text>
         </view>
@@ -305,7 +372,7 @@ function goBack() {
     </view>
 
     <!-- 兑换按钮 -->
-    <view v-if="validationResult?.available" class="footer">
+    <view v-if="codeAvailable" class="footer">
       <view
         class="footer__btn press-feedback"
         :class="{ 'footer__btn--disabled': store.redeeming }"
@@ -331,13 +398,13 @@ function goBack() {
             {{ redeemResult.success ? t('vip.promoCodeRedeemSuccess') : t('vip.promoCodeRedeemFailed') }}
           </text>
         </view>
-        <view class="result-row">
+        <view v-if="redeemDiscountYuan" class="result-row">
           <text class="result-row__label">{{ t('vip.promoCodeResultDiscount') }}</text>
-          <text class="result-row__value">¥{{ (redeemResult.discountAmount / 100).toFixed(2) }}</text>
+          <text class="result-row__value">¥{{ redeemDiscountYuan }}</text>
         </view>
-        <view class="result-row">
+        <view v-if="redeemPayableYuan" class="result-row">
           <text class="result-row__label">{{ t('vip.promoCodeResultPayable') }}</text>
-          <text class="result-row__value">¥{{ (redeemResult.payableAmount / 100).toFixed(2) }}</text>
+          <text class="result-row__value">¥{{ redeemPayableYuan }}</text>
         </view>
       </view>
     </view>

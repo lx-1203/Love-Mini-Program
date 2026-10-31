@@ -34,6 +34,15 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: ["refresh", "token"].join("_"),
   /** 用户信息缓存（避免每次启动重新拉取） */
   USER_CACHE: "campus_love_user_cache",
+  /**
+   * Session Store 的持久化字段快照（profileBackgroundUrl 等）。
+   *
+   * 2026-10-31 收编：原为 stores/session.ts 内的私有常量 SESSION_PERSIST_KEY（裸字符串）。
+   * 值保持完全一致（无需数据迁移），登记到本表后自动落入下方
+   * USER_SCOPED_STORAGE_KEYS，登出/401 强制下线时会被清除——
+   * 否则上一账号上传的背景图 URL 会闪现在下一账号的个人主页。
+   */
+  SESSION_PERSISTED_FIELDS: "session:persistent-fields",
 
   /* ========== 引导与首次访问 ========== */
   /** 是否已看过解锁引导 */
@@ -42,7 +51,13 @@ export const STORAGE_KEYS = {
   /* ========== 聊天模块 ========== */
   /** 消息投递状态（sending/sent/failed）持久化 */
   CHAT_MESSAGE_STATUS: "chat:message-delivery-status",
-  /** 聊天草稿（未发送的输入框内容，按会话 ID 分键） */
+  /**
+   * 聊天草稿（未发送的输入框内容，按会话 ID 分键）。
+   *
+   * 注意：实际写入方 chat-session/index.vue 用的是「前缀 + 会话 ID」的复合键
+   * （见下方 CHAT_DRAFT_SESSION_PREFIX），本裸键当前无写入方，保留作历史兼容；
+   * 登出清扫同时按本键与复合前缀处理，两者都覆盖。
+   */
   CHAT_DRAFT: "chat:draft",
   /** 本地删除消息 ID 集合（2026-08-09 微信语义：删除为本地持久隐藏） */
   DELETED_MESSAGE_IDS: "chat-session:deleted-message-ids",
@@ -56,6 +71,14 @@ export const STORAGE_KEYS = {
   DISCOVER_REWIND_COUNT: "discover:rewind-count",
   /** 上次反悔日期（yyyy-MM-dd，用于判断是否需要重置日计数） */
   DISCOVER_REWIND_DATE: "discover:rewind-date",
+  /**
+   * 今日寻觅记录（已看卡片 ID / 是否已挽回 / 上次刷新时间，JSON 串）。
+   *
+   * 2026-10-31 收编：写入方为 stores/discover/constants.ts 的 STORAGE_KEY
+   * （值一致，无需迁移）。登记到本表的原因是它属账号数据——
+   * 不清则下一账号会继承上一账号「今天已经看过谁」。
+   */
+  DISCOVER_DAILY_RECORD: "discover_daily_record",
 
   /* ========== 村口社区模块 ========== */
   /** 帖子草稿（未发布的发帖内容，含标题/正文/标签） */
@@ -110,6 +133,15 @@ export const STORAGE_KEYS = {
   /* ========== 安全与设备 ========== */
   /** 已下线（踢出）设备 ID 集合（pages/security 本地演示持久化） */
   KICKED_DEVICES: "security:kicked-devices",
+
+  /* ========== 官方助手 ========== */
+  /**
+   * 官方助手待消费通知列表（活动报名成功等，utils/assistant-notify.ts 写入）。
+   *
+   * 2026-10-31 收编：值与 assistant-notify.ts 的 ASSISTANT_ACTIVITY_NOTIFY_KEY 一致。
+   * 属账号数据——不清则下一账号会读到上一账号的「报名成功」待消费消息。
+   */
+  ASSISTANT_ACTIVITY_NOTIFY: "campus-love:assistant-activity-notify",
 } as const;
 
 /**
@@ -131,3 +163,83 @@ export type StorageKey = keyof typeof STORAGE_KEYS;
 export function getStorageKeyString(key: StorageKey): string {
   return STORAGE_KEYS[key];
 }
+
+/* ========== 用户级 / 设备级分区（2026-10-31 P1：登出必须清空账号数据） ========== */
+
+/**
+ * 设备级存储键（**跨账号保留**）——唯一豁免清单。
+ *
+ * 判定标准：值描述的是「这台设备的使用偏好/一次性提示」，与具体账号无关，
+ * 换账号后保留才是正确体验（主题、语言、免打扰时段、已看过的新手引导…）。
+ *
+ * ⚠️ 默认相反：凡是不在此清单里的 STORAGE_KEYS 条目，一律视为**用户级**、
+ * 登出时被清除（见 USER_SCOPED_STORAGE_KEYS）。也就是说，往 STORAGE_KEYS
+ * 里新增一个 key 的人不需要「记得」去某个地方登记——没登记进豁免清单
+ * 就等于会被清掉，漏清的方向天然是安全的那一侧。
+ */
+export const DEVICE_SCOPED_STORAGE_KEYS = [
+  /* 引导与首次访问（一次性提示，不含内容） */
+  STORAGE_KEYS.UNLOCK_GUIDE_SHOWN,
+  STORAGE_KEYS.NEWBIE_GUIDE_SHOWN,
+  STORAGE_KEYS.AI_VIDEO_GUIDE_SHOWN,
+  /* 视图偏好（上一账号看了哪个频道/开关，属设备使用习惯） */
+  STORAGE_KEYS.VILLAGE_LAST_CHANNEL,
+  STORAGE_KEYS.THEME_MODE,
+  STORAGE_KEYS.WEEKLY_SCHEDULE_ENABLED,
+  STORAGE_KEYS.LOCALE,
+  STORAGE_KEYS.DND_SETTING,
+  STORAGE_KEYS.NOTIFY_ENABLED,
+  STORAGE_KEYS.PRIVACY_MODE_ENABLED,
+  /* dev-only 模拟开关 */
+  STORAGE_KEYS.VIP_SIM_ENABLED,
+] as const satisfies readonly string[];
+
+/**
+ * 用户级存储键（登出 / 401 强制下线时必须清除）。
+ *
+ * 由 STORAGE_KEYS 全量值减去 {@link DEVICE_SCOPED_STORAGE_KEYS} 派生，
+ * 不做人工维护——新增 key 自动落入本清单（见上方判定标准）。
+ */
+export const USER_SCOPED_STORAGE_KEYS: readonly string[] = (
+  Object.values(STORAGE_KEYS) as string[]
+).filter((value) => !(DEVICE_SCOPED_STORAGE_KEYS as readonly string[]).includes(value));
+
+/**
+ * 聊天草稿的复合键前缀（实际写入方：subpackages/chat/chat-session/index.vue 的
+ * CHAT_DRAFT_PREFIX，键形如 `chat-session-draft:{sessionId}`）。
+ *
+ * 精确键删除覆盖不到分会话的复合键，故登出清扫额外按前缀枚举删除。
+ * 两处字面量必须一致——本常量是那份「必须一致」的唯一登记处。
+ */
+export const CHAT_DRAFT_SESSION_PREFIX = "chat-session-draft:";
+
+/**
+ * 用户级存储的键**前缀**清单（按会话/对象分键的家族）。
+ *
+ * 同样是「新增即生效」：把一个分键家族登记到这里，登出时整族被清。
+ */
+export const USER_SCOPED_STORAGE_PREFIXES: readonly string[] = [CHAT_DRAFT_SESSION_PREFIX];
+
+/**
+ * 可重建缓存键（设置页「清除缓存」消费）。
+ *
+ * 与 USER_SCOPED_STORAGE_KEYS 的差别：这里只放「删了能重新拉回来、
+ * 且不属账号内容」的键——草稿/搜索历史/已看卡片等虽属用户级，
+ * 但只能由登出流程清（清除缓存不是登出，不能顺手删用户未发送的内容）。
+ *
+ * 2026-10-31 P2 修复：原设置页硬编码 [STORAGE_KEYS.USER_CACHE]，
+ * 而 USER_CACHE 全仓零写入方 ⇒ 「清除缓存」实际删不掉任何东西却 toast 成功。
+ * 现列出真正有写入方的可重建键（nearby:city ← pages/nearby，
+ * tabbar_chat_unread ← composables/useUnreadBadge）。
+ */
+export const REBUILDABLE_CACHE_KEYS: readonly string[] = [
+  /** 预留键：当前无写入方，保留以兼容历史版本写入的数据 */
+  STORAGE_KEYS.USER_CACHE,
+  /** 最近一次定位解析出的城市（重新定位即可恢复） */
+  STORAGE_KEYS.NEARBY_CITY,
+  /** 自定义 TabBar 未读角标（由 messages store 重算） */
+  STORAGE_KEYS.TABBAR_CHAT_UNREAD,
+  /** 签到状态缓存（后端 /checkin/status 为权威） */
+  STORAGE_KEYS.CHECKIN_LAST_DATE,
+  STORAGE_KEYS.CHECKIN_CONSECUTIVE_DAYS,
+];

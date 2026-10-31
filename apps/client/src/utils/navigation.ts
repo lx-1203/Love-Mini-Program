@@ -1,4 +1,31 @@
 import { appTabs } from "../config/navigation";
+// GAP 4（round-3 缺口，2026-10-31）：路由档位闸门的落点。
+// openAppPath / replaceAppPath 是全站唯一的「按路径跳页」两处出口
+// （其余 uni.xxxTo 调用点都在 tabbar / 登录回跳等固定目标上），闸门只在这里生效一次。
+import { blockedByRouteBand } from "../constants/routes";
+import { currentBuildBands } from "../config/build-band";
+
+/**
+ * 档位可达性检查（GAP 4）。
+ *
+ * devOnly / showcaseOnly 路由此前只在**编译期**由 pages.json 的 `#ifdef DEV` /
+ * `#ifdef SHOWCASE` 挡一手，而 DEV 档产物并不定义那些条件符号（见
+ * config/build-band.ts 的文件头），运行时等于没挡。这里补运行时这一手：
+ * 不可达 ⇒ 不发起任何跳转，打一行 warn 并回调 fail（调用方按既有失败分支处置）。
+ *
+ * @param url 已规范化的目标 URL
+ * @param fail 调用方的失败回调（可空）
+ * @returns true = 可以继续跳转
+ */
+function passRouteBandGate(url: string, fail?: (err?: unknown) => void): boolean {
+  const reason = blockedByRouteBand(url, currentBuildBands());
+  if (reason === null) return true;
+  // 配置类拒绝只在开发期打日志（与 config/env.ts:215 的 R4-00526/00527 口径一致：
+  // 生产包不泄露内部档位信息），但**拒绝本身在所有档位生效**。
+  if (currentBuildBands().dev) console.warn(`[ROUTE_BAND] 已拦截：${reason}`);
+  fail?.(new Error(`openAppPath: blocked by route band — ${reason}`));
+  return false;
+}
 
 /**
  * 规范化 URL：确保以 `/` 开头。
@@ -59,6 +86,9 @@ export function openAppPath(url: string, options: OpenPathOptions = {}) {
     return;
   }
   const normalizedUrl = normalizeUrl(url);
+
+  // GAP 4：devOnly / showcaseOnly 路由在非本档构建里不可达（深链/分享卡片也拦得住）。
+  if (!passRouteBandGate(normalizedUrl, options.fail)) return;
 
   if (isTabPath(normalizedUrl)) {
     // P1-04：tab 页带 query 时先写入 storage 桥接，再 switchTab
@@ -270,6 +300,9 @@ export function replaceAppPath(url: string) {
     return;
   }
   const normalizedUrl = normalizeUrl(url);
+
+  // GAP 4：与 openAppPath 同一枚闸门（replaceAppPath 是登录回跳/redirect 的出口）。
+  if (!passRouteBandGate(normalizedUrl)) return;
 
   if (isTabPath(normalizedUrl)) {
     uni.switchTab({ url: normalizedUrl });

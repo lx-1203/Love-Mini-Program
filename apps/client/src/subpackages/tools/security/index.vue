@@ -10,7 +10,7 @@
  * - 注销账号：二次确认 + 提示
  */
 import { ref, computed } from "vue";
-import { onShow } from "@dcloudio/uni-app";
+import { onLoad, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import AppShell from "../../../components/layout/AppShell.vue";
 import SectionCard from "../../../components/common/SectionCard.vue";
@@ -22,7 +22,14 @@ import { openAppPath } from "../../../utils/navigation";
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../../constants/routes";
 import { STORAGE_KEYS } from "../../../constants/storage-keys";
 import { usePageAccess } from "../../../composables/usePageAccess";
-import { profilePageRequirements } from "../../../config/page-access";
+// P1 修复（2026-10-31）：本页原先复用 profilePageRequirements（requiresAuth:**false**，
+// 那枚描述的是「我的」Tab 可进入查看），于是账号安全中心在配置层成了免登录页 ——
+// 游客进来就发 GET /auth/devices（必 401），并且在被弹走之前看得见「更换手机号 / 注销账号」。
+// 与 config/page-access.ts 里 help 页同一判例：一码一页，不复用他人门槛。
+import { securityCenterPageRequirements } from "../../../config/page-access";
+// 游客档（本地无 token）不会由 usePageAccess 弹出（它对游客是故意放行的，见该文件 :79），
+// 所以必须在页面入口用 guards/guest-access 先行处置 ⇒ 守卫先于任何受保护请求。
+import { guideGuestToLogin } from "../../../guards/guest-access";
 import { useSessionStore } from "../../../stores/session";
 // 3-B/C/D/E 账号安全 real 链路：change-phone / change-password / devices / deactivate
 import { useMock } from "../../../stores/helpers/use-mock";
@@ -31,7 +38,16 @@ import { request, clearTokens } from "../../../services/http";
 import { resolveMediaUrl } from "../../../utils/media";
 
 /** 安全中心访问要求（需登录，无需资料完善） */
-usePageAccess(profilePageRequirements);
+usePageAccess(securityCenterPageRequirements);
+
+/**
+ * 游客守卫旗标：true 表示本页已把游客交给登录页跳转队列 ——
+ * 此后 onShow 不再拉设备列表，账号级控件也不再渲染（P1 修复的判点在 spec 里钉死）。
+ */
+const guestGuarded = ref(false);
+onLoad(() => {
+  guestGuarded.value = guideGuestToLogin();
+});
 
 const { t } = useI18n();
 const sessionStore = useSessionStore();
@@ -272,6 +288,8 @@ function formatDeviceDate(isoString: string | null): string {
  * mock 模式保留本地演示设备（buildInitialDevices）。
  */
 async function loadDevices(): Promise<void> {
+  // P1 守卫先行：游客不发 GET /auth/devices（这一句是本页唯一的入口取数）。
+  if (guestGuarded.value) return;
   if (useMock()) return;
   try {
     const list = await request<RealDeviceView[]>({ url: "/auth/devices", method: "GET" });
@@ -570,8 +588,8 @@ async function submitDeleteAccount(): Promise<void> {
 
 <template>
   <AppShell :title="t('security.navTitle')" :subtitle="t('security.subtitle')" show-back>
-    <!-- 账号安全 -->
-    <SectionCard :title="t('security.accountTitle')" compact>
+    <!-- 账号安全（P1：游客档不渲染账号级控件，页只在被送往登录页的队列里停一帧） -->
+    <SectionCard v-if="!guestGuarded" :title="t('security.accountTitle')" compact>
       <view class="sec-list">
         <view
           class="sec-item press-feedback"
@@ -619,8 +637,8 @@ async function submitDeleteAccount(): Promise<void> {
       </view>
     </SectionCard>
 
-    <!-- 第三方账号绑定（绑定状态与会话登录方式一致） -->
-    <SectionCard :title="t('security.thirdPartyTitle')" compact>
+    <!-- 第三方账号绑定（绑定状态与会话登录方式一致；游客档不渲染） -->
+    <SectionCard v-if="!guestGuarded" :title="t('security.thirdPartyTitle')" compact>
       <view class="sec-list">
         <view
           class="sec-item press-feedback"
@@ -667,8 +685,8 @@ async function submitDeleteAccount(): Promise<void> {
       </view>
     </SectionCard>
 
-    <!-- 登录设备 -->
-    <SectionCard :title="t('security.deviceTitle')" compact>
+    <!-- 登录设备（游客档不渲染：列表本来就拉不到） -->
+    <SectionCard v-if="!guestGuarded" :title="t('security.deviceTitle')" compact>
       <view class="sec-list">
         <view
           v-for="device in devices"
@@ -748,8 +766,8 @@ async function submitDeleteAccount(): Promise<void> {
       </view>
     </SectionCard>
 
-    <!-- 危险操作 -->
-    <SectionCard :title="t('security.dangerTitle')" compact>
+    <!-- 危险操作（注销账号：游客档必须看不见） -->
+    <SectionCard v-if="!guestGuarded" :title="t('security.dangerTitle')" compact>
       <view
         class="sec-item sec-item--danger press-feedback"
         hover-class="press-feedback--active"

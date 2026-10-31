@@ -1,4 +1,6 @@
 import { describe, expect, it, beforeEach } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { i18n, t } from "../i18n";
 import zhCN from "../i18n/locales/zh-CN";
 import {
@@ -668,12 +670,17 @@ describe("Task 3.3.5 - 法律文本 i18n key 存在性", () => {
   /**
    * 法律文本必备 key 清单（用户协议 / 隐私政策 / 授权同意）。
    * 2026-10-29：英文版不上线，en-US 侧键位存在性检查随资源一并移除，只验 zh-CN。
+   *
+   * 2026-10-31 S2-6：清单里**不再有 legal.*.content**——语言包里的第二份法律全文已删除，
+   * 正式正文唯一来源是后端 legal_document 表（GET /v1/config/legal），离线兜底摘要在
+   * config/legal-texts.ts。语言侧只保留标题/按钮等 UI 字串；
+   * 「语言包不含法律正文」这条反向断言见 src/tests/config/legal-texts.spec.ts。
    */
   const requiredLegalKeys = [
     "legal.userAgreement.title",
-    "legal.userAgreement.content",
+    "legal.userAgreement.accept",
     "legal.privacyPolicy.title",
-    "legal.privacyPolicy.content",
+    "legal.privacyPolicy.accept",
     "legal.consent.title",
     "legal.consent.agree",
   ];
@@ -805,18 +812,126 @@ describe("Task 3.3.4 - Mock 数据 i18n 化回归", () => {
   /**
    * 验证 fixtures.ts 中的 Mock 数据已迁移为 i18n key 或可正常解析。
    * Mock 数据本身不应硬编码中文文案（应通过 i18n key 引用）。
+   *
+   * ⚠️ 判点修复（GAP 3，2026-10-31）：这条此前写成
+   * `try { await import(...) ; expect(fixtures).toBeDefined() } catch { expect(true).toBe(true) }`
+   * —— catch 里那句恒真断言让整条判点**不可能变红**（模块改名、getter 崩溃、
+   * mock 数据退化成裸 i18n key 全都绿）。现在按注释里写的立项本意真断言，
+   * 且下面每条都可打靶（打靶记录见本轮报告）。
    */
   // 冷模块图在并行负载下的动态 import 会挤爆 5000ms 默认预算：实测绿色跑 1076ms、一次加载跑的红色跑 5025ms 超时（Test timed out in 5000ms）——非产品缺陷，只给这一条放宽到 30s。
   it("fixtures 模块应可正常导入", async () => {
     // 动态导入 fixtures 模块，验证其结构完整
-    // 注意：fixtures.ts 位于 services/mocks/ 目录下
-    try {
-      const fixtures = await import("../services/mocks/fixtures");
-      expect(fixtures).toBeDefined();
-    } catch (_e) {
-      // 若 fixtures 模块路径变化或不存在，测试不强制失败
-      // 仅作为可选回归验证
-      expect(true).toBe(true);
+    // 注意：fixtures.ts 位于 services/mocks/ 目录下（在册真实路径，路径写错必须红）
+    const fixtures = await import("../services/mocks/fixtures");
+    expect(fixtures.mockFixtures).toBeTypeOf("object");
+    expect(fixtures.mockFixtures).not.toBeNull();
+  }, { timeout: 30_000 });
+
+  it("在册的无参 getter 逐个可解析：返回数据、不返回空壳（展示版没数据可演＝红）", async () => {
+    const { mockFixtures } = await import("../services/mocks/fixtures");
+    const arrayGetters = [
+      "getDiscussionRecommendations",
+      "getActivityRecommendations",
+      "getFollowingList",
+    ] as const;
+    // 这两枚的**在册初态就是空表**（悄悄话信箱要等页内 sendMessageToWhisper 写过才有条目）：
+    // 只判「是不是数组」，判非空就是迁就缺陷写断言。
+    const maybeEmptyArrayGetters = ["getWhisperInbox", "getWhisperSent"] as const;
+    const objectGetters = [
+      "getLoginHero",
+      "getSession",
+      "getBasicProfile",
+      "getProfileStats",
+      "getCampusProfile",
+      "getScheduleProfile",
+      "getHomeDashboard",
+      "getChatOverview",
+      "getMatchFormConfig",
+      "getCheckInStatus",
+      "getDndSetting",
+    ] as const;
+
+    for (const name of [...arrayGetters, ...maybeEmptyArrayGetters, ...objectGetters]) {
+      const fn = (mockFixtures as unknown as Record<string, unknown>)[name];
+      expect(typeof fn, `mockFixtures.${name} 必须是函数（门面少一枚 ⇒ 消费方拿到 undefined）`).toBe(
+        "function",
+      );
     }
+    for (const name of arrayGetters) {
+      const value = (
+        mockFixtures as unknown as Record<string, () => unknown>
+      )[name]();
+      expect(Array.isArray(value), `mockFixtures.${name}() 应返回数组`).toBe(true);
+      expect(
+        (value as unknown[]).length,
+        `mockFixtures.${name}() 返回空数组 ⇒ mock 档页面无可演数据`,
+      ).toBeGreaterThan(0);
+    }
+    for (const name of maybeEmptyArrayGetters) {
+      const value = (
+        mockFixtures as unknown as Record<string, () => unknown>
+      )[name]();
+      expect(Array.isArray(value), `mockFixtures.${name}() 应返回数组`).toBe(true);
+    }
+    for (const name of objectGetters) {
+      const value = (
+        mockFixtures as unknown as Record<string, () => unknown>
+      )[name]();
+      expect(value, `mockFixtures.${name}() 不得返回空`).toBeDefined();
+      expect(value).not.toBeNull();
+      expect(typeof value).toBe("object");
+    }
+  }, { timeout: 30_000 });
+
+  it("fixtures 里每一枚 t(\"key\") 都必须在语言包查得到（悬空 key＝红）", async () => {
+    // SubTask 3.3.4 的立项形态：mock 展示文案经 t(*Key) 解析，而不是硬编码中文。
+    // vue-i18n 对**查不到的 key 原样回吐 key 本身** ⇒ 「迁移做了但 key 写错/语言包删了」
+    // 这种缺陷在页面上的形态是一串 `mockData.xxx.yyy`。本条判点抓的就是它。
+    const fixturesSrc = readFileSync(
+      resolve(__dirname, "../services/mocks/fixtures.ts"),
+      "utf8",
+    );
+    const keys = [
+      ...new Set(
+        // 捕获**任意** t("…") 字面量：早期版本把字符集收窄成 [A-Za-z0-9_.]，
+        // 结果一枚带空格的坏 key（打靶时写出来的）直接不被扫描 ⇒ 判点漏过缺陷。
+        // 现在坏 key 一律进 dangling 名单（te() 对它返回 false）。
+        [...fixturesSrc.matchAll(/\bt\("([^"\\]+)"\s*[,)]/gu)].map((m) => m[1]),
+      ),
+    ].sort();
+    // 判据本身不许空转：在册 189 枚 key，少到 0 枚说明扫描口径坏了
+    expect(keys.length, "fixtures.ts 里扫不到任何 t(\"key\") ⇒ 扫描口径失效").toBeGreaterThan(50);
+    const dangling = keys.filter((key) => !i18n.global.te(key, "zh-CN"));
+    expect(
+      dangling,
+      `fixtures.ts 引用了语言包里不存在的 key（页面会直接印出这串 key）：${dangling.join(", ")}`,
+    ).toEqual([]);
+    // 再确认可解析性：解析结果必须是**非空字符串**且**不等于 key 本身**
+    for (const key of keys.slice(0, 30)) {
+      const resolved = t(key);
+      expect(typeof resolved, `${key} 解析结果不是字符串`).toBe("string");
+      expect(resolved.length, `${key} 解析成空串`).toBeGreaterThan(0);
+      expect(resolved, `${key} 原样回吐（悬空 key）`).not.toBe(key);
+    }
+  }, { timeout: 30_000 });
+
+  it("mock 门面不得把裸 i18n key 当文案吐出去", async () => {
+    const { mockFixtures } = await import("../services/mocks/fixtures");
+    const snapshot = JSON.stringify([
+      mockFixtures.getLoginHero(),
+      mockFixtures.getHomeDashboard(),
+      mockFixtures.getDiscussionRecommendations(),
+      mockFixtures.getActivityRecommendations(),
+      mockFixtures.getMatchFormConfig(),
+      mockFixtures.getChatOverview(),
+      mockFixtures.getSocialProgress(),
+    ]);
+    // 快照非空（空快照会让下面那条正则变成空判点）
+    expect(snapshot.length).toBeGreaterThan(200);
+    expect(snapshot).toMatch(/[\u4e00-\u9fa5]/u); // 确实带着解析后的中文
+    expect(snapshot).not.toMatch(
+      /"(?:config|mockData|discover|home|likes|vip|common)\.[A-Za-z0-9_.]+"/u,
+    );
   }, { timeout: 30_000 });
 });

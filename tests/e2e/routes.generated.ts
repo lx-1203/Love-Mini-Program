@@ -92,8 +92,20 @@ export interface RouteExpectation {
   loggedInLanding: string | null;
   /** 本页源码里自己声明的跳转目标（从页面 .vue 与 ROUTES 常量派生） */
   selfRedirects: string[];
-  /** 整页模板包在 #ifdef DEV 里：非 DEV 构建编译期即无内容，不许断言渲染文字 */
+  /**
+   * 整页被构建档条件编译挡掉（pages.json 的 #ifdef DEV / #ifdef SHOWCASE 注册块，
+   * 或模板整页包在 DEV/SHOWCASE 里）：正式包编译期即无内容，不许断言渲染文字。
+   * P2 修复前这一枚只看页面模板里的 ifdef DEV，漏掉了 pages.json 用
+   * ifdef SHOWCASE 整条剔除的注册项（subpackages/setup/showcase/index 因此被当成可发货页）。
+   */
   devOnly: boolean;
+  /** 挡掉本页的条件符号；空数组表示任何构建档都会把它编译进去 */
+  buildConditions: string[];
+  /** 该页在正式（release）包里是否存在。true 才允许对它断言渲染/落点/产物。
+   *  ⚠️ 只由 pages.json 条件 + package.json define 派生，与这台机器上有没有 dist/ 产物无关；
+   *  产物一致性由生成器的 releasePackageCheck 对账（盘上有 mp-weixin-real/app.json 就逐条比，
+   *  对不上 exit 1），对账载体只进控制台。 */
+  inReleasePackage: boolean;
 }
 
 export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
@@ -109,7 +121,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
       "/pages/register/index",
       "/subpackages/setup/showcase/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/pages/register/index",
@@ -121,7 +135,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/login/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/pages/register/success",
@@ -133,7 +149,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/pages/discover/index",
@@ -143,7 +161,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": null,
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/pages/home/index",
@@ -158,7 +178,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
       "/pages/nearby/index",
       "/pages/profile/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/pages/nearby/index",
@@ -168,7 +190,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": ".login-register-entry",
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/pages/messages/index",
@@ -178,7 +202,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": null,
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/pages/profile/index",
@@ -190,7 +216,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/login/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/village/village/index",
@@ -200,7 +228,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": ".login-register-entry",
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/village/village/publish",
@@ -212,7 +242,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/subpackages/village/village/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/village/village/post",
@@ -224,7 +256,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/subpackages/village/village/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/village/village/detail",
@@ -236,7 +270,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/subpackages/village/village/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/village/village/tag-posts",
@@ -248,7 +284,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/subpackages/village/village/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/village/village/history",
@@ -260,7 +298,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/subpackages/village/village/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/circles/circles/index",
@@ -272,7 +312,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/circles/circles/topics",
@@ -284,7 +326,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/subpackages/circles/circles/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/circles/circles/topic-detail",
@@ -296,7 +340,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/subpackages/circles/circles/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/circles/circles/post-topic",
@@ -308,7 +354,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/circles/circles/circle-home",
@@ -318,7 +366,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": ".login-register-entry",
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/campus/campus/hub",
@@ -330,7 +380,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/nearby/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/campus/campus/index",
@@ -343,7 +395,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
       "/pages/home/index",
       "/subpackages/campus/campus/hub"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/campus/campus/post-topic",
@@ -353,7 +407,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": null,
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/campus/campus/topic-detail",
@@ -365,7 +421,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/subpackages/campus/campus/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/campus/campus/certification",
@@ -378,7 +436,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
       "/pages/home/index",
       "/subpackages/profile-extra/verification/real-name"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/discover-extra/discover/matching",
@@ -390,7 +450,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/discover/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/discover-extra/discover/match-success",
@@ -402,7 +464,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/discover/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/discover-extra/home/segment",
@@ -414,7 +478,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/discover-extra/nearby/people",
@@ -426,7 +492,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/discover/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/discover-extra/discover/history",
@@ -438,7 +506,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/discover/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/discover-extra/likes/index",
@@ -450,7 +520,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/discover-extra/likes-visitors/index",
@@ -462,7 +534,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/tools/daily-question/index",
@@ -474,7 +548,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/tools/love-center/index",
@@ -488,7 +564,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
       "/subpackages/tools/love-center/consulting",
       "/subpackages/tools/love-center/mbti"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/tools/help/index",
@@ -498,19 +576,23 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": null,
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/tools/security/index",
-    "expectedLanding": "/subpackages/tools/security/index",
-    "family": null,
-    "landingMarker": null,
-    "registerEntryMarker": null,
+    "expectedLanding": "/pages/login/index",
+    "family": "guard-bounce",
+    "landingMarker": ".login-page__brand",
+    "registerEntryMarker": ".login-register-entry",
     "loggedInLanding": null,
     "selfRedirects": [
       "/pages/login/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/tools/search/index",
@@ -522,7 +604,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/discover/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/tools/heart-signals/index",
@@ -534,7 +618,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/tools/activities/detail",
@@ -544,7 +630,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": null,
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/tools/love-center/nearby",
@@ -556,7 +644,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/tools/love-center/mbti",
@@ -568,7 +658,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/tools/love-center/consulting",
@@ -578,7 +670,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": null,
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/profile-extra/settings/index",
@@ -592,7 +686,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
       "/subpackages/profile-extra/feedback/history",
       "/subpackages/profile-extra/settings/dnd"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/profile-extra/verification/index",
@@ -604,7 +700,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/profile/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/profile-extra/verification/real-name",
@@ -616,7 +714,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/subpackages/profile-extra/verification/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/profile-extra/profile/visitors",
@@ -628,7 +728,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/profile-extra/profile/other",
@@ -640,7 +742,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/profile-extra/profile/location",
@@ -652,7 +756,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/profile-extra/profile/privacy",
@@ -667,7 +773,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
       "/subpackages/tools/help/index",
       "/subpackages/tools/security/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/profile-extra/profile/album",
@@ -679,7 +787,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/profile-extra/profile/favorites",
@@ -691,7 +801,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/profile/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/profile-extra/profile/tasks",
@@ -703,7 +815,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/profile-extra/settings/dnd",
@@ -715,7 +829,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/profile/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/profile-extra/notifications/index",
@@ -725,7 +841,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": null,
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/profile-extra/feedback/history",
@@ -738,7 +856,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
       "/pages/home/index",
       "/pages/profile/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/chat/chat-session/index",
@@ -750,7 +870,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/messages/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/chat/official-chat/index",
@@ -762,7 +884,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/messages/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/setup/profile/index",
@@ -775,7 +899,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
       "/pages/home/index",
       "/pages/profile/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/setup/campus/index",
@@ -785,7 +911,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": ".login-register-entry",
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/setup/schedule/index",
@@ -795,7 +923,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": ".login-register-entry",
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/setup/recommend-pref/index",
@@ -805,7 +935,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": ".login-register-entry",
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/setup/interest/index",
@@ -817,7 +949,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/profile/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/setup/dev/index",
@@ -827,7 +961,11 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": null,
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": true
+    "devOnly": true,
+    "buildConditions": [
+      "DEV"
+    ],
+    "inReleasePackage": false
   },
   {
     "route": "/subpackages/setup/showcase/index",
@@ -839,7 +977,11 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/discover/index"
     ],
-    "devOnly": false
+    "devOnly": true,
+    "buildConditions": [
+      "SHOWCASE"
+    ],
+    "inReleasePackage": false
   },
   {
     "route": "/subpackages/support/feedback/index",
@@ -849,7 +991,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": ".login-register-entry",
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/discover/discussions/index",
@@ -859,7 +1003,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": null,
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/discover/activities/index",
@@ -869,7 +1015,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": ".login-register-entry",
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/legal/privacy/index",
@@ -879,7 +1027,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": null,
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/legal/agreement/index",
@@ -889,7 +1039,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "registerEntryMarker": null,
     "loggedInLanding": null,
     "selfRedirects": [],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/market/detail/index",
@@ -901,7 +1053,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/market/shop/index",
@@ -913,19 +1067,23 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/home/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/market/wallet/index",
-    "expectedLanding": "/subpackages/market/wallet/index",
-    "family": null,
-    "landingMarker": null,
-    "registerEntryMarker": null,
+    "expectedLanding": "/pages/login/index",
+    "family": "guard-bounce",
+    "landingMarker": ".login-page__brand",
+    "registerEntryMarker": ".login-register-entry",
     "loggedInLanding": null,
     "selfRedirects": [
       "/pages/profile/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/vip/index",
@@ -939,7 +1097,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
       "/subpackages/vip/bills",
       "/subpackages/vip/promo-code"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/vip/promo-code",
@@ -951,7 +1111,9 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/profile/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   },
   {
     "route": "/subpackages/vip/bills",
@@ -963,6 +1125,8 @@ export const ROUTE_EXPECTATIONS: RouteExpectation[] = [
     "selfRedirects": [
       "/pages/profile/index"
     ],
-    "devOnly": false
+    "devOnly": false,
+    "buildConditions": [],
+    "inReleasePackage": true
   }
 ];

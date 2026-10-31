@@ -5,7 +5,7 @@ import { isDevUserEntryAllowed } from "../utils/dev-user-gate";
 // 微信登录真实链路（Task 0.1.1）：services/auth.ts 封装 wx.login + POST /v1/auth/wechat
 import { loginWithWechat as authLoginWithWechat } from "../services/auth";
 // JWT token 存取：bootstrap 检测到失效 token 时清除并以体验账号重登
-import { getToken, clearTokens } from "../services/http";
+import { getToken, clearTokens, clearUserScopedStorage } from "../services/http";
 // 2026-08-31 待办：IM 实时推送接线——登录态建立后连接 WebSocket，登出时断开
 import { wsClient } from "../services/websocket";
 // 2026-08-10 切换提速：登出时清空 TTL 缓存（防跨账号数据泄漏）
@@ -22,6 +22,9 @@ import { useAppConfigStore } from "./app-config";
 import type { components } from "../services/generated/api-types";
 // R4-00167: bindSchool 城市兜底（按学校名查城市表）
 import { SCHOOLS } from "../config/schools";
+// 2026-10-31 P1：会话持久化字段键收编至统一登记表（值不变，无需迁移），
+// 登记后自动落入 USER_SCOPED_STORAGE_KEYS，登出/401 清扫会一并清掉
+import { STORAGE_KEYS } from "../constants/storage-keys";
 // i18n 翻译函数（SubTask 3.3.3：错误回退消息 i18n 化）
 import { t } from "@/i18n";
 
@@ -141,7 +144,7 @@ export function hasDevUserFromLaunch(): boolean {
  *
  * 注意：项目未引入 pinia-plugin-persistedstate，故采用 uni.setStorageSync 手动持久化。
  */
-const SESSION_PERSIST_KEY = "session:persistent-fields";
+const SESSION_PERSIST_KEY = STORAGE_KEYS.SESSION_PERSISTED_FIELDS;
 
 /**
  * 资料完善度字段权重表（合计 100）。
@@ -555,8 +558,15 @@ export const useSessionStore = defineStore("session", {
      * 现新增 logout action 统一处理退出登录流程：
      * 1. 调用 clientApi.logout() 清除本地 token + 通知后端 + 跳转登录页
      * 2. 清空 store 状态（userSession / isOffline / errorMessage / profileBackgroundUrl）
-     * 3. 清除持久化的 profileBackgroundUrl（避免下次登录残留）
+     * 3. 清除持久化的 profileBackgroundUrl（避免下次登录残留；2026-10-31 起由用户级
+     *    存储清扫**整键删除**，不再写回空串）
      * 4. 清理模块级 in-flight Promise / 定时器（当前无显式定时器，预留扩展点）
+     *
+     * 修复（P1，2026-10-31）：原登出仅清 TTL/媒体缓存与 store 字段，本地存储里的
+     * 账号数据（聊天草稿、搜索历史、已删除消息 ID、寻觅已看记录、签到缓存、
+     * 定位城市……）一个都没删——共享设备上的下一个账号会直接继承上一个账号的
+     * 未发送草稿与搜索历史。现由 clearUserScopedStorage() 按 storage-keys.ts
+     * 的派生清单整批清除（新增 key 默认被覆盖），并与 401 强制登出共用同一入口。
      */
     async logout() {
       try {
@@ -572,6 +582,12 @@ export const useSessionStore = defineStore("session", {
         // 2026-08-10 切换提速：清空 TTL 缓存，防跨账号数据泄漏
         clearAllCaches();
         clearMediaSignCache();
+        // P1 修复（2026-10-31）：本地账号数据整批清扫（聊天草稿/搜索历史/已删除消息 ID/
+        // 已看记录/签到缓存/定位城市/会话持久化字段…）。
+        // 与 401 强制下线共用同一入口（services/http.ts 的 clearTokens 亦会调用），
+        // 这里显式再调一次：登出的本地清理不依赖 clientApi.logout 是否真的走到
+        // http.clearTokens（远端 500 / mock 桩 / 未来重构都不该让残留数据活下来）。
+        clearUserScopedStorage();
         // 2. 清空 store 状态，确保下次登录从干净状态开始
         this.userSession = null;
         this.loginHero = null;
@@ -589,12 +605,11 @@ export const useSessionStore = defineStore("session", {
         // 2026-08-31 待办：IM 实时推送——登出时断开 WebSocket，避免残留推送
         syncRealtimeConnection(false);
 
-        // 4. 清除持久化的 profileBackgroundUrl，避免下次登录残留
-        try {
-          savePersistedFields({ profileBackgroundUrl: "" });
-        } catch (_e) {
-          // 持久化失败忽略，不影响登出主流程
-        }
+        // 4. 持久化的 profileBackgroundUrl 由上方 clearUserScopedStorage() **整键删除**
+        //    （SESSION_PERSISTED_FIELDS 已登记进 storage-keys.ts，自动落入用户级清单）。
+        //    原实现在此写回 {"profileBackgroundUrl":""}，会把刚删掉的键**重新创建**：
+        //    空串本身不含上一账号的数据，但「登出后用户级键一律不存在」这条不变量
+        //    会被打破（冷启动 loadPersistedFields 读不到键时同样收敛为空串），故删除写回。
 
         if (isDev) {
           // 修复 no-console：调试日志改用 console.warn（允许的方法）
@@ -631,11 +646,28 @@ export const useSessionStore = defineStore("session", {
             console.warn("[SessionStore] dev-user=1 演示入口：跳过真实会话获取（保留 mock 会话）");
           }
         } else {
-          const [hero, session] = await Promise.all([
-            clientApi.getLoginHero(),
-            clientApi.getSession(),
-          ]);
-          this.loginHero = toLoginHeroView(hero);
+          // P2 修复（2026-10-31 冷启动解耦）：/auth/me 与登录主视觉配置此前写在同一个
+          // Promise.all 里，任一失败都落到下面的 catch ⇒ isOffline=true 且 userSession=null。
+          // 于是「营销位挂了」会在每次启动把已登录用户视觉打成未登录（/auth/me 明明成功）。
+          // 现拆成两条独立链路：
+          // - 致命错误 = clientApi.getSession()（/auth/me）：认证链路的真相源，
+          //   它失败仍进外层 catch 走离线/未登录判定，行为与修复前一致；
+          // - 非致命 = getLoginHero()：自带 catch 降级（loginHero 保持 null，
+          //   pages/login/index.vue:151-154 已有 i18n 兜底文案），绝不否决会话。
+          // 两者仍在同一帧并发发出（不串行等待，冷启动耗时不变）。
+          const heroPromise = clientApi.getLoginHero().catch((heroError: unknown) => {
+            // R4-batch4：诊断日志仅开发环境输出
+            if (isDev) {
+              console.warn("[SessionStore] 登录主视觉配置拉取失败（不影响会话）:", heroError);
+            }
+            return null;
+          });
+
+          const session = await clientApi.getSession();
+          const hero = await heroPromise;
+          if (hero) {
+            this.loginHero = toLoginHeroView(hero);
+          }
 
           // 修复（Bootstrap 失效 token）：后端对无效/过期 token 的 /auth/me 容错返回
           // HTTP 200 + loggedIn=false（而非 401）。若本地残留过期 token，旧逻辑把

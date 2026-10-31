@@ -16,9 +16,12 @@ import { useI18n } from "vue-i18n";
 import { lightHaptic } from "../../../utils/haptic";
 import { IMAGE_PATHS } from "../../../config/images";
 import { useSessionStore } from "../../../stores/session";
-import { STORAGE_KEYS } from "../../../constants/storage-keys";
+import { STORAGE_KEYS, REBUILDABLE_CACHE_KEYS } from "../../../constants/storage-keys";
 import { TOAST_DURATION } from "../../../constants/limits";
 import { isDev } from "../../../config/env";
+// P2 修复（2026-10-31）：清除缓存需覆盖运行时内存态缓存（TTL + 媒体签名 URL）
+import { clearAllCaches } from "../../../utils/cache-ttl";
+import { clearMediaSignCache } from "../../../utils/media-sign-cache";
 // 收尾轮：深色模式三态切换（auto/dark/light）
 import { useThemeStore } from "../../../stores/theme";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
@@ -57,8 +60,16 @@ interface MenuItem {
 /** 缓存大小（R4-00064：真实读取 uni.getStorageInfo 统计） */
 const cacheSize = ref("0 KB");
 
-/** R4-00064：可安全清除的缓存 key（可重新拉取/重建；不含登录态/设置/草稿） */
-const CACHE_KEYS_TO_CLEAR: string[] = [STORAGE_KEYS.USER_CACHE];
+/**
+ * 可清除的缓存键。
+ *
+ * P2 修复（2026-10-31）：原硬编码 `[STORAGE_KEYS.USER_CACHE]`，而 USER_CACHE
+ * 在全仓**没有任何写入方**（grep 确认：仅本行与常量表自身出现）⇒ 点「清除缓存」
+ * 实际只删了一个从不存在的键，却照样 toast「已清除」，等于骗用户。
+ * 现改为 storage-keys.ts 登记的 REBUILDABLE_CACHE_KEYS——每一项都有真实写入方
+ * 且可从后端/重算恢复（不含登录态/偏好/草稿，草稿属登出清理范围）。
+ */
+const CACHE_KEYS_TO_CLEAR: readonly string[] = REBUILDABLE_CACHE_KEYS;
 
 /** 格式化 storage 大小（KB → 可读文本） */
 function formatSizeKB(kb: number): string {
@@ -125,6 +136,12 @@ function viewPrivacyPolicy() {
 /**
  * 清除缓存（R4-00064：接入 uni.getStorageInfo / uni.removeStorageSync 真实链路，
  * 不再用 800ms 延迟假装清零）。
+ *
+ * P2 修复（2026-10-31）：除本地存储里的可重建缓存键外，一并清掉两个运行时内存缓存
+ * （utils/cache-ttl 的 stale-while-revalidate 结果、media-sign-cache 的签名 URL）——
+ * 它们才是这个 app 切 tab 时占内存/占请求的大头，且不在 getStorageInfo 的统计里。
+ * 这样「已清除」的 toast 不再挂在一次 no-op 上。
+ *
  * 注意：不使用 uni.clearStorage 全量清空——登录态 token / 主题 / 语言 /
  * 开关偏好 / 草稿等用户数据必须保留，仅清除可重建的缓存 key。
  */
@@ -138,16 +155,31 @@ function clearCache() {
     success: (res) => {
       if (!res.confirm) return;
       uni.showLoading({ title: t("settings.clearing") });
+      let removedKeyCount = 0;
       for (const key of CACHE_KEYS_TO_CLEAR) {
         try {
+          const existing = uni.getStorageSync(key);
+          if (existing !== "" && existing !== null && existing !== undefined) {
+            removedKeyCount += 1;
+          }
           uni.removeStorageSync(key);
         } catch (_e) {
           // 单个 key 删除失败不阻塞整体清除
         }
       }
+      // 运行时内存缓存（与登出/切账号同一批清理入口，本页不依赖网络重拉）
+      try {
+        clearAllCaches();
+        clearMediaSignCache();
+      } catch (_e) {
+        // 内存缓存清理失败不影响存储键已清除的事实
+      }
       uni.hideLoading();
       // 清除后重新统计真实大小
       refreshCacheSize();
+      if (isDev) {
+        console.warn("[settings] 清除缓存完成，移除存储键数:", removedKeyCount);
+      }
       uni.showToast({
         title: t("settings.cacheCleared"),
         icon: "success",

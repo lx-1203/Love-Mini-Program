@@ -98,10 +98,16 @@ export const useSearchStore = defineStore("search", {
       }, SEARCH_DEBOUNCE_MS);
     },
 
-    /** 立即执行搜索（点击热搜词/历史词/回车时调用） */
-    async search(reset = true) {
+    /**
+     * 立即执行搜索（点击热搜词/历史词/回车时调用）。
+     *
+     * @param reset true=重新从第 1 页搜索；false=在当前 page 上追加（loadMore 用）
+     * @returns 本次是否真正完成了一页数据的拉取与应用
+     *          （失败 / 被 abort / mock 短路 → false，供 loadMore 回滚页码）
+     */
+    async search(reset = true): Promise<boolean> {
       const kw = this.keyword.trim();
-      if (!kw) return;
+      if (!kw) return false;
       if (this.searchController) {
         try {
           this.searchController.abort();
@@ -118,11 +124,11 @@ export const useSearchStore = defineStore("search", {
         if (useMock()) {
           this.posts = [];
           this.hasMore = false;
-          return;
+          return false;
         }
         const currentPage = reset ? 1 : this.page;
         const data = await searchPostsApi(kw, currentPage, controller.signal);
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return false;
         const newPosts = data.content.map((r: PostSearchResult) => mapToPostItem(r.post));
         this.posts = reset ? newPosts : [...this.posts, ...newPosts];
         this.page = currentPage;
@@ -130,9 +136,11 @@ export const useSearchStore = defineStore("search", {
         // 搜索成功：记录到本地历史 + 刷新热搜词
         this.pushHistory(kw);
         void this.refreshHotSearches();
+        return true;
       } catch (error) {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted) return false;
         this.errorMessage = error instanceof Error ? error.message : LOAD_FAILED;
+        return false;
       } finally {
         if (this.searchController === controller) {
           this.loading = false;
@@ -141,13 +149,24 @@ export const useSearchStore = defineStore("search", {
       }
     },
 
-    /** 加载更多搜索结果 */
+    /**
+     * 加载更多搜索结果。
+     *
+     * 修复（P1 BUG，2026-10-31）：分页指针永久跳页。
+     * 原实现先 `this.page += 1`、再把**已自增后的**值赋给 `previousPage` 当作回滚目标
+     * （变量名与实际语义相反），于是第 3 页请求失败后 page 仍是 3；
+     * 下一次 loadMore 直接 +1 取第 4 页并 append —— 第 3 页永远不会被拉回，
+     * 用户看到的是「中间少了 20 条」且没有任何提示。
+     * 现先记下真正的上一页再自增，未成功（失败 / 被 abort）时回滚到上一页，
+     * 重试请求的仍是同一页。
+     */
     async loadMore() {
       if (!this.hasMore || this.loading) return;
-      this.page += 1;
       const previousPage = this.page;
-      await this.search(false);
-      if (this.errorMessage) {
+      this.page += 1;
+      const fetched = await this.search(false);
+      if (!fetched) {
+        // 回滚到自增前的页码：下一次 loadMore 重新请求失败的那一页
         this.page = previousPage;
       }
     },

@@ -58,6 +58,7 @@ vi.mock("../../services/api", () => ({
     getLoginHero: vi.fn(),
     getSession: vi.fn(),
     loginWithWechat: vi.fn(),
+    logout: vi.fn(),
   },
 }));
 
@@ -75,8 +76,14 @@ vi.mock("../../services/auth", () => ({
   getStorageSync: vi.fn(() => null),
   setStorageSync: vi.fn(),
   removeStorageSync: vi.fn(),
+  getStorageInfoSync: vi.fn(() => ({ keys: [], currentSize: 0, limitSize: 0 })),
   showToast: vi.fn(),
 };
+
+import {
+  STORAGE_KEYS,
+  DEVICE_SCOPED_STORAGE_KEYS,
+} from "../../constants/storage-keys";
 
 import { MOCK_LOGIN_HERO } from "../../features/login/hero";
 
@@ -330,6 +337,131 @@ describe("session store - bootstrap 失效 token 自动重登（401 雪崩修复
 
     expect(loginAsGuest).not.toHaveBeenCalled();
     expect(store.userSession?.userId).toBe("user-1001");
+  });
+});
+
+// ------------------------------------------------------------------
+// P1 修复 1（2026-10-31）：登出必须清掉账号级本地存储
+// P2 修复 6（2026-10-31）：冷启动非鉴权关键调用不得否决会话
+// ------------------------------------------------------------------
+describe("session store - logout 本地存储清理（P1 修复 1）", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+  });
+
+  it("logout 移除用户级存储键（草稿/搜索历史/隐藏消息 ID/已看记录/定位城市…）", async () => {
+    const removeStorageSync = vi.mocked(uni.removeStorageSync);
+    const store = useSessionStore();
+    store.userSession = makeSession({ loggedIn: true });
+
+    await store.logout();
+
+    for (const key of [
+      STORAGE_KEYS.CHAT_DRAFT,
+      STORAGE_KEYS.DELETED_MESSAGE_IDS,
+      STORAGE_KEYS.DISCOVER_SWIPE_HISTORY,
+      STORAGE_KEYS.SEARCH_HISTORY,
+      STORAGE_KEYS.VILLAGE_POST_DRAFT,
+      STORAGE_KEYS.NEARBY_CITY,
+      // 本次收编登记的真实写入键
+      STORAGE_KEYS.DISCOVER_DAILY_RECORD,
+      STORAGE_KEYS.ASSISTANT_ACTIVITY_NOTIFY,
+      STORAGE_KEYS.SESSION_PERSISTED_FIELDS,
+      STORAGE_KEYS.TABBAR_CHAT_UNREAD,
+      STORAGE_KEYS.CHECKIN_LAST_DATE,
+    ]) {
+      expect(removeStorageSync, `登出应清除 ${key}`).toHaveBeenCalledWith(key);
+    }
+  });
+
+  it("logout 不清设备级偏好（主题/语言/引导已读标记跨账号保留）", async () => {
+    const removeStorageSync = vi.mocked(uni.removeStorageSync);
+    const store = useSessionStore();
+
+    await store.logout();
+
+    for (const key of DEVICE_SCOPED_STORAGE_KEYS) {
+      expect(removeStorageSync, `设备级键 ${key} 不应被清除`).not.toHaveBeenCalledWith(key);
+    }
+  });
+
+  it("后端登出接口异常时本地清理照常执行（登出不依赖远端成功）", async () => {
+    vi.mocked(clientApi.logout).mockRejectedValue(new Error("后端 500"));
+    const removeStorageSync = vi.mocked(uni.removeStorageSync);
+    const store = useSessionStore();
+
+    await store.logout();
+
+    expect(removeStorageSync).toHaveBeenCalledWith(STORAGE_KEYS.SEARCH_HISTORY);
+    expect(store.userSession).toBeNull();
+  });
+});
+
+describe("session store - 冷启动关键/非关键调用解耦（P2 修复 6）", () => {
+  const onlineSession = makeSession({
+    userId: "user-1001",
+    loggedIn: true,
+    displayName: "林晓",
+    profileCompleted: true,
+    campusName: "北京大学",
+  });
+
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+    vi.mocked(uni.getStorageSync).mockReturnValue(null);
+    vi.mocked(clientApi.getLoginHero).mockResolvedValue(MOCK_LOGIN_HERO as any);
+    vi.mocked(clientApi.getSession).mockResolvedValue(onlineSession as any);
+  });
+
+  /**
+   * 修复前：getLoginHero 与 getSession 写在同一个 Promise.all，
+   * hero（营销位）500 ⇒ 整块 reject 落到 bootstrap 的 catch ⇒
+   * isOffline=true 且 userSession=null——/auth/me 明明成功，
+   * 用户每次启动都被视觉打成「离线/未登录」。
+   */
+  it("getLoginHero 失败但 /auth/me 成功时：会话成立、不判离线", async () => {
+    vi.mocked(clientApi.getLoginHero).mockRejectedValue(new Error("hero 配置接口 500"));
+
+    const store = useSessionStore();
+    await store.bootstrap();
+
+    expect(store.userSession?.loggedIn).toBe(true);
+    expect(store.userSession?.userId).toBe("user-1001");
+    expect(store.isOffline).toBe(false);
+    expect(store.errorMessage).toBeNull();
+    // loginHero 保持缺省（pages/login/index.vue 有 i18n 兜底文案），不因此登出
+    expect(store.loginHero).toBeNull();
+  });
+
+  it("getLoginHero 失败时仍会调用 getSession（两者并发、互不否决）", async () => {
+    vi.mocked(clientApi.getLoginHero).mockRejectedValue(new Error("hero 挂了"));
+
+    const store = useSessionStore();
+    await store.bootstrap();
+
+    expect(clientApi.getSession).toHaveBeenCalledTimes(1);
+    expect(clientApi.getLoginHero).toHaveBeenCalledTimes(1);
+  });
+
+  it("getSession（/auth/me）失败仍是致命错误：按原语义进入离线", async () => {
+    vi.mocked(clientApi.getSession).mockRejectedValue(new Error("网络不可达"));
+
+    const store = useSessionStore();
+    await store.bootstrap();
+
+    expect(store.isOffline).toBe(true);
+    expect(store.userSession).toBeNull();
+  });
+
+  it("两个调用都成功时行为不变（主视觉正常写入）", async () => {
+    const store = useSessionStore();
+    await store.bootstrap();
+
+    expect(store.loginHero).not.toBeNull();
+    expect(store.userSession?.loggedIn).toBe(true);
+    expect(store.isOffline).toBe(false);
   });
 });
 
