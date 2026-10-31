@@ -86,9 +86,11 @@ import org.springframework.web.servlet.HandlerMapping;
  *       覆盖"越权 + 路径穿越"两类场景。</li>
  * </ul>
  *
- * <p><b>real profile 集成测试</b>：完整的 real profile 端到端测试（含真实 Redis + RabbitMQ + MySQL）
- * 需在具备外部依赖的 CI 环境中执行，本测试类中通过 {@link RealProfileEndToEndTests}
- * 提供测试代码骨架并标记 {@code @Disabled}，待 CI 环境就绪后启用。</p>
+ * <p><b>real profile 集成测试</b>：完整的 real profile 端到端测试（含真实 Redis + MySQL）
+ * 需在具备外部依赖的 CI 环境中执行。本测试类内原 {@code @Nested RealProfileEndToEndTests}
+ * 只是一份空判点的骨架（真实断言全部被注释），real profile 的鉴权链此前从未被真正执行；
+ * 现已迁移并落地为独立顶层测试类 {@link RealProfileAuthChainIntegrationTest}，
+ * 由 {@code -Dreal.it.test=true} 在 CI 的 db-integration / e2e-real job 中真实运行。</p>
  *
  * <p><b>关联任务</b>：</p>
  * <ul>
@@ -104,7 +106,7 @@ import org.springframework.web.servlet.HandlerMapping;
  * @see P0SecurityFilterChainIntegrationTest
  * @see TokenRevocationFlowTests
  * @see MediaAccessIsolationTests
- * @see RealProfileEndToEndTests
+ * @see RealProfileAuthChainIntegrationTest
  */
 @DisplayName("Task 0.7.1: P0 安全测试用例覆盖（认证/授权/越权/Token 撤销/路径穿越）")
 class P0SecurityIntegrationTest {
@@ -774,85 +776,17 @@ class P0SecurityIntegrationTest {
     }
 
     // ========================================================================
-    // 段四：real profile 端到端集成测试（CI 环境就绪后启用）
+    // 段四：real profile 端到端集成测试——已迁移至独立顶层测试类
+    //      RealProfileAuthChainIntegrationTest.java。
+    // 迁移原因（两段共同）：
+    //   1) 本类内原 @Nested RealProfileEndToEndTests 的三个 @Test 方法体判点全部被注释掉
+    //      （// CI 环境就绪后启用:），属于"测试存在但从未真正断言"的假覆盖——real profile
+    //      的鉴权链（401 未认证 / 403 非管理员 / 登出后令牌失效）此前从未被执行过。
+    //   2) @Nested + @SpringBootTest + @TestInstance(PER_CLASS) 组合在 Spring Boot 3.3 +
+    //      JUnit 5 下导致 ApplicationContext 加载失败（JPA Repository 未注册），无法在
+    //      @Nested 里跑真实的 @SpringBootTest（参考段一同款迁移与 SecurityConfigTest 先例）。
+    // 现改为顶层 @SpringBootTest + @AutoConfigureMockMvc + @ActiveProfiles("real") +
+    // @EnabledIfSystemProperty("real.it.test=true")，断言全部落地。CI 的 db-integration /
+    // e2e-real job 传 -Dreal.it.test=true 时真实执行。
     // ========================================================================
-
-    /**
-     * real profile 端到端集成测试骨架（CI 环境就绪后启用）。
-     *
-     * <p>本测试类提供 real profile 下端到端验证的代码骨架，标记 {@code @Disabled}
-     * 跳过执行。CI 环境配置 Redis + RabbitMQ + MySQL 后可启用：</p>
-     *
-     * <ol>
-     *   <li>启动 Redis（默认 127.0.0.1:6379）</li>
-     *   <li>启动 RabbitMQ（默认 127.0.0.1:5672）</li>
-     *   <li>启动 MySQL（按 application-db.yml 配置）</li>
-     *   <li>设置环境变量 JWT_SECRET、WECHAT_APPID、WECHAT_SECRET 等</li>
-     *   <li>移除 {@code @Disabled} 注解后运行</li>
-     * </ol>
-     *
-     * <p><b>覆盖场景</b>（real profile 下完整链路）：</p>
-     * <ul>
-     *   <li>无 token 访问 /api/users/123/follow → 401（JwtAuthenticationEntryPoint）</li>
-     *   <li>有效 JWT 访问 /api/users/123/follow → 200</li>
-     *   <li>普通用户 JWT 访问 /api/admin/users → 403</li>
-     *   <li>管理员 JWT 访问 /api/admin/users → 200</li>
-     *   <li>logout 后再次使用同 JWT → 401</li>
-     * </ul>
-     */
-    @Nested
-    @org.junit.jupiter.api.Disabled("需 CI 环境提供 Redis + RabbitMQ + MySQL，本机暂跳过；"
-            + "本测试骨架作为 real profile 端到端验证的清单，CI 环境就绪后启用")
-    @DisplayName("段四：real profile 端到端集成测试（CI 环境就绪后启用）")
-    class RealProfileEndToEndTests {
-
-        /**
-         * real profile 下无 token 访问受保护资源 → 401。
-         *
-         * <p>前置条件：JWT_SECRET 环境变量已设置，Redis/MySQL/RabbitMQ 已启动。</p>
-         * <p>启动命令示例：</p>
-         * <pre>{@code
-         * JWT_SECRET=test-jwt-secret-for-real-profile-32-chars \
-         * SPRING_PROFILES_ACTIVE=real \
-         * DB_URL=jdbc:mysql://127.0.0.1:3306/campuslove \
-         * DB_USERNAME=root DB_PASSWORD=**** \
-         * REDIS_HOST=127.0.0.1 REDIS_PORT=6379 \
-         * mvnw test -Dtest=P0SecurityIntegrationTest$RealProfileEndToEndTests
-         * }</pre>
-         */
-        @Test
-        @DisplayName("real-6.1: 无 token 访问 /api/users/123/follow → 401（待 CI 启用）")
-        void realProfile_noToken_shouldReturn401() {
-            // CI 环境就绪后启用：
-            // mockMvc.perform(post("/api/v1/users/123/follow"))
-            //         .andExpect(status().isUnauthorized())
-            //         .andExpect(jsonPath("$.code").value("UNAUTHORIZED"))
-            //         .andExpect(jsonPath("$.status").value(401));
-        }
-
-        /**
-         * real profile 下有效 JWT 访问受保护资源 → 200。
-         */
-        @Test
-        @DisplayName("real-6.2: 有效 JWT 访问受保护资源 → 200（待 CI 启用）")
-        void realProfile_validJwt_shouldReturn200() {
-            // CI 环境就绪后启用：
-            // 1. 调用 /api/auth/wechat-login 获取 JWT
-            // 2. 使用 JWT 访问 /api/users/123/follow
-            // 3. 验证返回 200
-        }
-
-        /**
-         * real profile 下 logout 后再次使用同 JWT → 401。
-         */
-        @Test
-        @DisplayName("real-6.3: logout 后再使用同 JWT → 401（待 CI 启用）")
-        void realProfile_logoutThenReuseToken_shouldReturn401() {
-            // CI 环境就绪后启用：
-            // 1. 登录获取 JWT
-            // 2. 调用 /api/auth/logout
-            // 3. 再次使用同 JWT 访问受保护资源
-            // 4. 验证返回 401 + code=UNAUTHORIZED
-        }
-    }
 }

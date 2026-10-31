@@ -82,10 +82,19 @@ assert.match(
   /mvn -B -f apps\/api\/pom\.xml verify/u,
   "CI API gate must run mvn verify so JaCoCo check executes",
 );
-assert.doesNotMatch(
-  ci,
-  /mvn -B -f apps\/api\/pom\.xml test\b/u,
-  "CI must not stop at mvn test (JaCoCo check is bound to verify)",
-);
+// 原判据是 doesNotMatch(/mvn ... test/)，一刀切禁掉任何 `mvn test`。
+// 但 db-integration job 需要按【单类】定向跑（FlywayMigrationRepeatableTest、
+// real profile 鉴权链）：那种跑法必须用 test 阶段，若换成 verify，
+// JaCoCo 的覆盖率阈值在只跑一个类时必然不达标 ⇒ 一条恒红的门。
+// 真正要禁的是"全量测试止步于 test、把 JaCoCo check 漏掉"，所以判据收窄为：
+// 每一处 `mvn ... test` 都必须带 -Dtest= 定向，否则红。
+for (const match of ci.matchAll(/mvn -B -f apps\/api\/pom\.xml test\b/gu)) {
+  const invocation = ci.slice(match.index, match.index + 400).split("- name:")[0];
+  assert.ok(
+    /-Dtest=/u.test(invocation),
+    "CI must not stop at a full-suite mvn test (JaCoCo check is bound to verify)；" +
+      "只有定向单类（带 -Dtest=）可以走 test 阶段，全量跑法一律 verify",
+  );
+}
 
 console.log("test gate wiring contract ok");

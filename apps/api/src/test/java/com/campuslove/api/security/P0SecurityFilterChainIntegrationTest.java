@@ -310,7 +310,7 @@ class P0SecurityFilterChainIntegrationTest {
      * 的 {@link com.campuslove.api.config.SecurityConfig} 注册），mock profile 下 403
      * 响应体为 Spring Security 默认空体。本测试在 mock profile 下仅验证 status=403，
      * 完整 JSON 错误体（code/message/traceId/X-Trace-Id）由 real profile 端到端
-     * 集成测试覆盖（{@link P0SecurityIntegrationTest.RealProfileEndToEndTests}
+     * 集成测试覆盖（{@link RealProfileAuthChainIntegrationTest}
      * 与 {@link com.campuslove.api.auth.JwtAccessDeniedHandlerTest} 单元测试共同保证）。</p>
      *
      * <p><b>关联验证</b>：</p>
@@ -320,7 +320,7 @@ class P0SecurityFilterChainIntegrationTest {
      *       traceId + X-Trace-Id 头）</li>
      *   <li>本测试场景 2.1~2.6：验证 SecurityFilterChain 在 mock profile 下正确
      *       返回 403 status</li>
-     *   <li>real profile 完整链路验证待 CI 环境启用 RealProfileEndToEndTests</li>
+     *   <li>real profile 完整链路验证见 {@link RealProfileAuthChainIntegrationTest}</li>
      * </ul>
      */
     @Test
@@ -332,6 +332,7 @@ class P0SecurityFilterChainIntegrationTest {
         // 注：mock profile 下 MockSecurityConfig 未注册 JwtAccessDeniedHandler，
         // 默认返回空响应体。完整 JSON 错误体验证由以下两处共同保证：
         //   1. JwtAccessDeniedHandlerTest（单元测试，验证 handler 输出格式）
-        //   2. real profile 端到端集成测试（待 CI 环境启用 RealProfileEndToEndTests）
+        //   2. real profile 端到端集成测试（RealProfileAuthChainIntegrationTest，
+        //      由 -Dreal.it.test=true 在 CI 的 db-integration/e2e-real job 中真实执行）
     }
 }

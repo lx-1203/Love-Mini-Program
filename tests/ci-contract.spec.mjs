@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 
@@ -248,5 +248,149 @@ assert.doesNotMatch(
   /verify-app-assets-coverage\.mjs[^\n]*--base/u,
   "CI 不许点 http 轴（--base 在无后端的 CI 只会读成 NOT-EVIDENCED，等于装一扇不表态的门）",
 );
+
+// ---------------------------------------------------------------------------
+// 「门不许只写着不跑」ratchet（2026-10-31，本轮排查查出两起同族事故）
+//
+// 事故一：FlywayMigrationRepeatableTest 用 @EnabledIfSystemProperty(named =
+//   "flyway.repeatable.test") 把自己藏起来，而全仓库没有任何地方设置过这个属性
+//   —— 它的 javadoc 反而声称"CI 中由 flyway-validate job 执行"，那个 job 不存在。
+// 事故二：P0SecurityIntegrationTest 的 real profile 鉴权链原本是永久 @Disabled，
+//   且三个方法体里的断言全是注释——即使打开开关也是三条恒绿空判点。
+//
+// 这两类都长得像"有覆盖"，实际判点为 0，所以本门按结构核对（不按注释、不按文件名）：
+//   1) apps/api/src/test 里每一个 @EnabledIfSystemProperty 的属性名，必须真的出现在
+//      CI 某条 `mvn ... test` 命令里（-D<prop>=true）；
+//   2) 承载该属性的那个测试类名，必须同时出现在同一条命令的 -Dtest= 里
+//      —— 光设属性不选类，surefire 一个测试都不会跑，是事故一的另一种写法；
+//   3) 属性开关式的后端集成测试数量必须 ≥ 2（掉了说明是"删门"而不是"接通门"）；
+//   4) apps/api/src/test 里 @Disabled 注解恒为 0（注释/javadoc 里提及不算）；
+//   5) 凡 env 里 SPRING_PROFILES_ACTIVE=real 的 job，必须显式给 ADMIN_OPENID 与
+//      ADMIN_INITIAL_PASSWORD_HASH —— application-real.yml 去掉了这两项的占位默认值，
+//      漏一个就是 "Could not resolve placeholder" + 上下文起不来。
+// ---------------------------------------------------------------------------
+function collectJavaFiles(dirAbs, acc = []) {
+  for (const entry of readdirSync(dirAbs)) {
+    const abs = resolve(dirAbs, entry);
+    if (statSync(abs).isDirectory()) collectJavaFiles(abs, acc);
+    else if (entry.endsWith(".java")) acc.push(abs);
+  }
+  return acc;
+}
+
+const apiTestRoot = resolve(REPO, "apps/api/src/test/java");
+const apiTestFiles = existsSync(apiTestRoot) ? collectJavaFiles(apiTestRoot) : [];
+assert.ok(
+  apiTestFiles.length > 100,
+  `必须扫到 apps/api 的全部测试源文件（当前 ${apiTestFiles.length}）——扫不到文件时本门会假绿，先让它自己表态`,
+);
+
+const mavenTestRuns = findSteps(
+  (step) =>
+    typeof step.run === "string" &&
+    /mvn[^\n]*apps\/api\/pom\.xml[^\n]*\btest\b/u.test(step.run),
+).map((entry) => String(entry.step.run).replace(/\s+/gu, " "));
+
+const propertyGated = [];
+const disabledAnnotationLines = [];
+for (const file of apiTestFiles) {
+  const text = readFileSync(file, "utf8");
+  for (const match of text.matchAll(
+    // 注解可能写成 @EnabledIfSystemProperty，也可能写成全限定名
+    // @org.junit.jupiter.api.condition.EnabledIfSystemProperty —— 两种都必须被抓到，
+    // 否则换一种写法就能绕过本门（首跑实测：全限定写法让判点数从 2 掉到 1）。
+    /@(?:[\w.]*\.)?EnabledIfSystemProperty\s*\(\s*named\s*=\s*"([^"]+)"[^)]*\)/gu,
+  )) {
+    propertyGated.push({ prop: match[1], className: basename(file, ".java"), file });
+  }
+  for (const line of text.split(/\r?\n/u)) {
+    const trimmed = line.trim();
+    if (/^(\*|\/\/|\/\*)/u.test(trimmed)) continue; // javadoc / 行注释里提及 @Disabled 不算注解
+    if (/@Disabled/u.test(trimmed)) disabledAnnotationLines.push(`${file}: ${trimmed}`);
+  }
+}
+
+assert.ok(
+  propertyGated.length >= 2,
+  `按属性启用的后端集成测试必须 ≥ 2（当前 ${propertyGated.length}）：低于 2 说明门被删了，而不是被接通了`,
+);
+assert.deepEqual(
+  disabledAnnotationLines,
+  [],
+  `apps/api/src/test 不许再有 @Disabled（本轮已清零，保持为 0）。命中：\n${disabledAnnotationLines.join("\n")}`,
+);
+
+// 逐条收集而不是逐条 throw：一次跑完要把所有接线缺口一起看到，
+// 否则修掉第一条才会暴露第二条（本轮已经这样二次返工过）。
+const problems = [];
+for (const gate of propertyGated) {
+  const propSet = mavenTestRuns.some((run) => run.includes(`-D${gate.prop}=true`));
+  if (!propSet) {
+    problems.push(
+      `${gate.className} 靠 -D${gate.prop}=true 才执行，但 CI 没有任何一条 mvn test 设置它 ⇒ 这是一扇从不打开的门`,
+    );
+    continue;
+  }
+  const classSelected = mavenTestRuns.some(
+    (run) => run.includes(`-D${gate.prop}=true`) && new RegExp(`-Dtest=[^ ]*\\b${gate.className}\\b`).test(run),
+  );
+  if (!classSelected) {
+    problems.push(
+      `CI 设了 -D${gate.prop}=true 却没在同一条 mvn test 的 -Dtest= 里选中 ${gate.className} ⇒ surefire 不会跑它`,
+    );
+  }
+}
+assert.deepEqual(
+  problems,
+  [],
+  `后端属性开关式集成测试的 CI 接线有 ${problems.length} 处缺口：\n${problems.join("\n")}`,
+);
+
+assert.doesNotMatch(
+  ci,
+  /failIfNoSpecifiedTests=false/u,
+  "定向跑单类时不许加 -Dsurefire.failIfNoSpecifiedTests=false：类名一旦对不上，surefire 会跑 0 个测试并报 BUILD SUCCESS，" +
+    "本门前面的判点全绿而 CI 实际什么都没测——这正是本轮要根除的「恒绿的空判点」",
+);
+
+const dbIntegration = jobs["db-integration"];
+assert.ok(
+  dbIntegration,
+  "CI 必须有 db-integration job：它是迁移链能否从零建库、以及 real profile 鉴权链的唯一执行场所",
+);
+assert.deepEqual(
+  Object.keys(dbIntegration?.services ?? {}).sort(),
+  ["mysql", "redis"],
+  "db-integration 必须同时提供 mysql 与 redis 两个 service（少了 redis 时登出吊销那档会红，少了 mysql 时迁移判点是空的）",
+);
+assert.ok(
+  (dbIntegration?.steps ?? []).some(
+    (step) => typeof step.run === "string" && /flyway:migrate/u.test(step.run),
+  ),
+  "db-integration 必须真的跑一次 flyway:migrate（DEPLOYMENT.md 教的命令要有人在 CI 里执行，否则又是一条死文档）",
+);
+const freshSchemaSteps = (dbIntegration?.steps ?? []).filter(
+  (step) => typeof step.env?.DB_URL === "string" && !step.env.DB_URL.includes("/campus_love?"),
+);
+assert.ok(
+  freshSchemaSteps.length >= 2,
+  "migrate 与两个测试必须跑在一座【空 schema】上：在已有表的老库上 V2026.10.13.0001 会被 Flyway 报 Ignored，判点被历史遗留状态蒙过去",
+);
+
+const realProfileJobs = Object.entries(jobs).filter(
+  ([, job]) => job?.env?.SPRING_PROFILES_ACTIVE === "real",
+);
+assert.ok(
+  realProfileJobs.length >= 2,
+  `至少要有 e2e-real 与 db-integration 两个 real profile job（当前 ${realProfileJobs.length}）`,
+);
+for (const [jobId, job] of realProfileJobs) {
+  for (const key of ["ADMIN_OPENID", "ADMIN_INITIAL_PASSWORD_HASH"]) {
+    assert.ok(
+      typeof job.env?.[key] === "string" && job.env[key].length > 0,
+      `${jobId} 启动 real profile 却没有 ${key}：application-real.yml 已去掉占位默认值，缺它上下文起不来`,
+    );
+  }
+}
 
 console.log("ci image scan contract ok");

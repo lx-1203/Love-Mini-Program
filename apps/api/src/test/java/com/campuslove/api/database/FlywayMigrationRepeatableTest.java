@@ -15,9 +15,15 @@ import org.springframework.test.context.ActiveProfiles;
 /**
  * Flyway 迁移可重复执行测试（P7 - Task 7.2.3）。
  *
- * <p>验证 {@code database/flyway/sql/} 下全部迁移脚本可重复执行而不报错。
- * 通过在测试环境以 mock profile 启动 Spring 上下文，让 Flyway 自动迁移 H2/MySQL，
+ * <p>验证 {@code database/flyway/sql/} 下全部迁移脚本能在一座空库上从零建出完整 schema，
+ * 重复执行不报错。通过在测试环境以 real profile 启动 Spring 上下文（Flyway 自动迁移真实 MySQL），
  * 随后查询 schema_history 与关键表存在性。</p>
+ *
+ * <p>profile 选择说明（2026-10-31 修正）：本类原先标 {@code @ActiveProfiles("mock")}，
+ * 而 mock profile 在 application-mock.yml 里排除了 FlywayAutoConfiguration 与
+ * HibernateJpaAutoConfiguration——也就是说它根本没有数据源、一行迁移都不会跑，
+ * 这个测试在任何环境下都不可能通过（配合 {@code -Dflyway.repeatable.test} 开关后
+ * 更是从不执行）。real profile 才真正加载 Flyway，判点才有意义。</p>
  *
  * <p>验证点：</p>
  * <ul>
@@ -25,13 +31,16 @@ import org.springframework.test.context.ActiveProfiles;
  *   <li>关键表已创建（users/likes/posts/notifications 等）</li>
  *   <li>幂等迁移脚本可重复执行（V2026.07.26.0002/0003/0004 的存储过程）</li>
  *   <li>flyway_schema_history 表中所有迁移记录 success=1</li>
+ *   <li>circle_layer / admin_layer 由 V2026.10.13.0001 建出（空库从零构建的关键判点）</li>
  * </ul>
  *
- * <p>说明：CI 中由 flyway-validate job 通过 docker 调用 flyway migrate/validate 完成端到端校验，
- * 本测试作为单元层校验，校验 Spring 自动调用 Flyway 时的行为。</p>
+ * <p>说明：由 CI 的 db-integration job 在一份新建的空 schema 上执行
+ * （先 {@code mvn flyway:migrate} 再跑本测试），并传 {@code -Dflyway.repeatable.test=true}；
+ * 未设置该属性时本类跳过（无 DB 环境）。tests/ci-contract.spec.mjs 校验该属性确实在 CI 里被设置，
+ * 所以它不会退化成永不执行的死测试。</p>
  */
 @SpringBootTest
-@ActiveProfiles("mock")
+@ActiveProfiles("real")
 @AutoConfigureTestDatabase(replace = Replace.NONE)
 @DirtiesContext
 @EnabledIfSystemProperty(named = "flyway.repeatable.test", matches = "true")
@@ -66,20 +75,53 @@ class FlywayMigrationRepeatableTest {
      * 场景 2：关键业务表已创建（users/likes/posts/notifications）。
      *
      * <p>验证 Flyway 执行后核心表存在，迁移脚本未遗漏创建步骤。</p>
+     *
+     * <p>2026-10-31：查询条件补 {@code table_schema = DATABASE()}。原先只按 table_name 过滤，
+     * 同一 MySQL 实例上只要存在第二座含 users 表的库（本地开发多库、CI 上的
+     * campus_love + campus_love_fresh），COUNT 就变成 2，断言 {@code isEqualTo(1)} 会假红。</p>
      */
     @Test
     void keyBusinessTables_shouldExistAfterMigration() {
         // Arrange & Act
         Integer usersCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'users'",
+                "SELECT COUNT(*) FROM information_schema.tables "
+                        + "WHERE table_schema = DATABASE() AND table_name = 'users'",
                 Integer.class);
         Integer likesCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'likes'",
+                "SELECT COUNT(*) FROM information_schema.tables "
+                        + "WHERE table_schema = DATABASE() AND table_name = 'likes'",
                 Integer.class);
 
         // Assert
         assertThat(usersCount).isEqualTo(1);
         assertThat(likesCount).isEqualTo(1);
+    }
+
+    /**
+     * 场景 2b：circle_layer / admin_layer 由 V2026.10.13.0001 建出。
+     *
+     * <p>这两个表是 JPA 实体（CircleLayer / AdminLayer）映射的表，但在 V2026.10.13.0001
+     * 之前没有任何迁移创建过它们——只有 V2026.10.14.0005 的 {@code UPDATE circle_layer}
+     * 和 V2026.10.14.0007 的 {@code INSERT INTO circle_layer} 引用它们。也就是说空库
+     * 从迁移链构建时会直接失败，表只存在于 database/backup 的人工 dump 里。</p>
+     *
+     * <p>本判点必须跑在【新建空 schema】上才有意义：在已经建好表的库上，
+     * 低版本的 V2026.10.13.0001 会被 Flyway 报 Ignored（out-of-order 默认关闭），
+     * 于是判点被历史遗留状态蒙过去。CI 的 db-integration job 因此用一份空库跑。</p>
+     */
+    @Test
+    void circleLayerAndAdminLayerTables_shouldExistFromMigrationChain() {
+        Integer circleLayer = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.tables "
+                        + "WHERE table_schema = DATABASE() AND table_name = 'circle_layer'",
+                Integer.class);
+        Integer adminLayer = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.tables "
+                        + "WHERE table_schema = DATABASE() AND table_name = 'admin_layer'",
+                Integer.class);
+
+        assertThat(circleLayer).as("circle_layer 必须由迁移链创建").isEqualTo(1);
+        assertThat(adminLayer).as("admin_layer 必须由迁移链创建").isEqualTo(1);
     }
 
     /**
@@ -92,7 +134,8 @@ class FlywayMigrationRepeatableTest {
         // Arrange & Act
         Integer constraintCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM information_schema.statistics "
-                        + "WHERE table_name = 'users' AND index_name = 'uk_users_openid'",
+                        + "WHERE table_schema = DATABASE() "
+                        + "AND table_name = 'users' AND index_name = 'uk_users_openid'",
                 Integer.class);
 
         // Assert
@@ -109,7 +152,8 @@ class FlywayMigrationRepeatableTest {
         // Arrange & Act
         Integer columnCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM information_schema.columns "
-                        + "WHERE table_name = 'users' AND column_name = 'version'",
+                        + "WHERE table_schema = DATABASE() "
+                        + "AND table_name = 'users' AND column_name = 'version'",
                 Integer.class);
 
         // Assert
