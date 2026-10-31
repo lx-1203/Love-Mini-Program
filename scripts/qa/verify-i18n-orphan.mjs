@@ -28,7 +28,18 @@ const SRC = resolve(arg("src", join(REPO, "apps/client/src")));
    这些是**历史遗留死文案**，不是本轮引入的债；本轮的纪律是"只许降不许升"，
    所以默认允许值就是当时的实测数，改这个数字必须同时改台账 §74 的说明。
    配对检查（zh/en 键集一致）没有棘轮：任何差异一律判红。 */
-const ALLOW = Number(arg("allow-orphans", "1257"));
+
+/* 棘轮收缩 1257 → 1251（2026-11-01 第四轮修复批次）：
+   2026-10-31 实测读到 1277，比基线多 20 —— 棘轮已被突破而**这道门当时没接进任何链**
+   （package.json 与 ci.yml 里零引用），所以突破没人看见。修法不是把数字抬回 1277，
+   而是真删死键 + 把门接进 test:contracts。
+   删的是 matchHub 子树 26 个键：键名 root「matchHub」在 apps/client/src（含测试）
+   一字不出现，全仓只剩构建产物与 locale 文件自己在提它 ——
+   即"看不见引用"之外的第二个独立判据（整棵子树的根名零命中）也判它死。
+   删前用脚本断言结构：BEFORE=4169 AFTER=4143、差值恰为 26、
+   非 matchHub 键 0 改动 0 新增（见下），删后 zh 键数与孤儿数都由本门重读。
+   反证：--allow-orphans 1200 ⇒ exit 1（棘轮真的会咬）。 */
+const ALLOW = Number(arg("allow-orphans", "1251"));
 const VERBOSE = argv.includes("--verbose");
 
 /** locale 文件是纯对象字面量（结尾 `} as const;`），剥掉 TS 外衣后直接求值。 */
@@ -116,7 +127,16 @@ if (!existsSync(SRC)) { console.log("I18N_RESULT=FAIL reason=扫描目录不存�
 if (enExists && !inBoth.length) { console.log("I18N_RESULT=FAIL reason=配对键集为空（扫描/求值塌了），不许空过"); process.exit(2); }
 if (pairFail) console.log("I18N_FAIL_PAIR 成对 locale 文件键集不一致 —— 本仓纪律是「成对文件无例外」，必须两端同时补/删");
 if (orphanFail) console.log(`I18N_FAIL_ORPHAN 有 ${orphans.length - ALLOW} 条超出棘轮的孤儿键（定义未被任何静态/动态引用命中）`);
-console.log(pairFail || orphanFail
-  ? `I18N_RESULT=FAIL（pair 差异 ${zhOnly.length + enOnly.length}，孤儿 ${orphans.length}>允许 ${ALLOW}）`
-  : `I18N_RESULT=PASS${enExists ? "" : "（成对维 SKIPPED，本次只有孤儿维生效）"}`);
+if (!orphanFail && orphans.length < ALLOW) {
+  console.log(`I18N_RATCHET_SHRINK 实测孤儿 ${orphans.length} < 基线 ${ALLOW} ⇒ 基线可以降到 ${orphans.length}（只许降不许升，降的时候把理由写进上面的注释）`);
+}
+// 判决行只报【真正失败的那一维】：成对维在 EN 下线时是 SKIPPED，
+// 把它一起印进 FAIL 文案会让下一个人去追一个不存在的差异（2026-11-01 实测踩过）。
+if (orphanFail) {
+  console.log(`I18N_RESULT=FAIL（孤儿 ${orphans.length}>允许 ${ALLOW}${pairFail ? `，pair 差异 ${zhOnly.length + enOnly.length}` : ""}）`);
+} else if (pairFail) {
+  console.log(`I18N_RESULT=FAIL（pair 差异 ${zhOnly.length + enOnly.length}）`);
+} else {
+  console.log(`I18N_RESULT=PASS${enExists ? "" : "（成对维 SKIPPED，本次只有孤儿维生效）"}`);
+}
 process.exit(pairFail || orphanFail ? 1 : 0);
