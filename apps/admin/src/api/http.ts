@@ -6,7 +6,9 @@
  *  - JWT token（从 localStorage.admin_v2_token 读取，与旧后台 admin_token 隔离）
  *  - JSON 序列化/反序列化
  *  - 查询参数序列化
- *  - 401 自动登出并跳转登录页（携带 redirect 参数便于回跳）
+ *  - 401 自动登出并跳转登录页（携带 redirect 参数便于回跳）；
+ *    凭据已被别处更新时用新 token 原地重发一次（幂等键沿用，见 request 注释）
+ *  - 写请求（POST/PUT/DELETE）按「一次逻辑调用」附带 Idempotency-Key
  *  - 错误响应处理
  *
  * 安全说明（infra R2-00300）：
@@ -72,51 +74,54 @@ export class ApiError extends Error {
 export const API_BASE_URL = env.apiBaseUrl;
 
 /**
- * Idempotency-Key 缓存有效期（毫秒）。
- * API-CONTRACT.md:139 约定「所有写接口必须携带 Idempotency-Key」：
- * 弱网重试/双击等场景下，同一操作签名（方法+路径+请求体）在 TTL 内复用同一
- * 幂等键，供后端去重，避免重复扣款/重复建单等资金类操作被重复执行。
- * TTL 取 60s：覆盖网络层重试与双击场景，同时避免长时间内两次相同业务操作被误判为重复。
+ * 逻辑操作序号：模块内单调递增。
+ *
+ * 与时间戳/随机段组合后，保证「同一毫秒内并发发起的两次调用」也拿到不同幂等键——
+ * {@code Date.now()} 与 {@code Math.random()} 单独都不保证唯一，序号是防撞的底线。
+ * （与 apps/client/src/services/http.ts 的 operationSeq 同款）
  */
-const IDEMPOTENCY_TTL_MS = 60_000;
+let operationSeq = 0;
 
-/** 幂等键缓存上限（超过后先清理过期条目，防止无限增长） */
-const IDEMPOTENCY_CACHE_MAX = 200;
-
-/** 方法 + 路径 + 请求体 → { key, 生成时间 } 的幂等键缓存 */
-const idempotencyCache = new Map<string, { key: string; at: number }>();
-
-/** 生成幂等键：优先 crypto.randomUUID，不可用时回退到时间戳 + 随机串 */
-function createIdempotencyKey(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
+/**
+ * 读取平台 UUID：浏览器 / Node 提供 {@code crypto.randomUUID}，
+ * 其余环境返回空串，由调用方走兜底。
+ */
+function readRandomUuid(): string {
+  const g = globalThis as { crypto?: { randomUUID?: () => string } };
+  if (typeof g.crypto?.randomUUID !== "function") {
+    return "";
   }
-  return `admin-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  try {
+    return g.crypto.randomUUID();
+  } catch {
+    // 个别运行时暴露了 randomUUID 但实现不完整：按不可用处理
+    return "";
+  }
+}
+
+/** 非加密兜底随机段（完全无 WebCrypto 的环境使用；唯一性由序号 + 时间戳兜住）。 */
+function randomBase36(charCount: number): string {
+  let out = "";
+  while (out.length < charCount) {
+    out += Math.random().toString(36).slice(2);
+  }
+  return out.slice(0, charCount);
 }
 
 /**
- * 获取写请求的 Idempotency-Key：相同操作签名（方法+路径+请求体）在 TTL 内复用同一 key。
- * @param method  HTTP 方法（POST/PUT/DELETE）
- * @param path    接口路径
- * @param body    请求体（JSON 字符串）
+ * 生成一把标识「一次逻辑调用」的幂等键（语义对齐 apps/client/src/services/http.ts:239-283）。
+ *
+ * 键格式：{@code idem-{METHOD}-{operationId}}，operationId 优先取平台 UUID，
+ * 无 WebCrypto 时退化为 {@code 时间戳36进制-单调序号36进制-随机段}。
+ * 总长度远小于后端 IdempotentInterceptor 的 MAX_KEY_LENGTH（128）。
+ *
+ * @param method 请求方法（大写），保留在键内便于服务端按端点排查 Redis 幂等键
  */
-function getIdempotencyKey(method: string, path: string, body: unknown): string {
-  const signature = `${method} ${path} ${body === undefined ? "" : String(body)}`;
-  const now = Date.now();
-  const cached = idempotencyCache.get(signature);
-  if (cached && now - cached.at < IDEMPOTENCY_TTL_MS) {
-    return cached.key;
-  }
-  const key = createIdempotencyKey();
-  // 缓存达到上限时先清理过期条目，仍超限则整体清空（保守策略，避免无限增长）
-  if (idempotencyCache.size >= IDEMPOTENCY_CACHE_MAX) {
-    for (const [k, v] of idempotencyCache) {
-      if (now - v.at >= IDEMPOTENCY_TTL_MS) idempotencyCache.delete(k);
-    }
-    if (idempotencyCache.size >= IDEMPOTENCY_CACHE_MAX) idempotencyCache.clear();
-  }
-  idempotencyCache.set(signature, { key, at: now });
-  return key;
+export function generateIdempotencyKey(method: string): string {
+  operationSeq += 1;
+  const uuid = readRandomUuid();
+  const operationId = uuid || `${Date.now().toString(36)}-${operationSeq.toString(36)}-${randomBase36(10)}`;
+  return `idem-${method}-${operationId}`;
 }
 
 /**
@@ -182,59 +187,89 @@ export async function get<T>(
 }
 
 /**
- * 发起 DELETE 请求。
- * @param path 接口路径
- * @returns 响应 JSON 数据
- */
-export async function del<T>(path: string, timeout?: number): Promise<T> {
-  return request<T>(path, { method: "DELETE" }, timeout);
-}
-
-/**
- * 发起 PUT 请求。
- * @param path 接口路径
- * @param body 请求体对象（将被 JSON.stringify）
- * @returns 响应 JSON 数据
- */
-export async function put<T>(path: string, body?: unknown, timeout?: number): Promise<T> {
-  return request<T>(path, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  }, timeout);
-}
-
-/**
- * 读语义 POST 的豁免标记（2026-10-26）。
+ * 写请求的调用选项（一次逻辑调用的语义扩展）。
  *
+ * readOnlySafe（2026-10-26）：
  * 默认所有 POST 在本地就按「写请求」预检（只读角色 AUDITOR 直接 403，省一次
  * 注定失败的往返）。个别 POST 端点本质是「读凭据签发」——如
  * POST /api/v1/media/sign（媒体签名 URL）：只读审核员必须能调用，否则媒体
  * 审核页看不到待审图片。带此标记的请求跳过本地写权限预检；后端仍按自身
  * 授权规则细粒度放行（/media/sign 对无权路径静默省略）。
+ *
+ * idempotencyKey：调用方**确实持有业务键**时才传（如客户端生成的订单号/请求号、
+ * 「同一用户当日签到固定键」这类按业务语义去重的场景）。传了它，本层原样使用、
+ * 不再生成随机键——去重范围由业务语义决定（同款规则见
+ * apps/client/src/services/http.ts:259-263「已有手动设置的幂等键不覆盖」）。
+ * 不传时每次调用生成一把新键，这是默认形态（缺陷修复：以前同签名的两次合法
+ * 操作会共用一把键）。
+ *
+ * retry：网络层失败（超时 / 断网）后的**原地重试次数**，默认 0 = 现有行为（发一次）。
+ * 与幂等键的关系是这条存在的唯一理由：一次逻辑调用的多次投递必须共用同一把键，
+ * 否则「重试」会变成后端眼中的「重复操作」。当前后台没有默认开启重试的调用方
+ * （ErrorState 的「重试」按钮是操作人重新发起 = 新的逻辑操作，本就该换一把键），
+ * 该选项留给确需弱网重试的写调用（如批量导入）。
  */
-export interface ReadOnlySafePostOptions {
+export interface RequestCallOptions {
   readOnlySafe?: boolean;
+  idempotencyKey?: string;
+  retry?: number;
 }
+
+/** 旧名保留（只承载 readOnlySafe 语义的历史引用），避免调用方因改名而误改。 */
+export type ReadOnlySafePostOptions = RequestCallOptions;
 
 /**
  * 发起 POST 请求。
  * @param path     接口路径
  * @param body     请求体对象
  * @param timeout  超时（毫秒）
- * @param options  readOnlySafe=true 时跳过本地只读角色写预检（仅限读语义端点）
+ * @param options  readOnlySafe=跳过本地只读写权限预检；idempotencyKey=显式业务幂等键；retry=网络失败原地重试次数
  */
 export async function post<T>(
   path: string,
   body?: unknown,
   timeout?: number,
-  options?: ReadOnlySafePostOptions
+  options?: RequestCallOptions
 ): Promise<T> {
   return request<T>(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   }, timeout, options);
+}
+
+/**
+ * 发起 PUT 请求。
+ * @param path     接口路径
+ * @param body     请求体对象（将被 JSON.stringify）
+ * @param timeout  超时（毫秒）
+ * @param options  见 RequestCallOptions（显式业务幂等键 / 原地重试）
+ */
+export async function put<T>(
+  path: string,
+  body?: unknown,
+  timeout?: number,
+  options?: RequestCallOptions
+): Promise<T> {
+  return request<T>(path, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  }, timeout, options);
+}
+
+/**
+ * 发起 DELETE 请求。
+ * @param path    接口路径
+ * @param timeout 超时（毫秒）
+ * @param options 见 RequestCallOptions（显式业务幂等键 / 原地重试）
+ */
+export async function del<T>(
+  path: string,
+  timeout?: number,
+  options?: RequestCallOptions
+): Promise<T> {
+  return request<T>(path, { method: "DELETE" }, timeout, options);
 }
 
 /**
@@ -368,27 +403,50 @@ export async function downloadFile(
 }
 
 /**
- * 底层请求实现。
- * 401 响应自动清除 token 并跳转登录页。
+ * 底层请求实现：**一次 request 调用 = 一次逻辑操作 = 一把幂等键**。
+ *
+ * 幂等键语义（对齐 apps/client/src/services/http.ts:239-283 的 P1-1 修复）：
+ * 键标识「这一次操作」，不是「这个端点 + 这份 body」。旧实现按
+ * `method + path + String(body)` 做签名缓存在 60s 内复用同一把键，而后台大量
+ * 写端点是**无请求体的状态开关**（POST /v1/admin/users/{id}/disable|enable、
+ * 帖子 publish/unpublish、置顶/取消置顶）——两次**相反**的合法操作签名完全相同，
+ * 第二次会被后端 IdempotentInterceptor（Redis `idempotent:{key}:{userId}`）当成
+ * 重复投递拦成 409「重复请求」，或让后一次动作静默不生效而 UI 仍报成功
+ * （封禁 → 解封 → 再封禁，一分钟内的第三刀就废了）。
+ * 「双击防连点」也不再由幂等键兜底：那是页面的 submitting/禁用态职责，
+ * 与客户端同一取舍（apps/client/src/services/http.ts:265-267）。
+ *
+ * 键在投递循环**之外**生成一次，循环内的所有投递（网络重试、401 换 token 重发）
+ * 复用同一个 headers 对象——这才是不变式的意义所在：
+ * **切勿把键生成下沉到单次投递里**，那样每次投递换一把键，幂等保护归零
+ * （一次操作被送达两次正是 @Idempotent 要防的，也是被误删的旧签名缓存本来想做的事）。
+ *
+ * 401 处理：本地凭据已被别处更新（另一页签重新登录）时，用新 token 原地重发
+ * 一次（只覆盖 Authorization，幂等键原样继承，同客户端 http.ts:819-825）；
+ * 凭据没变则维持原行为——清理本地凭据并跳转登录页。
  *
  * @param timeout 可选超时（毫秒），批量导入/导出等慢操作可传 LONG_REQUEST_TIMEOUT_MS
- * @param options readOnlySafe=true 时跳过只读角色（AUDITOR）的本地写预检（见 post 注释）
+ *                超时按**每次投递**计（开启 retry 时总耗时上限为 timeout ×(1+retry)）
+ * @param options readOnlySafe 跳过只读角色本地写预检；idempotencyKey 显式业务幂等键；
+ *                retry 网络失败原地重试次数（默认 0）
  */
 async function request<T>(
   path: string,
   init: RequestInit,
   timeout: number = REQUEST_TIMEOUT_MS,
-  options?: ReadOnlySafePostOptions
+  options?: RequestCallOptions
 ): Promise<T> {
-  const token = getToken();
-  const headers = new Headers(init.headers);
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-  // 写请求统一注入 Idempotency-Key（API-CONTRACT.md:139 约定），
-  // 弱网重试/双击时后端可据幂等键去重
   const method = (init.method || "GET").toUpperCase();
-  if (method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
+  const isWrite = method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
+
+  const headers = new Headers(init.headers);
+  let tokenUsed = getToken();
+  if (tokenUsed) {
+    headers.set("Authorization", `Bearer ${tokenUsed}`);
+  }
+
+  // 写请求统一注入 Idempotency-Key（API-CONTRACT.md:139 约定）
+  if (isWrite) {
     // 只读角色（AUDITOR 及任何未知角色）在请求发出前就被拦下。
     // 后端 URL 层本会回 403，但把「这个账号是只读的」说在调用方一侧有两点好处：
     // 少一次注定失败的往返，且尚未接 v-if="canWrite" 的写控件也不会再让
@@ -402,53 +460,83 @@ async function request<T>(
     ) {
       throw new ApiError(403, t("errors.readOnlyRole"));
     }
-    headers.set("Idempotency-Key", getIdempotencyKey(method, path, init.body));
+    // 一次逻辑调用一把键：调用方显式给了业务幂等键就原样透传，
+    // 否则现生成（同一方法+路径+请求体的两次独立调用必须拿到不同的键，
+    // 这是本轮修掉的缺陷——旧的「签名 60s 缓存」会把两次真实操作合成一次）。
+    headers.set(
+      "Idempotency-Key",
+      options?.idempotencyKey?.trim() || generateIdempotencyKey(method),
+    );
   }
 
-  // 超时控制：超过 timeout 未响应则中止请求并抛 ApiError
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  // 网络层原地重试次数由调用方按操作语义决定，默认 0 = 单次投递；
+  // 重试沿用同一 headers ⇒ 幂等键不变，后端据此识别重复投递。
+  const maxRetries = options?.retry ?? 0;
+  let retriesLeft = maxRetries;
+  // 401 原地重发最多一次：只有「本地凭据已被别处刷新」才会走到，
+  // 重发只换 Authorization、幂等键继承，因此不会重复扣款/重复建单。
+  let refreshResendsLeft = 1;
 
-  let response: Response;
-  try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      ...init,
-      headers,
-      signal: controller.signal,
-    });
-  } catch (err) {
-    // 区分超时中止与其他网络错误（文案走 i18n）
-    if (err instanceof DOMException && err.name === "AbortError") {
-      throw new ApiError(408, t("errors.network"));
+  for (;;) {
+    // 超时控制：每次投递各自一个 AbortController，超过 timeout 未响应则中止
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE_URL}${path}`, {
+        ...init,
+        headers,
+        signal: controller.signal,
+      });
+    } catch (err) {
+      // 同一次逻辑调用的重试：headers 未变 ⇒ 幂等键不变，后端据此认出这是重复投递
+      if (retriesLeft > 0) {
+        retriesLeft -= 1;
+        continue;
+      }
+      // 区分超时中止与其他网络错误（文案走 i18n）
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw new ApiError(408, t("errors.network"));
+      }
+      throw new ApiError(0, t("errors.network"));
+    } finally {
+      clearTimeout(timeoutId);
     }
-    throw new ApiError(0, t("errors.network"));
-  } finally {
-    clearTimeout(timeoutId);
-  }
 
-  // 401 未授权：统一清理凭据并跳转登录页（收敛并发 401 为一次跳转）
-  if (response.status === 401) {
-    handleUnauthorized();
-    throw new ApiError(401, t("errors.auth"));
-  }
+    // 401 未授权
+    if (response.status === 401) {
+      const currentToken = getToken();
+      if (refreshResendsLeft > 0 && currentToken && currentToken !== tokenUsed) {
+        // 凭据已被别处刷新：沿用本次逻辑调用的幂等键，只换 Authorization 重发
+        refreshResendsLeft -= 1;
+        tokenUsed = currentToken;
+        headers.set("Authorization", `Bearer ${currentToken}`);
+        continue;
+      }
+      // 统一清理凭据并跳转登录页（收敛并发 401 为一次跳转）
+      handleUnauthorized();
+      throw new ApiError(401, t("errors.auth"));
+    }
 
-  if (!response.ok) {
-    const { message, body } = await extractErrorMessage(response);
-    throw new ApiError(response.status, message, body);
-  }
+    if (!response.ok) {
+      const { message, body } = await extractErrorMessage(response);
+      throw new ApiError(response.status, message, body);
+    }
 
-  // 处理 204 No Content 或空 body
-  if (response.status === 204) {
-    return null as T;
-  }
-  const text = await response.text();
-  if (!text) {
-    return null as T;
-  }
-  // JSON.parse 包 try/catch，后端返回非 JSON 内容时给出可读错误而非抛出 SyntaxError
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    throw new ApiError(response.status, t("errors.unknown"), text);
+    // 处理 204 No Content 或空 body
+    if (response.status === 204) {
+      return null as T;
+    }
+    const text = await response.text();
+    if (!text) {
+      return null as T;
+    }
+    // JSON.parse 包 try/catch，后端返回非 JSON 内容时给出可读错误而非抛出 SyntaxError
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      throw new ApiError(response.status, t("errors.unknown"), text);
+    }
   }
 }
