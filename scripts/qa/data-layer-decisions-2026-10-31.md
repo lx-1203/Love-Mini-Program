@@ -337,6 +337,12 @@ flyway:validate → Successfully validated 233 migrations
 flyway:migrate  → BUILD SUCCESS（存量库无待应用项；存量库本来就有这三列，即便应用也是 no-op）
 ```
 
+守卫形态实测（2026-11-01）：把 `V2026.10.13.0002` 整份文件直接在现网库执行 ⇒ exit 0、
+只回 `SELECT 1` 的空结果，**没有报 1060 Duplicate column**。这证明三件事：
+语法在 MySQL 8.0 上成立、`information_schema` 的列存在性判定确实命中、
+「列已在」时整段是 no-op（不会把现网库改坏）。
+未证的方向仍是「列不在」⇒ 只有 CI 的 `campus_love_fresh` 会真走 ALTER 分支。
+
 **清单项 `heart_signals.match_id` 的处理**：直接从 `identifyingColumns` 删掉
 （该表没有这一列，SQL 也没用到它，只有声明在骗人）。`temp_chat_session.match_id`
 是真的存在（`TempChatSession#matchId`），未动。
