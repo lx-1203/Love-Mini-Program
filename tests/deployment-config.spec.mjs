@@ -54,16 +54,42 @@ const envExample = readFileSync(
   new URL("../.env.example", import.meta.url),
   "utf8",
 );
-assert.match(
-  envExample,
-  /^APP_AES_SECRET=<PLACEHOLDER>$/mu,
-  ".env.example must document APP_AES_SECRET",
+// .env.example 与 compose 的必填插值必须【形状相反】：compose 用 ${VAR:?} 缺参即中止，
+// 示例文件里就必须是那一行空值（`VAR=`），照抄的人才会被 compose 当场拦下。
+//
+// 这条判点是本轮反转过来的：原来它写的是 `^APP_AES_SECRET=<PLACEHOLDER>$`——
+// 也就是【强制】示例里放一个非空占位。非空占位恰好绕过了 `${VAR:?}`
+// （:? 只在"未设置或为空"时中止），于是照抄 .env.example 的运营会顺利通过校验，
+// 让一次性 migrate 服务先把这个垃圾 BCrypt 写进 users.password 行；
+// 等 AdminPasswordValidator 之后拒绝启动时，那一行已经提交、撤不回来。
+// 一扇门把缺陷钉成了规范，这就是"门要判形状而不是判印象"的实证。
+const composeAlertingText = readFileSync(
+  new URL("../docker-compose.alerting.yml", import.meta.url),
+  "utf8",
 );
-assert.match(
-  envExample,
-  /^WEBSOCKET_ALLOWED_ORIGIN_PATTERNS=$/mu,
-  ".env.example must document WEBSOCKET_ALLOWED_ORIGIN_PATTERNS",
+const exampleLines = new Set(envExample.split(/\r?\n/u));
+const requiredByCompose = new Set();
+for (const text of [composeText, composeAlertingText]) {
+  for (const line of text.split(/\r?\n/u)) {
+    if (/^\s*#/u.test(line)) continue; // 注释里谈 ${VAR:?} 不算真要求某个变量
+    for (const m of line.matchAll(/\$\{([A-Z0-9_]+):?\?/gu)) requiredByCompose.add(m[1]);
+  }
+}
+assert.ok(
+  requiredByCompose.size >= 8,
+  `compose 侧的必填插值应至少 8 个（当前 ${requiredByCompose.size}）——变少说明 fail-fast 被改成弱默认，那比缺文件更糟`,
 );
+const badExample = [...requiredByCompose]
+  .sort()
+  .filter((name) => !exampleLines.has(`${name}=`));
+assert.deepEqual(
+  badExample,
+  [],
+  `这些变量 compose 要求必填（:?），但 .env.example 不是一行空值，照抄即可混过校验：` +
+    `\n${badExample.map((n) => `  ${n} → 当前为 ${JSON.stringify([...exampleLines].find((l) => l.startsWith(`${n}=`)) ?? "(缺行)")}`).join("\n")}\n` +
+    "正确形状是 `NAME=`（空），让 compose 在缺参时中止。",
+);
+
 assert.match(
   envExample,
   /^IMAGE_PREFIX=/mu,

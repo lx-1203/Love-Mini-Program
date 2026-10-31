@@ -203,20 +203,11 @@ assert.match(
   "compose API must require WEBSOCKET_ALLOWED_ORIGIN_PATTERNS without a weak default"
 );
 
-const envExample = readFileSync(
-  new URL("../.env.example", import.meta.url),
-  "utf8"
-);
-assert.match(
-  envExample,
-  /^APP_AES_SECRET=<PLACEHOLDER>$/mu,
-  ".env.example must document APP_AES_SECRET"
-);
-assert.match(
-  envExample,
-  /^WEBSOCKET_ALLOWED_ORIGIN_PATTERNS=$/mu,
-  ".env.example must document WEBSOCKET_ALLOWED_ORIGIN_PATTERNS"
-);
+// .env.example 与 compose 必填插值的形状对账不在这里——由
+// tests/deployment-config.spec.mjs 单点持有（它按 compose 的 ${VAR:?} 反推示例必须是空行）。
+// 这里原来复制了同样的两条判点，而且复制的是【错的那一半】：
+// 它要求 `APP_AES_SECRET=<PLACEHOLDER>`（非空占位），正好绕过 compose 的 :? 校验，
+// 于是两扇门各自把同一个缺陷钉成规范，改一处漏一处。单点持有才不会再漂移。
 
 /**
  * SCSS/CSS 不许带 UTF-8 BOM。
