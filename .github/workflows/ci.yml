@@ -761,7 +761,9 @@ jobs:
     needs:
       - api-compile
       - client-typecheck-and-build
-    timeout-minutes: 45
+    # 2026-10-31：这一发从"只跑 smoke"扩到 smoke + 五条业务流程，45 分钟不再够用
+    # （真机 H5 + 真后端，逐条走登录/划卡/发帖/下单/越权）。
+    timeout-minutes: 75
     services:
       mysql:
         image: mysql:8.0.39
