@@ -14,9 +14,11 @@ import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.entity.AdminAppConfig;
 import com.campuslove.api.entity.AdminAppRule;
 import com.campuslove.api.entity.AdminAppSwitch;
+import com.campuslove.api.profile.ProfileConfigView;
 import com.campuslove.api.repository.AdminAppConfigRepository;
 import com.campuslove.api.repository.AdminAppRuleRepository;
 import com.campuslove.api.repository.AdminAppSwitchRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +34,8 @@ import org.springframework.cache.annotation.AnnotationCacheOperationSource;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.cache.interceptor.CacheInterceptor;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * P2 缓存正确性修复——后台规则/开关写路径必须失效它们喂的那个缓存键
@@ -57,6 +61,8 @@ class AdminConfigCacheEvictionTest {
     @Mock private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
     private CacheManager cacheManager;
+    /** 提为字段：控制器侧的写要挂到【同一个】CacheInterceptor 上，才复现容器里的真实失效路径 */
+    private CacheInterceptor interceptor;
     private AdminConfigService service;
 
     @BeforeEach
@@ -64,7 +70,7 @@ class AdminConfigCacheEvictionTest {
         MockitoAnnotations.openMocks(this);
 
         cacheManager = new CaffeineCacheManager();
-        CacheInterceptor interceptor = new CacheInterceptor();
+        interceptor = new CacheInterceptor();
         interceptor.setCacheManager(cacheManager);
         interceptor.setCacheOperationSources(new AnnotationCacheOperationSource());
         // Spring 6.1 的 CacheAspectSupport#execute 在 initialized=false 时直接跳过缓存
@@ -233,5 +239,56 @@ class AdminConfigCacheEvictionTest {
         when(configRepository.findAll()).thenReturn(List.of(config));
         when(configRepository.findByConfigKey(anyString())).thenReturn(Optional.of(config));
         when(configRepository.save(any(AdminAppConfig.class))).thenAnswer(inv -> inv.getArgument(0));
+    }
+
+    /**
+     * 场景 3（2026-10-31）：写入者不止 service 一个 bean。
+     *
+     * <p>{@code AdminProfileConfigController#save} 直接 {@code configRepository.save} 改
+     * 同一张 {@code app_config}，绕开了 service，所以它必须自己挂
+     * {@code @CacheEvict(cacheNames = SYSTEM_CONFIG, key = "'all'")}。
+     * 本用例把控制器挂在【同一个】CacheInterceptor/CacheManager 上，
+     * 因此删掉那行注解就会红：'all' 键留着旧列表，列表页最长 30 分钟（TTL）显示旧配置。</p>
+     */
+    @Test
+    @DisplayName("跨 bean：AdminProfileConfigController.save 必须失效 service 侧共享的 'all' 键")
+    void profileConfigSave_evictsSharedAllKey() {
+        stubRuleFind();
+        stubSwitchFind();
+        stubConfigFind();
+
+        service.listConfigs();
+        service.listRules();
+        service.listSwitches();
+
+        Cache cache = cacheManager.getCache(CacheNames.SYSTEM_CONFIG);
+        assertNotNull(cache, "system_config 缓存应已创建");
+        assertNotNull(cache.get("all"), "写之前 'all' 应已被 listConfigs 填上");
+
+        AdminProfileConfigController controllerTarget =
+                new AdminProfileConfigController(configRepository, new ObjectMapper());
+        ProxyFactory controllerFactory = new ProxyFactory(controllerTarget);
+        // 控制器没有接口 ⇒ 只能类代理（CGLIB），与 service 那侧同源
+        controllerFactory.setProxyTargetClass(true);
+        controllerFactory.addAdvice(interceptor);
+        AdminProfileConfigController controller =
+                (AdminProfileConfigController) controllerFactory.getProxy();
+
+        // save() 里要取操作者 ID（SecurityUtils.getCurrentUserId 未认证会抛），
+        // 所以给一个已认证主体；用完立刻清掉，避免污染同 JVM 的其它测试。
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken(99L, "n/a", "ROLE_ADMIN"));
+        try {
+            controller.save(new ProfileConfigView(false, false, false, 7, 60));
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        assertNull(cache.get("all"), "控制器的写必须清掉 'all'（注解被删时这里仍是旧列表 ⇒ 本用例即红）");
+        assertNotNull(cache.get("rules"), "不应连坐清掉 'rules'");
+        assertNotNull(cache.get("switches"), "不应连坐清掉 'switches'");
+
+        service.listConfigs();
+        verify(configRepository, times(2)).findAll();
     }
 }

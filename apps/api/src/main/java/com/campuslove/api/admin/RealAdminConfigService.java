@@ -63,9 +63,12 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * 全仓 {@code SYSTEM_CONFIG} 也只有本类的三个键（{@code 'all'}/{@code 'rules'}/
  * {@code 'switches'}），精确失效不会漏掉别的缓存项。</p>
  *
- * <p>已知残留（不在本次改动范围）：{@code AdminProfileConfigController#save} 直接
- * {@code configRepository.save} 改 {@code app_config}，同样不失效 {@code 'all'} 键，
- * 由该文件归属方按需补 {@code @CacheEvict}。</p>
+ * <p>同类写入口（2026-10-31 已闭合）：{@code AdminProfileConfigController#save} 也直接
+ * {@code configRepository.save} 改 {@code app_config}，原先不失效 {@code 'all'} 键，
+ * 现已在同一方法上补 {@code @CacheEvict(cacheNames = SYSTEM_CONFIG, key = "'all'")}，
+ * 判点在 {@code AdminConfigCacheEvictionTest} 的跨 bean 场景里（控制器的写必须让
+ * service 侧的缓存回源）。也就是说 {@code SYSTEM_CONFIG} 的写入者有两个 bean，
+ * 以后再加写入口时必须一并失效自己喂的那个键。</p>
  *
  * <p>SubTask 5.3.3：配置更新后广播 {@link ConfigUpdatedEvent} 事件，
  * 通知订阅者（缓存刷新器、推荐服务、WebSocket 推送器等）拉取最新配置，

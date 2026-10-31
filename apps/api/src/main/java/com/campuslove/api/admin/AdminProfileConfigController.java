@@ -1,11 +1,13 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.config.CacheNames;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.AdminAppConfig;
 import com.campuslove.api.profile.ProfileConfigView;
 import com.campuslove.api.repository.AdminAppConfigRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,13 @@ import com.campuslove.api.common.TimeZones;
 
 /**
  * 管理后台 - 主页运营配置（profile.config）。
+ *
+ * <p>写路径必须自己失效 {@code system_config} 的 {@code 'all'} 键：本类直接
+ * {@code configRepository.save(...)} 改 {@code app_config}，绕开了
+ * {@link RealAdminConfigService}（{@code listConfigs()} 的 {@code @Cacheable} 在那一侧，TTL 30 分钟）。
+ * 缺这道失效时，保存成功、GET 本端点也能看到新值——但配置列表页读的是缓存，
+ * 运营改完最长 30 分钟仍显示旧配置。RedisCacheManager 走 {@code transactionAware()}，
+ * 所以失效被推迟到事务提交之后，不留"先清缓存、旧值又被并发读回填"的窗口。</p>
  */
 @Profile("real")
 @RestController
@@ -50,6 +59,7 @@ public class AdminProfileConfigController {
 
     @PutMapping
     @Transactional
+    @CacheEvict(cacheNames = CacheNames.SYSTEM_CONFIG, key = "'all'")
     public ProfileConfigView save(@RequestBody ProfileConfigView view) {
         AdminAppConfig config = configRepository.findByConfigKey(CONFIG_KEY).orElseGet(() -> {
             AdminAppConfig created = new AdminAppConfig();
