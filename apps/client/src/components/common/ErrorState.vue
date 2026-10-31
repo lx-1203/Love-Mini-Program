@@ -45,8 +45,14 @@ const subText = computed(() => props.description || t(subKey.value));
     <image class="error-icon" :src="iconSrc" mode="aspectFit" alt="" />
     <text class="error-msg">{{ msgText }}</text>
     <text class="error-sub">{{ subText }}</text>
+    <!-- A11Y-R（2026-10-31 按压反馈轨）：原仅 .error-btn:active，mp-weixin :active 不可靠
+         （App.vue:813 自证），真机上按「重试」无任何反馈。补 hover-class，口径同
+         components/common/BaseTabs.vue:28+219（组件内局部 --pressed 类 + hover-class）。
+         :active 保留：H5 鼠标/键盘按下行为逐字不变。 -->
     <view
       class="error-btn"
+      hover-class="error-btn--pressed"
+      :hover-stay-time="80"
       @tap="emit('retry')"
       role="button"
       :aria-label="t('error.retry')"
@@ -87,7 +93,11 @@ const subText = computed(() => props.description || t(subKey.value));
   border-radius: var(--r-full, 9999rpx);
   background: var(--c-brand-400);
 }
-.error-btn:active { transform: scale(0.97); }
+/* H5 走 :active、mp-weixin 走 hover-class（同名 --pressed 类），共用同一套按下值。
+   编译产物为证：dist/build/mp-weixin/components/common/BaseTabs.wxss 的
+   `.base-tab-item--pressed.data-v-3278c03a` 与节点 class 数组里的 data-v 同域 ⇒ 可命中。 */
+.error-btn:active,
+.error-btn--pressed { transform: scale(0.97); }
 .error-btn-text {
   color: var(--c-text-inverse, #fff);
   font-size: var(--fs-md);

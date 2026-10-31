@@ -350,7 +350,21 @@ onShow(() => {
         :class="statusCardClass(certificationStatus)"
       >
         <!-- 2026-09-04 QA 修复：statusIcon() 返回的是图片路径，原 <text> 会把 URL 当文字渲染；改为 <image> -->
-        <image class="status-card__icon-img" :src="resolveMediaUrl(statusIcon(certificationStatus))" mode="aspectFit" />
+        <!-- A11Y-R（2026-10-31 无障碍轨）：本枚是「认证状态图标」（verified=CHECK /
+             rejected=CLOSE / unverified=EDIT），AT 走到该图片节点时原先无任何可访问名。
+             机制口径同 components/common/VerificationBadge.vue:106 与 ChatBubble.vue:176-179
+             （role="img" + aria-label 直接落 <image>）。名字复用 :355 已在渲染的
+             CERT_STATUS_MAP，不新造文案。
+             pending 时 statusIcon() 返回 ""（:291）⇒ 图上根本不渲染任何东西，
+             此时不给标签（无名图片比一张被宣称为「审核中」的空图更诚实）；该空图本身
+             另记入报告，属既有渲染缺口，非本轨修复范围。 -->
+        <image
+          class="status-card__icon-img"
+          :src="resolveMediaUrl(statusIcon(certificationStatus))"
+          mode="aspectFit"
+          role="img"
+          :aria-label="statusIcon(certificationStatus) ? CERT_STATUS_MAP[certificationStatus] : ''"
+        />
         <view class="status-card__body">
           <text class="status-card__title">{{ CERT_STATUS_MAP[certificationStatus] }}</text>
           <text v-if="certificationStatus === 'pending'" class="status-card__desc">

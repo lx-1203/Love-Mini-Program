@@ -2220,7 +2220,17 @@ defineExpose({ noop });
         role="status"
         :aria-label="t('chat.typingAria')"
       >
-        <image class="typing-row__avatar" :src="resolveMediaUrl(peerAvatarSrc)" mode="aspectFill" />
+        <!-- A11Y-R（2026-10-31 无障碍轨）：外层是 role="status"（活区，非 ARIA 叶子）⇒ 子节点仍会
+             被 AT 遍历到，本头像是该行走查顺序里唯一的无名图片节点。口径同
+             components/chat/ChatBubble.vue:176-179（聊天行头像 = role="img" + aria-label），
+             取名逻辑复用本文件 :1985 已有的 pageTitle || chat.peerFallbackName 口径。 -->
+        <image
+          class="typing-row__avatar"
+          :src="resolveMediaUrl(peerAvatarSrc)"
+          mode="aspectFill"
+          role="img"
+          :aria-label="pageTitle || t('chat.peerFallbackName')"
+        />
         <view class="typing-row__bubble">
           <text class="typing-row__text">{{ t('chat.typing') }}</text>
           <view class="typing-row__dots" aria-hidden="true">
@@ -2619,7 +2629,9 @@ defineExpose({ noop });
             role="button"
             :aria-label="s.partnerName"
           >
-            <image class="forward-item__avatar" :src="resolveMediaUrl(s.partnerAvatar)" mode="aspectFill" />
+            <!-- A11Y-R：父节点是 role="button"（ARIA 叶子，子节点 presentational），
+                 这里加 aria-label 是惰性的 ⇒ 不编造标签，按装饰图口径显式空 alt（仅 H5 生效）。 -->
+            <image class="forward-item__avatar" :src="resolveMediaUrl(s.partnerAvatar)" mode="aspectFill" alt="" />
             <text class="forward-item__name">{{ s.partnerName }}</text>
           </view>
         </scroll-view>
@@ -2647,7 +2659,15 @@ defineExpose({ noop });
     >
       <view class="avatar-menu-sheet" @tap.stop="noop">
         <view class="avatar-menu-head">
-          <image class="avatar-menu-avatar" :src="resolveMediaUrl(peerAvatarSrc)" mode="aspectFill" />
+          <!-- A11Y-R：.avatar-menu-head / .avatar-menu-sheet 均无带名角色，祖先 role="dialog"
+               也不是 ARIA 叶子 ⇒ 本头像可被 AT 独立访问到，需名字（口径同 ChatBubble.vue:176-179）。 -->
+          <image
+            class="avatar-menu-avatar"
+            :src="resolveMediaUrl(peerAvatarSrc)"
+            mode="aspectFill"
+            role="img"
+            :aria-label="pageTitle || t('chat.peerFallbackName')"
+          />
           <text class="avatar-menu-name">{{ pageTitle }}</text>
         </view>
         <view class="avatar-menu-actions">

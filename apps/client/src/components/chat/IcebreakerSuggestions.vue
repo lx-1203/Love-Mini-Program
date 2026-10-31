@@ -37,8 +37,13 @@ const { t } = useI18n();
       <text class="icebreaker__label">{{ t('chat.icebreakerTitle') }}</text>
       <view class="icebreaker__header-right">
         <text v-if="loading" class="icebreaker__loading-hint">{{ t('chat.icebreakerLoading') }}</text>
+        <!-- A11Y-R（2026-10-31 按压反馈轨）：以下两处原只有 :active，mp-weixin :active
+             不可靠（App.vue:813 自证）⇒ 真机按下「换话题」与话题卡无任何反馈。
+             补 hover-class，口径同 components/common/BaseTabs.vue:28 + :219；:active 保留，H5 不变。 -->
         <view
           class="icebreaker__refresh-btn"
+          hover-class="icebreaker__refresh-btn--pressed"
+          :hover-stay-time="80"
           @tap="emit('refresh')"
           role="button"
           :aria-label="t('chat.icebreakerRefreshAria')"
@@ -76,6 +81,8 @@ const { t } = useI18n();
           v-for="item in items"
           :key="item.id"
           class="icebreaker__card"
+          hover-class="icebreaker__card--pressed"
+          :hover-stay-time="80"
           @tap="emit('select', item.content)"
           role="button"
           :aria-label="t('chat.icebreakerCardAria', { content: item.content })"
@@ -149,7 +156,11 @@ const { t } = useI18n();
   transition: background var(--d-normal, 200ms);
 }
 
-.icebreaker__refresh-btn:active {
+/* H5 走 :active、mp-weixin 走 hover-class（同名 --pressed 类），两者取同一套按下值。
+   编译产物为证：dist/build/mp-weixin/components/common/BaseTabs.wxss 里
+   `.base-tab-item--pressed.data-v-3278c03a` 与节点 class 数组中的 data-v 同域 ⇒ 选择器可命中。 */
+.icebreaker__refresh-btn:active,
+.icebreaker__refresh-btn--pressed {
   background: var(--c-secondary-blue-border-tint-strong, var(--c-secondary-blue-border-tint-strong, rgba(37, 99, 235, 0.14)));
 }
 
@@ -194,7 +205,8 @@ const { t } = useI18n();
   transition: all var(--d-normal, 200ms) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.icebreaker__card:active {
+.icebreaker__card:active,
+.icebreaker__card--pressed {
   transform: scale(0.97);
   border-color: var(--c-brand-200);
   box-shadow: 0 4rpx 16rpx var(--c-secondary-blue-bg-tint, var(--c-secondary-blue-bg-tint, rgba(37, 99, 235, 0.06)));

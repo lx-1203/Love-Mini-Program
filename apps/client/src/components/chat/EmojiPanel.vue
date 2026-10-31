@@ -46,11 +46,16 @@ function emojiAria(emoji: string): string {
     role="listbox"
     :aria-label="t('chat.emojiPanelAria')"
   >
+    <!-- A11Y-R（2026-10-31 按压反馈轨）：本行原已有 hover-class="press-feedback--active"
+         （走 theme/global.scss:339 的 scale+opacity），所以「完全无按下反馈」的判定对
+         emoji 格并不成立；真实缺口是组件内 .emoji-panel__item:active 的底色高亮（:96）
+         只有 H5 拿得到。改为局部 --pressed 并集类：global 的 scale/opacity + 本地底色，
+         mp 与 H5 呈现同一套按下态。 -->
     <view
       v-for="(emoji, idx) in EMOJIS"
       :key="idx"
       class="emoji-panel__item press-feedback"
-      hover-class="press-feedback--active"
+      hover-class="emoji-panel__item--pressed"
       hover-stay-time="120"
       @tap="emit('select', emoji)"
       role="option"
@@ -95,6 +100,15 @@ function emojiAria(emoji: string): string {
 
 .emoji-panel__item:active {
   background: var(--c-neutral-100, #EEF2F0);
+}
+
+/* mp-weixin hover-class 按下态：除本地底色外，并集 global.scss:339 .press-feedback--active
+   的 scale/opacity（该类在 global.scss 里、hover-class 只能带一个类名，故在此内联复制），
+   保证从 press-feedback--active 切过来不丢原有的缩放+透明度反馈。 */
+.emoji-panel__item--pressed {
+  background: var(--c-neutral-100, #EEF2F0);
+  transform: scale(0.98);
+  opacity: 0.92;
 }
 
 .emoji-panel__emoji {

@@ -472,7 +472,10 @@ onLoad((query) => {
             <image class="hero-deco hero-deco-2" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
             <image class="hero-deco hero-deco-3" :src="IMAGE_PATHS.ICONS_EMOJI.LEAF" mode="aspectFit" alt="" />
             <image class="hero-deco hero-deco-4" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
-            <image class="hero-mascot" :src="mascotSmileSrc" mode="aspectFill" />
+            <!-- A11Y-R：英雄区吉祥物是纯装饰（紧邻的 :477 文本已给出「我是寻觅助手」的身份），
+                 不编造 aria-label，按同块 4 枚 hero-deco 图标（:471-474）的既有口径显式标记为空
+                 alt＝装饰图。注：mp-weixin 忽略 alt，此改动只影响 H5 的可访问名计算。 -->
+            <image class="hero-mascot" :src="mascotSmileSrc" mode="aspectFill" alt="" />
             <view class="hero-greeting">
               <text>Hi~ 我是寻觅助手</text>
               <image class="hero-greeting-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
@@ -493,7 +496,11 @@ onLoad((query) => {
 
               <!-- ===== 助手消息（左对齐） ===== -->
               <view v-if="!isUserMsg(msg)" class="msg-row msg-row--left">
-                <image class="msg-avatar" :src="mascotSmileSrc" mode="aspectFill" />
+                <!-- A11Y-R（2026-10-31 无障碍轨）：msg-row--left 到本 <image> 的祖先链上没有任何
+                     带名的角色节点，头像因此是 AT 遍历里唯一可聚焦的无名节点。
+                     机制口径同 components/chat/ChatBubble.vue:176-179（同为聊天行头像，
+                     role="img" + aria-label 直接落在 <image> 上，仓内已有 6 处这种写法）。 -->
+                <image class="msg-avatar" :src="mascotSmileSrc" mode="aspectFill" role="img" :aria-label="accountName" />
                 <view class="msg-content">
                   <!-- 纯文本消息：body 中可能含 emoji（mock/后端），由 EmojiText 自动转 SVG -->
                   <view v-if="msg.messageType === 'text'" class="bubble bubble--assistant">
@@ -561,7 +568,8 @@ onLoad((query) => {
                   </view>
                   <text class="read-receipt">已读</text>
                 </view>
-                <image class="msg-avatar" :src="userAvatar" mode="aspectFit" />
+                <!-- A11Y-R：口径同 components/chat/ChatBubble.vue:186-189（自己头像 = role="img" + aria-label="我"） -->
+                <image class="msg-avatar" :src="userAvatar" mode="aspectFit" role="img" aria-label="我" />
               </view>
             </template>
           </view>

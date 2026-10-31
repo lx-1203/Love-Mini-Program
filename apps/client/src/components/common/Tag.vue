@@ -35,6 +35,11 @@ const tagClass = computed(() => [
     :aria-selected="selected"
   >
     <text v-if="icon" class="tag-icon">{{ icon }}</text>
+    <!-- A11Y-R（2026-10-31 颜色语义轨）：选中态原先只靠 --selected 的底色/字色/描边变化
+       （:71 tag--blue.tag--selected、:112 tag--romance.tag--selected 全是纯颜色差），
+       色觉障碍用户无法区分选中与否。补一枚「✓」形状线索（非颜色）。
+       aria-hidden：屏幕阅读器侧的选中语义已由根节点 aria-selected 承载，读一个勾字符只会是噪音。 -->
+    <text v-if="selected" class="tag-check" aria-hidden="true">✓</text>
     <text class="tag-label">{{ label }}</text>
     <slot />
   </view>
@@ -159,5 +164,7 @@ const tagClass = computed(() => [
 }
 
 .tag-icon { font-size: inherit; }
+/* A11Y-R：选中态的非颜色线索（勾字符 + 加粗），不依赖底色差异 */
+.tag-check { font-size: inherit; font-weight: 700; }
 .tag-label { font-size: inherit; }
 </style>

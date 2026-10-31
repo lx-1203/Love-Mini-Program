@@ -97,9 +97,18 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <!-- A11Y-R（2026-10-31 按压反馈轨）：原仅 .voice-pill:active，mp-weixin 的 :active 伪类不可靠
+       （App.vue:813 自证）⇒ 真机点语音气泡没有任何按下反馈。补 hover-class，口径同
+       components/common/BaseTabs.vue:28 + :219（组件内局部 --pressed 类）。:active 保留，
+       H5 鼠标按下行为逐字不变。
+       过期态 hover-class 取 'none'（微信小程序「无按下效果」的官方取值）：expired 时
+       togglePlay() 直接 return（:46），给不可用控件按下去的反馈会谎报「点到了」。
+       条件式 hover-class 的仓内先例：components/profile/public/PublicGallery.vue:37。 -->
   <view
     class="voice-pill"
     :class="{ 'voice-pill--expired': expired, 'voice-pill--playing': isPlaying }"
+    :hover-class="expired ? 'none' : 'voice-pill--pressed'"
+    :hover-stay-time="80"
     @tap="togglePlay"
     role="button"
     :aria-label="ariaLabel"
@@ -136,7 +145,11 @@ onUnmounted(() => {
   min-width: 140rpx;
 }
 
-.voice-pill:active {
+/* H5 走 :active、mp-weixin 走 hover-class（同名 --pressed 类），共用同一套按下值。
+   编译产物为证：dist/build/mp-weixin/components/common/BaseTabs.wxss 的
+   `.base-tab-item--pressed.data-v-3278c03a` 与节点 class 数组里的 data-v 同域 ⇒ 可命中。 */
+.voice-pill:active,
+.voice-pill--pressed {
   transform: scale(0.98);
   opacity: 0.85;
 }
