@@ -29,6 +29,9 @@ import {
   maskSensitiveUrl,
 } from "../../utils/format";
 import { DEFAULT_PAGE_SIZE } from "../../utils/constants";
+// P2 修复（2026-10-31）：客户端拼 CSV 必须走与后端 CsvCellUtil 同一套规则
+// （公式中和 + RFC 4180 转义），见 utils/csv.ts 的立项理由注释。
+import { csvDocument } from "../../utils/csv";
 
 const { t } = useI18n();
 
@@ -224,17 +227,8 @@ function exportCsv() {
       t("auditLogs.columnDuration"),
       t("auditLogs.columnIp"),
     ];
-    const csv = [header, ...rows]
-      .map((row) =>
-        row
-          .map((cell) => {
-            const s = String(cell ?? "");
-            return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-          })
-          .join(","),
-      )
-      .join("\n");
-    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
+    const csv = csvDocument([header, ...rows]);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
