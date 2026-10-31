@@ -20,6 +20,9 @@ import org.springframework.stereotype.Component;
  *   <li>通过 {@code @Cacheable} 缓存 {@link #getCachedRecommendations} 计算结果，
  *       key 为 userId，TTL 由 {@link CacheNames#MATCH_RECOMMEND} 配置决定（默认 5 分钟）。</li>
  *   <li>结果为 null 或空列表时不缓存（unless 条件），避免缓存穿透与空结果占用缓存空间。</li>
+ *   <li>游客链路 {@link #getCachedGuestRecommendations} 是「全服一个 key」的昂贵共享读，
+ *       与登录链路相反：既不加 unless（空结果照缓存，否则永久穿透），
+ *       还开了 {@code sync=true}（同实例并发只回源一次）。两处的取舍差异见各自方法注释。</li>
  *   <li>提供 {@link #evictRecommendationCache} 主动失效方法，
  *       在偏好更新、互动等场景由 {@link UserPreferenceCalculator} 通过 {@code @CacheEvict} 调用。</li>
  *   <li>封装推荐算法耗时监控（{@link MatchMetrics#recordRecommendLatency}）。</li>
@@ -81,6 +84,14 @@ public class RecommendationCacheManager {
      * <p>监控：记录推荐算法耗时（match.recommend.latency 指标），
      * finally 块保证异常也能记录耗时。</p>
      *
+     * <p><b>为什么本方法不开 {@code sync=true}</b>（与游客链路相反，P2 防击穿修复时逐项确认过）：
+     * 本方法体内带<b>副作用</b>——配额扣减，且「空列表」有两种完全不同的成因
+     * （配额耗尽 vs 真的没有候选人）。sync 路径不评估 {@code unless}，一旦开 sync，
+     * 配额耗尽产生的空列表会被原样缓存 5 分钟，用户当天刷完配额后每次进首页都要
+     * 再吃 5 分钟空态，且这段时间连「配额已用完」的重试语义都被固化进缓存。
+     * per-user key 的并发量也远小于游客固定 key，惊群风险低，故保留
+     * 「unless 挡空 + 不开 sync」的原样。</p>
+     *
      * @param userId 当前用户 ID
      * @return 推荐人物视图列表
      */
@@ -126,21 +137,48 @@ public class RecommendationCacheManager {
     }
 
     /**
-     * 获取游客（未登录）推荐人物列表（带缓存，2026-08-12 卡顿修复）。
+     * 获取游客（未登录）推荐人物列表（带缓存，2026-08-12 卡顿修复；
+     * 2026-11 缓存正确性修复：sync 加载 + 缓存空结果）。
      *
      * <p>游客推荐无个性化上下文（固定 key {@code guest:v1}），每次全量重算
      * ~8 次 SQL（候选池 200 人）是未登录切页卡顿主因；缓存后降为 1 次 Redis GET。
      * TTL 60 秒（{@link CacheNames#GUEST_RECOMMEND}）：新用户/资料更新的可见性
      * 窗口 1 分钟，运营可接受，不额外挂 @CacheEvict。</p>
      *
-     * <p>结果为 null 或空列表时不缓存（unless 条件），避免缓存穿透。
-     * 注意：filter 筛选在调用方（RealRecommendationService）内存执行，
+     * <p><b>P2 惊群修复（为什么原来这里是「自伤式惊群」）</b>：固定 key + TTL 60 秒 +
+     * {@code unless="#result.isEmpty()"} 三件事叠加的结果是——每分钟 TTL 到期的那一刻，
+     * 所有并发游客请求同时 miss、同时跑一遍 8 SQL/200 候选的重算（惊群），
+     * 而候选池为空时（冷启动/全部被过滤）结果永远不入缓存，于是空结果变成
+     * <b>永久缓存穿透</b>：每一次游客请求都全量重算。修法两条，都在这里：</p>
+     * <ul>
+     *   <li><b>缓存空结果</b>：去掉 {@code unless}，空列表照缓存，穿透上限就是 TTL
+     *       （60 秒），不再是「永久」。注意 {@code sync=true} 下 Spring 走
+     *       {@code Cache.get(key, valueLoader)}，<b>本来就不评估 unless</b>
+     *       （已核对 spring-context 6.1.10 {@code CacheAspectSupport#executeSynchronized}），
+     *       留着 unless 只会误导读者「空结果不会进缓存」，故直接删掉；</li>
+     *   <li><b>回源串行化</b>：{@code sync=true} 让同一实例内只有一个线程回源，
+     *       其余线程在 {@code RedisCache} 内部的 {@link java.util.concurrent.locks.ReentrantLock}
+     *       上等结果（Caffeine 分支由 per-key 原子加载保证），把「N 个并发 = N 次重算」
+     *       压成「N 个并发 = 1 次重算」。</li>
+     * </ul>
+     *
+     * <p><b>sync 的边界（不要过度解读）</b>：RedisCache 的锁是<b>进程内</b>锁，不是 Redis
+     * 分布式锁，多实例部署时每台各算一次。当前 docker-compose 只有 1 个 api 容器，
+     * 足够；横向扩容时应改为 Redisson 分布式锁（本仓库已有
+     * {@code RedissonClient}，参考 {@code HotScoreScheduler#scheduledHotScoreRecalc}）。</p>
+     *
+     * <p><b>sync 与 null 的成对约束</b>：开了 sync 的缓存必须允许缓存 null，否则回源
+     * 返回 null 时 {@code RedisCache#put} 会抛
+     * {@code IllegalArgumentException("... does not allow 'null' values")}
+     * （{@code RedisConfig#SYNC_LOADED_CACHES} 已把本缓存名登记为 null 容忍）。
+     * 本方法实际不可能返回 null（{@code new ArrayList<>(...)} 兜底），白名单是防御性兜底。</p>
+     *
+     * <p>注意：filter 筛选在调用方（RealRecommendationService）内存执行，
      * 本方法不含 filter 参数保证缓存 key 单一。</p>
      *
-     * @return 游客推荐人物视图列表
+     * @return 游客推荐人物视图列表（可能为空列表；空列表同样会被缓存 60 秒）
      */
-    @Cacheable(cacheNames = CacheNames.GUEST_RECOMMEND, key = "'guest:v1'",
-            unless = "#result == null || #result.isEmpty()")
+    @Cacheable(cacheNames = CacheNames.GUEST_RECOMMEND, key = "'guest:v1'", sync = true)
     public List<RecommendedPersonView> getCachedGuestRecommendations() {
         long startNanos = System.nanoTime();
         try {

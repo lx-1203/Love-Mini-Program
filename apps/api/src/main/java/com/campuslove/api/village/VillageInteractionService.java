@@ -32,7 +32,29 @@ import org.springframework.transaction.annotation.Transactional;
  * 不负责帖子发布（由 {@link VillagePostService} 负责）和查询（由 {@link VillageQueryService} 负责）。</p>
  *
  * <p>提取自原 RealVillageService.likePost / commentPost / sharePost 方法。
- * 三个方法均通过 @CacheEvict 主动失效 VILLAGE_HOT_POSTS 缓存。</p>
+ * 互动写路径均主动失效 {@link CacheNames#VILLAGE_HOT_POSTS} 缓存。</p>
+ *
+ * <p><b>P2 缓存正确性修复：allEntries=true → 精确键 {@code 'hot'}</b>
+ * （点赞 / 取消点赞、评论、楼中楼回复、收藏、转发这 6 个高频写入口）：</p>
+ * <ul>
+ *   <li>该缓存线上只有一个键 {@code 'hot'}（由 {@code VillageQueryService#listHotPosts}
+ *       写入；{@code HotScoreScheduler#findHotBoard} 的 {@code 'board:' + page} 无调用点）。
+ *       {@code allEntries=true} 的语义是「清空整个缓存名」，一旦 {@code 'board:' + page}
+ *       之类分页键上线，每条点赞就会连坐清掉所有分页——这正是它不该留在写路径上的原因。</li>
+ *   <li>{@code allEntries=true} 在 Redis 侧走 {@code KEYS/SCAN + 批量 DEL}，
+ *       而精确键是 1 次 {@code DEL}；点赞是最高频写操作，省掉的正是这笔开销。</li>
+ * </ul>
+ *
+ * <p><b>新鲜度取舍（明确说明，不是静默改变行为）</b>：点赞/评论仍然会让下一次读
+ * 重新回源，<b>榜单上展示的点赞数/评论数照旧即时刷新</b>（同一个键，行为等价）。
+ * 改变的是「不再顺手清空缓存里的其他键」：分页键（当前无生产写入点）此后只按
+ * 15 分钟 TTL、{@code VillagePostService} 的发帖/改帖/删帖（帖子生命周期确实改变榜单
+ * 成员，保留 allEntries）以及 {@code HotScoreScheduler#evictHotCache()}
+ * （每 15 分钟重算 + 管理端操纵 hot_boost/hot_banned 时）刷新。也就是说——
+ * 榜单<b>排序</b>的新鲜度本来就没被点赞影响过：排序读的是 {@code posts.hot_score}，
+ * 而 {@code hot_score} 只在定时重算/管理端操纵时变化，那两处都带 {@code clear()}，
+ * 所以「每次点赞都全量清空」在修复前就换不来任何排序新鲜度，只有全局击穿
+ * （击穿后又由 {@code VillageQueryService#listHotPosts} 的 {@code sync=true} 兜住）。</p>
  */
 @Profile("real")
 @Component
@@ -141,7 +163,7 @@ public class VillageInteractionService {
      * @throws IllegalArgumentException 当 userId 为空时
      */
     @Transactional
-    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, key = "'hot'")
     public PostLikeResponse likePost(Long userId, Long postId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
@@ -256,7 +278,7 @@ public class VillageInteractionService {
      * @throws IllegalArgumentException 当 userId 为空时
      */
     @Transactional
-    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, key = "'hot'")
     public FavoriteResponse toggleFavorite(Long userId, Long postId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
@@ -337,7 +359,7 @@ public class VillageInteractionService {
      * @see #commentPost(Long, Long, String, Long)
      */
     @Transactional
-    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, key = "'hot'")
     public CommentItemView commentPost(Long userId, Long postId, String content) {
         return commentPost(userId, postId, content, null);
     }
@@ -358,7 +380,7 @@ public class VillageInteractionService {
      *                                  /不属于该帖子时抛出
      */
     @Transactional
-    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, key = "'hot'")
     public CommentItemView commentPost(Long userId, Long postId, String content, Long parentId) {
         return commentPost(userId, postId, content, parentId, java.util.List.of());
     }
@@ -380,7 +402,7 @@ public class VillageInteractionService {
      *                                  /不属于该帖子时抛出
      */
     @Transactional
-    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, key = "'hot'")
     public CommentItemView commentPost(Long userId, Long postId, String content, Long parentId,
                                        java.util.List<String> images) {
         if (userId == null) {
@@ -476,7 +498,7 @@ public class VillageInteractionService {
      * @throws IllegalArgumentException 当 userId 为空时
      */
     @Transactional
-    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, key = "'hot'")
     public ShareView sharePost(Long userId, Long postId, String comment) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");

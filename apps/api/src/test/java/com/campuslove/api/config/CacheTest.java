@@ -214,7 +214,12 @@ class CacheTest {
     }
 
     /**
-     * 场景 7：系统配置更新应添加 {@code @CacheEvict(SYSTEM_CONFIG, allEntries=true)}。
+     * 场景 7：系统配置更新应精确失效 {@code 'all'} 键。
+     *
+     * <p>P2 修复：原实现是 {@code allEntries = true}，改一条配置会连坐清掉
+     * {@code 'rules'} / {@code 'switches'} 两个键（那两张表本次没被改）。
+     * 现按 key 精确失效；写路径的失效行为由
+     * {@code AdminConfigCacheEvictionTest} 用真实缓存代理验证。</p>
      */
     @Test
     void realAdminConfigService_updateConfig_shouldEvictCache() throws Exception {
@@ -223,7 +228,33 @@ class CacheTest {
         CacheEvict evict = m.getAnnotation(CacheEvict.class);
         assertNotNull(evict, "updateConfig 应添加 @CacheEvict 注解");
         assertEquals(CacheNames.SYSTEM_CONFIG, evict.cacheNames()[0]);
-        assertTrue(evict.allEntries(), "updateConfig 应使用 allEntries=true 失效全量缓存");
+        assertEquals("'all'", evict.key(), "updateConfig 应精确失效 listConfigs 的 'all' 键");
+        assertFalse(evict.allEntries(), "updateConfig 不应再用 allEntries 连坐清掉 rules/switches 键");
+    }
+
+    /**
+     * 场景 7b：规则 / 开关更新也必须失效各自的键（P2 修复）。
+     *
+     * <p>修复前这两个写方法只有 {@code @Transactional}，运营改完规则/开关后
+     * 后台最长 30 分钟（{@code system_config} TTL）仍显示旧状态。</p>
+     */
+    @Test
+    void realAdminConfigService_updateRuleAndUpdateSwitch_shouldEvictTheirOwnKeys() throws Exception {
+        Method updateRule = RealAdminConfigService.class.getMethod("updateRule",
+                Long.class, String.class, Boolean.class, String.class, Long.class);
+        CacheEvict ruleEvict = updateRule.getAnnotation(CacheEvict.class);
+        assertNotNull(ruleEvict, "updateRule 应添加 @CacheEvict（否则后台最长 30 分钟看到旧规则）");
+        assertEquals(CacheNames.SYSTEM_CONFIG, ruleEvict.cacheNames()[0]);
+        assertEquals("'rules'", ruleEvict.key());
+        assertFalse(ruleEvict.allEntries());
+
+        Method updateSwitch = RealAdminConfigService.class.getMethod("updateSwitch",
+                String.class, Boolean.class, Long.class);
+        CacheEvict switchEvict = updateSwitch.getAnnotation(CacheEvict.class);
+        assertNotNull(switchEvict, "updateSwitch 应添加 @CacheEvict（否则后台最长 30 分钟看到旧开关）");
+        assertEquals(CacheNames.SYSTEM_CONFIG, switchEvict.cacheNames()[0]);
+        assertEquals("'switches'", switchEvict.key());
+        assertFalse(switchEvict.allEntries());
     }
 
     /**

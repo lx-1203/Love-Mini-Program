@@ -3,6 +3,7 @@ package com.campuslove.api.config;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
@@ -37,6 +38,8 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  *   <li>{@link RedisTemplate} 使用 StringRedisSerializer + Jackson2JsonRedisSerializer
  *       组合，保证 key 可读、value 跨服务可解析</li>
  *   <li>{@link CacheManager} 默认 TTL 30 分钟，供 @Cacheable / @CacheEvict 使用</li>
+ *   <li>固定 key 的昂贵共享读（游客推荐 / 村口热度榜）开启 {@code sync=true} 防惊群，
+ *       并按 {@link #SYNC_LOADED_CACHES} 允许缓存 null（sync 与 null 策略必须成对配置）</li>
  *   <li>所有连接参数（host/port/password/database）支持环境变量外部化</li>
  * </ul>
  *
@@ -128,6 +131,57 @@ public class RedisConfig {
 
     /** 管理后台统计缓存 TTL：5 分钟（SubTask 5.3.4，作为 Redis 计数器方案，避免全表 COUNT 频繁触发） */
     private static final Duration ADMIN_STATS_TTL = Duration.ofMinutes(5);
+
+    /**
+     * 采用「同步加载（{@code @Cacheable(sync = true)}）」的缓存白名单——P2 防击穿修复。
+     *
+     * <p>白名单里的缓存都是「全服共享一个固定 key + 回源昂贵」的读路径
+     * （游客推荐 ~8 次 SQL / 200 候选，村口热度榜 20 条 + 批量预加载），
+     * TTL 到期或被 evict 的那一刻，所有并发请求会一起回源（经典惊群）。</p>
+     *
+     * <p><b>sync 与 null 值缓存的强绑定关系</b>（已逐一核对
+     * spring-context 6.1.10 {@code CacheAspectSupport#executeSynchronized} 与
+     * spring-data-redis 3.3.1 {@code RedisCache#get(Object, Callable)} 的字节码语义）：
+     * <ul>
+     *   <li>sync=true 时拦截器直接调 {@code Cache.get(key, valueLoader)}，
+     *       <b>不再评估 {@code unless}</b>——回源结果由缓存实现自己 {@code put}，
+     *       所以空列表也会被缓存（这正是「空结果永久穿透」需要的修法）；</li>
+     *   <li>并发线程在缓存实现内部排队：RedisCache 用进程内
+     *       {@link java.util.concurrent.locks.ReentrantLock}（<b>不是</b> Redis 分布式锁，
+     *       只能保证「同一实例一个线程回源」；本部署 docker-compose 只有 1 个 api 容器，
+     *       扩容多实例时需再叠加 Redisson 锁），Caffeine 用 per-key 原子加载；</li>
+     *   <li>回源返回 {@code null} 时，{@code RedisCache#put → processAndCheckValue}
+     *       在该缓存禁止 null 的情况下<b>直接抛
+     *       {@code IllegalArgumentException("Cache 'x' does not allow 'null' values")}</b>。
+     *       换言之：<b>开 sync 必须同时允许缓存 null，否则就是半个 sync</b>
+     *       （平时不炸，一次 null 回源就把接口打成 500/降级）。</li>
+     * </ul>
+     *
+     * <p>因此本白名单内的缓存使用「null 容忍」基线构建（见
+     * {@link #cacheManager}），其余缓存维持原 {@code disableCachingNullValues()} 行为不变。
+     * null 值由 {@code RedisCache} 以固定字节序列（{@code BINARY_NULL_VALUE}）落库，
+     * <b>不经过 Jackson</b>，与 P0-20 的 default-typing 白名单互不影响。
+     * 非 real profile 的 {@code CaffeineCacheManager} 默认就允许 null，两侧语义天然一致。</p>
+     *
+     * <p>新增 sync 缓存时必须把名字加进本集合，否则 {@link #cacheManager} 启动即失败
+     * （白名单外的 sync 缓存没有 null 容忍配置）。</p>
+     */
+    static final Set<String> SYNC_LOADED_CACHES = Set.of(
+            CacheNames.GUEST_RECOMMEND,
+            CacheNames.VILLAGE_HOT_POSTS);
+
+    /**
+     * 该缓存是否按「sync 加载 + 允许 null」基线配置。
+     *
+     * <p>暴露为包内可见静态方法，供单测断言「注解上的 sync」与「缓存的 null 策略」
+     * 成对出现，防止只改一半。</p>
+     *
+     * @param cacheName 缓存名
+     * @return true=该缓存允许 null 且应使用 sync 加载
+     */
+    static boolean isSyncLoadedCache(String cacheName) {
+        return SYNC_LOADED_CACHES.contains(cacheName);
+    }
 
     /**
      * 配置 LettuceConnectionFactory，启用 commons-pool2 连接池。
@@ -257,7 +311,8 @@ public class RedisConfig {
      * <ul>
      *   <li>{@link CacheNames#USER_PROFILE}：10 分钟</li>
      *   <li>{@link CacheNames#MATCH_RECOMMEND}：5 分钟</li>
-     *   <li>{@link CacheNames#VILLAGE_HOT_POSTS}：15 分钟</li>
+     *   <li>{@link CacheNames#GUEST_RECOMMEND}：60 秒（sync 加载 + 允许 null）</li>
+     *   <li>{@link CacheNames#VILLAGE_HOT_POSTS}：15 分钟（sync 加载 + 允许 null）</li>
      *   <li>{@link CacheNames#CAMPUS_SCHOOLS}：1 小时</li>
      *   <li>{@link CacheNames#DAILY_QUESTION}：1 小时</li>
      *   <li>{@link CacheNames#SENSITIVE_WORDS}：1 小时</li>
@@ -265,6 +320,10 @@ public class RedisConfig {
      *   <li>{@link CacheNames#USER_TAGS}：10 分钟</li>
      *   <li>{@link CacheNames#CLIENT_CONFIG}：5 分钟（Task 3.6 客户端动态配置）</li>
      * </ul>
+     *
+     * <p>Null 值策略：默认（含上表大部分缓存）保持 {@code disableCachingNullValues()}，
+     * 与原行为一致；仅 {@link #SYNC_LOADED_CACHES} 白名单（游客推荐 / 村口热度榜）
+     * 使用 null 容忍配置，因为它们开了 {@code sync=true}——理由见该常量的注释。</p>
      *
      * @param connectionFactory Redis 连接工厂
      * @return Redis 缓存管理器
@@ -281,25 +340,86 @@ public class RedisConfig {
                 .serializeValuesWith(RedisSerializationContext.SerializationPair
                         .fromSerializer(redisJsonSerializer()));
 
-        // 按 CacheName 维度配置独立 TTL
-        Map<String, RedisCacheConfiguration> cacheNameTtl = new HashMap<>();
-        cacheNameTtl.put(CacheNames.USER_PROFILE, defaultConfig.entryTtl(USER_PROFILE_TTL));
-        cacheNameTtl.put(CacheNames.MATCH_RECOMMEND, defaultConfig.entryTtl(MATCH_RECOMMEND_TTL));
-        cacheNameTtl.put(CacheNames.GUEST_RECOMMEND, defaultConfig.entryTtl(GUEST_RECOMMEND_TTL));
-        cacheNameTtl.put(CacheNames.VILLAGE_HOT_POSTS, defaultConfig.entryTtl(VILLAGE_HOT_POSTS_TTL));
-        cacheNameTtl.put(CacheNames.CAMPUS_SCHOOLS, defaultConfig.entryTtl(CAMPUS_SCHOOLS_TTL));
-        cacheNameTtl.put(CacheNames.DAILY_QUESTION, defaultConfig.entryTtl(DAILY_QUESTION_TTL));
-        cacheNameTtl.put(CacheNames.SENSITIVE_WORDS, defaultConfig.entryTtl(SENSITIVE_WORDS_TTL));
-        cacheNameTtl.put(CacheNames.SYSTEM_CONFIG, defaultConfig.entryTtl(SYSTEM_CONFIG_TTL));
-        cacheNameTtl.put(CacheNames.USER_TAGS, defaultConfig.entryTtl(USER_TAGS_TTL));
-        cacheNameTtl.put(CacheNames.CLIENT_CONFIG, defaultConfig.entryTtl(CLIENT_CONFIG_TTL));
-        cacheNameTtl.put(CacheNames.ADMIN_STATS, defaultConfig.entryTtl(ADMIN_STATS_TTL));
+        Map<String, RedisCacheConfiguration> cacheNameTtl = buildCacheConfigurations(defaultConfig);
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
                 .withInitialCacheConfigurations(cacheNameTtl)
                 .transactionAware()
                 .build();
+    }
+
+    /**
+     * 按 CacheName 组装「独立 TTL + null 策略」配置表（从 {@link #cacheManager} 抽出，
+     * 便于在没有真实 Redis 的单测里断言 TTL 与 null 策略成对生效）。
+     *
+     * @param strictBase 默认（禁止 null）基线配置，通常来自 {@link #cacheManager}
+     * @return 缓存名 → 该缓存的 Redis 配置
+     * @throws IllegalStateException 白名单里的 sync 缓存没有独立 TTL 配置
+     *         （宁可启动失败，也不留「sync 已开但 null 仍被禁」的半个配置）
+     */
+    static Map<String, RedisCacheConfiguration> buildCacheConfigurations(
+            RedisCacheConfiguration strictBase) {
+        Map<String, RedisCacheConfiguration> cacheNameTtl = new HashMap<>();
+        for (Map.Entry<String, Duration> entry : cacheTtlByName().entrySet()) {
+            cacheNameTtl.put(entry.getKey(),
+                    configForCacheName(strictBase, entry.getKey(), entry.getValue()));
+        }
+
+        // 白名单里的缓存必须都有独立 TTL 配置，否则「sync 已开、null 策略没跟上」
+        // 就是半个配置——宁可启动失败，也不留一个只在 null 回源时才炸的隐患。
+        Set<String> missing = new java.util.HashSet<>(SYNC_LOADED_CACHES);
+        missing.removeAll(cacheNameTtl.keySet());
+        if (!missing.isEmpty()) {
+            throw new IllegalStateException("sync 缓存缺少 TTL 配置，无法切换为允许 null: " + missing);
+        }
+        return cacheNameTtl;
+    }
+
+    /**
+     * CacheName → TTL（与 {@code CaffeineCacheConfig} 的同名映射保持一致）。
+     *
+     * @return 不可变映射，键为缓存名，值为写入后过期时间
+     */
+    private static Map<String, Duration> cacheTtlByName() {
+        return Map.ofEntries(
+                Map.entry(CacheNames.USER_PROFILE, USER_PROFILE_TTL),
+                Map.entry(CacheNames.MATCH_RECOMMEND, MATCH_RECOMMEND_TTL),
+                Map.entry(CacheNames.GUEST_RECOMMEND, GUEST_RECOMMEND_TTL),
+                Map.entry(CacheNames.VILLAGE_HOT_POSTS, VILLAGE_HOT_POSTS_TTL),
+                Map.entry(CacheNames.CAMPUS_SCHOOLS, CAMPUS_SCHOOLS_TTL),
+                Map.entry(CacheNames.DAILY_QUESTION, DAILY_QUESTION_TTL),
+                Map.entry(CacheNames.SENSITIVE_WORDS, SENSITIVE_WORDS_TTL),
+                Map.entry(CacheNames.SYSTEM_CONFIG, SYSTEM_CONFIG_TTL),
+                Map.entry(CacheNames.USER_TAGS, USER_TAGS_TTL),
+                Map.entry(CacheNames.CLIENT_CONFIG, CLIENT_CONFIG_TTL),
+                Map.entry(CacheNames.ADMIN_STATS, ADMIN_STATS_TTL));
+    }
+
+    /**
+     * 单个缓存的最终配置：TTL 走 {@link #cacheTtlByName()}，null 策略走
+     * {@link #SYNC_LOADED_CACHES} 白名单，序列化器与基线一致。
+     *
+     * <p>白名单内的缓存不能用 {@code strictBase}（它带 {@code disableCachingNullValues()}）：
+     * 本版本 {@code RedisCacheConfiguration} 没有 {@code allowCacheNullValues()}，
+     * 只能从 {@code defaultCacheConfig()} 的 null 容忍基线（
+     * {@code DEFAULT_CACHE_NULL_VALUES = true}）重新构建，再把基线的 key/value 序列化器搬过来，
+     * 除 null 策略外与基线完全等价。</p>
+     *
+     * @param strictBase 禁止 null 的基线配置（默认配置的派生体）
+     * @param cacheName  缓存名
+     * @param ttl        该缓存的 TTL
+     * @return 该缓存的 Redis 配置
+     */
+    private static RedisCacheConfiguration configForCacheName(
+            RedisCacheConfiguration strictBase, String cacheName, Duration ttl) {
+        if (!isSyncLoadedCache(cacheName)) {
+            return strictBase.entryTtl(ttl);
+        }
+        return RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(ttl)
+                .serializeKeysWith(strictBase.getKeySerializationPair())
+                .serializeValuesWith(strictBase.getValueSerializationPair());
     }
 
     /**

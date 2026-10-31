@@ -576,7 +576,32 @@ public class VillageQueryService {
                 .toList();
     }
 
-    @Cacheable(cacheNames = CacheNames.VILLAGE_HOT_POSTS, key = "'hot'")
+    /**
+     * 村口热门帖子榜（缓存读侧，P2 缓存正确性修复）。
+     *
+     * <p><b>缓存键清单</b>：{@link CacheNames#VILLAGE_HOT_POSTS} 目前线上只有本方法的
+     * {@code 'hot'} 一个键在被写入；{@code HotScoreScheduler#findHotBoard} 的
+     * {@code 'board:' + page} 与 {@code findHotPosts}（同名 {@code 'hot'}，值是
+     * {@code List<Post>} 实体，与本方法的 {@code List<PostSummaryView>} 同键不同型）
+     * 至今无生产调用点。写侧 evict 因此统一瞄准 {@code 'hot'}
+     * （见 {@code VillageInteractionService}），不再用 allEntries 连坐。</p>
+     *
+     * <p><b>sync=true（防惊群）</b>：热度榜是「全服共享单键 + 回源贵」的典型
+     * （1 条排序 SQL + 作者/校区/活动/评论预览多路批量预加载）。TTL 到期或写侧 evict 后，
+     * 所有并发首页请求会一起回源；开 sync 后回源被串行化（锁在 {@code RedisCache} 内部，
+     * 进程级；多实例部署需换 Redisson 分布式锁）。本方法自带只读事务，若事务通知器排在
+     * 缓存通知器之外，{@code transactionAware()} 会把回填推迟到事务提交，等待线程可能各自
+     * 再算一次——sync 的正确性不受影响（最多退回修复前的并发回源），所以这里接受它，
+     * 不用为此拆掉只读事务。
+     * 相应地本缓存名已在 {@code RedisConfig#SYNC_LOADED_CACHES} 登记为「允许缓存 null」——
+     * sync 路径由缓存实现自己 put，null 回源在禁止 null 的缓存上会直接抛异常
+     * （本方法实际不会返回 null：{@code toPostSummaryViews} 空输入返回 {@code List.of()}）。</p>
+     *
+     * <p><b>新鲜度</b>：榜单<b>排序</b>取决于 {@code posts.hot_score}，而点赞/评论只改
+     * 计数列、不改热度分，排序由 {@code HotScoreScheduler} 每 15 分钟重算并 clear 缓存；
+     * 榜上展示的点赞/评论数则在下次 evict（写侧 {@code 'hot'}）或 15 分钟 TTL 后刷新。</p>
+     */
+    @Cacheable(cacheNames = CacheNames.VILLAGE_HOT_POSTS, key = "'hot'", sync = true)
     @Transactional(readOnly = true)
     public List<PostSummaryView> listHotPosts() {
         Page<Post> postPage = postRepository.findHotBoard(
@@ -589,8 +614,14 @@ public class VillageQueryService {
     /**
      * 热度榜分页查询（按 hot_score 降序，过滤 banned）。
      *
-     * <p>缓存统一由 {@link HotScoreScheduler#findHotBoard} 的 @Cacheable 承担
-     * （VILLAGE_HOT_POSTS），本方法为只读委托；重算/管理端操纵后缓存被主动失效。</p>
+     * <p><b>缓存口径（2026-11 核对）</b>：本方法<b>没有</b>走缓存，直连
+     * {@code postRepository.findHotBoard}。{@code HotScoreScheduler#findHotBoard}
+     * 上那个 {@code @Cacheable('board:' + page)} 至今没有生产调用点（旧注释说
+     * 「缓存统一由它承担」与代码不符，已纠正），所以
+     * {@link com.campuslove.api.config.CacheNames#VILLAGE_HOT_POSTS} 线上实际只有
+     * {@link #listHotPosts} 的 {@code 'hot'} 一个键。热度分本身由
+     * {@code HotScoreScheduler} 每 15 分钟重算并 clear 缓存，管理端操纵
+     * （{@code AdminVillagePostController} → {@code recalcPostScore}）后立即失效。</p>
      */
     @Transactional(readOnly = true)
     public PostListResponse getHotBoard(int page, int pageSize) {
