@@ -296,11 +296,13 @@ class JwtChannelInterceptorTest {
         assertNotNull(result);
     }
 
-    /* ========== 其他命令: 直接放行 ========== */
+    /* ========== 其他命令 ========== */
 
     @Test
     void sendCommand_shouldPassThroughWithoutAuthCheck() {
-        // SEND 命令不做额外校验（由 MessageWebSocketHandler 处理）
+        // 2026-10-31 收口后：SEND 只校验「目标是否在应用前缀内」（见 JwtChannelInterceptorSendGuardTest），
+        // 不额外要求 Principal——本例仍成立：/app/chat/send 落在应用前缀内，直接放行，
+        // 未认证与否由 @MessageMapping 处理器（MessageWebSocketHandler）自己裁定。
         StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SEND);
         accessor.setSessionId("session-14");
         accessor.setDestination("/app/chat/send");
@@ -308,7 +310,7 @@ class JwtChannelInterceptorTest {
         Message<byte[]> message = MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
 
         Message<?> result = assertDoesNotThrow(() -> interceptor.preSend(message, messageChannel),
-                "SEND 命令应直接放行");
+                "SEND 到应用前缀（/app/**）应放行");
         assertNotNull(result);
     }
 

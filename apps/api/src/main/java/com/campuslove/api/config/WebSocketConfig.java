@@ -30,7 +30,8 @@ import java.util.Map;
  * 用户目标前缀: /user
  *
  * 安全控制:
- * - STOMP 通道拦截器: CONNECT 阶段校验 JWT，SUBSCRIBE 阶段校验路径权限
+ * - STOMP 通道拦截器: CONNECT 阶段校验 JWT，SUBSCRIBE 阶段校验订阅路径，
+ *   SEND/MESSAGE 阶段校验发送目标（只允许应用前缀，见 {@link JwtChannelInterceptor}）
  * - 握手拦截器: 在 HTTP 握手阶段预校验 JWT 令牌（从 Sec-WebSocket-Protocol 子协议提取）
  * - Origin 限制: 仅允许 localhost 和 127.0.0.1 来源
  */
@@ -65,6 +66,18 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      */
     @Value("${app.websocket.allowed-origin-patterns:${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:}}")
     private String allowedOriginPatternsRaw;
+
+    /**
+     * 客户端发送目标前缀（应用前缀），从 {@value JwtChannelInterceptor#APP_DESTINATION_PREFIXES_PROPERTY}
+     * 读取，缺省 {@value JwtChannelInterceptor#DEFAULT_APP_DESTINATION_PREFIX}。
+     *
+     * <p>同一个键同时驱动 {@link #configureMessageBroker} 的路由注册与
+     * {@link JwtChannelInterceptor} 的 SEND 白名单：客户端只能发到 {@code @MessageMapping}
+     * 所在的前缀下，代理命名空间（/topic、/queue）对客户端只读。</p>
+     */
+    @Value("${" + JwtChannelInterceptor.APP_DESTINATION_PREFIXES_PROPERTY + ":"
+            + JwtChannelInterceptor.DEFAULT_APP_DESTINATION_PREFIX + "}")
+    private List<String> rawApplicationDestinationPrefixes;
 
     private JwtChannelInterceptor jwtChannelInterceptor;
 
@@ -126,12 +139,52 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      * - /queue: 点对点消息（一对一，需认证）
      * - /app: 客户端发送消息的前缀
      * - /user: 用户专属消息前缀
+     *
+     * <p>P2（2026-10-31）：应用前缀不再硬编码，与 {@link JwtChannelInterceptor} 的
+     * SEND 白名单读同一个配置键（{@value JwtChannelInterceptor#APP_DESTINATION_PREFIXES_PROPERTY}），
+     * 保证「路由到哪」与「允许发到哪」永远同口径。{@code /topic}、{@code /queue} 是
+     * <b>代理（服务端写）</b>命名空间：客户端可以订阅（见 SUBSCRIBE 规则），但不允许发送
+     * ——简单代理本身不区分读写，收口点在 {@link JwtChannelInterceptor#preSend}。</p>
      */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic", "/queue");
-        config.setApplicationDestinationPrefixes("/app");
+        config.setApplicationDestinationPrefixes(applicationDestinationPrefixes());
         config.setUserDestinationPrefix("/user");
+    }
+
+    /**
+     * 生效的应用目标前缀（缺省 {@value JwtChannelInterceptor#DEFAULT_APP_DESTINATION_PREFIX}）。
+     *
+     * <p>归一规则与拦截器一致（补前导斜杠、去尾随斜杠）；配置为空时回落缺省值，
+     * 避免「配了空值」把应用前缀取消掉、连带 {@code @MessageMapping} 全部失联。</p>
+     */
+    private String[] applicationDestinationPrefixes() {
+        List<String> configured = rawApplicationDestinationPrefixes;
+        if (configured == null || configured.isEmpty()) {
+            configured = List.of(JwtChannelInterceptor.DEFAULT_APP_DESTINATION_PREFIX);
+        }
+        List<String> normalized = new java.util.ArrayList<>();
+        for (String raw : configured) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            String value = raw.trim();
+            if (!value.startsWith("/")) {
+                value = "/" + value;
+            }
+            while (value.length() > 1 && value.endsWith("/")) {
+                value = value.substring(0, value.length() - 1);
+            }
+            if (!value.equals("/")) {
+                normalized.add(value);
+            }
+        }
+        if (normalized.isEmpty()) {
+            normalized.add(JwtChannelInterceptor.DEFAULT_APP_DESTINATION_PREFIX);
+        }
+        log.info("WebSocket 应用目标前缀（客户端 SEND 白名单同源）: {}", normalized);
+        return normalized.toArray(new String[0]);
     }
 
     /**
@@ -174,7 +227,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     /**
      * 注册客户端入站通道拦截器。
      * 在 STOMP 消息处理管道中注入 JWT 认证拦截器，
-     * 对 CONNECT 和 SUBSCRIBE 命令执行安全校验。
+     * 对 CONNECT / SUBSCRIBE / SEND 三类带授权语义的命令执行校验
+     * （SEND 的收口见 {@link JwtChannelInterceptor}：非应用前缀的目标直接拒绝）。
      */
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {

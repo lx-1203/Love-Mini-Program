@@ -1,5 +1,6 @@
 package com.campuslove.api.profile;
 
+import com.campuslove.api.utils.CsvCellUtil;
 import java.util.List;
 
 /**
@@ -21,8 +22,8 @@ public record PersonalDataExport(
         String generatedAt,
         List<PersonalDataCategory> categories) {
 
-    /** CSV 行分隔符（RFC 4180 要求 CRLF） */
-    private static final String CRLF = "\r\n";
+    /** CSV 行分隔符（RFC 4180 要求 CRLF；与三个导出场景共用 {@link CsvCellUtil#CRLF}） */
+    private static final String CRLF = CsvCellUtil.CRLF;
 
     /**
      * 导出总行数（跨全部类别），供日志与"是否被行数上限截断"的排查使用。
@@ -53,20 +54,22 @@ public record PersonalDataExport(
      * v1,v2,...
      * </pre>
      *
-     * <p>单元格转义：含逗号/引号/换行时用双引号包裹并双写内部引号；以
-     * {@code = + - @} 或制表符开头的值前置单引号，阻断 CSV 公式注入
-     * （用户可控字段如昵称/简介会被 Excel 当公式执行）。转义仅影响渲染，
-     * 不改变数据本身——JSON 形态下值保持原文。</p>
+     * <p>单元格转义统一委托 {@link CsvCellUtil#escape(String)}（本类不再有第二份转义实现）：
+     * 含逗号/引号/换行时用双引号包裹并双写内部引号；以 {@code = + - @ Tab CR} 开头的值
+     * 前置单引号，阻断 CSV 公式注入（用户可控字段如昵称/简介会被 Excel 当公式执行）。
+     * 两个管理端导出（活动报名 {@code AdminActivityController}、兑换码
+     * {@code AdminPromoCodeController}）与本方法共用同一份实现，新增第四个导出没有
+     * "忘记转义"的可能。转义仅影响渲染，不改变数据本身——JSON 形态下值保持原文。</p>
      *
      * @return CSV 全文（调用方以 UTF-8 编码为字节流）
      */
     public String toCsv() {
         StringBuilder sb = new StringBuilder(1024);
-        // 前置 UTF-8 BOM，与既有管理端 CSV 导出口径一致（AdminActivityController 同规则）
-        sb.append('\uFEFF');
+        // 前置 UTF-8 BOM，与两个管理端 CSV 导出共用同一常量
+        sb.append(CsvCellUtil.BOM);
         sb.append("# 个人信息导出").append(CRLF);
         sb.append("# userId,").append(userId).append(CRLF);
-        sb.append("# generatedAt,").append(escapeCell(generatedAt)).append(CRLF);
+        sb.append("# generatedAt,").append(CsvCellUtil.escape(generatedAt)).append(CRLF);
         for (PersonalDataCategory category : categories) {
             sb.append(CRLF);
             sb.append("# ").append(category.label()).append(" (").append(category.name())
@@ -86,37 +89,8 @@ public record PersonalDataExport(
         return sb.toString();
     }
 
-    /** 以逗号连接一行（逐格转义）。 */
+    /** 以逗号连接一行（逐格转义，规则见 {@link CsvCellUtil#row(Object...)}）。 */
     private String joinRow(List<String> cells) {
-        StringBuilder row = new StringBuilder();
-        for (int i = 0; i < cells.size(); i++) {
-            if (i > 0) {
-                row.append(',');
-            }
-            row.append(escapeCell(cells.get(i)));
-        }
-        return row.toString();
-    }
-
-    /**
-     * CSV 单元格转义 + 公式注入中和。
-     *
-     * @param value 原始值（可为 null）
-     * @return 可安全写入 CSV 的值
-     */
-    private static String escapeCell(String value) {
-        if (value == null || value.isEmpty()) {
-            return "";
-        }
-        String guarded = value;
-        char first = guarded.charAt(0);
-        if (first == '=' || first == '+' || first == '-' || first == '@' || first == '\t') {
-            guarded = "'" + guarded;
-        }
-        if (guarded.indexOf(',') >= 0 || guarded.indexOf('"') >= 0
-                || guarded.indexOf('\n') >= 0 || guarded.indexOf('\r') >= 0) {
-            return '"' + guarded.replace("\"", "\"\"") + '"';
-        }
-        return guarded;
+        return CsvCellUtil.row(cells.toArray());
     }
 }

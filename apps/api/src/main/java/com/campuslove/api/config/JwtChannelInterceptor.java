@@ -15,16 +15,27 @@ import java.util.List;
 
 /**
  * WebSocket STOMP 通道拦截器。
- * 在 CONNECT 阶段校验 JWT 令牌，在 SUBSCRIBE 阶段校验订阅路径权限。
+ * 在 CONNECT 阶段校验 JWT 令牌，在 SUBSCRIBE 阶段校验订阅路径权限，
+ * 在 SEND/MESSAGE 阶段校验发送目标（P2 修复，2026-10-31）。
  *
  * 安全策略:
  * - CONNECT: 必须携带有效 JWT，验证成功后将用户信息写入 header
  * - SUBSCRIBE: 只允许订阅 /user/{自身userId}/queue/** 和 /topic/**
- * - 其他命令: 直接放行
+ * - SEND / MESSAGE: 目标必须落在应用前缀（缺省 /app/**）之下，其余一律拒绝
+ * - 其他命令（DISCONNECT/ACK/NACK 等）: 直接放行
+ *
+ * <p>为什么 SEND 必须单独设限（P2，2026-10-31）：本应用用
+ * {@code enableSimpleBroker("/topic","/queue")}，而 SUBSCRIBE 把 {@code /topic/**}
+ * 放开给所有认证用户。STOMP 的简单代理对「订阅」与「发送」不做区分——没有 SEND 侧过滤时，
+ * 任何认证用户都能 {@code SEND destination=/topic/anything} 直接往广播命名空间注入内容
+ * （绕开所有 {@code @MessageMapping} 里的关系校验、内容安全校验与限流），或往他人的
+ * {@code /queue/*} 前缀投递。当前 API 里没有任何 {@code /topic} 发送方（服务端全部走
+ * {@code /user/**}\/{@code /queue}），所以这是<b>潜在</b>影响面；但一旦有人加上广播主题，
+ * 缺口立刻变成现实的伪造推送通道。规则：客户端只能把消息交给应用前缀下的
+ * {@code @MessageMapping} 处理器，代理命名空间对客户端只读。</p>
  *
  * Token 提取说明（Phase 3 任务 15）:
- * - 客户端通过 STOMP CONNECT 帧的 Authorization header (Bearer token) 传递 token
- * - 兼容 token 原生 header 作为后备（直接传 token 字符串，无 Bearer 前缀）
+ * - 客户端通过 STOMP CONNECT 帧的 JWT 令牌（Authorization header / token 原生 header）建立会话
  * - 不从 URL 查询参数提取 token（已由 WebSocketConfig.JwtHandshakeInterceptor 在握手阶段处理）
  */
 @Component
@@ -40,6 +51,23 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
 
     /** STOMP 连接时传递 token 的原生 header 名称 */
     private static final String TOKEN_HEADER = "token";
+
+    /**
+     * 「客户端可发送目标」的配置项名（逗号分隔前缀列表）。
+     *
+     * <p>与 {@link WebSocketConfig#configureMessageBroker} 注册的应用前缀<b>同一个键、同一份缺省</b>：
+     *  broker 侧用它路由到 {@code @MessageMapping}，拦截器侧用它做白名单，两处不能各自硬编码，
+     * 否则改前缀时授权口径会与路由脱节。</p>
+     */
+    public static final String APP_DESTINATION_PREFIXES_PROPERTY =
+            "app.websocket.application-destination-prefixes";
+
+    /** 应用目标前缀缺省值（与 WebSocketConfig 的历史硬编码口径一致） */
+    public static final String DEFAULT_APP_DESTINATION_PREFIX = "/app";
+
+    /** 前缀缺省集合（{@value #APP_DESTINATION_PREFIXES_PROPERTY} 未配置或为空时使用） */
+    private static final List<String> DEFAULT_APP_DESTINATION_PREFIXES =
+            List.of(DEFAULT_APP_DESTINATION_PREFIX);
 
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -60,6 +88,16 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     /** R4-00280：mock 模式兜底用户 ID（配置 app.mock.principal-user-id，与 MockSecurityConfig 对齐） */
     @org.springframework.beans.factory.annotation.Value("${app.mock.principal-user-id:1}")
     private long mockPrincipalUserId;
+
+    /**
+     * 客户端 SEND/MESSAGE 允许的目标前缀（默认仅 {@value #DEFAULT_APP_DESTINATION_PREFIX}）。
+     *
+     * <p>与 {@link WebSocketConfig} 注册的应用前缀同源（同一个配置键）；未经 Spring 注入时
+     * （单元测试直接 new 出本类）回落 {@link #defaultAppDestinationPrefixes()}，缺省口径不变。</p>
+     */
+    @org.springframework.beans.factory.annotation.Value(
+            "${" + APP_DESTINATION_PREFIXES_PROPERTY + ":" + DEFAULT_APP_DESTINATION_PREFIX + "}")
+    private List<String> applicationDestinationPrefixes;
 
     public JwtChannelInterceptor(JwtTokenProvider jwtTokenProvider,
                                  org.springframework.core.env.Environment environment) {
@@ -101,10 +139,97 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         switch (command) {
             case CONNECT -> handleConnect(accessor);
             case SUBSCRIBE -> handleSubscribe(accessor);
-            default -> { /* 其他命令不做额外校验 */ }
+            // P2（2026-10-31）：SEND/MESSAGE 也必须授权——代理命名空间（/topic、/queue）
+            // 对客户端只读，客户端只能把消息交给应用前缀下的 @MessageMapping 处理器
+            case SEND, MESSAGE -> handleSend(accessor);
+            default -> { /* DISCONNECT/ACK/NACK 等无目标语义的控制帧不做额外校验 */ }
         }
 
         return message;
+    }
+
+    /**
+     * 处理 SEND / MESSAGE 命令：目标必须落在应用前缀（缺省 {@code /app/**}）之下。
+     *
+     * <p>被拒绝的目标形态：{@code /topic/**}（广播命名空间，任何认证用户都能 SUBSCRIBE，
+     * 若允许 SEND 即等于任何人都能向全体在线用户伪造推送）、{@code /queue/**}
+     * （点对点队列前缀）、{@code /user/**}（用户目的地由服务端解析，客户端不得自行投递）、
+     * 以及无目标或空目标的帧。</p>
+     *
+     * @param accessor STOMP 帧头访问器
+     * @throws org.springframework.messaging.MessageDeliveryException 目标不在应用前缀内时（403 语义）
+     */
+    private void handleSend(StompHeaderAccessor accessor) {
+        String destination = accessor.getDestination();
+        if (destination == null || destination.isBlank()) {
+            log.warn("WebSocket SEND 拒绝: 缺少目标地址, userId={}, sessionId={}",
+                    principalName(accessor), accessor.getSessionId());
+            throw new org.springframework.messaging.MessageDeliveryException(
+                    "Forbidden: SEND requires a destination under " + effectiveAppPrefixes());
+        }
+        if (!isApplicationDestination(destination)) {
+            // 明确记录被拒目标：这是「客户端试图写代理命名空间」的唯一可见信号，
+            // 线上据此判断是否有人在探测 /topic 注入面
+            log.warn("WebSocket SEND 拒绝: userId={} 尝试发送到非应用前缀目标 destination={}, "
+                            + "sessionId={}, 允许的前缀={}（/topic 与 /queue 属代理命名空间，对客户端只读）",
+                    principalName(accessor), destination, accessor.getSessionId(), effectiveAppPrefixes());
+            throw new org.springframework.messaging.MessageDeliveryException(
+                    "Forbidden: cannot send to destination " + destination
+                            + "; client SEND is only accepted under " + effectiveAppPrefixes());
+        }
+        log.debug("WebSocket SEND 允许: userId={}, destination={}", principalName(accessor), destination);
+    }
+
+    /** 目标是否落在允许的应用前缀之下（前缀按「路径段」匹配，避免 /appx 被 /app 误放行）。 */
+    private boolean isApplicationDestination(String destination) {
+        for (String prefix : effectiveAppPrefixes()) {
+            if (destination.equals(prefix) || destination.startsWith(prefix + "/")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 生效中的应用目标前缀（已归一为带前导斜杠、不带尾随斜杠的形态）。
+     *
+     * <p>配置缺省、为空或全部非法时回落 {@link #DEFAULT_APP_DESTINATION_PREFIXES}，
+     * 保证「忘记配置」不会变成「放开所有目标」（fail-closed）。</p>
+     */
+    private List<String> effectiveAppPrefixes() {
+        List<String> configured = applicationDestinationPrefixes;
+        if (configured == null || configured.isEmpty()) {
+            configured = DEFAULT_APP_DESTINATION_PREFIXES;
+        }
+        List<String> normalized = new java.util.ArrayList<>(configured.size());
+        for (String raw : configured) {
+            String prefix = normalizePrefix(raw);
+            if (prefix != null) {
+                normalized.add(prefix);
+            }
+        }
+        return normalized.isEmpty() ? DEFAULT_APP_DESTINATION_PREFIXES : normalized;
+    }
+
+    /** 前缀归一：补前导斜杠、去尾随斜杠；空白返回 null（由调用方丢弃）。 */
+    private static String normalizePrefix(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String value = raw.trim();
+        if (!value.startsWith("/")) {
+            value = "/" + value;
+        }
+        while (value.length() > 1 && value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return value.equals("/") ? null : value;
+    }
+
+    /** 当前会话认证主体名（未认证时为 "anonymous"，仅用于日志）。 */
+    private static String principalName(StompHeaderAccessor accessor) {
+        Principal user = accessor.getUser();
+        return user == null ? "anonymous" : user.getName();
     }
 
     /**

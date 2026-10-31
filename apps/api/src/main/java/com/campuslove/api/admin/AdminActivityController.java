@@ -12,6 +12,7 @@ import com.campuslove.api.entity.User;
 import com.campuslove.api.repository.ActivityEnrollmentRepository;
 import com.campuslove.api.repository.ActivityRepository;
 import com.campuslove.api.repository.UserRepository;
+import com.campuslove.api.utils.CsvCellUtil;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -386,6 +387,12 @@ public class AdminActivityController {
      * <p>文件头带 UTF-8 BOM，保证 Excel 直接打开中文不乱码；
      * 响应 Content-Type 为 text/csv，附件下载。</p>
      *
+     * <p>安全（P2 CSV 公式注入）：昵称只有长度校验、无字符集限制，故每个单元格都经
+     * {@link CsvCellUtil#line(Object...)} 渲染——除 RFC 4180 引号转义外，还会给
+     * {@code = + - @ Tab CR} 开头的值前置单引号。仅靠引号包裹挡不住 DDE：Excel 会先剥
+     * 掉引号再按公式执行 {@code =cmd|'/c calc'!A0}。转义逻辑与兑换码导出、个人信息
+     * 自助导出共用同一份实现。</p>
+     *
      * @param id 活动 ID
      * @return CSV 文件流；活动不存在返回 404；越权返回 403
      */
@@ -405,18 +412,18 @@ public class AdminActivityController {
 
         StringBuilder csv = new StringBuilder();
         // 前置 UTF-8 BOM，保证 Excel 打开中文不乱码
-        csv.append('\uFEFF');
-        csv.append("用户ID,昵称,报名时间,状态\r\n");
+        csv.append(CsvCellUtil.BOM);
+        csv.append(CsvCellUtil.line("用户ID", "昵称", "报名时间", "状态"));
         for (ActivityEnrollment enrollment : enrollments) {
             User user = userMap.get(enrollment.getUserId());
             String nickname = user != null ? user.getNickname() : "";
             String enrolledAt = enrollment.getEnrolledAt() != null
                     ? enrollment.getEnrolledAt().format(CSV_TIME_FORMATTER)
                     : "";
-            csv.append(enrollment.getUserId()).append(',')
-                    .append(escapeCsv(nickname)).append(',')
-                    .append(escapeCsv(enrolledAt)).append(',')
-                    .append(ENROLLMENT_STATUS_JOINED).append("\r\n");
+            // 逐格经 CsvCellUtil 转义：昵称只有长度校验、无字符集限制，
+            // 形如 =cmd|'/c calc'!A0 的值若只靠引号包裹，Excel 会剥掉引号再按公式执行
+            csv.append(CsvCellUtil.line(enrollment.getUserId(), nickname, enrolledAt,
+                    ENROLLMENT_STATUS_JOINED));
         }
 
         byte[] content = csv.toString().getBytes(StandardCharsets.UTF_8);
@@ -615,23 +622,6 @@ public class AdminActivityController {
         return java.util.Set.of("social", "sports", "game", "study",
                 "volunteer", "food", "music", "other").contains(trimmed)
                 ? trimmed : "other";
-    }
-
-    /**
-     * CSV 字段转义：含逗号/引号/换行时用双引号包裹，内部引号双写。
-     *
-     * @param value 原始值
-     * @return 转义后的 CSV 字段
-     */
-    private String escapeCsv(String value) {
-        if (value == null) {
-            return "";
-        }
-        if (value.contains(",") || value.contains("\"")
-                || value.contains("\n") || value.contains("\r")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        }
-        return value;
     }
 }
 

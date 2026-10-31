@@ -7,6 +7,7 @@ import com.campuslove.api.admin.audit.Auditable;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.entity.PromoCode;
 import com.campuslove.api.repository.PromoCodeRepository;
+import com.campuslove.api.utils.CsvCellUtil;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -213,6 +214,9 @@ public class AdminPromoCodeController {
     /**
      * 导出兑换码 CSV（UTF-8 + BOM，便于 Excel 直接打开中文不乱码）。
      * <p>导出全量兑换码（不分页），按创建时间倒序。</p>
+     * <p>安全：每个单元格都经 {@link CsvCellUtil#line(Object...)} 渲染，
+     * 除 RFC 4180 引号转义外还会中和 {@code = + - @ Tab CR} 开头的公式注入
+     * （与活动报名导出、个人信息自助导出共用同一份实现）。</p>
      *
      * @return CSV 文件响应
      */
@@ -225,16 +229,17 @@ public class AdminPromoCodeController {
 
         StringBuilder sb = new StringBuilder();
         // UTF-8 BOM：Excel 识别中文表头
-        sb.append('\uFEFF');
-        sb.append("兑换码,折扣类型,折扣值,状态,有效期起,有效期止\n");
+        sb.append(CsvCellUtil.BOM);
+        sb.append(CsvCellUtil.line("兑换码", "折扣类型", "折扣值", "状态", "有效期起", "有效期止"));
         for (PromoCode p : all) {
-            sb.append(escapeCsv(p.getCode())).append(',')
-                    .append(discountTypeLabel(p.getDiscountType())).append(',')
-                    .append(p.getDiscountValue()).append(',')
-                    .append(statusLabel(p.getStatus())).append(',')
-                    .append(formatDateTime(p.getValidFrom())).append(',')
-                    .append(formatDateTime(p.getValidTo()))
-                    .append('\n');
+            // 逐格走 CsvCellUtil：兑换码/备注等字段可能带公式前缀字符，引号包裹挡不住 DDE
+            sb.append(CsvCellUtil.line(
+                    p.getCode(),
+                    discountTypeLabel(p.getDiscountType()),
+                    p.getDiscountValue(),
+                    statusLabel(p.getStatus()),
+                    formatDateTime(p.getValidFrom()),
+                    formatDateTime(p.getValidTo())));
         }
 
         String filename = "promo_codes_" + DateTimeFormatter.ofPattern("yyyyMMddHHmmss").format(LocalDateTime.now(TimeZones.BUSINESS)) + ".csv";
@@ -378,19 +383,6 @@ public class AdminPromoCodeController {
      */
     private String formatDateTime(LocalDateTime value) {
         return value == null ? "" : CSV_DATE_FORMAT.format(value);
-    }
-
-    /**
-     * CSV 字段转义：含逗号/引号/换行时用双引号包裹并转义。
-     */
-    private String escapeCsv(String value) {
-        if (value == null) {
-            return "";
-        }
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        }
-        return value;
     }
 
     /**
