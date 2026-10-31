@@ -10,6 +10,7 @@
  * - GET  /api/posts/{postId}               - 获取帖子详情
  * - POST /api/posts/{postId}/like          - 点赞/取消点赞
  * - POST /api/posts/{postId}/share         - 转发帖子
+ * - DELETE /api/v1/posts/{postId}           - 作者删除自己的帖子（软删除，2026-10-31）
  * - GET  /api/posts/{postId}/comments      - 获取帖子评论
  * - POST /api/posts/{postId}/comments      - 创建评论
  * - POST /api/posts/comments/{commentId}/like - 点赞评论
@@ -305,6 +306,25 @@ export async function favoritePostApi(
   return request<FavoriteResponse>({
     url: `/posts/${postId}/favorite`,
     method: "POST",
+  });
+}
+
+/**
+ * 作者删除自己的帖子（2026-10-31 用户内容生命周期补齐：软删除）。
+ *
+ * DELETE /api/v1/posts/{postId}（VillageController#deletePost）
+ *
+ * <p>后端契约：作者重复删除同一帖子恒 200（幂等，零写入），
+ * 非作者 403 OPERATION_FORBIDDEN、帖子不存在 404 RESOURCE_NOT_FOUND，
+ * 未登录 401。这些错误由 http.ts 抛 EnhancedApiError，
+ * 调用方（store/UI）必须显式提示，不得 catch 后静默。</p>
+ *
+ * @param postId - 帖子 ID
+ */
+export async function deletePostApi(postId: string): Promise<void> {
+  await request<void>({
+    url: `/posts/${postId}`,
+    method: "DELETE",
   });
 }
 

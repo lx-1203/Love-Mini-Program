@@ -167,20 +167,31 @@ const currentFilters = computed<PostFilters>(() => {
   };
 });
 
+/**
+ * 频道列表桶 key（与 30s 新鲜度键同名，但语义不同：
+ * 新鲜度只回答「多久没拉了」，`villageStore.isFeedLoaded` 才回答
+ * 「这个频道拉过自己的数据没有」。2026-10-31 频道轨 P2）。
+ */
+function feedKeyOf(id: string): string {
+  return `village:feed:${id}`;
+}
+
 /** 帖子频道列表（今日广场/学校圈/活动帖/热度榜） */
 const displayPosts = computed<PostItem[]>(() => {
   // 修复（TS18048）：currentChannel.value 可能为 undefined
   const channel = currentChannel.value;
   if (!channel || channel.dataSource === "interest-hub") return [];
-  // 2026-08-11 热度榜：数据已按热度分排序，直接展示不重复过滤
   if (channel.dataSource === "hot-board") return villageStore.posts;
-  // 2026-09-05 R17：自己待审核的新帖置顶展示（审核中徽标）；审核通过后服务端列表
-  // 含同 id 帖，按 id 去重避免双份
+  // 2026-08-11 热度榜：数据已按热度分排序，直接展示不重复过滤
+  // 2026-10-31 频道轨 P2：不再对共享列表做本地 `cat-${postCategory}` 二次过滤。
+  // posts 现在是<b>本频道自己的桶</b>（fetchPosts 已带 categoryId 向服务端/mock
+  // 过滤过一遍），本地再过滤一次正是「切学校圈/热度榜显示暂无内容」的根因：
+  // 列表来自别的频道时，按本频道分类过滤必然清空。
   const pending = villageStore.selfPendingPosts.filter(
     (p) => !villageStore.posts.some((q) => q.id === p.id && q.auditStatus !== "pending")
   );
   const seen = new Set<string>();
-  return [...pending, ...villageStore.filteredPosts(currentFilters.value)].filter((p) => {
+  return [...pending, ...villageStore.posts].filter((p) => {
     if (seen.has(p.id)) return false;
     seen.add(p.id);
     return true;
@@ -217,6 +228,10 @@ function selectChannel(id: ChannelId) {
   // 恢复目标频道滚动位置
   const saved = savedScrollPositions[id];
   scrollTopValue.value = saved ?? 0;
+  // 2026-10-31 频道轨 P2：先换数据桶（归档旧频道、取回该频道自己的列表与游标），
+  // 再发请求。换桶必须在 loadChannelData 之前——否则 fetch 回来的数据会落进
+  // 上一个频道的槽里。
+  villageStore.selectFeed(feedKeyOf(id));
   void loadChannelData(id);
 }
 
@@ -229,10 +244,20 @@ function onChannelChange(id: string) {
  * MP-R1-VILLAGE-INDEX-104：新鲜度标记只在请求成功后写入——原实现 void 发起的同时
  * 立即 setCachedValue，请求失败后 30s 内「重试/下拉刷新」全被 TTL 短路，错误态卡死。
  * force=true（下拉刷新/发帖返回）绕过 TTL 强制拉取。
+ *
+ * <p>2026-10-31 频道轨 P2：TTL 短路多加一个<b>硬前置</b>
+ * ——`villageStore.isFeedLoaded(feedKey)`。原实现只看 30s 新鲜度，而数据装在
+ * 所有频道共享的 `posts` 里，于是「今日广场刚拉过 ⇒ 30s 内切学校圈/热度榜不发请求
+ * ⇒ 拿今日广场的数据按学校圈分类本地过滤 ⇒ 暂无内容」。现在每个频道有自己的桶，
+ * 没成功拉过的桶绝不因别人的新鲜度被跳过。</p>
  */
 async function loadChannelData(id: string = currentChannelId.value, force = false) {
   const channel = getChannelConfig(id);
   if (!channel) return;
+  const feedKey = feedKeyOf(id);
+  // 先切到本频道自己的数据槽（同 key 幂等）。放在 token 守卫之前：
+  // 未登录/无 token 时也不能把上一个频道的列表留在槽里冒充本频道。
+  villageStore.selectFeed(feedKey);
   // 修复（2026-08-09）：未登录时不发受保护请求（页面处于 LockScreen 锁定态，
   // 冷启动无 token 时 onShow/onMounted 会拉 posts → 401 雪崩）。
   // 登录后 watch(isUnlocked) 会自动补拉，无需在此处理。
@@ -240,10 +265,18 @@ async function loadChannelData(id: string = currentChannelId.value, force = fals
   // 频道在未登录/无 token 时也能加载出真实帖子列表（real 模式守卫行为保持不变）。
   if (!useMock() && !getToken()) return;
   // 2026-08-10 切换提速：30s 新鲜度窗口（切 tab 回来不再全量重拉帖子流）
-  if (!force && !useMock() && isCacheFresh(`village:feed:${id}`, 30_000)) {
+  if (
+    !force &&
+    !useMock() &&
+    villageStore.isFeedLoaded(feedKey) &&
+    isCacheFresh(feedKey, 30_000)
+  ) {
     return;
   }
-  const markFresh = () => setCachedValue(`village:feed:${id}`, true);
+  const markFresh = () => {
+    setCachedValue(feedKey, true);
+    villageStore.markFeedLoaded(feedKey);
+  };
   if (channel.dataSource === "interest-hub") {
     try {
       await circleStore.fetchFeaturedTopics(1);
@@ -460,11 +493,16 @@ async function onLoadMore() {
   isLoadingMore.value = true;
   try {
     // 2026-08-11 热度榜频道：分页走 hot-board（按热度分排序）
+    // 2026-10-31 频道轨 P2：这里读的 page/hasMore 是<b>当前频道自己的游标</b>
+    // （selectFeed 换槽后 store.posts/page/hasMore 就是本频道的桶），
+    // 不再是所有频道抢用的那一个全局 page —— 原实现切频道后「加载更多」会跳页漏帖。
     if (currentChannelId.value === "hot") {
-      await villageStore.fetchHotBoard(villageStore.page + 1);
+      await villageStore.fetchHotBoard(villageStore.feedPage(feedKeyOf("hot")) + 1);
+      villageStore.markFeedLoaded(feedKeyOf("hot"));
       return;
     }
     await villageStore.loadMore(currentFilters.value);
+    villageStore.markFeedLoaded(feedKeyOf(currentChannelId.value));
   } finally {
     isLoadingMore.value = false;
   }

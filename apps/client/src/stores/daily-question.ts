@@ -10,6 +10,17 @@ import { isCacheFresh, setCachedValue } from "../utils/cache-ttl";
 /** 今日问题新鲜度窗口 */
 const QUESTION_TTL_MS = 30_000;
 
+/**
+ * 回答正文长度上限。
+ *
+ * 单一真源常量（2026-10-31 契约轨 P2-5a）：此前 textarea `maxlength="500"` 与
+ * store 校验各写一份 500，而后端 `DailyQuestionController` 的
+ * `DailyAnswerRequest.content` 收的是 `@Size(max = 2000)` —— 客户端把用户在
+ * 文档契约以下就截断了（且是静默截断，没有报错）。现在页面模板与 store 校验
+ * 都引用这一个常量，改契约只需要改这里一次。
+ */
+export const MAX_ANSWER_LENGTH = 2000;
+
 /* ========== 后端视图类型 ========== */
 
 /**
@@ -34,7 +45,13 @@ export interface BackendDailyQuestionView {
 export interface BackendDailyAnswerView {
   id: number;
   userId: number;
-  authorName: string;
+  /**
+   * 作者昵称。后端 record 字段<b>无任何非空注解</b>
+   * （apps/api/.../discover/DailyAnswerView.java:11），昵称未填时就是 JSON null，
+   * 与 `isAnonymous` 无关——所以这里必须允许 null，不能像以前那样写 `string`
+   * 骗过类型检查后在运行时炸 `null[0]`。
+   */
+  authorName: string | null;
   content: string;
   isAnonymous: boolean;
   createdAt: string;
@@ -58,17 +75,25 @@ function mapToDailyQuestion(raw: BackendDailyQuestionView): DailyQuestion {
 
 /**
  * 将后端 DailyAnswerView 映射为前端 DailyAnswer
+ *
+ * <p>契约轨 P2-5b（2026-10-31）：后端 `authorName` 是可空裸字段，非匿名回答也可能带
+ * null 昵称。这里统一归一成<b>空串</b>，让视图模型 `DailyAnswer.authorName` 保持
+ * `string` 语义；渲染侧的首字母取值另有兜底（见 pages/daily-question 的 `answerInitial`），
+ * 不再出现 `answer.authorName[0]` 直接下标 null 崩掉整张卡片。</p>
  */
 function mapToDailyAnswer(raw: BackendDailyAnswerView, questionId?: string): DailyAnswer {
+  // 匿名时按既有语义清空展示身份；非匿名时把后端的 null 昵称收敛成 ""
+  const displayName = raw.isAnonymous ? "" : (raw.authorName ?? "");
+  const displayAvatar = raw.isAnonymous ? "" : (raw.avatarUrl || "");
   return {
     id: String(raw.id),
     questionId: questionId ?? "",
     userId: String(raw.userId),
-    userName: raw.isAnonymous ? "" : raw.authorName,
-    userAvatar: raw.isAnonymous ? "" : (raw.avatarUrl || ""),
+    userName: displayName,
+    userAvatar: displayAvatar,
     isAnonymous: raw.isAnonymous,
-    authorName: raw.isAnonymous ? "" : raw.authorName,
-    authorAvatar: raw.isAnonymous ? "" : (raw.avatarUrl || ""),
+    authorName: displayName,
+    authorAvatar: displayAvatar,
     content: raw.content,
     createdAt: raw.createdAt,
   };
@@ -158,6 +183,15 @@ export interface DailyQuestionState {
   answerPage: number;
   /** 回答列表是否还有更多 */
   answerHasMore: boolean;
+  /**
+   * 回答分页自身的在途标志（2026-10-31 契约轨 P2-3）。
+   *
+   * <p>病灶：`fetchAnswers` 从不碰 `loading`，而页面 `loadMoreAnswers()` 的守卫读的正是
+   * `loading`（那个只由 `fetchTodayQuestion` 置位）。于是快速两次 `scrolltolower`
+   * 都读到 `answerPage=1`、都请求第 2 页、都 `push` ⇒ 重复回答卡片 + 头部计数虚高。
+   * 现在分页守卫用这个独立标志，与「今日问题加载中」彻底分开。</p>
+   */
+  answerLoading: boolean;
 }
 
 /* ========== Mock 数据 ========== */
@@ -245,6 +279,36 @@ export function formatAnswerTime(dateStr: string): string {
   return `${Math.floor(diff / day)}天前`;
 }
 
+/** 昵称缺失/匿名时头像位的占位字符 */
+const ANSWER_INITIAL_PLACEHOLDER = "?";
+
+/**
+ * 头像位首字母（与 `formatAnswerTime` 同属「模板可用的展示工具」）。
+ *
+ * <p>契约轨 P2-5b（2026-10-31）：原模板直接写 `answer.authorName[0]`。
+ * 后端 `DailyAnswerView.authorName` 是<b>没有任何非空注解</b>的 record 字段
+ * （apps/api/.../discover/DailyAnswerView.java:11），非匿名回答也可能下发 null 昵称，
+ * 取值即抛 TypeError，整张卡片被空白掉。此处对 null/空昵称统一兜占位符 "?"。</p>
+ */
+export function answerInitial(answer: Pick<DailyAnswer, "isAnonymous" | "authorName">): string {
+  if (answer.isAnonymous) return ANSWER_INITIAL_PLACEHOLDER;
+  const name = typeof answer.authorName === "string" ? answer.authorName.trim() : "";
+  return name.length > 0 ? name.charAt(0) : ANSWER_INITIAL_PLACEHOLDER;
+}
+
+/**
+ * 回答分页追加（按 id 去重）。
+ *
+ * 契约轨 P2-3 的第二道保险：即使调用方绕过在途守卫、把同一页送到两次，
+ * 重复 id 也不会进列表（否则回答卡片成对出现、头部 `answers.length` 计数虚高）。
+ * 返回新数组，不原地 push，避免 Pinia 状态被外部引用改写。
+ */
+function appendUniqueAnswers(existing: DailyAnswer[], incoming: DailyAnswer[]): DailyAnswer[] {
+  const seen = new Set(existing.map((a) => a.id));
+  const fresh = incoming.filter((a) => !seen.has(a.id));
+  return fresh.length === 0 ? existing : [...existing, ...fresh];
+}
+
 /**
  * 每日一问 Store
  *
@@ -259,6 +323,7 @@ export const useDailyQuestionStore = defineStore("daily-question", {
     errorMessage: null,
     answerPage: 1,
     answerHasMore: true,
+    answerLoading: false,
   }),
 
   actions: {
@@ -318,9 +383,9 @@ export const useDailyQuestionStore = defineStore("daily-question", {
           this.errorMessage = t("storeErrors.dailyQuestion.answerContentEmpty");
           throw new Error(t("storeErrors.dailyQuestion.answerContentEmpty"));
         }
-        if (content.length > 500) {
-          this.errorMessage = t("storeErrors.dailyQuestion.answerContentTooLong");
-          throw new Error(t("storeErrors.dailyQuestion.answerContentTooLong"));
+        if (content.length > MAX_ANSWER_LENGTH) {
+          this.errorMessage = t("storeErrors.dailyQuestion.answerContentTooLong", { n: MAX_ANSWER_LENGTH });
+          throw new Error(t("storeErrors.dailyQuestion.answerContentTooLong", { n: MAX_ANSWER_LENGTH }));
         }
 
         if (useMock()) {
@@ -368,11 +433,31 @@ export const useDailyQuestionStore = defineStore("daily-question", {
 
     /**
      * 获取回答列表
+     *
+     * <p>2026-10-31 契约轨 P2-3 修复两件事：</p>
+     * <ol>
+     *   <li><b>分页自己的在途守卫</b>：用 `answerLoading`（同步置位，先于任何 await），
+     *       快速两次 `scrolltolower` 的第二次直接返回；不再依赖 `loading`（那是
+     *       `fetchTodayQuestion` 的加载态，从不覆盖这条链路）。</li>
+     *   <li><b>按页码幂等</b>：`answerPage` 单调递增，`page <= answerPage` 视为重复页丢弃；
+     *       追加时再按回答 id 去重，保证「同一页第二次到达」不会翻倍行数、
+     *       不会把头部计数（`answers.length`）抬高。</li>
+     * </ol>
+     *
      * @param questionId - 问题 ID
      * @param page - 页码（从 1 开始）
      */
     async fetchAnswers(questionId: string, page = 1) {
+      // 在途：同一页（或任何分页请求）未落地前不重复发起
+      if (this.answerLoading) {
+        return;
+      }
+      // 幂等：页码不前进即为重复到达（含并发双双读到旧 answerPage 后排队到达的情形）
+      if (page > 1 && page <= this.answerPage) {
+        return;
+      }
       this.errorMessage = null;
+      this.answerLoading = true;
 
       try {
         if (!questionId || questionId.trim().length === 0) {
@@ -382,11 +467,7 @@ export const useDailyQuestionStore = defineStore("daily-question", {
 
         if (useMock()) {
           const answers = [...mockAnswers];
-          if (page === 1) {
-            this.answers = answers;
-          } else {
-            this.answers.push(...answers);
-          }
+          this.answers = page === 1 ? answers : appendUniqueAnswers(this.answers, answers);
           this.answerPage = page;
           // 修复：原代码恒为 false，导致分页加载失效；改为根据返回数据量判断是否还有更多
           this.answerHasMore = answers.length >= ANSWER_PAGE_SIZE;
@@ -401,15 +482,13 @@ export const useDailyQuestionStore = defineStore("daily-question", {
         });
 
         const mappedAnswers = data.content.map((item) => mapToDailyAnswer(item, questionId));
-        if (page === 1) {
-          this.answers = mappedAnswers;
-        } else {
-          this.answers.push(...mappedAnswers);
-        }
+        this.answers = page === 1 ? mappedAnswers : appendUniqueAnswers(this.answers, mappedAnswers);
         this.answerPage = page;
         this.answerHasMore = data.content.length >= ANSWER_PAGE_SIZE;
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.dailyQuestion.loadAnswersFailed");
+      } finally {
+        this.answerLoading = false;
       }
     },
   },

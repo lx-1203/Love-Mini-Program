@@ -23,7 +23,7 @@ vi.mock("../../services/http", () => ({
 // stub global uni
 (globalThis as any).uni = {};
 
-import { useDailyQuestionStore, formatAnswerTime } from "../../stores/daily-question";
+import { useDailyQuestionStore, formatAnswerTime, MAX_ANSWER_LENGTH } from "../../stores/daily-question";
 
 describe("daily-question store - 每日一问", () => {
   beforeEach(() => {
@@ -79,11 +79,21 @@ describe("daily-question store - 每日一问", () => {
     expect(store.errorMessage).not.toBeNull();
   });
 
-  it("submitAnswer() 超长内容（>500）抛出错误", async () => {
+  it("submitAnswer() 超过后端契约上限（MAX_ANSWER_LENGTH）抛出错误", async () => {
     const store = useDailyQuestionStore();
-    const longContent = "a".repeat(501);
+    const longContent = "a".repeat(MAX_ANSWER_LENGTH + 1);
     await expect(store.submitAnswer("dq-20260522", longContent, false)).rejects.toThrow();
     expect(store.errorMessage).not.toBeNull();
+  });
+
+  it("submitAnswer() 接受后端契约内的长度（客户端不再提前截断到 500）", async () => {
+    // 契约轨 P2-5a：后端 DailyAnswerRequest.content 是 @Size(max = 2000)，
+    // 客户端此前用 500 静默限制用户。上限收敛到 MAX_ANSWER_LENGTH 单一常量。
+    const store = useDailyQuestionStore();
+    expect(MAX_ANSWER_LENGTH).toBe(2000);
+    const result = await store.submitAnswer("dq-20260522", "a".repeat(600), false);
+    expect(result).toBeDefined();
+    expect(store.errorMessage).toBeNull();
   });
 
   it("submitAnswer() 匿名提交时 userName 为空", async () => {

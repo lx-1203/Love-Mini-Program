@@ -94,7 +94,7 @@ async function fetchConfigs() {
  * 无变更时直接跳过请求；保存前校验模板长度。
  */
 async function handleSave() {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   if (!hasChanges.value) {
     return;
   }
@@ -174,7 +174,7 @@ onBeforeUnmount(() => {
     </view>
 
     <view class="toolbar">
-      <button v-if="sessionStore.canWrite" class="primary-button" :disabled="saving || loading || !hasChanges" @click="handleSave">
+      <button v-if="sessionStore.canSuperAdminWrite" class="primary-button" :disabled="saving || loading || !hasChanges" @click="handleSave">
         {{ saving ? t("common.saving") : t("notifyConfig.saveButtonShort") }}
       </button>
       <!-- 未保存修改提示 -->

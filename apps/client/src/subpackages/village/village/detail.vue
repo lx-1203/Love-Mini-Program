@@ -331,18 +331,23 @@ const REPORT_REASONS = computed(() => [
 ]);
 
 /**
- * 长按帖子正文：弹出操作菜单（复制内容 / 举报）。
+ * 长按帖子正文 / 顶部三点菜单：弹出操作菜单（复制内容 / 举报 /〔作者本人〕删除）。
  * P2 修复（长按复制支持）：
  * - 复制内容：调用 uni.setClipboardData 将帖子正文写入剪贴板
  * - 举报：复用 handleReportPost 触发举报弹窗
+ * 2026-10-31 用户内容生命周期：作者本人的帖子追加「删除」项（非作者看不到该项，
+ * 后端仍有 403 兜底——前端的可见性只是体验，不是授权）。
  * 使用 uni.showActionSheet 弹出原生操作菜单，与系统交互一致。
  */
 async function handlePostLongpress() {
   if (!currentPost.value) return;
-  // 操作菜单：复制 + 举报（Task 28: 文案走 i18n）
+  // 操作菜单：复制 + 举报 +〔仅作者〕删除（Task 28: 文案走 i18n）
   const copyContentLabel = t("village.detail.copyContent");
   const reportLabel = t("village.detail.reportAction");
-  const actions = [copyContentLabel, reportLabel];
+  const deleteLabel = isOwnPost.value ? t("village.detail.deleteAction") : "";
+  const actions = deleteLabel
+    ? [copyContentLabel, reportLabel, deleteLabel]
+    : [copyContentLabel, reportLabel];
   try {
     const res = await uni.showActionSheet({ itemList: actions });
     const action = actions[res.tapIndex] ?? actions[0] ?? "";
@@ -357,9 +362,60 @@ async function handlePostLongpress() {
     } else if (action === reportLabel) {
       // 触发举报弹窗
       handleReportPost();
+    } else if (deleteLabel !== "" && action === deleteLabel) {
+      // 作者删除自己的帖子（二次确认 + 失败可见）
+      await handleDeletePost();
     }
   } catch (_e) {
     // 用户取消选择，静默退出
+  }
+}
+
+/**
+ * 作者删除自己的帖子（2026-10-31）。
+ *
+ * <p>三段都必须显式落地，任何一段都不许静默：</p>
+ * <ol>
+ *   <li>二次确认（删除是不可逆操作，误触成本由确认弹窗兜住）；
+ *       确认弹窗自身起不来 ⇒ 提示失败，不当成「用户取消」；</li>
+ *   <li>调用 store（real 档 DELETE /api/v1/posts/{id}；后端幂等，重复删恒 200）；</li>
+ *   <li>失败 ⇒ 一律 toast 后端文案（403/404/429）或兜底文案，<b>留在当前页</b>，
+ *       帖子仍在列表里可重试。绝不用空 catch 把失败吞成「看起来删掉了」——
+ *       那是本仓已多次复发的缺陷形态。</li>
+ * </ol>
+ */
+async function handleDeletePost() {
+  const post = currentPost.value;
+  if (!post) return;
+
+  let confirmed = false;
+  try {
+    const res = await uni.showModal({
+      title: t("village.detail.deleteConfirmTitle"),
+      content: t("village.detail.deleteConfirmContent"),
+      confirmText: t("village.detail.deleteConfirmOk"),
+      cancelText: t("village.detail.deleteConfirmCancel"),
+    });
+    confirmed = !!res.confirm;
+  } catch (modalError: unknown) {
+    // 弹窗起不来（低版本容器/被系统打断）也要让用户知道操作没生效
+    console.error("删除确认弹窗不可用:", modalError);
+    uni.showToast({ title: t("village.detail.deleteFailed"), icon: "none" });
+    return;
+  }
+  if (!confirmed) return; // 用户主动取消：不删、不报错
+
+  try {
+    await villageStore.deletePost(post.id);
+    uni.showToast({ title: t("village.detail.deleteSuccess"), icon: "success" });
+    // 成功后帖子已不在数据源里，停留在详情只会渲染一条 404 的空壳 ⇒ 回村口列表
+    goBack();
+  } catch (error: unknown) {
+    console.error("删除帖子失败:", error);
+    uni.showToast({
+      title: villageStore.errorMessage || t("village.detail.deleteFailed"),
+      icon: "none",
+    });
   }
 }
 

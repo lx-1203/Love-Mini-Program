@@ -163,6 +163,31 @@ export interface PostFilters {
 }
 
 /**
+ * 单个村口频道的独立列表状态（2026-10-31 频道轨 P2）。
+ *
+ * <p>病灶：所有频道共用一份 `posts` + 一个 `page` 游标，页面再按
+ * `cat-${channel.postCategory}` 本地过滤这份共享列表。切换「学校圈 / 热度榜」时，
+ * 频道新鲜度标记（`village:feed:{id}`，30s TTL）会短路掉本次请求，于是
+ * (a) 展示的是<b>上一个频道</b>那批帖子被本地过滤后的切片 —— 通常直接「暂无内容」；
+ * (b) 「加载更多」推进的是全局 `page`，各频道互相抢游标 ⇒ 跳页漏帖。</p>
+ *
+ * <p>现在每个频道拥有自己的列表与游标；`posts/page/hasMore` 退化为
+ * 「当前活跃频道」的镜像（`detail.vue`、`favorites.vue` 等旧消费方仍读它们）。</p>
+ */
+export interface ChannelFeedBucket {
+  /** 该频道自己的帖子列表（不再与其他频道共享） */
+  posts: PostItem[];
+  /** 该频道自己的页码游标（从 1 开始） */
+  page: number;
+  /** 该频道是否还有下一页 */
+  hasMore: boolean;
+  /** 该频道是否至少成功加载过一次（TTL 短路的前置条件，见 loadedKeyOf） */
+  loaded: boolean;
+  /** 该频道是否正在加载（分页在途） */
+  loading: boolean;
+}
+
+/**
  * VillageStore 状态
  */
 export interface VillageState {
@@ -182,6 +207,13 @@ export interface VillageState {
   page: number;
   /** 是否还有更多数据可加载 */
   hasMore: boolean;
+  /**
+   * 按频道 key 独立保存的列表状态（2026-10-31 频道轨 P2）。
+   * key 由页面给定，如 `village:feed:today` / `village:feed:hot`。
+   */
+  channelFeeds: Record<string, ChannelFeedBucket>;
+  /** 当前村口页展示的频道 key；`posts/page/hasMore` 是它的镜像 */
+  activeFeedKey: string | null;
   /** 同校动态流 - 帖子列表 */
   campusFeedPosts: PostItem[];
   /** 同校动态流 - 活动列表 */

@@ -50,7 +50,7 @@ async function load() {
 }
 
 async function save(doc: AdminLegalDocument) {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   savingId.value = doc.id;
   error.value = "";
   try {
@@ -69,7 +69,7 @@ async function save(doc: AdminLegalDocument) {
 }
 
 async function publish(doc: AdminLegalDocument) {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   savingId.value = doc.id;
   error.value = "";
   try {
@@ -84,7 +84,7 @@ async function publish(doc: AdminLegalDocument) {
 }
 
 async function offline(doc: AdminLegalDocument) {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   savingId.value = doc.id;
   error.value = "";
   try {
@@ -142,13 +142,13 @@ onMounted(load);
       </div>
 
       <div class="legal-actions">
-        <button type="button" class="legal-btn legal-btn--primary" :disabled="!sessionStore.canWrite || savingId === doc.id" @click="save(doc)">
+        <button type="button" class="legal-btn legal-btn--primary" :disabled="!sessionStore.canSuperAdminWrite || savingId === doc.id" @click="save(doc)">
           保存
         </button>
-        <button type="button" class="legal-btn" :disabled="!sessionStore.canWrite || savingId === doc.id" @click="publish(doc)">
+        <button type="button" class="legal-btn" :disabled="!sessionStore.canSuperAdminWrite || savingId === doc.id" @click="publish(doc)">
           发布
         </button>
-        <button type="button" class="legal-btn" :disabled="!sessionStore.canWrite || savingId === doc.id" @click="offline(doc)">
+        <button type="button" class="legal-btn" :disabled="!sessionStore.canSuperAdminWrite || savingId === doc.id" @click="offline(doc)">
           下线
         </button>
       </div>

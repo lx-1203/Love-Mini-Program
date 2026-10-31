@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { env } from "../config/env";
 import { logger } from "../utils/logger";
-import { roleCanWrite } from "../utils/write-policy";
+import { roleCanAdminOnlyWrite, roleCanSuperAdminWrite, roleCanWrite } from "../utils/write-policy";
 import { t } from "../i18n";
 
 /**
@@ -58,16 +58,33 @@ export const useSessionStore = defineStore("session", () => {
   const isAuditor = computed(() => currentRole.value === "AUDITOR");
 
   /**
-   * 当前账号能否执行写操作（后台「新增/编辑/删除/审核」等控件的唯一开关）。
+   * 档位 1：当前账号能否执行写操作（后台「新增/编辑/删除/审核」等控件的总开关）。
    *
-   * 单一来源约定：判定口径在 utils/write-policy.ts 的 roleCanWrite，视图一律
-   * `v-if="sessionStore.canWrite"`，不要各自比较 role 字符串。
+   * 单一来源约定：判定口径在 utils/write-policy.ts，视图一律
+   * `v-if="sessionStore.canWrite"`（或下面两个更窄的位），不要各自比较 role 字符串。
    * 后端同样按 HTTP 方法分级拦截（/api/v1/admin/** 的 POST/PUT/PATCH/DELETE 仅
    * ADMIN / SUPER_ADMIN，见 SecurityConfig），前端隐藏控件只是体验优化；
    * api/http.ts 还会在写请求发出前按同一口径本地拦截，未接 v-if 的写控件
    * 也不会漏出一次 403 往返。未知角色一律按只读处理（fail-closed）。
    */
   const canWrite = computed(() => roleCanWrite(currentRole.value));
+
+  /**
+   * 档位 2：能否执行「超管专属」写操作。
+   *
+   * 后端有 42 处方法级 `@PreAuthorize("hasRole('SUPER_ADMIN')")`（高校/字典/菜单/角色/
+   * 通知配置/在线用户踢人/VIP 退款/法务文本/咨询课程/系统配置…），只挂 canWrite 的控件
+   * 会让校区 ADMIN 每点一次吃一次 403。这类控件必须改挂本位。
+   */
+  const canSuperAdminWrite = computed(() => roleCanSuperAdminWrite(currentRole.value));
+
+  /**
+   * 档位 3：能否执行后端 `@PreAuthorize("hasRole('ADMIN')")` 的写操作。
+   *
+   * 与档位 1 today 同集合（SUPER_ADMIN 也被注入 ROLE_ADMIN，见 utils/write-policy.ts 头注释），
+   * 单独设位是为了让「后端若把这些端点收紧为纯 ADMIN」立刻变成门能判出来的契约违背。
+   */
+  const canAdminOnlyWrite = computed(() => roleCanAdminOnlyWrite(currentRole.value));
 
   /**
    * 从 localStorage 恢复管理员会话。
@@ -227,6 +244,8 @@ export const useSessionStore = defineStore("session", () => {
     isSuperAdmin,
     isAuditor,
     canWrite,
+    canSuperAdminWrite,
+    canAdminOnlyWrite,
     bootstrap,
     login,
     logout,

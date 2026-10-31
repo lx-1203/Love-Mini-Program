@@ -7,7 +7,12 @@ import { ref, onMounted } from "vue";
 import { onUnload } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
-import { useDailyQuestionStore, formatAnswerTime } from "../../../stores/daily-question";
+import {
+  useDailyQuestionStore,
+  formatAnswerTime,
+  answerInitial,
+  MAX_ANSWER_LENGTH,
+} from "../../../stores/daily-question";
 import { useCheckInStore } from "../../../stores/checkin";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { IMAGE_PATHS } from "../../../config/images";
@@ -25,7 +30,8 @@ const dailyQuestionStore = useDailyQuestionStore();
 const checkInStore = useCheckInStore();
 // 注入 --statusbar/--capsule-right：开发者工具 var(--statusbar, env(safe-area-inset-top)) 恒 0，头部需按真实状态栏高度避让
 const { styleVars: menuStyleVars } = useMenuButtonRect();
-const { todayQuestion, answers, hasAnswered, loading, answerPage, answerHasMore } = storeToRefs(dailyQuestionStore);
+const { todayQuestion, answers, hasAnswered, loading, answerPage, answerHasMore, answerLoading } =
+  storeToRefs(dailyQuestionStore);
 
 /** 锁定卡「去签到」：就地完成签到解锁每日一问（原锁定卡无任何出口形成死胡同） */
 const isCheckingIn = ref(false);
@@ -118,18 +124,26 @@ async function retryQuestion() {
 
 /**
  * P1-12：回答列表分页加载更多。
- * store 已维护 answerPage / answerHasMore（fetchAnswers 按页追加），
- * 这里仅需推进页码；加载失败由 store 设置 errorMessage，不中断页面。
+ *
+ * <p>2026-10-31 契约轨 P2-3：守卫从 `loading` 改为 `answerLoading`。
+ * `loading` 只由 `fetchTodayQuestion` 置位、`fetchAnswers` 从不碰它，
+ * 因此原守卫在分页链路上恒为 false —— 快速两次 scrolltolower 双双通过，
+ * 各自读到同一个 `answerPage` 再各自 +1 请求同一页并 append，
+ * 结果是重复回答卡片 + 头部计数（`answers.length`）虚高。
+ * store 侧同时加了「同页码幂等 + 按 id 去重」两道保险。</p>
  */
 function loadMoreAnswers(): void {
-  if (!todayQuestion.value || !answerHasMore.value || loading.value) return;
+  if (!todayQuestion.value || !answerHasMore.value || answerLoading.value) return;
   void dailyQuestionStore.fetchAnswers(todayQuestion.value.id, answerPage.value + 1);
 }
 
-/** 回答列表滚动到底：触发加载更多（scroll-view 的 scrolltolower） */
+/** 回答滚动到底：触发加载更多（scroll-view 的 scrolltolower） */
 function onAnswersScrollLower(): void {
   loadMoreAnswers();
 }
+
+/* 头像位首字母取自 store 导出的 answerInitial（与 formatAnswerTime 同属展示工具，
+   放 store 侧是为了可单测：契约轨 P2-5b 的 null 昵称回归就在这条上）。 */
 </script>
 
 <template>
@@ -239,7 +253,7 @@ function onAnswersScrollLower(): void {
             v-model="answerContent"
             class="answer-input"
             :placeholder="t('dailyQuestion.inputPlaceholder')"
-            maxlength="500"
+            :maxlength="MAX_ANSWER_LENGTH"
             :show-confirm-bar="false" :aria-label="t('dailyQuestion.inputPlaceholder')"
           />
           <view class="answer-actions">
@@ -288,7 +302,7 @@ function onAnswersScrollLower(): void {
                   lazy-load alt=""
                 />
                 <text v-else class="answer-card__avatar-char">
-                  {{ answer.isAnonymous ? "?" : answer.authorName[0] }}
+                  {{ answerInitial(answer) }}
                 </text>
               </view>
               <view class="answer-card__info">
@@ -311,7 +325,7 @@ function onAnswersScrollLower(): void {
             :aria-label="t('dailyQuestion.loadMore')"
             @tap="loadMoreAnswers"
           >
-            <text class="answers-load-more__text">{{ loading ? t("dailyQuestion.loadingMore") : t("dailyQuestion.loadMore") }}</text>
+            <text class="answers-load-more__text">{{ answerLoading ? t("dailyQuestion.loadingMore") : t("dailyQuestion.loadMore") }}</text>
           </view>
           <view v-else-if="answers.length > 0" class="answers-load-more">
             <text class="answers-load-more__text">{{ t("dailyQuestion.noMoreAnswers") }}</text>
@@ -320,7 +334,7 @@ function onAnswersScrollLower(): void {
 
         <!-- 空状态 -->
         <EmptyState
-          v-else-if="!loading && hasAnswered"
+          v-else-if="!loading && !answerLoading && hasAnswered"
           type="no-data"
           :title="t('dailyQuestion.emptyTitle')"
           :description="t('dailyQuestion.emptyDesc')"

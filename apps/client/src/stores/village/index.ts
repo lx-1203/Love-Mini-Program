@@ -64,6 +64,7 @@ import {
   clearPostHistoryApi,
   createCommentApi,
   createPostApi,
+  deletePostApi,
   favoritePostApi,
   fetchCampusFeedApi,
   fetchCommentsApi,
@@ -78,6 +79,7 @@ import {
   sharePostApi,
 } from "./api";
 import type {
+  ChannelFeedBucket,
   CommentItem,
   CommentItemView,
   PostFilters,
@@ -166,6 +168,10 @@ export const useVillageStore = defineStore("village", {
     errorMessage: null,
     page: 1,
     hasMore: true,
+    // 2026-10-31 频道轨 P2：每个村口频道一套自己的列表 + 游标；
+    // posts/page/hasMore 只是「当前活跃频道」的工作槽（旧消费方仍读它们）。
+    channelFeeds: {},
+    activeFeedKey: null,
     campusFeedPosts: [],
     campusFeedActivities: [],
     campusFeedTopics: [],
@@ -207,6 +213,87 @@ export const useVillageStore = defineStore("village", {
   },
 
   actions: {
+    /* ========== 频道独立列表（2026-10-31 频道轨 P2） ========== */
+
+    /**
+     * 把当前工作槽（posts/page/hasMore）归档回它所属频道的桶。
+     *
+     * <p>`activeFeedKey` 为空时不做事——首页/收藏/附近等页面走 `fetchPosts`
+     * 时不该污染任何村口频道的桶，行为与改造前一致。</p>
+     */
+    archiveActiveFeed(): void {
+      const key = this.activeFeedKey;
+      if (!key) return;
+      const prev = this.channelFeeds[key];
+      const bucket: ChannelFeedBucket = {
+        // 存引用而非快照：点赞/收藏在原数组元素上就地生效，切回来不该看到旧数据
+        posts: this.posts,
+        page: this.page,
+        hasMore: this.hasMore,
+        loaded: prev?.loaded === true,
+        loading: false,
+      };
+      this.channelFeeds[key] = bucket;
+    },
+
+    /**
+     * 切换到指定频道：先归档上一个频道，再载入该频道自己的列表与游标。
+     *
+     * <p>同 key 重复调用是幂等的（直接返回），因此页面可以在 `loadChannelData`
+     * 开头无条件调用它。从未加载过的频道得到空槽 + `page=1`，
+     * 于是「该频道必须发自己的请求」这一条不依赖任何 TTL 判断。</p>
+     */
+    selectFeed(key: string): void {
+      if (!key || this.activeFeedKey === key) return;
+      this.archiveActiveFeed();
+      this.activeFeedKey = key;
+      const bucket = this.channelFeeds[key];
+      this.posts = bucket ? bucket.posts : [];
+      this.page = bucket ? bucket.page : 1;
+      this.hasMore = bucket ? bucket.hasMore : true;
+      this.errorMessage = null;
+    },
+
+    /**
+     * 标记频道已完成一次成功加载（页面在 fetch 成功后调用）。
+     *
+     * <p>这是 30s TTL 短路的<b>前置条件</b>：只有「本频道自己成功拉过一次」才允许
+     * 之后靠新鲜度跳过请求。新鲜度键与频道同名（`village:feed:{id}`），
+     * 但短路是否生效由这里决定，因此不存在「A 的新鲜度喂给 B 的列表」。</p>
+     */
+    markFeedLoaded(key: string): void {
+      if (!key) return;
+      if (this.activeFeedKey === key) {
+        this.channelFeeds[key] = {
+          posts: this.posts,
+          page: this.page,
+          hasMore: this.hasMore,
+          loaded: true,
+          loading: false,
+        };
+        return;
+      }
+      const bucket = this.channelFeeds[key];
+      if (bucket) bucket.loaded = true;
+    },
+
+    /** 频道是否已完成过至少一次成功加载（未加载过 ⇒ 禁止任何 TTL 短路） */
+    isFeedLoaded(key: string): boolean {
+      return !!key && this.channelFeeds[key]?.loaded === true;
+    },
+
+    /** 读取某频道自己的页码游标（页面「加载更多」用它，不再读全局 page） */
+    feedPage(key: string): number {
+      if (this.activeFeedKey === key) return this.page;
+      return this.channelFeeds[key]?.page ?? 1;
+    },
+
+    /** 读取某频道自己的 hasMore */
+    feedHasMore(key: string): boolean {
+      if (this.activeFeedKey === key) return this.hasMore;
+      return this.channelFeeds[key]?.hasMore ?? true;
+    },
+
     /**
      * 获取帖子列表（支持筛选和分页）
      *
@@ -702,6 +789,64 @@ export const useVillageStore = defineStore("village", {
       } finally {
         // 清理 in-flight 标记
         favoritingPostIds.delete(postId);
+      }
+    },
+
+    /**
+     * 作者删除自己的帖子（2026-10-31 用户内容生命周期补齐）。
+     *
+     * <p>口径：后端是软删除（{@code posts.status='deleted'}），成功后该帖在各 feed
+     * 查询里被 {@code status <> 'deleted'} 排除、详情与其评论区返回 404。本地三处
+     * 承载该帖的列表（posts / nearbyPosts / selfPendingPosts）必须同步移除，
+     * 否则用户删完还在原地看见自己的帖子——那比没有删除功能更容易被当成 bug。</p>
+     *
+     * <p>失败语义：<b>不做乐观删除</b>。删除失败（403/404/429/网络）时列表一字不动、
+     * 错误冒泡给 UI 弹提示；「先抹掉再回滚」在删除这种不可逆操作上只会让用户以为
+     * 内容没了。后端幂等（重复删同一帖子恒 200），所以重试是安全的。</p>
+     *
+     * @param postId - 帖子 ID
+     */
+    async deletePost(postId: string) {
+      this.errorMessage = null;
+
+      if (!postId || postId.trim().length === 0) {
+        this.errorMessage = t("storeErrors.village.postIdInvalid");
+        throw new Error(t("storeErrors.village.postIdInvalid"));
+      }
+
+      if (useMock()) {
+        // mock 档演示数据不落库（后端 VillageService#deletePost 默认实现显式 422），
+        // 这里仅从本地列表移除，保证演示闭环；real 档必走后端。
+        this.removePostEverywhere(postId);
+        return;
+      }
+
+      try {
+        await deletePostApi(postId);
+      } catch (error) {
+        // 失败保留原状并冒泡：UI 必须提示，不得静默（本轮修的就是静默形态的缺陷）
+        this.errorMessage =
+          error instanceof Error ? error.message : t("storeErrors.village.deletePostFailed"); // infra R2-00038
+        throw error;
+      }
+
+      // 只有后端确认成功才把帖子从各列表摘掉
+      this.removePostEverywhere(postId);
+    },
+
+    /**
+     * 把帖子从所有承载它的列表里摘掉：村口/首页流（posts）、附近动态（nearbyPosts）、
+     * 自己刚发布仍在审核流的条目（selfPendingPosts）与详情页当前帖（currentPost）。
+     *
+     * <p>漏掉任何一处都会出现「后端已删、界面上还在」的假象——尤其 selfPendingPosts
+     * 是 R17 专为「发完就消失」加的 feed 顶部缓存，删帖时若不清它，刚发的帖子删不掉。</p>
+     */
+    removePostEverywhere(postId: string) {
+      this.posts = this.posts.filter((p) => p.id !== postId);
+      this.nearbyPosts = this.nearbyPosts.filter((p) => p.id !== postId);
+      this.selfPendingPosts = this.selfPendingPosts.filter((p) => p.id !== postId);
+      if (this.currentPost?.id === postId) {
+        this.currentPost = null;
       }
     },
 
@@ -1310,6 +1455,12 @@ export const useVillageStore = defineStore("village", {
       likingCommentIds.clear();
       // 2026-08-08 论坛互动真实化：清理收藏 in-flight 集合
       favoritingPostIds.clear();
+      // 2026-10-31 频道轨 P2：离开村口页前把当前频道的工作槽归档，
+      // 否则切回来时该频道的页码游标/列表会与桶里的旧值脱节（「加载更多」跳页）。
+      this.archiveActiveFeed();
+      // 归档后置空活跃键：详情页/收藏页等仍会直接调 fetchPosts()，
+      // 没有这一步它们的结果会被当成某个村口频道的桶内容、在 30s TTL 内冒充该频道列表。
+      this.activeFeedKey = null;
     },
   },
 });

@@ -117,7 +117,7 @@ function errorMessage(err: unknown, fallback: string): string {
 
 /** 保存单条参数配置（key 行） */
 async function handleSaveConfig(row: AdminConfig) {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   const value = (row.value || "").trim();
   if (!value) {
     error.value = t("config.valueRequired");
@@ -142,7 +142,7 @@ async function handleSaveConfig(row: AdminConfig) {
 
 /** 保存单条业务规则（id 行） */
 async function handleSaveRule(row: AdminRule) {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   if (savingKey.value) return;
   savingKey.value = `rule-${row.id}`;
   error.value = "";
@@ -163,7 +163,7 @@ async function handleSaveRule(row: AdminRule) {
 
 /** 保存单条功能开关（key 行，仅 enabled 可更新） */
 async function handleSaveSwitch(row: AdminSwitch) {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   if (savingKey.value) return;
   savingKey.value = `switch-${row.key}`;
   error.value = "";
@@ -296,7 +296,7 @@ onBeforeUnmount(() => {
             <td class="time-cell">{{ formatTime(row.updatedAt) }}</td>
             <td class="action-cell">
               <button
-                v-if="isSuperAdmin && sessionStore.canWrite"
+                v-if="isSuperAdmin && sessionStore.canSuperAdminWrite"
                 class="action-button edit"
                 :disabled="savingKey === `config-${row.key}`"
                 @click="handleSaveConfig(row)"
@@ -346,7 +346,7 @@ onBeforeUnmount(() => {
             <td class="time-cell">{{ formatTime(row.updatedAt) }}</td>
             <td class="action-cell">
               <button
-                v-if="isSuperAdmin && sessionStore.canWrite"
+                v-if="isSuperAdmin && sessionStore.canSuperAdminWrite"
                 class="action-button edit"
                 :disabled="savingKey === `rule-${row.id}`"
                 @click="handleSaveRule(row)"
@@ -390,7 +390,7 @@ onBeforeUnmount(() => {
             <td class="time-cell">{{ formatTime(row.updatedAt) }}</td>
             <td class="action-cell">
               <button
-                v-if="isSuperAdmin && sessionStore.canWrite"
+                v-if="isSuperAdmin && sessionStore.canSuperAdminWrite"
                 class="action-button edit"
                 :disabled="savingKey === `switch-${row.key}`"
                 @click="handleSaveSwitch(row)"

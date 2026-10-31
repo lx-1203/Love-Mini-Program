@@ -351,6 +351,9 @@ function handleCancelEdit() {
  * 调用 PUT /api/v1/admin/users/{id}，请求体只携带变更字段（nickname）。
  */
 async function handleSaveEdit() {
+  // 权限位在防重复点击之前：只读角色点保存必须被本地拦下，
+  // 而不是发一次注定 403 的请求（tests/admin-write-gate 判"处理函数有守卫"这一轴）。
+  if (!sessionStore.canWrite) return;
   if (!editingUser.value) return;
   if (savingEdit.value) return; // 防重复点击
 
@@ -636,6 +639,7 @@ function closeCreateUser() {
  * 成功后关闭弹窗并刷新列表。
  */
 async function handleCreateUser() {
+  if (!sessionStore.canSuperAdminWrite) return;
   if (creatingUser.value) return;
   const phone = createPhone.value.trim();
   if (!/^1[3-9]\d{9}$/.test(phone)) {

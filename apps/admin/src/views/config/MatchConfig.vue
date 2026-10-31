@@ -168,7 +168,7 @@ function validateEntries(entries: ConfigEntry[]): string | null {
  * 无变更时跳过请求；保存成功后更新基线并轻提示。
  */
 async function handleSaveMatch() {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   if (!hasMatchChanges.value || savingMatch.value) return;
   const invalid = validateEntries(matchEntries.value);
   if (invalid) {
@@ -198,7 +198,7 @@ async function handleSaveMatch() {
  * 保存推荐策略配置。
  */
 async function handleSaveRecommend() {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   if (!hasRecommendChanges.value || savingRecommend.value) return;
   const invalid = validateEntries(recommendEntries.value);
   if (invalid) {
@@ -272,7 +272,7 @@ onBeforeUnmount(() => {
             {{ t("matchConfig.unsavedChanges") }}
           </text>
           <button
-            v-if="isSuperAdmin && sessionStore.canWrite"
+            v-if="isSuperAdmin && sessionStore.canSuperAdminWrite"
             class="primary-button"
             :disabled="savingMatch || loading || !hasMatchChanges"
             @click="handleSaveMatch"
@@ -331,7 +331,7 @@ onBeforeUnmount(() => {
             {{ t("matchConfig.unsavedChanges") }}
           </text>
           <button
-            v-if="isSuperAdmin && sessionStore.canWrite"
+            v-if="isSuperAdmin && sessionStore.canSuperAdminWrite"
             class="primary-button"
             :disabled="savingRecommend || loading || !hasRecommendChanges"
             @click="handleSaveRecommend"

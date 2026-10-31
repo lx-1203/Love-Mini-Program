@@ -155,7 +155,9 @@ function switchRole(role: "ADMIN" | "SUPER_ADMIN") {
 
 /** 提交创建管理员（前端校验与后端 AdminCreateAdminRequest 对齐） */
 async function handleCreate() {
-  if (!sessionStore.canWrite) return;
+  // POST /api/v1/admin/users/admins 的方法级授权是 hasRole('SUPER_ADMIN')，
+  // 用 canWrite 会让校区 ADMIN 看到按钮并白吃一次 403（tests/admin-write-gate 判此轴）。
+  if (!sessionStore.canSuperAdminWrite) return;
   if (creating.value) return;
   const phone = createPhone.value.trim();
   if (!/^1[3-9]\d{9}$/.test(phone)) {
@@ -269,7 +271,7 @@ onMounted(() => {
       />
       <button class="primary-button" @click="handleSearch">{{ t("common.search") }}</button>
       <button class="secondary-button" @click="handleReset">{{ t("common.reset") }}</button>
-      <button v-if="sessionStore.canWrite" class="primary-button" @click="openCreate">{{ t("admins.actionCreateAdmin") }}</button>
+      <button v-if="sessionStore.canSuperAdminWrite" class="primary-button" @click="openCreate">{{ t("admins.actionCreateAdmin") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchAdmins" />

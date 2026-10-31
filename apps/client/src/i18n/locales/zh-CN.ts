@@ -1946,6 +1946,13 @@ export default {
       "copyContent": "复制内容",
       "reportAction": "举报",
       "copyFailed": "复制失败，请重试",
+      "deleteAction": "删除",
+      "deleteConfirmTitle": "删除这条动态",
+      "deleteConfirmContent": "删除后村口与个人主页不再展示这条动态，其评论区一并隐藏。",
+      "deleteConfirmOk": "删除",
+      "deleteConfirmCancel": "取消",
+      "deleteSuccess": "已删除",
+      "deleteFailed": "删除失败，请重试",
       "reportReasonSpam": "垃圾广告",
       "reportReasonAbuse": "辱骂攻击",
       "reportReasonPorn": "色情低俗",
@@ -4155,7 +4162,10 @@ export default {
       "loadSimilarAuthorsFailed": "加载相似作者失败",
       "favoritePostFailed": "收藏操作失败",
       "loadHistoryFailed": "加载浏览记录失败",
-      "clearHistoryFailed": "清空浏览记录失败"
+      "clearHistoryFailed": "清空浏览记录失败",
+      // stores/village/index.ts 的删帖失败兜底：此前只有 t() 引用没有这条键，
+      // 删除失败时用户会看到裸键名 storeErrors.village.deletePostFailed。
+      "deletePostFailed": "删除动态失败，请稍后重试"
     },
     "activity": {
       "loadActivitiesFailed": "加载活动失败",

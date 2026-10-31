@@ -69,7 +69,7 @@ function handleKickClick(user: OnlineUserView) {
 
 /** 确认踢下线 */
 async function handleKickConfirm() {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   const target = kickTarget.value;
   if (!target || kicking.value) return;
   kicking.value = true;
@@ -161,7 +161,7 @@ onMounted(() => {
             </td>
             <td>{{ formatTime(user.loginAt) }}</td>
             <td>
-              <button v-if="sessionStore.canWrite" class="action-button kick" @click="handleKickClick(user)">
+              <button v-if="sessionStore.canSuperAdminWrite" class="action-button kick" @click="handleKickClick(user)">
                 {{ t("onlineUsers.actionKick") }}
               </button>
             </td>

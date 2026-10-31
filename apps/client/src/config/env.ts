@@ -202,23 +202,58 @@ function resolveApiBaseUrl(): string {
   );
 }
 
+/**
+ * `resolveApiMode` 的纯函数内核（导出以便单测命中）。
+ *
+ * 契约轨 P2-4 修复：原实现先在 `if (isDev) return "mock"` 处返回，
+ * 后面那条 `if (isDev) console.warn("生产环境未配置 VITE_API_MODE…")`
+ * 位于 isDev 恒为 true 才可达的分支之外 —— 即<b>永远不可能打印</b>。
+ * 后果：本地 `localhost` 起的 H5 预览静默跑在 mock fixtures 上，
+ * 看的人以为是真后端。这里把「选了什么模式 + 哪个变量能改」做成可见的提示。
+ *
+ * 语义保持不变：<b>dev 默认 mock 仍是合法默认</b>（本地演示能力），
+ * 只是不再无声；real 构建（`import.meta.env.PROD`）走 `VITE_API_MODE=real`
+ * 显式配置路径，行为与之前一致。
+ */
+export function resolveApiModeNotice(
+  dev: boolean,
+  configuredMode: string | undefined,
+): { mode: ApiMode; notice: string | null } {
+  if (configuredMode === "real" || configuredMode === "mock") {
+    return { mode: configuredMode, notice: null };
+  }
+  const trimmed = (configuredMode ?? "").trim();
+  if (trimmed.length > 0 && trimmed.toLowerCase() !== "none") {
+    // 配了但不是合法值：说清楚解析成了什么，避免"配了没生效"的排查黑洞
+    const fallback: ApiMode = dev ? "mock" : "real";
+    return {
+      mode: fallback,
+      notice:
+        `[ENV] VITE_API_MODE="${configuredMode}" 不是合法取值（仅支持 real / mock），` +
+        `当前按${dev ? "开发" : "生产"}环境回退为 ${fallback}。` +
+        `如需连真实后端请设置 VITE_API_MODE=real；本地演示用 VITE_API_MODE=mock。`,
+    };
+  }
+  if (dev) {
+    // 这条就是原实现里够不着的那个信号：dev 且没显式要求模式 ⇒ 明确告知走了 mock
+    return {
+      mode: "mock",
+      notice:
+        "[ENV] 开发环境未显式配置 VITE_API_MODE，本次运行使用 mock（本地演示数据，不发真实请求）。" +
+        "若要在 localhost 预览真实后端，请设置 VITE_API_MODE=real（并配 VITE_API_BASE_URL）。",
+    };
+  }
+  // 生产缺配：默认 real（更安全）。诊断日志按 R4-00526/00527 的既有约定不在发布包输出，
+  // 但这里必须返回 real 而不是像原实现那样把一段永远不可达的 warn 留在代码里误导读者。
+  return { mode: "real", notice: null };
+}
+
 function resolveApiMode(): ApiMode {
-  if (VITE_API_MODE === "real" || VITE_API_MODE === "mock") {
-    return VITE_API_MODE;
+  const { mode, notice } = resolveApiModeNotice(isDev, VITE_API_MODE);
+  if (notice) {
+    console.warn(notice);
   }
-  // 开发环境默认 mock
-  if (isDev) {
-    return "mock";
-  }
-  // 生产环境默认 real（更安全）
-  // 配置缺失诊断日志仅在开发环境输出（R4-00526/00527）
-  if (isDev) {
-    console.warn(
-      "[ENV] 生产环境未配置 VITE_API_MODE，默认使用 real 模式。" +
-        "如需 mock 模式请显式设置 VITE_API_MODE=mock"
-    );
-  }
-  return "real";
+  return mode;
 }
 
 /**

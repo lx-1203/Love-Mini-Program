@@ -80,7 +80,7 @@ function toForm(course: AdminConsultingCourse): ConsultingCourseForm {
 }
 
 async function save(course: AdminConsultingCourse) {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   savingId.value = course.id;
   error.value = "";
   try {
@@ -95,7 +95,7 @@ async function save(course: AdminConsultingCourse) {
 }
 
 async function publish(course: AdminConsultingCourse) {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   savingId.value = course.id;
   error.value = "";
   try {
@@ -110,7 +110,7 @@ async function publish(course: AdminConsultingCourse) {
 }
 
 async function offline(course: AdminConsultingCourse) {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   savingId.value = course.id;
   error.value = "";
   try {
@@ -125,7 +125,7 @@ async function offline(course: AdminConsultingCourse) {
 }
 
 async function create() {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   if (creating.value) return;
   creating.value = true;
   error.value = "";
@@ -192,9 +192,9 @@ onMounted(load);
       </div>
 
       <div class="legal-actions">
-        <button type="button" class="legal-btn legal-btn--primary" :disabled="!sessionStore.canWrite || savingId === course.id" @click="save(course)">保存</button>
-        <button type="button" class="legal-btn" :disabled="!sessionStore.canWrite || savingId === course.id" @click="publish(course)">发布</button>
-        <button type="button" class="legal-btn" :disabled="!sessionStore.canWrite || savingId === course.id" @click="offline(course)">下线</button>
+        <button type="button" class="legal-btn legal-btn--primary" :disabled="!sessionStore.canSuperAdminWrite || savingId === course.id" @click="save(course)">保存</button>
+        <button type="button" class="legal-btn" :disabled="!sessionStore.canSuperAdminWrite || savingId === course.id" @click="publish(course)">发布</button>
+        <button type="button" class="legal-btn" :disabled="!sessionStore.canSuperAdminWrite || savingId === course.id" @click="offline(course)">下线</button>
       </div>
     </div>
 
@@ -223,7 +223,7 @@ onMounted(load);
         <textarea v-model="newCourse.content" class="legal-content" rows="6" />
       </div>
       <div class="legal-actions">
-        <button type="button" class="legal-btn legal-btn--primary" :disabled="!sessionStore.canWrite || creating || !newCourse.title.trim()" @click="create">新增</button>
+        <button type="button" class="legal-btn legal-btn--primary" :disabled="!sessionStore.canSuperAdminWrite || creating || !newCourse.title.trim()" @click="create">新增</button>
       </div>
     </div>
   </div>

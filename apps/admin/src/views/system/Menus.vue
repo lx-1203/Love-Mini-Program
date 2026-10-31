@@ -173,7 +173,7 @@ function switchType(type: "DIR" | "MENU") {
 
 /** 提交新增/编辑 */
 async function handleSubmit() {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   if (saving.value) return;
   // 基础校验（title/name/path 必填；MENU 类型 component 必填）
   if (!form.value.title.trim()) {
@@ -234,7 +234,7 @@ function askDelete(node: MenuTreeNode) {
 }
 
 async function confirmDelete() {
-  if (!sessionStore.canWrite) return;
+  if (!sessionStore.canSuperAdminWrite) return;
   const target = deleteTarget.value;
   if (!target || deleting.value) return;
   deleting.value = true;
@@ -272,7 +272,7 @@ onMounted(() => {
     </view>
 
     <view class="toolbar">
-      <button v-if="sessionStore.canWrite" class="primary-button" @click="openCreateTop">{{ t("menus.createTopButton") }}</button>
+      <button v-if="sessionStore.canSuperAdminWrite" class="primary-button" @click="openCreateTop">{{ t("menus.createTopButton") }}</button>
       <button class="secondary-button" :disabled="loading" @click="fetchMenus">{{ t("common.refresh") }}</button>
     </view>
 
@@ -328,11 +328,11 @@ onMounted(() => {
             </td>
             <td>
               <view class="action-cell">
-                <button v-if="sessionStore.canWrite" class="action-button edit" @click="openEdit(row.node)">{{ t("menus.actionEdit") }}</button>
-                <button v-if="sessionStore.canWrite && row.node.menuType === 'DIR'" class="action-button handle" @click="openCreateChild(row.node)">
+                <button v-if="sessionStore.canSuperAdminWrite" class="action-button edit" @click="openEdit(row.node)">{{ t("menus.actionEdit") }}</button>
+                <button v-if="sessionStore.canSuperAdminWrite && row.node.menuType === 'DIR'" class="action-button handle" @click="openCreateChild(row.node)">
                   {{ t("menus.actionCreateChild") }}
                 </button>
-                <button v-if="sessionStore.canWrite" class="action-button delete" @click="askDelete(row.node)">{{ t("menus.actionDelete") }}</button>
+                <button v-if="sessionStore.canSuperAdminWrite" class="action-button delete" @click="askDelete(row.node)">{{ t("menus.actionDelete") }}</button>
               </view>
             </td>
           </tr>
