@@ -334,6 +334,77 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             Pageable pageable);
 
     /**
+     * 管理后台 - 多条件分页查询帖子的<b>圈层数据域强制版</b>（S2-7，2026-10-31）。
+     *
+     * <p><b>为什么必须存在这条查询</b>：{@link com.campuslove.api.admin.AdminPostController}
+     * 的审核/删除写操作已经能按圈层轴拦截（{@link com.campuslove.api.admin.AdminScopeService}），
+     * 但列表只有 {@link #searchForAdmin} 这条<b>校区轴</b>查询。若只把写操作换成圈层口径，
+     * 「绑了大区/学校圈层、但 users.campus_name 为空或不同校」的管理员会在自己的列表里
+     * 看不到那些行，却仍能在后台按 ID 审掉它们 —— 审核了自己列表里不可见的行，
+     * 上一轮迁移因此在 {@link #searchForVillageAdminScoped} 同批改掉了
+     * {@link com.campuslove.api.admin.AdminVillagePostController} 的读写两侧。
+     * 本方法是 {@link #searchForAdmin} 的对应补齐：读列表与写校验同一条圈层轴、同一个子树。</p>
+     *
+     * <p>与 {@link #searchForAdmin} 的筛选条件<b>逐条一致</b>（auditStatus / status /
+     * excludeStatus 软删口径 / category / authorId / campusName，排序同为
+     * {@code created_at DESC}），只额外强制一条：帖子必须落在调用管理员
+     * （{@code :adminId}）在 {@code admin_layer} 绑定的圈层节点<b>子树</b>内
+     * （按路径段：{@code owner_circle_path = 节点 OR LIKE '节点/%'}，
+     * 禁裸前缀 —— 否则 {@code C1/R3/S1} 会命中 {@code C1/R3/S14}）。
+     * 与 {@link #searchForVillageAdminScoped} 同一口径，用相关子查询表达变长的
+     * 「一个管理员绑定多个不相邻节点」，不把前缀列表塞进 SQL。</p>
+     *
+     * <p><b>fail-closed 语义</b>：{@code adminId} 在 {@code admin_layer} 没有任何绑定行时，
+     * EXISTS 恒为假 → 返回空集（不放行全库）；未归属帖子的 {@code owner_circle_path}
+     * 为 NULL 时，{@code NULL = ... / NULL LIKE ...} 结果为 NULL，同样被 EXISTS 排除。
+     * 全平台账号（SUPER_ADMIN）不走本方法，行为与 {@link #searchForAdmin} 逐字节一致。</p>
+     *
+     * <p>保持 JPQL（与 {@link #searchForAdmin} 同形态）：实体类型参数（枚举/Long）
+     * 由 Hibernate 定型，{@code :x IS NULL} 分支稳定，不触碰原生 SQL 里
+     * 「未定型参数与 NULL 比较不稳定」的老坑（见
+     * {@link #countAdminPostsWithoutOwnerCircle} 的说明）。</p>
+     *
+     * @param auditStatus   审核状态筛选，null 表示不筛选
+     * @param status        帖子状态筛选，null 表示不筛选
+     * @param excludeStatus 需要排除的帖子状态（软删口径），null 表示不排除
+     * @param category      分类筛选，null 表示不筛选
+     * @param authorId      作者用户 ID 筛选，null 表示不筛选
+     * @param campusName    校区筛选（按作者所属校区过滤，调用方显式收窄时才传），null/空表示不筛选
+     * @param adminId       当前管理员用户 ID（其 admin_layer 绑定节点即数据域）
+     * @param pageable      分页参数
+     * @return 分页帖子列表（按创建时间倒序）
+     */
+    @Query("""
+            SELECT p FROM Post p
+            WHERE (:auditStatus IS NULL OR p.auditStatus = :auditStatus)
+              AND (:status IS NULL OR p.status = :status)
+              AND (:excludeStatus IS NULL OR p.status <> :excludeStatus)
+              AND (:category IS NULL OR p.category = :category)
+              AND (:authorId IS NULL OR p.authorId = :authorId)
+              AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
+                    SELECT 1 FROM UserCampusProfile ucp
+                    WHERE ucp.userId = p.authorId AND ucp.campusName = :campusName))
+              AND EXISTS (
+                    SELECT 1 FROM AdminLayer al
+                    WHERE al.adminId = :adminId
+                      AND EXISTS (
+                            SELECT 1 FROM CircleLayer cl
+                            WHERE cl.id = al.circleLayerId
+                              AND (p.ownerCirclePath = cl.circlePath
+                                   OR p.ownerCirclePath LIKE CONCAT(cl.circlePath, '/%'))))
+            ORDER BY p.createdAt DESC
+            """)
+    Page<Post> searchForAdminScoped(
+            @Param("auditStatus") AuditStatus auditStatus,
+            @Param("status") PostStatus status,
+            @Param("excludeStatus") PostStatus excludeStatus,
+            @Param("category") PostCategory category,
+            @Param("authorId") Long authorId,
+            @Param("campusName") String campusName,
+            @Param("adminId") Long adminId,
+            Pageable pageable);
+
+    /**
      * 管理后台 - 村落动态精细化管理分页查询。
      * <p>区别于 {@link #searchForAdmin}：支持内容关键字模糊筛选与校区隔离
      * （posts 表无 campus_name 列，校区隔离按作者所属校区过滤：

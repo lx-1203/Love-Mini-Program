@@ -1,5 +1,6 @@
 package com.campuslove.api.feedback;
 
+import com.campuslove.api.admin.AdminDataScope;
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.config.SecurityUtils;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +31,24 @@ import org.springframework.web.multipart.MultipartFile;
  *
  * 功能9：新增 uploadImage 方法，复用 MediaStorageService 上传图片附件。
  * 功能10：新增 getSubmissionDetail 方法，查询反馈详情（含 content/attachments/latestReplyContent）。
+ *
+ * <p><b>S2-2（2026-10-30）admin 三端点的校区数据隔离</b>：
+ * {@link #listAdminFeedback()}、{@link #replyFeedback(long, String)}、
+ * {@link #convertProposal(long)} 之前完全没有校区轴（只有 URL 层的 ADMIN/AUDITOR 角色判定），
+ * 一个校区的管理员（含只读 AUDITOR）可枚举、修改甚至转化其他高校的工单。现在三者的校区判定
+ * 全部复用 {@link AdminDataScope} 的同一套 helper（与
+ * {@link com.campuslove.api.admin.AdminFeedbackController} 逐字对齐）：
+ * 读用 {@code getCurrentAdminCampusName()} + 批量 {@code resolveUserCampusNames} 过滤、
+ * 写用 {@code assertCampusAccess(resolveUserCampusName(提交人))}、
+ * 落库校区用 {@code resolveCampusForWrite}；
+ * {@link AdminDataScope#NO_CAMPUS_SCOPE} 哨兵一律 fail-closed（读空集 / 写 403），
+ * SUPER_ADMIN 保持全局语义不变。</p>
+ *
+ * <p>残留说明：提交人<b>无校区资料</b>（campus 解析为 null）的工单，在列表里被排除
+ * （无法判定属于本校区即视为不属于），但在 reply/convert 上仍按
+ * {@code assertCampusAccess} 的既有语义视为「全局资源」放行——该取舍与
+ * {@code AdminFeedbackController#handleTicket} 完全一致，不做单边收紧，以免两个后台入口
+ * 对同一条工单给出不同的权限结论。</p>
  */
 @Profile("real")
 @Service
@@ -59,14 +79,26 @@ public class RealFeedbackService implements FeedbackService {
     /** R4-00342：活动仓库——提案转活动时真实创建 Activity 记录 */
     private final ActivityRepository activityRepository;
 
+    /**
+     * 管理端数据隔离（多管理员多校区）——admin 反馈端点的校区轴统一由此判定。
+     *
+     * <p>口径完全复用 {@link com.campuslove.api.admin.AdminFeedbackController}：
+     * {@code feedback_tickets} 表<b>没有校区列</b>（{@code expected_campus} 是用户「期望的校区」
+     * 愿望字段，不是归属校区，不能用于隔离），因此工单归属校区一律取<b>提交人所属校区</b>
+     * （{@code user_campus_profile.campus_name}）。</p>
+     */
+    private final AdminDataScope adminDataScope;
+
     public RealFeedbackService(FeedbackRepository feedbackRepository,
                                ObjectMapper objectMapper,
                                MediaStorageService mediaStorageService,
-                               ActivityRepository activityRepository) {
+                               ActivityRepository activityRepository,
+                               AdminDataScope adminDataScope) {
         this.feedbackRepository = feedbackRepository;
         this.objectMapper = objectMapper;
         this.mediaStorageService = mediaStorageService;
         this.activityRepository = activityRepository;
+        this.adminDataScope = adminDataScope;
     }
 
     /**
@@ -136,18 +168,78 @@ public class RealFeedbackService implements FeedbackService {
      * 管理员查询所有反馈（不含活动提案）。
      * 排除 ACTIVITY_PROPOSAL 类型，按创建时间降序排列。
      *
+     * <p><b>校区数据隔离（S2-2，2026-10-30）</b>：本方法此前直接返回全库工单，任何校区的
+     * ADMIN / AUDITOR 都能枚举其他高校的工单标题与最新回复摘要。现按
+     * {@link com.campuslove.api.admin.AdminFeedbackController 同一口径} 以「提交人所属校区」过滤：</p>
+     * <ul>
+     *   <li>校区管理员 / 有校区的 AUDITOR → 只返回提交人校区匹配本人管辖校区的工单；
+     *       <b>提交人无校区资料（校区未知）的工单一律排除</b>（不能判定属于本人校区即视为不属于）</li>
+     *   <li>SUPER_ADMIN（{@link AdminDataScope#getCurrentAdminCampusName()} 返回 null）
+     *       → 全量返回，行为与改造前逐字节一致，不做任何校区解析查询</li>
+     *   <li>无管辖校区的 ADMIN / AUDITOR（{@link AdminDataScope#NO_CAMPUS_SCOPE} 内部哨兵）
+     *       → 空列表，且不发查询（fail-closed）；哨兵字符串绝不作为校区值参与比对</li>
+     * </ul>
+     *
+     * <p>响应契约（裸 {@code List<SubmissionRecordView>}、不分页）保持不变——分页属于 API 契约
+     * 变更，由 {@code GET /api/v1/admin/feedback/tickets} 承担；本端点只补校区这条安全轴。</p>
+     *
      * @return 提交记录列表
      */
     @Override
     public List<SubmissionRecordView> listAdminFeedback() {
+        String scopedCampus = adminDataScope.getCurrentAdminCampusName();
+
+        // 哨兵作用域：可见校区集合为空 → 读不到任何数据，连表都不查（同 AdminWhisperController#list）
+        if (AdminDataScope.isNoCampusScope(scopedCampus)) {
+            log.warn("管理员读取反馈列表被收敛为空：当前账号无管辖校区（内部哨兵不得当作校区条件）");
+            return List.of();
+        }
+
         List<Feedback> feedbacks = feedbackRepository
                 .findByTypeNotOrderByCreatedAtDesc(FeedbackTicketType.ACTIVITY_PROPOSAL);
-        return feedbacks.stream().map(this::toView).toList();
+
+        // SUPER_ADMIN：全局可见，保持改造前行为（不解析任何作者校区）
+        if (scopedCampus == null) {
+            return feedbacks.stream().map(this::toView).toList();
+        }
+
+        // 校区隔离：一次批量解析作者校区，避免逐行 findByUserId 的 N+1（口径同 AdminFeedbackController）
+        Map<Long, String> campusByAuthor = adminDataScope.resolveUserCampusNames(
+                feedbacks.stream().map(Feedback::getUserId).toList());
+        return feedbacks.stream()
+                .filter(feedback -> belongsToScopedCampus(feedback, scopedCampus, campusByAuthor))
+                .map(this::toView)
+                .toList();
+    }
+
+    /**
+     * 工单是否属于当前管理员的管辖校区（按提交人 {@code user_campus_profile.campus_name} 判定，
+     * 忽略大小写，与 {@link AdminDataScope#assertCampusAccess(String)} 的比对方式一致）。
+     *
+     * @param feedback       工单
+     * @param scopedCampus   当前管理员管辖校区名（非空、非哨兵）
+     * @param campusByAuthor 批量解析出的作者校区映射
+     * @return 提交人校区已知且等于管辖校区时为 true；校区缺失/未知一律 false（fail-closed）
+     */
+    private static boolean belongsToScopedCampus(Feedback feedback, String scopedCampus,
+                                                 Map<Long, String> campusByAuthor) {
+        String authorCampus = campusByAuthor.get(feedback.getUserId());
+        return authorCampus != null && authorCampus.equalsIgnoreCase(scopedCampus);
     }
 
     /**
      * 将活动提案转为活动。
      * 更新 Feedback 的状态为 CONVERTED，并设置 convertedActivityId。
+     *
+     * <p><b>校区数据隔离（S2-2，2026-10-30）</b>：转换会<b>真实写入 activities 表</b>，
+     * 改造前仅有 {@code hasRole('ADMIN')} 兜着，任何校区的管理员都能把别的校区的提案转成活动。
+     * 现在在任何写操作之前先按<b>提交人所属校区</b>调用
+     * {@link AdminDataScope#assertCampusAccess(String)}（与
+     * {@code AdminFeedbackController#handleTicket} 同一helper），越权抛
+     * {@link com.campuslove.api.common.OperationForbiddenException}（HTTP 403）且不创建 Activity；
+     * 无管辖校区的账号（内部哨兵）同样一律 403。归属校区落库走
+     * {@link AdminDataScope#resolveCampusForWrite(String)}：校区管理员写自己的校区、
+     * SUPER_ADMIN 按提案期望值（行为不变）、哨兵值绝不落库。</p>
      *
      * @param proposalId 提案 ID
      * @return 更新后的提交记录视图
@@ -159,6 +251,10 @@ public class RealFeedbackService implements FeedbackService {
     public SubmissionRecordView convertProposal(long proposalId) {
         Feedback feedback = feedbackRepository.findById(proposalId)
                 .orElseThrow(() -> new NoSuchElementException("提案不存在，ID: " + proposalId));
+
+        // 校区越权拦截（先于一切业务校验与写操作）：非本校区提交人的提案直接 403，
+        // 既不创建 Activity，也不泄露该提案的类型/状态
+        adminDataScope.assertCampusAccess(adminDataScope.resolveUserCampusName(feedback.getUserId()));
 
         // 校验提案类型必须是 ACTIVITY_PROPOSAL
         if (feedback.getType() != FeedbackTicketType.ACTIVITY_PROPOSAL) {
@@ -174,15 +270,25 @@ public class RealFeedbackService implements FeedbackService {
         // R4-00342：转换时真实创建 Activity 记录（原实现仅改状态、convertedActivityId 恒为
         // null，运营闭环断裂）。按提案内容初始化活动：标题/描述取自提案，校区/城市取
         // 提案期望值，时间地点缺省为"待定"，由运营后续完善。
+        // S2-2：期望校区经 resolveCampusForWrite 收敛——校区管理员一律归属自己的管辖校区
+        //（SUPER_ADMIN 保持按期望值，行为与改造前一致），并且内部哨兵绝不可能成为落库的校区值。
+        String activityCampus = adminDataScope.resolveCampusForWrite(feedback.getExpectedCampus());
+        if (AdminDataScope.isNoCampusScope(activityCampus)) {
+            // 兜底：expected_campus 是用户自由文本，可能被伪造成哨兵串；哨兵不是校区，按「未归属」处理
+            log.warn("提案 {} 的期望校区等于内部哨兵，已按未归属校区处理，避免污染 activities.campus_name",
+                    proposalId);
+            activityCampus = null;
+        }
+
         Activity activity = new Activity();
         activity.setTitle(feedback.getTitle() != null && !feedback.getTitle().isBlank()
                 ? feedback.getTitle()
                 : "校园活动提案");
         activity.setDescription(feedback.getContent() != null ? feedback.getContent() : "");
-        activity.setLocation(feedback.getExpectedCampus() != null ? feedback.getExpectedCampus() : "待定");
+        activity.setLocation(activityCampus != null ? activityCampus : "待定");
         activity.setScheduleText("待定");
         activity.setCityName(feedback.getExpectedCity());
-        activity.setCampusName(feedback.getExpectedCampus());
+        activity.setCampusName(activityCampus);
         activity.setEnrollmentCount(0);
         activity.setStatus(Activity.ActivityStatus.upcoming);
         activity.setPublished(true);
@@ -322,6 +428,12 @@ public class RealFeedbackService implements FeedbackService {
     /**
      * 管理员回复/标记反馈为已处理（infra R2-00023）。
      *
+     * <p><b>校区数据隔离（S2-2，2026-10-30）</b>：改造前只有 {@code hasRole('ADMIN')} 兜底，
+     * 任何校区的管理员都能回复/结案其他高校的工单（改 status + latest_reply_summary，
+     * 用户侧直接可见）。现在加载工单后、写入前，按提交人所属校区调用
+     * {@link AdminDataScope#assertCampusAccess(String)}（helper 与
+     * {@code AdminFeedbackController#handleTicket} 完全相同），越权抛 403 且不做任何写入。</p>
+     *
      * @param id    反馈记录 ID
      * @param reply 回复内容（非空）
      * @return 更新后的提交记录视图（状态 REVIEWED，latestReplySummary 已刷新）
@@ -334,6 +446,9 @@ public class RealFeedbackService implements FeedbackService {
         }
         Feedback feedback = feedbackRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException(ErrorMessages.FEEDBACK_NOT_FOUND_PREFIX + id));
+
+        // 校区越权拦截：以「提交人所属校区」为归属轴校验，不匹配 → 403（写操作一律不发生）
+        adminDataScope.assertCampusAccess(adminDataScope.resolveUserCampusName(feedback.getUserId()));
 
         feedback.setStatus(SubmissionStatus.REVIEWED);
         // 截断过长回复（latestReplySummary 列通常为 255 字符，取前 200 并加省略号）

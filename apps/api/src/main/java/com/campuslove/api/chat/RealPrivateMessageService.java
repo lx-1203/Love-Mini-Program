@@ -427,6 +427,20 @@ public class RealPrivateMessageService implements PrivateMessageService {
     /**
      * 标记指定会话中所有未读消息为已读。
      * 使用批量更新提高性能。
+     *
+     * <p><b>越权修复（S2-2，2026-10-30）</b>：批量 UPDATE 的 JPQL 只按
+     * {@code conversation_id + sender_id <> :currentUserId} 过滤，
+     * <b>不校验调用方是不是该会话的参与者</b>。改造前本方法只做了入参非空校验，
+     * 任何用户枚举 conversationId 即可清掉他人的未读角标、伪造对方可见的「已读」回执，
+     * 并摧毁骚扰举报里「对方未读」的证据。</p>
+     *
+     * <p>修复口径与本文件同域的其他方法逐字一致
+     * （{@link #getMessages}、{@link #markUnread}、{@link #pinConversation}、
+     * {@link #setConversationMuted}、{@link #deleteConversation}）：
+     * 授权用的「读」先于「写」——先按 ID 取会话（不存在 → 同参数的
+     * {@link IllegalArgumentException}「Conversation not found: 」），再校验调用方是
+     * {@code userAId} 或 {@code userBId}，非参与者抛
+     * 「User is not a participant of this conversation」，两种情况都绝不触达仓储写操作。</p>
      */
     @Override
     @Transactional
@@ -435,17 +449,24 @@ public class RealPrivateMessageService implements PrivateMessageService {
             throw new IllegalArgumentException("conversationId and userId are required");
         }
 
+        // 校验用户是否是会话参与者（防 IDOR：任意用户枚举会话 id 清他人未读 / 伪造已读回执）
+        PrivateConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("Conversation not found: " + conversationId));
+
+        if (!conversation.getUserAId().equals(userId) && !conversation.getUserBId().equals(userId)) {
+            throw new IllegalArgumentException("User is not a participant of this conversation");
+        }
+
         // 使用批量更新标记未读消息为已读
         messageRepository.markAsReadByConversationAndSenderNot(conversationId, userId);
 
         // 同步清掉当前用户侧的「标为未读」标记；只在标记确实存在时写库
-        conversationRepository.findById(conversationId).ifPresent(conv -> {
-            if (conv.isMarkedUnreadBy(userId)) {
-                conv.setMarkedUnreadBy(userId, false);
-                conv.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
-                conversationRepository.save(conv);
-            }
-        });
+        // 复用上面授权阶段已加载并校验过归属的会话，不再重复 findById（查询次数与改造前一致）
+        if (conversation.isMarkedUnreadBy(userId)) {
+            conversation.setMarkedUnreadBy(userId, false);
+            conversation.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+            conversationRepository.save(conversation);
+        }
     }
 
     @Override

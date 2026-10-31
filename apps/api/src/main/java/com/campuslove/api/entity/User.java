@@ -61,7 +61,10 @@ public class User {
      * 日志/审计请使用 {@link #getMaskedOpenid()} 获取脱敏值。</p>
      */
     @JsonIgnore
-    @Column(name = "openid", length = 128)
+    // FINDING B：DDL（V2026.05.18.0001:5）为 NOT NULL；全部写入路径均先置非空 openid
+    // （wechat 派生 hash / phone: 派生键 / guest:UUID / provider:hash），注销匿名化不清空。
+    // ddl-auto=validate 不校验可空性，显式 nullable=false 让契约在实体层可见。
+    @Column(name = "openid", length = 128, nullable = false)
     private String openid;
 
     /** 昵称 */

@@ -107,6 +107,18 @@ public class FeedbackController {
     return ApiResponse.ok(feedbackService.listMine(type));
   }
 
+  /**
+   * 管理端反馈裸列表（旧「裸列表」组，保留兼容 {@code apps/admin} 既有导出）。
+   *
+   * <p>URL 层 {@code /api/v1/admin/**} 已按方法分级（读：ADMIN / SUPER_ADMIN / AUDITOR）。
+   * <b>校区数据隔离（S2-2，2026-10-30）在 real 服务层强制</b>：
+   * {@link RealFeedbackService#listAdminFeedback()} 按「提交人所属校区」过滤，校区管理员 /
+   * 有校区的 AUDITOR 只返回本人管辖校区的工单，无校区账号（{@code AdminDataScope.NO_CAMPUS_SCOPE}
+   * 哨兵）返回空集，SUPER_ADMIN 仍为全局。响应形态（裸数组、不分页）未变。</p>
+   *
+   * <p>新后台请优先使用带分页与审计的 {@code GET /api/v1/admin/feedback/tickets}
+   * （{@code AdminFeedbackController}），两者的校区口径完全一致。</p>
+   */
   @GetMapping("/api/v1/admin/feedback")
   public List<SubmissionRecordView> listAdminFeedback() {
     return feedbackService.listAdminFeedback();
@@ -117,6 +129,11 @@ public class FeedbackController {
    *
    * <p>与其余 admin 端点一致返回裸对象（不使用 ApiResponse 包装），
    * 管理后台前端直接按数组/对象消费。</p>
+   *
+   * <p><b>校区越权拦截（S2-2，2026-10-30）</b>：{@code hasRole('ADMIN')} 只是角色轴，
+   * 校区轴由 {@link RealFeedbackService#replyFeedback(long, String)} 在写入前用
+   * {@code AdminDataScope#assertCampusAccess} 按<b>提交人所属校区</b>校验，
+   * 跨校区回复 → {@code OperationForbiddenException}（HTTP 403）且不落库。</p>
    *
    * @param id    反馈记录 ID
    * @param reply 回复内容（非空）
@@ -130,6 +147,18 @@ public class FeedbackController {
     return feedbackService.replyFeedback(id, reply.reply());
   }
 
+  /**
+   * 活动提案转为活动。
+   *
+   * <p><b>校区越权拦截（S2-2，2026-10-30）</b>：本端点会<b>真实创建 activities 行</b>，
+   * 因此除 {@code hasRole('ADMIN')} 外，还有 {@link RealFeedbackService#convertProposal(long)}
+   * 里的校区校验（提交人校区不匹配 → 403 且不创建 Activity），新活动的归属校区由
+   * {@code AdminDataScope#resolveCampusForWrite} 决定（校区管理员一律写自己的校区，
+   * SUPER_ADMIN 按提案期望值，内部哨兵绝不落库）。</p>
+   *
+   * <p>注意：这一条与 {@code /api/v1/admin/feedback/tickets} 那组<b>不重复</b>——
+   * 工单 handle 端点只推进状态、不生成活动。</p>
+   */
   @PostMapping("/api/v1/admin/activity-proposals/{id}/convert")
   @Idempotent
   @PreAuthorize("hasRole('ADMIN')")
