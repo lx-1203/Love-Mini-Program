@@ -12,6 +12,8 @@ import { useI18n } from "vue-i18n";
 import { useCoinsStore } from "../../../stores/coins";
 import { useAppConfigStore } from "../../../stores/app-config";
 import { request } from "../../../services/http";
+// P1 修复（2026-10-31）：充值幂等键要跨「页面卸载 / H5 刷新」存活 ⇒ 落盘，键名统一登记
+import { STORAGE_KEYS } from "../../../constants/storage-keys";
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 import { lightHaptic, successHaptic } from "../../../utils/haptic";
 import { IMAGE_PATHS } from "../../../config/images";
@@ -102,6 +104,94 @@ onShow(async () => {
 /** 演示充值进行中锁（MP-R1-C26REQ-002：防重入——快击 N 次即 N 个不同幂等键的
  *  POST /wallet/recharge，服务端幂等头无法去重，理论快击 5 次入账 5×¥100） */
 const recharging = ref(false);
+/**
+ * 演示充值的入账金额（分 = 100 元）；与幂等记录绑定，金额变了就是另一笔操作。
+ */
+const RECHARGE_AMOUNT_CENTS = 10000;
+
+/**
+ * 一次「未走完到终态」的充值操作（落盘形态）。
+ *
+ * P1 修复（2026-10-31）：充值幂等键此前是 `RECHARGE-DEMO-${Date.now()}` **在调用内**生成，
+ * 与自己 :119 那行「幂等键单次流程内固定」的注释直接矛盾——每击换一个键，服务端
+ * `POST /wallet/recharge` 的 `@Idempotent`（Idempotency-Key + Redis，见 WalletController）
+ * 就永远没有可去重的对象；唯一的真闸是内存里的 `recharging` ref，而它在
+ * `onUnload` / H5 刷新 / 请求被杀时一并消失。于是「服务端已入账、响应丢了」这一笔
+ * 会被下一次点击再入账一次。键必须跟着这笔操作活到终态 ⇒ 落盘。
+ */
+interface PendingRecharge {
+  /** 本次操作的 Idempotency-Key */
+  key: string;
+  /** 本次操作的入账金额（分）——金额不同即不同操作，不复用键 */
+  amountCents: number;
+}
+
+/** 读取未完成的充值操作（存储不可用/脏数据一律按「无」处理，不阻塞充值） */
+function readPendingRecharge(): PendingRecharge | null {
+  try {
+    const raw = uni.getStorageSync(STORAGE_KEYS.WALLET_PENDING_RECHARGE);
+    if (!raw) return null;
+    const parsed: unknown = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      typeof (parsed as PendingRecharge).key === "string" &&
+      (parsed as PendingRecharge).key &&
+      typeof (parsed as PendingRecharge).amountCents === "number"
+    ) {
+      return {
+        key: (parsed as PendingRecharge).key,
+        amountCents: (parsed as PendingRecharge).amountCents,
+      };
+    }
+    return null;
+  } catch (_e) {
+    return null;
+  }
+}
+
+/** 落盘未完成的充值操作（写入失败不影响本次请求，只是丢了跨页面的键复用） */
+function writePendingRecharge(pending: PendingRecharge): void {
+  try {
+    uni.setStorageSync(STORAGE_KEYS.WALLET_PENDING_RECHARGE, JSON.stringify(pending));
+  } catch (_e) {
+    /* 存储不可用（隐私模式/配额）：退化为仅本页面实例内复用键 */
+  }
+}
+
+/** 清除未完成记录：仅在操作抵达**终态**（入账成功）时调用 */
+function clearPendingRecharge(): void {
+  try {
+    uni.removeStorageSync(STORAGE_KEYS.WALLET_PENDING_RECHARGE);
+  } catch (_e) {
+    /* 清不掉就让下一次点击继续复用同一个键 —— 宁可被服务端判重复，不可重复入账 */
+  }
+}
+
+/**
+ * 取本次充值操作的幂等键：**同一笔未走完的充值必须复用同一个键**。
+ *
+ * 服务端语义（已核 apps/api，只读）：
+ * - `POST /wallet/recharge` 标了 `@Idempotent`（`IdempotentInterceptor`：Redis `SET NX EX`，
+ *   默认 TTL 4 小时），同键第二次进来抛 `IdempotencyException("重复请求已被拦截…")` ⇒ 不会重复入账；
+ * - 业务失败（HTTP ≥ 400）时拦截器会在 afterCompletion **释放**该键（R4-00287），
+ *   所以「保留键重试」不会被一次确定性失败永久锁死；
+ * - 服务层另有 order_id 唯一索引兜底。
+ *
+ * 若后端哪天不再按头去重，这里的键就只是对账线索，防重复入账只剩 `recharging` 在途锁
+ * 一道闸（扛不住刷新/杀进程）——所以键的稳定性本身必须测住。
+ */
+function acquireRechargeIdempotencyKey(amountCents: number): string {
+  const pending = readPendingRecharge();
+  if (pending && pending.amountCents === amountCents) return pending.key;
+  const created: PendingRecharge = {
+    key: `RECHARGE-DEMO-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+    amountCents,
+  };
+  writePendingRecharge(created);
+  return created.key;
+}
+
 /** 演示充值：+100 元（wallet/recharge 双 profile 可用：mock 内存 / real 数据库） */
 async function handleRecharge() {
   // MP-R1-C26REQ-002：在途/冷却期内忽略重复点击
@@ -113,17 +203,20 @@ async function handleRecharge() {
   }
   recharging.value = true;
   lightHaptic();
+  // 修复（P0-12）：后端 RechargeRequest 仅含 amountCents（orderId 由服务端生成），
+  // 删除请求体中的 orderId 字段；orderId 仅作为 Idempotency-Key 请求头防重复提交。
+  // P1 修复（2026-10-31）：幂等键在**派发之前**按「这一次充值操作」取得并落盘
+  // —— 与 :119 注释一致（键单次流程内固定），且响应丢失/刷新后的重试撞的是同一个键。
+  const orderId = acquireRechargeIdempotencyKey(RECHARGE_AMOUNT_CENTS);
   try {
-    // 修复（P0-12）：后端 RechargeRequest 仅含 amountCents（orderId 由服务端生成），
-    // 删除请求体中的 orderId 字段；orderId 仅作为 Idempotency-Key 请求头防重复提交。
-    // MP-R1-C26REQ-002：幂等键单次流程内固定（原 Date.now() 每击重生成，服务端无法去重）
-    const orderId = `RECHARGE-DEMO-${Date.now()}`;
     await request<{ balanceAfterCents: number }, { amountCents: number }>({
       url: "/wallet/recharge",
       method: "POST",
-      data: { amountCents: 10000 },
+      data: { amountCents: RECHARGE_AMOUNT_CENTS },
       headers: { "Idempotency-Key": orderId },
     });
+    // 终态：入账已确认 ⇒ 清掉未完成记录，下一次点击是一笔新操作、一个新键
+    clearPendingRecharge();
     await Promise.all([
       coinsStore.fetchBalance(true),
       coinsStore.listTransactions({ page: 0, size: 20 }),
@@ -131,6 +224,8 @@ async function handleRecharge() {
     successHaptic();
     uni.showToast({ title: t("wallet.rechargeSuccess", { n: 100 }), icon: "success" });
   } catch (err) {
+    // 非终态（超时/断网/响应丢失）：**保留**键不清 —— 重试复用同一个 Idempotency-Key，
+    // 由服务端 @Idempotent 拒掉「其实已经入账成功」的那一次重复提交。
     const message = err instanceof Error ? err.message : String(err);
     uni.showToast({ title: message, icon: "none" });
   } finally {
@@ -215,9 +310,9 @@ function amountText(item: { type?: string; amount: number }): string {
              仅 mock/开发环境展示；真实模式隐藏，避免用户无限刷余额 -->
         <view
           v-if="useMock() || isDev"
-          class="wallet__recharge press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('wallet.recharge')" @tap="handleRecharge"
+          class="wallet__recharge press-feedback" :class="{ 'wallet__recharge--pending': recharging }" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-disabled="recharging ? 'true' : 'false'" :aria-label="t('wallet.recharge')" @tap="handleRecharge"
         >
-          <text class="wallet__recharge-text">{{ t('wallet.recharge') }}</text>
+          <text class="wallet__recharge-text">{{ recharging ? t('common.loading') : t('wallet.recharge') }}</text>
         </view>
       </view>
 
@@ -422,6 +517,13 @@ function amountText(item: { type?: string; amount: number }): string {
   font-size: var(--fs-base, 26rpx);
   font-weight: 700;
   color: var(--c-brand-600, #22a35f);
+}
+
+/* P1 修复（2026-10-31）：充值在途期间按钮进入禁用态（H5 连点不落地；
+   MP 侧 pointer-events 不生效，由 handleRecharge 的 recharging 早退兜底）。 */
+.wallet__recharge--pending {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 /* ========== 批次 A / ADR-2：商业化封存态 ========== */

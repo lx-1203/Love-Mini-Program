@@ -15,11 +15,16 @@
  * 入场/出场动画：遮罩复用全局 overlay-fade-in/out keyframes，
  * 面板使用本组件自定义 whisper-sheet-slide-up/down 上下滑
  * （与 QuickFilterSheet 同款 closing ref + 200ms 定时器模式，卸载时清理）。
+ *
+ * 金额口径（P1 修复 2026-10-31）：`balanceCents` 入参是**分**（后端钱包口径），
+ * 屏上「余额 / 解锁需」两个数字都用**元**展示，且都取自 stores/coins 的
+ * formatCentsAsYuan / unlockCostYuan 同一换算处 —— 与钱包页余额卡同单位，
+ * 不再出现「钱包 20、这里 2000」。
  */
 import { ref, computed, watch, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
-import { UNLOCK_COST_YUAN } from "../../stores/coins";
+import { formatCentsAsYuan, unlockCostCents, unlockCostYuan } from "../../stores/coins";
 
 /** 弹层阶段：付费墙 → 解锁中 → 结果 */
 type WhisperPhase = "paywall" | "unlocking" | "result";
@@ -58,13 +63,28 @@ const closing = ref(false);
 /** 关闭动画定时器引用（卸载时清理） */
 let closeTimer: ReturnType<typeof setTimeout> | null = null;
 
-/** 悄悄话解锁单价（分，定价镜像表与服务端 app.unlock-price.whisper 对齐） */
-const WHISPER_COST_CENTS = Math.round(UNLOCK_COST_YUAN.WHISPER * 100);
+/**
+ * 悄悄话解锁单价（分）——经 stores/coins 的 unlockCostCents() 唯一派生处取，
+ * 不在本组件 `Math.round(UNLOCK_COST_YUAN.WHISPER * 100)`（coins.ts 明令禁止的
+ * 平行换算站点，P1 修复 2026-10-31 顺带清掉）。
+ */
+const whisperCostCents = computed<number>(() => unlockCostCents("WHISPER"));
 
-/** 余额是否足够（null 视为未知：不拦截，由解锁请求兜底校验） */
+/** 悄悄话解锁单价（元，与余额同一个单位口径） */
+const whisperCostYuan = computed<number>(() => unlockCostYuan("WHISPER"));
+
+/** 余额是否足够（**分 vs 分**比较；null 视为未知：不拦截，由解锁请求兜底校验） */
 const hasEnoughBalance = computed<boolean>(
-  () => props.balanceCents === null || props.balanceCents >= WHISPER_COST_CENTS
+  () => props.balanceCents === null || props.balanceCents >= whisperCostCents.value
 );
+
+/**
+ * 余额展示文本（元）—— P1 修复（2026-10-31）：
+ * 此前这里把**分**原样填进「当前余额 {n} 交友币」，而同一屏的费用行用的是元，
+ * 于是钱包页印 20、本弹层印 2000；且「余额不足」判定吃的是分，与印在旁边的数字自相矛盾。
+ * 现在余额与费用一律走 formatCentsAsYuan / unlockCostYuan 这同一个换算出口。
+ */
+const balanceText = computed<string>(() => formatCentsAsYuan(props.balanceCents));
 
 /** 每次打开重置到付费墙（结果态仅由解锁成功后 showResult 驱动） */
 watch(
@@ -162,13 +182,13 @@ defineExpose({ showResult, resetToPaywall });
           </view>
           <text class="whisper-letter__name">{{ t('discover.whisperFromUser', { name: userName }) }}</text>
           <text class="whisper-letter__hint">{{ t('discover.whisperGuideDesc') }}</text>
-          <text class="whisper-letter__hint whisper-letter__cost">{{ t('discover.whisperCostHint', { n: UNLOCK_COST_YUAN.WHISPER }) }}</text>
+          <text class="whisper-letter__hint whisper-letter__cost">{{ t('discover.whisperCostHint', { n: whisperCostYuan }) }}</text>
         </view>
         <text
           class="whisper-sheet__balance"
           :class="{ 'whisper-sheet__balance--insufficient': !hasEnoughBalance }"
         >
-          {{ t('discover.whisperBalanceHint', { n: props.balanceCents ?? '--' }) }}
+          {{ t('discover.whisperBalanceHint', { n: balanceText }) }}
         </text>
         <view class="whisper-sheet__actions">
           <view

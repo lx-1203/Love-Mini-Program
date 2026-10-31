@@ -69,6 +69,39 @@ export const UNLOCK_COST_YUAN: Record<UnlockScene, number> = {
 };
 
 /**
+ * 分 → 元：**全仓唯一的单位换算处**（P1 修复 2026-10-31）。
+ *
+ * 背景：后端钱包金额一律是「分」，展示口径是「元」。此前各组件各自
+ * `props.balanceCents` 直接塞进「{n} 交友币」文案（悄悄话弹层印 2000、
+ * 钱包页印 20），单位漂移没人拦。从本函数出发的一切展示都算「同一处换算」，
+ * 其余站点请不要再手写 `/ 100`。
+ *
+ * @param cents 金额（分）
+ * @returns 金额（元）
+ */
+export function centsToYuan(cents: number): number {
+  return cents / 100;
+}
+
+/**
+ * 分 → 「元」展示文本（所有 `{n} 交友币` / 金额插值文案的唯一出口）。
+ *
+ * - `null` / `undefined` / 非有限值 → `"--"`（余额未知：不印 0 误导用户）；
+ * - 其余按元输出，最多 2 位小数并去掉尾零：2000 分 → `"20"`、150 分 → `"1.5"`。
+ *
+ * 修复（P1 2026-10-31）：悄悄话解锁/发送弹层此前把**分**原样填进
+ * 「当前余额 {n} 交友币」，与同一屏上用元显示的费用行、以及钱包页的余额卡
+ * 三者单位不一致（钱包 20 / 弹层 2000）。消费方一律改走本函数。
+ *
+ * @param cents 金额（分，可空表示未知）
+ * @returns 用于文案插值的元值字符串
+ */
+export function formatCentsAsYuan(cents: number | null | undefined): string {
+  if (cents === null || cents === undefined || !Number.isFinite(cents)) return "--";
+  return String(Number(centsToYuan(cents).toFixed(2)));
+}
+
+/**
  * 单一派生处：场景 → 展示/预检用的扣费金额（分）。
  *
  * 取值优先级：服务端本次实际扣减额（`/wallet/deduct` 响应的 amountCents，资金权威）
@@ -89,12 +122,12 @@ export function unlockCostCents(
   return Math.round(UNLOCK_COST_YUAN[scene] * 100);
 }
 
-/** 场景 → 展示用金额（元），与 unlockCostCents 同一处派生（不另算第二遍）。 */
+/** 场景 → 展示金额（元），与 unlockCostCents 同一处派生（不另算第二遍）。 */
 export function unlockCostYuan(
   scene: UnlockScene,
   serverObservedCents?: number | null,
 ): number {
-  return unlockCostCents(scene, serverObservedCents) / 100;
+  return centsToYuan(unlockCostCents(scene, serverObservedCents));
 }
 
 /**
@@ -160,11 +193,11 @@ export const useCoinsStore = defineStore("coins", () => {
 
   /** 场景 → 展示/预检金额（元）：与 costCentsFor 同一处派生，不另算第二遍。 */
   function costYuanFor(scene: UnlockScene): number {
-    return costCentsFor(scene) / 100;
+    return centsToYuan(costCentsFor(scene));
   }
 
-  /** 余额（元，展示用） */
-  const balanceYuan = computed<number>(() => balanceCents.value / 100);
+  /** 余额（元，展示用）——分→元只经 centsToYuan 这一处（P1 修复 2026-10-31） */
+  const balanceYuan = computed<number>(() => centsToYuan(balanceCents.value));
 
   /** 流水列表（当前页） */
   const transactions = ref<CoinTransactionItem[]>([]);

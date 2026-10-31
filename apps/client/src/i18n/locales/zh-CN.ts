@@ -485,7 +485,7 @@ export default {
     "toUser": "写给 {name}",
     "defaultName": "TA",
     "placeholder": "说点什么吧（60 字以内）",
-    "price": "价格：200 交友币",
+    "price": "价格：{n} 交友币",
     "balance": "余额：{n} 交友币",
     "send": "发送悄悄话",
     "sent": "已送达，优先展示给 TA",
@@ -4019,7 +4019,7 @@ export default {
     "dailyQuestion": {
       "questionIdInvalid": "问题 ID 无效",
       "answerContentEmpty": "回答内容不能为空",
-      "answerContentTooLong": "回答内容不能超过500字",
+      "answerContentTooLong": "回答内容不能超过{n}字",
       "loadQuestionFailed": "加载每日一问失败",
       "submitAnswerFailed": "提交回答失败",
       "loadAnswersFailed": "加载回答失败"

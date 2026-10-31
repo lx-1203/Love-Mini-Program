@@ -130,6 +130,17 @@ export const STORAGE_KEYS = {
   /** dev-vip 模拟开关（仅开发环境生效，stores/vip.ts 与 dev 页共用） */
   VIP_SIM_ENABLED: "campus-love:dev-vip-sim",
 
+  /* ========== 钱包 / 充值 ========== */
+  /**
+   * 演示充值的「一次未完成操作」记录（JSON：`{ key, amountCents, createdAt }`）。
+   *
+   * 登记原因（P1 修复 2026-10-31）：充值幂等键必须跨「页面卸载 / H5 刷新 / 请求被杀」
+   * 存活，否则同一次充值在响应丢失后被重新点亮 = 账户被重复入账。内存 ref 扛不住这三种情况，
+   * 所以键要落盘。属账号资金数据 ⇒ 自动落入 USER_SCOPED_STORAGE_KEYS（登出即清，
+   * 不留给下一账号一个「看起来还在进行中」的充值操作）。
+   */
+  WALLET_PENDING_RECHARGE: "wallet:pending-recharge",
+
   /* ========== 安全与设备 ========== */
   /** 已下线（踢出）设备 ID 集合（pages/security 本地演示持久化） */
   KICKED_DEVICES: "security:kicked-devices",

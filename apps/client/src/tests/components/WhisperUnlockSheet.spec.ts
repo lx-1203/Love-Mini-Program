@@ -79,4 +79,63 @@ describe("WhisperUnlockSheet - 悄悄话解锁弹层（2026-08-14 多条文案 +
     await chatBtn!.trigger("tap");
     expect(wrapper.emitted("chat")).toBeTruthy();
   });
+
+  /**
+   * P1 修复（2026-10-31）：这一屏的余额此前印的是**分**。
+   *
+   * 改前实况：`:balance-cents="coinsStore.balanceCents"`（分）被原样填进
+   * 「当前余额 {n} 交友币」，而同一条费用行走的是 `UNLOCK_COST_YUAN.WHISPER`（元）⇒
+   * 同一个账号钱包页说 20、这里说 2000；而「余额不足」判定吃的是分
+   * （`balanceCents >= WHISPER_COST_CENTS`），与印在它旁边的数字自相矛盾。
+   *
+   * 这里刻意用**数字断言**而不是快照：单位再漂移（比如有人把换算改成 *1000）
+   * 会直接被数值打到，而不是只改一张快照就悄悄过。
+   */
+  describe("金额单位：余额与费用同一条口径（元）", () => {
+    /** 抠出「当前余额 {n} 交友币」里那个数字 */
+    function printedBalance(wrapper: ReturnType<typeof mountSheet>): number | null {
+      const m = wrapper.find(".whisper-sheet__balance").text().match(/当前余额\s*([\d.]+)\s*交友币/);
+      return m ? Number(m[1]) : null;
+    }
+
+    it("余额 2000 分（=20 元）渲染 20，绝不渲染 2000", () => {
+      const wrapper = mountSheet({ balanceCents: 2000 });
+      expect(wrapper.find(".whisper-sheet__balance").text()).toBe("当前余额 20 交友币");
+      expect(printedBalance(wrapper)).toBe(20);
+      // 分→元的显式关系：印出来的数 = cents/100，且不等于 cents 本身
+      expect(printedBalance(wrapper)).toBe(2000 / 100);
+      expect(printedBalance(wrapper)).not.toBe(2000);
+      expect(wrapper.text()).not.toContain("2000");
+    });
+
+    it("费用行与余额行同单位：解锁需 2 交友币 / 余额 5 交友币（500 分）", () => {
+      const wrapper = mountSheet({ balanceCents: 500 });
+      expect(wrapper.find(".whisper-letter__cost").text()).toBe("解锁需 2 交友币");
+      expect(wrapper.find(".whisper-sheet__balance").text()).toBe("当前余额 5 交友币");
+    });
+
+    it("余额 1.5 元（150 分）< 单价 2 元 ⇒ 进入余额不足态", () => {
+      const wrapper = mountSheet({ balanceCents: 150 });
+      expect(printedBalance(wrapper)).toBe(1.5);
+      expect(wrapper.find(".whisper-sheet__balance").classes()).toContain(
+        "whisper-sheet__balance--insufficient"
+      );
+    });
+
+    it("余额恰好等于单价（200 分 = 2 元）⇒ 不算不足（分对分比较，不能被单位换算带偏）", () => {
+      const wrapper = mountSheet({ balanceCents: 200 });
+      expect(wrapper.find(".whisper-sheet__balance").text()).toBe("当前余额 2 交友币");
+      expect(wrapper.find(".whisper-sheet__balance").classes()).not.toContain(
+        "whisper-sheet__balance--insufficient"
+      );
+    });
+
+    it("余额未知（null）⇒ 印 -- 且不拦（由后端兜底校验）", () => {
+      const wrapper = mountSheet({ balanceCents: null });
+      expect(wrapper.find(".whisper-sheet__balance").text()).toBe("当前余额 -- 交友币");
+      expect(wrapper.find(".whisper-sheet__balance").classes()).not.toContain(
+        "whisper-sheet__balance--insufficient"
+      );
+    });
+  });
 });
