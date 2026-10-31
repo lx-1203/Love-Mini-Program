@@ -91,7 +91,7 @@ redis ─┘                              ├─→ api ─→ admin ─→ clie
                                       │        ↑
                                       │        ├─→ prometheus ─→ grafana
                                       │        │                └─→ alertmanager
-                                      │        └─→ node-exporter (profile: monitoring)
+                                      │        └─→ node-exporter (默认常开)
 mysql ─→ backup (profile: backup)
 ```
 
@@ -301,12 +301,36 @@ docker compose up -d mysql redis
 ### 启动监控告警
 
 ```bash
-# 启动 Prometheus + Grafana + Alertmanager + Node Exporter
-docker compose --profile monitoring up -d
+# Prometheus + Grafana + Alertmanager + Node Exporter 都在默认部署里（无 profile 门控）
+docker compose up -d
 
 # Grafana 访问地址：http://localhost:3001
 # 默认账号：admin / .env 中 GRAFANA_ADMIN_PASSWORD
 ```
+
+> ✅ **主机指标这条链已经接通（2026-11-01 修）。**
+> 此前 `docker/prometheus/prometheus.yml` 里 `job_name: node-exporter` 那段是注释状态，
+> 而 `HostDiskHigh` / `HostMemoryHigh` / `HostCpuHigh` / `BackupNeverCompleted` 查的正是
+> `node_*`、`node_backup_*`：Prometheus 不评估空向量 ⇒ **四条规则永不触发、也不报错**
+> （和 2026-10-29 那条 `spring_boot_health_status` 死告警同一类）。当时的登记方式是
+> "规则里写 INERT-WITHOUT-SCRAPE 前置声明 + 文档教运维自己补第二步"，而不是把 job 打开。
+> 现在 job 常开，node-exporter 也和 prometheus 一样不再受 profile 门控
+> （R4-00486 用注释防 target 长期 DOWN，前提是容器只在 profile 里起；两边现在同档，
+> 容器与抓取要么都在、要么都不在）。
+>
+> 部署后自检（任一条为空就说明这条链又是哑的）：
+>
+> ```bash
+> curl -s 'http://localhost:9090/api/v1/query?query=up%7Bjob=%22node-exporter%22%7D' | grep -o '"value":\[[^]]*\]'
+> curl -s 'http://localhost:9090/api/v1/query?query=count(node_filesystem_avail_bytes)' | grep -o '[0-9.]*\]'
+> ```
+>
+> `BackupNeverCompleted` 还剩一个自己的前置：`node_backup_*` 由 backup 容器里的脚本
+> 写进 textfile 目录，所以必须 `--profile backup` 起备份（见下一节），否则指标同样为空。
+>
+> 接线状态由 `npm run test:monitoring` 钉住：job 被重新注释 ⇒ 门红；规则里还挂着
+> `INERT-WITHOUT-SCRAPE=node-exporter` 这种过期声明 ⇒ 同样门红；node-exporter 与
+> prometheus 的 profile 档位被改成不一致 ⇒ 也门红。
 
 ### 启动数据库备份
 
@@ -334,32 +358,68 @@ BACKUP_ENCRYPT=true BACKUP_ENCRYPTION_KEY='<从密钥管理注入>' \
 
 | 服务 | 镜像 | 宿主机端口（默认） | 容器端口 | Profile | 健康检查 | 日志驱动 |
 |------|------|---------------------|----------|---------|----------|----------|
-| `mysql` | `mysql:8.0` | `${MYSQL_PORT:-3306}` | 3306 | 默认 | `mysqladmin ping` (10s/5s/10次/start 30s) | json-file (10m×5) |
-| `redis` | `redis:7-alpine` | `${REDIS_PORT:-6379}` | 6379 | 默认 | `redis-cli ping` (10s/5s/5次/start 10s) | json-file (10m×5) |
+| `mysql` | `mysql:8.0.39` | `${MYSQL_PORT:-3306}` | 3306 | 默认 | `mysqladmin ping` (10s/5s/10次/start 30s) | json-file (10m×5) |
+| `redis` | `redis:7.2.5-alpine` | `${REDIS_PORT:-6379}` | 6379 | 默认 | `redis-cli ping` (10s/5s/5次/start 10s) | json-file (10m×5) |
 | `migrate` | `flyway/flyway:10.10.0-alpine` | - | - | 默认（一次性，`restart: "no"`） | 无（跑完即退出，供 api 依赖其成功完成） | json-file (10m×3) |
 | `api` | `${IMAGE_PREFIX:-campus-love}/api:${TAG:-dev}` | `${API_PORT:-8080}` | 8080 | 默认 | `curl /actuator/health` (30s/5s/5次/start 90s) | json-file (10m×5) |
 | `admin` | `${IMAGE_PREFIX:-campus-love}/admin:${TAG:-dev}` | `${ADMIN_PORT:-5177}` | 8080 | 默认 | `curl /healthz` (30s/5s/3次/start 10s) | json-file (10m×5) |
-| `client` | `nginx:1.27-alpine` | `${CLIENT_PORT:-5173}` | 80 | `client-h5` | `wget /` (30s/5s/3次/start 10s) | json-file (10m×5) |
+| `client` | `nginx:1.27.3-alpine` | `${CLIENT_PORT:-5173}` | 80 | `client-h5` | `wget /` (30s/5s/3次/start 10s) | json-file (10m×5) |
 | `prometheus` | `prom/prometheus:v2.55.0` | `${PROMETHEUS_PORT:-9090}` | 9090 | 默认 | `wget /-/healthy` (30s/5s/3次) | json-file (10m×5) |
 | `grafana` | `grafana/grafana:11.3.0` | `${GRAFANA_PORT:-3001}` | 3000 | 默认 | `wget /api/health` (30s/5s/3次/start 30s) | json-file (10m×5) |
 | `alertmanager` | `prom/alertmanager:v0.27.0` | `${ALERTMANAGER_PORT:-9093}` | 9093 | 默认 | `wget /-/healthy` (30s/5s/3次) | json-file (10m×5) |
-| `node-exporter` | `prom/node-exporter:v1.8.2` | `${NODE_EXPORTER_PORT:-9100}` | 9100 | `monitoring` | `wget /-/healthy` (30s/5s/3次/start 10s) | json-file (10m×5) |
-| `backup` | `alpine:3.19` | - | - | `backup` | `pgrep crond` (60s/5s/3次/start 30s) | json-file (10m×3) |
+| `node-exporter` | `prom/node-exporter:v1.8.2` | `${NODE_EXPORTER_PORT:-9100}` | 9100 | 默认 | `wget /-/healthy` (30s/5s/3次/start 10s) | json-file (10m×5) |
+| `backup` | `alpine:3.19.4` | - | - | `backup` | `pgrep crond` (60s/5s/3次/start 30s) | json-file (10m×3) |
+
+> ⚠️ **`backup` 这一行的镜像是有坑的，别只看表面**：alpine 仓库里的 `mysql-client~10.11`
+> 是 **MariaDB 血统**（compose 文件自己的注释就这么写的），而服务端是 `mysql:8.0.39`。
+> MariaDB 的 `mysqldump` 不认识 `--set-gtid-purged`、它的 `mysqlbinlog` 解析不了 MySQL 8
+> 的 binlog 事件。`scripts/backup-mysql.sh` 现在会先探测血统：探测到 MariaDB 即**硬失败**
+> 并点名修法（换 `mysql:8.0.39` 镜像 / `BACKUP_MYSQLDUMP_BIN` 指对二进制 /
+> 自担风险 `BACKUP_ALLOW_MARIADB_DUMP=true`）。在这三条都没落实前，
+> **不要假设每日备份是成功的**——判据只有一个：`docker compose logs backup` 里出现
+> `BACKUP-STATUS=OK exit=0` 与 `PITR-COVERAGE … gaps=none`。
 
 > **健康检查说明**：`interval/timeout/retries/start_period` 格式。`mysql` 与 `redis` 的 healthcheck 分别通过容器环境变量 `MYSQL_PWD` / `REDISCLI_AUTH` 传递密码，密码不出现在进程参数中（infra #3）。
 >
 > **日志驱动说明**：所有服务统一使用 `json-file` 日志驱动，通过 `max-size` 与 `max-file` 限制单文件大小（10MB）与轮转文件数（5 个，backup 为 3 个），避免日志撑满磁盘。
 >
 > **Profile 说明**：
-> - 默认启动：`mysql`、`redis`、`migrate`（一次性迁移）、`api`、`admin`、`prometheus`、`grafana`、`alertmanager`
+> - 默认启动：`mysql`、`redis`、`migrate`（一次性迁移）、`api`、`admin`、`prometheus`、`grafana`、`alertmanager`、`node-exporter`
 > - `--profile client-h5`：追加 `client`（H5 预览，mp-weixin 产物需在微信开发者工具中导入）
-> - `--profile monitoring`：追加 `node-exporter`（主机指标采集）
+> - （2026-11-01 起 `monitoring` 这个 profile 已不存在：`node-exporter` 改为与
+>   `prometheus` 同档常开。旧文档里的 `--profile monitoring` 现在是无效果的空 flag，
+>   写它反而会让运维以为"没带这个 flag 就没有主机指标"。）
 > - `--profile backup`：追加 `backup`（MySQL 定时备份 cron sidecar）。⚠️ **`docker compose up -d` 不会启动 backup**，
 >   等于没有备份；必须显式 `docker compose --profile backup up -d`（见「启动数据库备份」）。
 > - `migrate` 无 profile（始终参与默认启动），它是 `api` 的 `service_completed_successfully` 前置；
 >   因此把它挪进 profile 会让 `api` 起不来——保持默认。
 
 > 启动顺序与依赖关系见本文档开头「部署架构图 → 启动顺序」小节。
+
+### 这条链路是在哪个环境里被证明的（CI ≠ compose）
+
+同一段迁移/鉴权链，CI 与本编排用的 **MySQL 认证与 JDBC 参数并不一致**，所以"CI 绿"不等于
+"compose 起得来"，反之亦然（2026-10-31 复审明确记录下来，别再拿一边的绿去背书另一边）：
+
+| 维度 | `.github/workflows/ci.yml`（db-integration / e2e-real） | `docker-compose.yml` |
+|------|------|------|
+| 镜像 | `mysql:8.0.39` | `mysql:8.0.39` |
+| 认证插件 | **默认 `caching_sha2_password`**（services 只给 env，没有 command/options 覆盖） | `--default-authentication-plugin=mysql_native_password`（compose:104） |
+| JDBC URL | `…?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai`（ci.yml:328/367/793） | `…&useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true`（compose:284） |
+| 已证明的 | Flyway 从空库建链、real profile 鉴权链 —— **在 caching_sha2 + 无 allowPublicKeyRetrieval 的组合下** | 本机的 compose 链路 **从未证明过**：本机 Docker 引擎停机 |
+
+推论与注意：
+
+1. `allowPublicKeyRetrieval=true` 只在 **caching_sha2_password** 首次取公钥时才需要。compose
+   把服务器强制成 `mysql_native_password`，所以那边的 URL 带不带它都不影响结果——两处不一致
+   **今天不是 bug**，但它是"两份真相"：哪天 compose 去掉 `--default-authentication-plugin`
+   （MySQL 8.4 起该参数已被 `authentication_policy` 取代），宿主侧连库就会变成需要取公钥，
+   而带 `allowPublicKeyRetrieval=true` 的那条 URL 才连得上。
+2. 反过来，若照 CI 的 URL 去连 compose 里的 8.4+ 服务器 → 取不到公钥 → 连接失败。
+   真要升 MySQL 8.4，这两处必须一起改，并且**只能在真实容器里验一次**才算数。
+3. 因此：本仓当前的"迁移/real profile 可跑通"这一结论，证据来源是 CI；
+   compose 侧的等价性目前只有静态门（`npm run test:deployment-config` 等）在管，
+   运行时证据为 0（见文末「未证明」清单）。
 
 ### 环境变量清单（与 `.env.example` 对齐）
 
@@ -385,7 +445,7 @@ BACKUP_ENCRYPT=true BACKUP_ENCRYPTION_KEY='<从密钥管理注入>' \
 | `AGNES_API_KEY` | - | - | Agnes AI 服务密钥 | api |
 | `AGNES_API_BASE` | - | `https://api.agnes-ai.com/api` | Agnes AI 服务地址 | api |
 | `AGNES_TIMEOUT_MS` | - | `30000` | Agnes AI 超时 | api |
-| `ADMIN_OPENID` | ✅（生产） | - | 管理员 OpenID（默认空，生产必填） | api |
+| `ADMIN_OPENID` | ✅（生产） | **无默认值** | 管理员 OpenID。compose 两处（`migrate` 与 `api`）都用 `${ADMIN_OPENID:?…}` 读取：未设置或空串 ⇒ compose 直接中止，一行迁移都不会跑（旧文档"默认空"描述的是已废弃的 `:-` 写法，2026-10-31 更正；`apps/api/src/main/resources/application-real.yml` 的 114、133 行同样去掉了默认值） | migrate、api |
 | `ADMIN_NICKNAME` | - | `系统管理员` | 管理员昵称 | api |
 | `ADMIN_INITIAL_PASSWORD_HASH` | ✅（real） | - | 管理员初始密码 BCrypt 哈希（real 档 AdminPasswordValidator fail-fast；不得使用仓库内出现过的口令） | api |
 | `RABBITMQ_HOST` / `RABBITMQ_PORT` / `RABBITMQ_USERNAME` / `RABBITMQ_PASSWORD` | - | 空（本编排未部署 MQ，应用自动降级；启用 MQ 时必填强凭据，禁止 guest，R4-02089） | RabbitMQ 连接（可选） | api |
@@ -402,7 +462,11 @@ BACKUP_ENCRYPT=true BACKUP_ENCRYPTION_KEY='<从密钥管理注入>' \
 | `BACKUP_KEEP_COUNT` | - | `7`（脚本内单一真相源） | 每类产物至少保留份数（下限，防止删光最近备份）（S4-3） | backup |
 | `BACKUP_ENCRYPT` | - | `false` | 置真则备份落盘前 AES-256 加密（S4-3） | backup |
 | `BACKUP_ENCRYPTION_KEY` | - | 无（**无默认值**） | 加密密钥；`BACKUP_ENCRYPT` 为真而此项缺失时脚本硬失败、绝不落明文。切勿写进 compose/仓库，仅部署机 .env/密钥管理注入（S4-3） | backup |
-| `BACKUP_BINLOG_ARCHIVE` | - | `true` | 归档 `mysql-bin.*` 以支撑 PITR（S4-3）；关闭则不做 binlog、也不给 mysqldump 加 `--master-data` | backup |
+| `BACKUP_BINLOG_ARCHIVE` | - | `true` | 归档 `mysql-bin.*` 以支撑 PITR（S4-3）；关闭则不做 binlog、也不给 mysqldump 加坐标开关。**开启时脚本会强制校验覆盖**：拿不到坐标、binlog 目录没挂载、归档有缺口 ⇒ exit 3（2026-10-31） | backup |
+| `BACKUP_MYSQLDUMP_BIN` / `BACKUP_MYSQLBINLOG_BIN` | - | 空（= PATH 上的 `mysqldump` / `mysqlbinlog`） | 指定要用的客户端二进制（血统/版本对不上时的修法之一，2026-10-31） | backup |
+| `BACKUP_ALLOW_MARIADB_DUMP` | - | `false` | alpine 的 `mysql-client` 是 MariaDB 血统：默认**拒绝运行**并点名修法；置真才继续（绕开不支持的开关，且放弃 mysqlbinlog 层校验） | backup |
+| `BACKUP_ALERT_URL` | - | 空 | 备份失败时直发的告警入口（如 `http://alertmanager:9093/api/v2/alerts`）。空 + 无 textfile 目录 ⇒ 脚本每次打 `LOUDD WARN`：失败只有 cron.log 一个去处 | backup |
+| `BACKUP_TEXTFILE_DIR` | - | `/mnt/node-textfile` | node-exporter textfile collector 目录，落 `node_backup_last_success_timestamp_seconds` / `node_backup_last_exit_code`（compose 已把宿主 `./backups/node-textfile` 同时挂给 backup 与 node-exporter） | backup、node-exporter |
 | `MYSQL_BINLOG_DIR` | - | `/var/lib/mysql` | backup 容器内 binlog 源目录（= 只读挂载的 mysql-data 卷）（S4-3） | backup |
 | `BACKUP_CRON` | - | `0 2 * * *` | 备份 cron 表达式（由 backup 服务启动命令写入 crontab） | backup |
 | `BACKUP_DIR` | - | `/backups` | 备份存储目录（容器内，与宿主 `./backups` bind 挂载对齐） | backup |
@@ -608,26 +672,36 @@ docker compose exec backup cat /backup/cron.log 2>/dev/null || true
 
 ### MySQL 恢复（全量）
 
+**首选：用 `scripts/restore-mysql.sh`**（2026-10-31 新增；默认 dry-run，只有 `--apply` 才写库；
+口令走 `--defaults-extra-file` 的临时 0600 文件，不进进程参数；目标库默认是影子库
+`campus_love_drill`，指向 `campus_love` 会被直接拒绝，除非显式 `--allow-live-target`）。
+
 ```bash
-# 1. 停止 API 服务避免恢复期间有写入
+# 0. 先跑 dry-run：打印计划 + 位置算式（PITR-COVERAGE 行），什么都不做
+set -a; . ./.env; set +a          # ⚠️ shell 不会自动 source .env，不写这步 MYSQL_* 全是空的
+MYSQL_PASSWORD="${MYSQL_ROOT_PASSWORD}" \
+  scripts/restore-mysql.sh --artifact ./backups/campus_love-<YYYYMMDD-HHMMSS>.sql.gz
+
+# 1. 停 API 避免恢复期间有写入
 docker compose stop api
 
-# 2. 恢复备份到 MySQL（明文 .sql.gz 直接 gunzip；加密 .sql.gz.enc 先解密再 gunzip）
-BACKUP=./backups/campus_love-20260729-020000.sql.gz   # 或同名 .enc
-case "$BACKUP" in
-  *.enc) openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 \
-           -pass env:BACKUP_ENCRYPTION_KEY -in "$BACKUP" | gunzip \
-           | docker compose exec -T mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" campus_love ;;
-  *)     gunzip -c "$BACKUP" \
-           | docker compose exec -T mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" campus_love ;;
-esac
+# 2. 真执行（先在影子库演练成功，再谈生产）
+MYSQL_PASSWORD="${MYSQL_ROOT_PASSWORD}" \
+  scripts/restore-mysql.sh --artifact ./backups/campus_love-<YYYYMMDD-HHMMSS>.sql.gz \
+    --target-schema campus_love_drill --apply
 
 # 3. 验证关键表行数
-docker compose exec mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" campus_love \
-  -e "SELECT COUNT(*) FROM users; SELECT COUNT(*) FROM posts;"
+docker compose exec mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot campus_love_drill \
+  -e "SELECT COUNT(*) FROM users; SELECT COUNT(*) FROM posts;"'
+```
 
-# 4. 重启 API
-docker compose up -d api
+手工路径（仅在脚本不可用时）——注意三条规矩：口令不进进程参数、`.env` 要自己 source、
+容器内 mysql 客户端用 `MYSQL_PWD` 而不是 `-p`：
+
+```bash
+set -a; . ./.env; set +a
+gunzip -c ./backups/campus_love-<YYYYMMDD-HHMMSS>.sql.gz \
+  | docker compose exec -T -e MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" mysql sh -c 'mysql -uroot campus_love_drill'
 ```
 
 > 恢复期间不要重复跑 `migrate`：全量备份已含 `flyway_schema_history`，导入后迁移状态
@@ -635,49 +709,80 @@ docker compose up -d api
 
 ### 按时间点恢复（PITR，S4-3）
 
-前置：备份为 `BACKUP_BINLOG_ARCHIVE=true` 产出（mysqldump 头部有 `-- CHANGE MASTER TO
-MASTER_LOG_FILE='mysql-bin.NNNNNN', MASTER_LOG_POS=...;` 注释），且
-`./backups/binlogs/` 内有覆盖目标时刻的 `mysql-bin.*.gz[.enc]` 归档。若当初 binlog
-未开或卷未挂载，脚本会记录 WARN 且无归档——此时 PITR 不可用，只能回到全量快照点。
+前置：备份为 `BACKUP_BINLOG_ARCHIVE=true` 产出，且同目录有 `<artifact>.manifest`
+（2026-10-31 起由脚本写出：`dump_binlog_file` / `dump_binlog_pos` / `archived_binlogs` /
+`mysqlbinlog_verified` / `artifact_sha256`）。归档文件名是
+**`mysql-bin.<NNNNNN>.gz` 或 `.gz.enc`**——不是裸的 `mysql-bin.<NNNNNN>`：
+旧文档写 `mysqlbinlog … ./backups/binlogs/mysql-bin.<NNNNNN>`，那个路径从来不存在，
+照抄必然失败（本轮修掉的三处断链之一）。
 
 ```bash
-# 1. 先按「MySQL 恢复（全量）」把库还原到快照点（导入全量备份）
-# 2. 从备份头部读出快照坐标
-HEAD=$( { [ "${BACKUP##*.}" = enc ] && openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 -pass env:BACKUP_ENCRYPTION_KEY -in "$BACKUP" | gunzip || gunzip -c "$BACKUP"; } | head -50 )
-echo "$HEAD" | grep -E 'CHANGE MASTER TO'
-# 3. 用 mysqlbinlog 从该坐标重放到目标时间戳（示例：SET @@session.sql_log_bin=0 于目标库）
-#    归档为 .gz.enc 时先 openssl 解密再 gunzip，喂给 mysqlbinlog --read-from-remote-server 不适用，
-#    需先把解密后的原始 binlog 文件落盘（解密到临时目录，仅在本机操作）：
-mysqlbinlog --start-position=<POS> --stop-datetime='2026-07-29 15:30:00' \
-  ./backups/binlogs/mysql-bin.<NNNNNN> \
-  | docker compose exec -T mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" campus_love
+# 首选：restore 脚本自己算覆盖（dump 坐标 ↔ 归档首末文件 ↔ 缺口），
+# 覆盖不足会直接拒绝执行；位置参数从 manifest/SQL 头部读，不用手抄
+set -a; . ./.env; set +a
+MYSQL_PASSWORD="${MYSQL_ROOT_PASSWORD}" scripts/restore-mysql.sh \
+  --artifact ./backups/campus_love-<YYYYMMDD-HHMMSS>.sql.gz \
+  --point-in-time '2026-10-31 15:30:00' --target-schema campus_love_drill      # 先看计划
+# ……确认 PITR-COVERAGE 那行 gaps=none 之后，把上面的 --target-schema 配上 --apply 再跑一遍
 ```
 
-> ⚠️ 具体坐标/文件序号以你这次备份的 `CHANGE MASTER TO` 与 `binlogs/` 实际内容为准；
-> 多个连续 binlog 文件需按顺序一并传给 mysqlbinlog。恢复务必先在**影子库演练**，
-> 确认无误再上生产——演练记录写进 `doc/RUNBOOKS.md#演练日志`。
+手工路径（顺序固定：**先解密 → 再 gunzip → 才喂给 mysqlbinlog**，且必须先落成真实文件，
+`mysqlbinlog` 不接受 stdin）：
 
-**部分恢复（仅单表）**：从解压后的 SQL 文件中提取 `INSERT INTO <table>` 语句执行。
+```bash
+set -a; . ./.env; set +a
+TMPD=$(mktemp -d); trap 'rm -rf "$TMPD"' EXIT
+# 1. 读快照坐标（加密产物先解密）
+{ [ "${BACKUP##*.}" = enc ] && openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 -pass env:BACKUP_ENCRYPTION_KEY -in "$BACKUP" | gunzip || gunzip -c "$BACKUP"; } \
+  | head -60 | grep -E 'CHANGE MASTER TO'
+# 2. 归档解密/解压到临时目录（明文只留在 $TMPD，用完即删）
+for f in ./backups/binlogs/mysql-bin.*.gz*; do
+  case "$f" in
+    *.enc) openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 -pass env:BACKUP_ENCRYPTION_KEY -in "$f" | gunzip > "$TMPD/$(basename "${f%.enc}")" ;;
+    *.gz)  gunzip -c "$f" > "$TMPD/$(basename "${f%.gz}")" ;;
+  esac
+done
+# 3. 重放（第一个文件带 --start-position=快照位置；口令仍走 MYSQL_PWD / defaults 文件）
+docker compose exec -T -e MYSQL_PWD="${MYSQL_ROOT_PASSWORD}" mysql sh -c 'mysql -uroot campus_love_drill' \
+  < <(mysqlbinlog --start-position=<POS> --stop-datetime='2026-10-31 15:30:00' "$TMPD"/mysql-bin.*)
+```
+
+> ⚠️ 具体坐标/文件序号以本次备份的 manifest 与 `CHANGE MASTER TO` 为准；多个连续 binlog
+> 文件需按编号顺序一并传给 mysqlbinlog（上面的 `"$TMPD"/mysql-bin.*` glob 已按序展开）。
+> 恢复务必先在**影子库演练**，确认无误再上生产——演练记录写进
+> `doc/RUNBOOKS.md#演练日志`（截至 2026-10-31：**0 次**，所以下面这些还没被验证过：
+> 归档能否被 mysqlbinlog 解析、事件重放有无主键冲突、耗时是否满足 RTO）。
+> 另外 `--set-gtid-purged=OFF` 的产物在开了 GTID 的复制拓扑上不能这么直接灌，本编排没配
+> 复制，所以这一条既没验证也不需要——真上复制拓扑时要重新评估。
+
+**部分恢复（仅单表）**：从解压后的 SQL 中提取该表的 `DROP TABLE/CREATE TABLE/INSERT INTO`
+片段，先在影子库导，确认行数与外键关系后再决定是否动生产库。不要在生产库上直接跑 sed 抽取。
 
 ### Redis 恢复
 
 ⚠️ Redis RDB 恢复会覆盖现有数据，请在确认无关键 session 后操作。
 
 ```bash
+# 0. .env 不会自动进 shell（本仓所有恢复/运维命令段的通用前置）
+set -a; . ./.env; set +a
+
 # 1. 停止 redis 服务
 docker compose stop redis
 
 # 2. 将备份的 dump.rdb 复制到 redis-data 卷（覆盖现有 RDB）
 #    加密备份（.rdb.enc）先解密再落盘：
 #    openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 -pass env:BACKUP_ENCRYPTION_KEY -in /backups/redis-<ts>.rdb.enc > /data/dump.rdb
-docker run --rm -v campus-redis-data:/data -v "$(pwd)/backups:/backups" alpine \
-  sh -c "cp /backups/redis-20260729-020000.rdb /data/dump.rdb && chmod 644 /data/dump.rdb"
+#    ⚠️ 版本按本仓的 pin 规矩写死（compose 里 backup 用的就是 alpine:3.19.4），不要用浮动 tag。
+docker run --rm -v campus-redis-data:/data -v "$(pwd)/backups:/backups" alpine:3.19.4 \
+  sh -c "cp /backups/redis-<YYYYMMDD-HHMMSS>.rdb /data/dump.rdb && chmod 644 /data/dump.rdb"
 
 # 3. 重启 redis（启动时自动加载 dump.rdb）
 docker compose up -d redis
 
-# 4. 验证数据
-docker compose exec redis redis-cli -a "$REDIS_PASSWORD" DBSIZE
+# 4. 验证数据 ——⚠️ 不要用 `-a "$REDIS_PASSWORD"`：口令会出现在进程参数里（同机任何
+#    进程可读 /proc/<pid>/cmdline），本仓 compose 的 redis healthcheck 就是为此才用
+#    REDISCLI_AUTH（docker-compose.yml:170-171）。这里保持同一规矩：
+docker compose exec redis sh -c 'REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli --no-auth-warning DBSIZE'
 ```
 
 **注意**：
@@ -831,10 +936,22 @@ server {
 
 | 服务 | 配置文件 | 监听端口 | 职责 |
 |------|----------|----------|------|
-| `admin` | `apps/admin/docker/nginx.conf` | 8080 | SPA fallback、gzip、`/api/` 与 `/actuator/` 反代到 `API_UPSTREAM` |
+| `admin` | `apps/admin/docker/nginx.conf` | 8080 | SPA fallback、gzip、**只反代 `/api/`** 到 `API_UPSTREAM` |
 | `client` | `docker/client-nginx.conf` | 80 | H5 静态托管、`/api/` 反代、SPA fallback |
 
 两者均通过环境变量 `API_UPSTREAM` 注入后端地址（默认 `host.docker.internal:8080` / `api:8080`）。
+
+> ⚠️ **不要"顺手补上" `/actuator/` 的反代**（本表旧文写着 `/api/` 与 `/actuator/` 两条，
+> 那是错的：`apps/admin/docker/nginx.conf` 的 88-89 行只有 `/api/`）。原因不是"没必要"，
+> 而是**加了就是一个公开漏洞**：
+> `SecurityConfig` 对 `/actuator/prometheus` 走的是**来源地址白名单**
+> （`MetricsScrapeAuthorizationManager`，判定只看 `remoteAddr`，见 `docker-compose.yml` 的
+> `METRICS_SCRAPE_ALLOWLIST`，默认放通 `172.16.0.0/12,10.0.0.0/8,192.168.0.0/16`），
+> 而不是登录态。一旦 admin 的 nginx 反代 `/actuator/`，来自公网请求的 `remoteAddr` 在 api
+> 容器看来是**那个 nginx 容器的内网地址**（落在上面网段内）⇒ 白名单命中 ⇒
+> `/actuator/prometheus` 对外公开可读（业务指标、登录失败率、JVM/连接池规模全在外面），
+> 其它 `/actuator/**` 仍要求 ROLE_ADMIN 所以不会一起漏——这正是"看起来无害的一行配置"。
+> 要暴露指标请走防火墙/内网 + 抓取白名单网段，不要经过任何面向公网的 location。
 
 ### 外层 Nginx（生产推荐）
 
@@ -1037,8 +1154,10 @@ docker compose logs --since 7d api > api-logs-$(date +%Y%m%d).log
 2. **变更日志**：查阅 `CHANGELOG.md` 与 `README.md#发布窗口`，确认本次升级范围
 3. **镜像签名**（如启用 cosign）：验证新镜像签名
    ```bash
-   cosign verify --key /etc/campus-love/cosign.pub $IMAGE_PREFIX/api:$TAG_NEW
-   cosign verify --key /etc/campus-love/cosign.pub $IMAGE_PREFIX/admin:$TAG_NEW
+   # 校验的就是 compose 会拉的那个名字：compose 只读 TAG（本仓没有 TAG_NEW / TAG_ROLLBACK）
+   export TAG=ci-abc1234          # 本次要上线的版本（升级前检查阶段就先钉好）
+   cosign verify --key /etc/campus-love/cosign.pub $IMAGE_PREFIX/api:$TAG
+   cosign verify --key /etc/campus-love/cosign.pub $IMAGE_PREFIX/admin:$TAG
    ```
 4. **数据库迁移预演**：在 staging 用一次性 `migrate` 服务预演：`docker compose run --rm migrate info`
    查看待应用迁移（不在容器里跑时，宿主侧 `./mvnw flyway:info` 等价可用）、
@@ -1049,8 +1168,11 @@ docker compose logs --since 7d api > api-logs-$(date +%Y%m%d).log
 Docker Compose 默认按依赖顺序逐个重启服务，可借助 `--no-deps` 避免连带重启：
 
 ```bash
-# 1. 拉取新镜像
-export TAG_NEW=ci-abc1234
+# 1. 拉取新镜像 ——⚠️ compose 只读 TAG 这一个变量，没有 TAG_NEW
+#    （2026-10-31 修正：原写法 `export TAG_NEW=ci-abc1234` 之后 `docker compose pull api`
+#     拉的是 services.api.image = ${IMAGE_PREFIX:-campus-love}/api:${TAG:-dev}，
+#     也就是 campus-love/api:dev ——新版本根本没被拉下来，而命令会"成功"。）
+export TAG=ci-abc1234
 docker compose pull api admin
 
 # 2. 仅升级 API（不重启 mysql/redis）
@@ -1064,7 +1186,21 @@ docker compose up -d --no-deps admin
 
 # 5. 升级 Client H5（如启用 client-h5 profile）
 docker compose --profile client-h5 up -d --no-deps client
+
+# 6. 把钉住 Versions 落到 .env（否则下一条命令、下一个 shell 又回到 dev）
+grep -q '^TAG=' .env && sed -i "s/^TAG=.*/TAG=${TAG}/" .env || printf 'TAG=%s\n' "${TAG}" >> .env
 ```
+
+> **为什么必须第 6 步**：`export TAG=…` 只对当前 shell 有效。compose 每次都会重新插值，
+> 没写进 `.env` 的话，`docker compose ps` 显示的还是旧标签、`up -d` 会把容器换回 `:dev`。
+> 想临时试某个 tag 而不改 `.env`，用行内变量：`TAG=ci-abc1234 docker compose up -d --no-deps api`
+> （行内变量优先级高于 `.env`，但对**下一条**命令无效）。
+>
+> **确认插值真的生效**（不需要 Docker 引擎，纯客户端）：
+> `docker compose config | grep -E '^\s+image:'` 会打印 compose 解析后的镜像名；
+> 若显示 `:dev` 而你以为在升 `ci-abc1234`，就是 TAG 没传到 compose。
+> 本机 Docker 引擎停机，这条命令**未在此环境执行过**（判点由
+> `npm run test:deployment-config` 静态钉住：文档里出现的变量必须真的被 compose 插值）。
 
 > 迁移由一次性 `migrate` 服务在 `api` 之前完成（single writer），**不再在 API 启动时执行**。
 > 滚动升级 `api` 时（`--no-deps`）不会触发迁移；需要新 schema 时先
@@ -1075,12 +1211,34 @@ docker compose --profile client-h5 up -d --no-deps client
 
 #### 镜像回滚（无破坏性 DDL 时）
 
+compose 读的变量只有 `TAG` 一个（`docker-compose.yml` 里 `services.api/admin.image` 两处插值），
+所以"回滚"＝把 TAG 改回上一个稳定标签，再让 compose 重建这两个容器。
+`export TAG_ROLLBACK=…` 那种写法**没有任何作用**（旧文档如此，2026-10-31 已更正）：
+
 ```bash
-# 回滚到上一个稳定 tag
-export TAG_ROLLBACK=ci-previous1234
+# 0. 先确认当前跑的是哪个 tag（回滚目标要从这里挑，不要凭记忆）
+docker compose images api admin        # 或：docker compose config | grep -E '^\s+image:'
+
+# 1. 把 TAG 钉回上一个稳定版本（同一个变量，没有第二个名字）
+export TAG=ci-previous1234
+
+# 2. 确认 compose 解析出来的名字真的是它（纯客户端，不依赖引擎）
+docker compose config | grep -E '^\s+image:' | grep -E '/(api|admin):'
+#    期望看到 campus-love/api:ci-previous1234 —— 若仍是 :dev 说明 TAG 没传进来
+
+# 3. 只滚 api / admin，不动 mysql/redis
 docker compose up -d --no-deps api
 docker compose up -d --no-deps admin
+
+# 4. 验证 + 把钉住的版本写回 .env（不写回去，下一个 shell / 下次 up 又会变回 dev）
+curl -fsS http://localhost:8080/actuator/health
+sed -i "s/^TAG=.*/TAG=${TAG}/" .env
 ```
+
+> ⚠️ 本机 Docker 引擎停机，上面第 2/3 步在这里**没有执行过**；`docker compose config` 的
+> 插值部分是纯客户端行为（不需要引擎），但本仓没把它当作证据——判点由
+> `npm run test:deployment-config` 静态核对「文档里 `docker compose …` 命令用到的每个变量，
+> compose 必须真的插值」。
 
 #### 数据库回滚（Flyway 不支持自动回滚）
 
@@ -1090,12 +1248,14 @@ Flyway 社区版不支持 undo 迁移，需手动恢复：
 # 1. 停止 API
 docker compose stop api
 
-# 2. 从备份恢复 MySQL
-gunzip -c ./backups/campus_love-<YYYYMMDD-HHMMSS>.sql.gz | \
-  docker compose exec -T mysql mysql -uroot -p"$MYSQL_ROOT_PASSWORD" campus_love
+# 2. 从备份恢复 MySQL —— 用脚本（默认 dry-run，先看清位置算式再 --apply）
+set -a; . ./.env; set +a
+MYSQL_PASSWORD="${MYSQL_ROOT_PASSWORD}" scripts/restore-mysql.sh \
+  --artifact ./backups/campus_love-<YYYYMMDD-HHMMSS>.sql.gz --target-schema campus_love --apply
+#    ↑ 只有影子库演练成功之后才允许 --target-schema campus_love（脚本会拒绝，需 --allow-live-target）
 
-# 3. 回滚到旧镜像
-export TAG_ROLLBACK=ci-previous1234
+# 3. 回滚到旧镜像（compose 只读 TAG，见「镜像回滚」）
+export TAG=ci-previous1234
 docker compose up -d api
 ```
 
@@ -1103,10 +1263,17 @@ docker compose up -d api
 
 ### 蓝绿部署 / 灰度发布
 
-详见 `README.md#发布窗口`：
-
-- **蓝绿**：通过两套 docker-compose（`docker-compose.green.yml` / `docker-compose.blue.yml`）+ Nginx upstream 切换
-- **灰度**：按用户 ID hash 路由，逐步将流量从旧版本切到新版本（10% → 50% → 100%）
+> ⚠️ 现状（2026-10-31 更正）：**本仓没有 `docker-compose.green.yml` /
+> `docker-compose.blue.yml`**（旧文档引用了这两个不存在的文件）。仓库里存在的覆盖文件只有
+> `docker-compose.alerting.yml`（告警渠道，需显式 `-f` 才加载）。
+> 也就是说"蓝绿"目前只是**设计意图**，没有任何可执行产物：
+> - 想做蓝绿，至少还需要：两套 service 定义（或两套 compose project + `-p`）、
+>   外层 Nginx `upstream` 的热切换、以及**同一份 schema 能被两个版本同时跑**的迁移策略
+>   （本仓 Flyway 社区版无 undo，见上「数据库回滚」）；
+> - 灰度（按用户 ID hash 路由 10%→50%→100%）同样没有实现落点：路由层在外层 Nginx，
+>   而外层 Nginx 的配置在本仓只有示例片段，没有可部署文件。
+> 在补齐这些之前，本节不构成任何"可以按文档操作"的承诺；现行发布判定只看
+> CI Release Gate 与 `npm run test:release-gate`（见 `README.md#发布窗口`）。
 
 ### 升级后验证
 
@@ -1130,8 +1297,11 @@ curl -sH "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/profile/me 
 
 1. 检查日志：`docker compose logs api` 或 `apps/api/logs/campus-love-api.log`
 2. 验证环境变量：`echo $JWT_SECRET` / `echo $DB_PASSWORD`
-3. 验证数据库连通性：`mysql -h 127.0.0.1 -u campus -p`
-4. 验证 Redis 连通性：`redis-cli -h 127.0.0.1 -a $REDIS_PASSWORD ping`
+   （注意 shell **不会**自动 source `.env`：先 `set -a; . ./.env; set +a`，否则这里全是空值，
+   看起来像"变量丢了"其实是没加载）
+3. 验证数据库连通性：`mysql -h 127.0.0.1 -u campus --password` （交互输入口令，别把口令写进参数）
+4. 验证 Redis 连通性：`REDISCLI_AUTH="$REDIS_PASSWORD" redis-cli -h 127.0.0.1 --no-auth-warning ping`
+   （`-a "$REDIS_PASSWORD"` 是禁止写法：口令进进程参数，同机任何进程读 `/proc/<pid>/cmdline` 就能看到）
 
 ### 数据库迁移失败
 

@@ -212,6 +212,13 @@ groups:
           description: "HikariCP 平均获取连接耗时 {{ $value }}s，可能存在慢 SQL。"
 
   # ---------- 主机资源告警（node-exporter）----------
+  # 数据源在位（2026-11-01 修）：prometheus.yml 的 node-exporter job 已常开，
+  # 容器也与 prometheus 同为无 profile 常开服务，因此本组规则不再需要
+  # "INERT-WITHOUT-SCRAPE=node-exporter" 前置声明（留着会被门判成过期声明）。
+  # 部署侧只需：docker compose up -d
+  # 验证：/targets 里 up{job="node-exporter"}==1，或 count(node_filesystem_avail_bytes) > 0。
+  # tests/monitoring-wiring.spec.mjs 双向钉住：job 被重新注释 ⇒ 门红；
+  # 规则引用了没人抓的 exporter 又没声明 ⇒ 同样门红。
   - name: host-resources
     interval: 30s
     rules:
@@ -243,6 +250,7 @@ groups:
           summary: "主机内存使用率过高"
           description: "实例 {{ $labels.instance }} 内存使用率 {{ $value | humanizePercentage }}，可能触发 OOM Killer。"
 
+
       # CPU 使用率 > 80%（连续 10 分钟）
       - alert: HostCpuHigh
         expr: |
@@ -254,6 +262,30 @@ groups:
         annotations:
           summary: "CPU 使用率偏高"
           description: "实例 {{ $labels.instance }} CPU 使用率 {{ $value | humanizePercentage }} 持续 10 分钟。"
+
+
+      # 备份多久没成功过（2026-10-31 新增；指标由 scripts/backup-mysql.sh 落
+      # node-exporter 的 textfile collector 目录：宿主 ./backups/node-textfile，
+      # compose 里 backup 写、node-exporter 读，指标名 node_backup_*）。
+      # 阈值 = BACKUP_CRON 日备份 + 1 天缓冲（86400*1.5 ≈ 129600s）。
+      # ⚠️ 本规则仍有自己的前置条件（REQUIRES-PROFILE=backup）：node_backup_* 是
+      #   backup 容器里的脚本落进 textfile 目录的文件，由 node-exporter 读出来。
+      #   抓取任务现已常开，所以缺 profile 时缺的是【写入端】而不是抓取端：
+      #   没起 backup 时本条无序列，备份失败的唯一信号退化成容器内 /backup/cron.log。
+      #   启用：docker compose --profile backup up -d（node-exporter 与 prometheus 已在默认栈）
+      #   脚本另可选直发 BACKUP_ALERT_URL（不依赖本链路）。见 doc/RUNBOOKS.md#备份与恢复。
+      - alert: BackupNeverCompleted
+        expr: |
+          (time() - node_backup_last_success_timestamp_seconds) > 129600
+        for: 30m
+        labels:
+          severity: warning
+          service: backup
+        annotations:
+          summary: "数据库备份超过 36 小时没有成功过"
+          description: "实例 {{ $labels.instance }} 最近一次成功备份于 {{ $value | humanizeDuration }} 前，PITR 窗口正在失效；查 `docker compose logs backup` 与 /backup/cron.log。"
+          runbook: "doc/RUNBOOKS.md#备份与恢复"
+          precondition: "REQUIRES-PROFILE=backup（指标由 backup 容器写 textfile 文件；只起 monitoring 时本规则无序列）"
 
   # ---------- 第三方依赖可用性 ----------
   # ⚠️ 2026-08-05：以下规则依赖 blackbox-exporter 的 probe_success 指标，
@@ -294,11 +326,18 @@ groups:
 
       # 登录失败率 > 10%（5 分钟内）
       # infra R2-00004:指标名对齐应用实际注册的 auth.login.success/failure
-      # (AuthMetrics.java:30-32,Prometheus 导出为 auth_login_success/auth_login_failure)
+      # ---- 2026-10-31 复审：本规则原为一条**死告警** ----
+      # AuthMetrics.java:28-30 注册的是 micrometer Counter（"auth.login.failure"），
+      # Counter 经 prometheus 客户端导出后名字**必然带 _total 后缀**
+      # ⇒ 真实序列名是 auth_login_failure_total / auth_login_success_total。
+      # 原来的 rate(auth_login_failure[5m]) 查的是一个不存在的序列：Prometheus 对
+      # 空向量的 rate 返回空结果，比 0.1 不成立 ⇒ 规则自建立以来一次都没触发过，
+      # 而 tests/monitoring-wiring.spec.mjs 当时把 _total 后缀剥掉再比对，所以门是绿的。
+      # 该判点已收紧：Counter 类指标在规则里必须写带 _total 的导出名。
       - alert: HighLoginFailureRate
         expr: |
-          sum(rate(auth_login_failure[5m]))
-          / (sum(rate(auth_login_failure[5m])) + sum(rate(auth_login_success[5m]))) > 0.1
+          sum(rate(auth_login_failure_total[5m]))
+          / (sum(rate(auth_login_failure_total[5m])) + sum(rate(auth_login_success_total[5m]))) > 0.1
         for: 5m
         labels:
           severity: warning
@@ -306,6 +345,7 @@ groups:
         annotations:
           summary: "登录失败率过高"
           description: "5 分钟内登录失败率 {{ $value | humanizePercentage }}，可能存在撞库或微信 API 异常。"
+          runbook: "doc/RUNBOOKS.md#通用第一步"
 
       # 支付回调处理失败（2026-10-05 补充）：5 分钟窗口内失败计数 > 0
       # 指标名对齐 PaymentMetrics.recordCallbackFailure 动态注册的

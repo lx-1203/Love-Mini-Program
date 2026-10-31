@@ -26,7 +26,7 @@
 | Admin 后台（apps/admin） | Vue 3 + TypeScript + Vite + Pinia + vue-router + vue-i18n + Element Plus | SPA，45 个视图；39 个单元测试 |
 | 后端 API（apps/api） | Spring Boot 3 + Java 17 + Maven | JPA / MyBatis、Spring Security、JWT、Flyway、STOMP WebSocket |
 | 数据库 | MySQL 8.0 + Redis 7 | Flyway 管理迁移，Redis 缓存 / 限流 / 会话 |
-| 监控 | Prometheus + Grafana + Alertmanager + Node Exporter | Docker Compose `monitoring` profile |
+| 监控 | Prometheus + Grafana + Alertmanager + Node Exporter | Docker Compose 默认栈（无 profile 门控） |
 | 容器化 | Docker + Docker Compose | 一键编排 api / admin / client / mysql / redis / 监控 / 备份 |
 | CI/CD | GitHub Actions + Trivy + cosign | 镜像扫描与签名（见 `.github/workflows/ci.yml`） |
 | 包管理 | pnpm 11.x（前端）+ Maven 3.9+（后端） | 详见 `packageManager` 与 `engines` 字段 |
@@ -292,18 +292,36 @@ pnpm --filter @campus-love/client run build:mp-weixin
 
 ```bash
 # 一键启动全部服务
-cp .env.example .env  # 编辑 .env，填写所有 *PASSWORD* / *SECRET* 字段
+cp .env.example .env  # 编辑 .env：填写下面说明的必填项（不是填 *PASSWORD* 就够）
 docker compose up -d
 
 # 仅启动基础设施（开发联调）
 docker compose up -d mysql redis
 
-# 启动监控告警
-docker compose --profile monitoring up -d
+# 监控告警（Prometheus/Grafana/Alertmanager/node-exporter）随默认栈一起起，
+# 起来后自证主机指标真的被抓到了：
+curl -s 'http://localhost:9090/api/v1/query?query=count(node_filesystem_avail_bytes)' | grep -o '[0-9.]*\]'
 
 # 启动数据库定时备份
 docker compose --profile backup up -d
 ```
+
+> **照抄 `.env.example` 一定起不来，这是设计**：compose 用 `${VAR:?}` 强制的字段
+> （`JWT_SECRET` / `APP_AES_SECRET` / `WEBSOCKET_ALLOWED_ORIGIN_PATTERNS` / `MYSQL_ROOT_PASSWORD` /
+> `MYSQL_PASSWORD` / `REDIS_PASSWORD` / `GRAFANA_ADMIN_PASSWORD` / `ADMIN_OPENID` /
+> `ADMIN_INITIAL_PASSWORD_HASH`）在示例文件里一律留**空值**——空 + `:?` 才拦得住"把
+> `<PLACEHOLDER>` 当真凭据提交进数据库"的那条路径（此前一次性 `migrate` 会先把脏值写进
+> `users.password` 并提交，应用侧校验根本来不及拦）。
+>
+> **主机告警的前置只剩"起没起服务"**：`node-exporter` 与它的抓取任务
+> （`docker/prometheus/prometheus.yml` 的 `job_name: node-exporter`）2026-11-01 起都随
+> 默认栈常开，`HostDiskHigh`/`HostMemoryHigh`/`HostCpuHigh` 因此有数据源；
+> 曾经的形式是"容器起了但 job 还注释着 ⇒ 规则永不触发也不报错"，
+> 该状态由 `npm run test:monitoring` 钉死不许回来。见 `doc/DEPLOYMENT.md`「启动监控告警」。
+>
+> **`--profile backup` ≠ 备份成功**：alpine 的 `mysql-client` 是 MariaDB 血统，
+> 备份脚本现在会探测并可能直接失败；判据是日志里的 `BACKUP-STATUS=OK` 与
+> `PITR-COVERAGE … gaps=none`。恢复请走 `scripts/restore-mysql.sh`（默认 dry-run）。
 
 更详细的部署架构、域名与 SSL、Nginx 反向代理、监控告警、备份恢复、升级回滚等见 `doc/DEPLOYMENT.md`。
 

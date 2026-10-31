@@ -65,30 +65,76 @@ docker compose exec api sh -c 'wget -qO- http://localhost:8080/actuator/health'
 
 ## 磁盘满
 
-`HostDiskHigh`（需 `--profile monitoring` 起 node-exporter，否则该规则无数据源）：
+`HostDiskHigh` / `HostMemoryHigh` / `HostCpuHigh` 依赖 node-exporter。2026-11-01 之前
+它的抓取 job 在 `docker/prometheus/prometheus.yml` 里是注释状态 ⇒ 三条告警一次都不会响；
+现在 job 与容器都常开（`docker compose up -d` 即有数据源），上线后用
+`count(node_filesystem_avail_bytes) > 0` 与 `/targets` 里 `up{job="node-exporter"}==1`
+自证一次即可（详见 `doc/DEPLOYMENT.md#启动监控告警`）。
+告警在位不等于磁盘不会被写满（阈值 80%、`for: 5m`，突发写满仍会先撞到这里）：
 
 1. `df -h`；本仓最容易占满的位置：`./uploads`（媒体）、`./logs`、`apps/api/target`、
    宿主 `./backups`（mysqldump 产物，含 gzip）。
 2. 备份盘满 ⇒ 先扩保留策略而不是直接删：`scripts/backup-mysql.sh` 的保留份数在脚本内，
    删除前确认最新一份可用（见「备份与恢复」）。
 3. 日志：确认 logback 的滚动与 `max-history` 生效，容器日志由 compose 的 `logging.options` 限制。
+4. 备份失败的告警现在只剩一个前置：抓取已常开，但 `node_backup_*` 要 backup 容器
+   真的在跑（`--profile backup`）才有值。没起 backup 时，`/backup/cron.log` 仍是唯一信号。
+   `docker compose logs backup` 必须定期人肉看，或配 `BACKUP_ALERT_URL`（脚本直发
+   Alertmanager v2 API）/ `BACKUP_TEXTFILE_DIR`（node-exporter 指标 → `BackupNeverCompleted`）。
+   2026-10-31 起脚本还会在每次运行结束时把「最近一次成功时间」落进
+   `./backups/node-textfile/backup.prom` 并打印 `BACKUP-STATUS` 行，便于 grep。
 
 ## 备份与恢复
 
-权威步骤见 `doc/DEPLOYMENT.md`「备份与恢复（P3-D.3 + S4-3）」章节。要点：
+权威步骤见 `doc/DEPLOYMENT.md`「备份与恢复（P3-D.3 + S4-3）」与「升级与回滚」章节。要点：
 
 - `backup` 服务受 `profiles: backup` 门控，`docker compose up -d` **不会**启动它，
   必须 `docker compose --profile backup up -d`（否则等于没有备份）。
-- 备份落宿主 `./backups`（单机）。S4-3 后 `scripts/backup-mysql.sh` 已具备：
-  可选 AES-256 加密（`BACKUP_ENCRYPT=true` + `BACKUP_ENCRYPTION_KEY`，缺密钥即硬失败不落明文）、
-  binlog 归档（`BACKUP_BINLOG_ARCHIVE=true`，MySQL 已在 compose 开 `--log-bin`）⇒ **PITR 可用**、
-  保留改为「窗口 `BACKUP_RETENTION_DAYS` + 最少份数 `BACKUP_KEEP_COUNT`」且覆盖 `.enc`/binlog 产物。
+- 备份落宿主 `./backups`（单机）。`scripts/backup-mysql.sh` 具备：可选 AES-256 加密
+  （缺密钥即硬失败不落明文）、binlog 归档（PITR）、「窗口 + 最少份数」保留且覆盖
+  `.enc`/binlog/manifest 产物。
+- ⚠️ **2026-10-31 明确没解决的**：备份镜像里的 `mysql-client~10.11` 是 MariaDB 血统，
+  与 `mysql:8.0.39` 服务端不同血统。脚本现在会探测并在默认情况下**硬失败**，
+  所以"profile 起来了" ≠ "备份成功了"。判据只有一条：
+  `docker compose logs backup` 里出现 `BACKUP-STATUS=OK exit=0` 和
+  `PITR-COVERAGE dump_position=… gaps=none`。
+- 备份失败的可见性：三条独立出路，一条都没配时脚本每次都会打 `LOUDD WARN` 说明"失败无人知晓"：
+  `BACKUP_ALERT_URL`（直发 Alertmanager v2 API）、`BACKUP_TEXTFILE_DIR`（node-exporter
+  textfile 指标 `node_backup_*`；抓取 2026-11-01 起已常开，剩下的前置是 `--profile backup`
+  本身——backup 不跑就没有写入端，`BackupNeverCompleted` 同样无序列）、
+  `/backup/cron.log`（唯一"今天一定存在"的渠道，得有人看）。
+- **恢复有代码了**：`scripts/restore-mysql.sh`（默认 dry-run，只打印计划与
+  `PITR-COVERAGE(restore)` 位置算式；`--apply` 才写库；口令只走 `--defaults-extra-file`
+  的 0600 临时文件；目标库默认影子库 `campus_love_drill`，指向 `campus_love` 直接拒绝）。
+  它按 openssl 解密 → gunzip → mysqlbinlog 的正确顺序处理 `.gz.enc` 归档，
+  并在覆盖有缺口时拒绝执行 PITR。
 - ⚠️ 异地容灾仍非本脚本职责：脚本只清 `./backups`，**不会**过期任何异地副本；若用 rclone/S3
   同步，异地保留须在同步工具/桶策略里单独配置，否则异地副本无限增长。密钥只放部署机环境，绝不入库。
-- 恢复前先验证备份可用：明文用 `gunzip -c <file> | mysql ...`、加密先
-  `openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 -pass env:BACKUP_ENCRYPTION_KEY -in <file>`，
-  在影子库演练（含 PITR：先灌全量、再按备份头 `CHANGE MASTER TO` 坐标 `mysqlbinlog` 重放），
-  演练记录写回本文件末尾的「演练日志」。
+
+## 恢复演练（可执行版）
+
+以前这里只有"照手抄命令做"的描述，2026-10-31 起换成可执行步骤：
+
+```bash
+# 0. .env 不会自动进 shell
+set -a; . ./.env; set +a
+
+# 1. 先跑一次带加密的备份（影子产物，不动生产）
+docker compose --profile backup run --rm backup /backup.sh --dry-run   # 看计划与血统探测
+docker compose --profile backup run --rm backup /backup.sh            # 真跑一次
+
+# 2. 恢复演练到影子库：先 dry-run 看位置算式，再 --apply
+scripts/restore-mysql.sh --artifact ./backups/campus_love-<TS>.sql.gz
+scripts/restore-mysql.sh --artifact ./backups/campus_love-<TS>.sql.gz \
+  --point-in-time "$(date '+%Y-%m-%d %H:%M:%S')" --target-schema campus_love_drill --apply
+
+# 3. 自检 + 清理影子库
+docker compose exec mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot campus_love_drill \
+  -e "SELECT COUNT(*) FROM users;"'
+```
+
+演练必须记录：耗时（RTO 判据）、`PITR-COVERAGE` 那行的 gaps 是否为 none、
+重放是否有报错、业务数据抽查结论。缺任何一项，这次演练等于没做。
 
 ## 演练日志
 
@@ -96,3 +142,4 @@ docker compose exec api sh -c 'wget -qO- http://localhost:8080/actuator/health'
 |---|---|---|---|
 | — | 尚未做过恢复演练 | 待补 | — |
 | 2026-10-30 | 待做：全量 + PITR（加密开启）恢复演练——S4-3 上线备份脚本后首次真实演练，记录耗时/是否成功/发现的问题 | ⬜ 待执行 | （填写执行人） |
+| 2026-10-31 | 恢复代码补上（`scripts/restore-mysql.sh`，dry-run + `--apply`）。**仍未演练**：本机 Docker 引擎停机，脚本的 `--apply` 路径一次都没跑过，只验证过 dry-run、覆盖缺口判定、生产库名拒绝、口令缺失拒绝四条分支（本机 bash 实测）。下一次演练请用上面的「恢复演练（可执行版）」步骤，并把结果写在下面 | ⬜ 待执行 | （填写执行人） |

@@ -110,6 +110,12 @@ const TEST_EXECUTION_BASELINE = {
   // CI 跑的是它的 :self-test（已在 contracts 链里，且由 ci-contract 钉住"恰有一发"）；
   // 真读数只在有完整盘上资产的本地跑。
   "test:asset-coverage:source": "CI 检出树缺 gitignore 的二进制资产 ⇒ 真读数在 CI 恒假红，只在本地跑；CI 跑它的 :self-test",
+  // 真读数需要「有用户可见内容」的库：现网/本地实盘 3818 个单元格。CI 的 db-integration 是
+  // demo_seed=false 从零建的空链库，扫出来 cells<500 ⇒ 门自己按 HYGIENE_MIN_CELLS 判 NOT-EVIDENCED。
+  // 接进 CI 只会造出一条恒空的 PASS，比不接更坏；本地跑真读数，链里跑它的 :self-test（注入脏行必须变红）。
+  "test:data-hygiene": "真读数只在有内容的实盘库跑（CI 的 fresh 库会被自己的 cells 下限判 NOT-EVIDENCED）；链里跑 :self-test",
+  // 同一条理由的另一面：--urls 不给就自己查库；查不到库直接 exit 2，不给判。
+  "test:asset-registry": "注册表行来自库里 370+ 条 media_asset，CI 空链库读不到 ⇒ 真读数只在实盘库跑；链里跑 :self-test",
 };
 const escGateName = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const chainText = contracts;

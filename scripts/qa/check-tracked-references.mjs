@@ -161,7 +161,6 @@ const ORPHAN_BASELINE = new Set([
   "scripts/audit-client-scan.mjs",
   "scripts/debug-strip.mjs",
   "scripts/find_corrupted_entities.py",
-  "scripts/qa/mini-audit-smoke.sh",
   "scripts/scan-chinese.mjs",
 ]);
 let orphanScanned = 0;

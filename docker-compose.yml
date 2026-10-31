@@ -53,6 +53,23 @@
 #   - 网络按安全域拆分：data-net（mysql/redis/backup）与 app-net（其余服务），
 #     api 同时接入两个网络（FIN-01328）
 #   - TAG 默认值改为 dev（禁止 latest 默认上线，生产必须注入 ci-<sha> 或 release tag）
+#
+# 2026-10-31 运维复审（发布/监控/备份轨）：
+#   - 标签变量只有 TAG 一个（services.api/admin 的 image 各自插值一次）。不存在
+#     TAG_NEW / TAG_ROLLBACK：想让 pull/up 作用于新版本，只能改 TAG 本身
+#     （`TAG=ci-abc1234 docker compose pull api`），旧文档写 export TAG_NEW 的
+#     两处已更正，判点见 tests/deployment-config.spec.mjs。
+#   - 一次性 `migrate` 服务先于 api 完成，所以 ADMIN_OPENID / ADMIN_INITIAL_PASSWORD_HASH
+#     的 `${VAR:?}` 是唯一能挡住"脏 ADMIN 行落库"的关口：空值/缺值即中止（这也是
+#     .env.example 把这两项留空、不再写 <PLACEHOLDER> 的原因）。
+#   - node-exporter 与 prometheus/grafana/alertmanager 一样是**无 profile 常开**的
+#     （2026-11-01 改）：prometheus 本就在每次部署里起，并把 node-exporter 列进抓取
+#     任务；把它单独关在 --profile monitoring 里只会得到一个长期 DOWN 的 target。
+#     主机四条告警（HostDiskHigh/HostMemoryHigh/HostCpuHigh/BackupNeverCompleted）
+#     从此有数据源；对账判点见 tests/monitoring-wiring.spec.mjs 第 6/6b 节。
+#   - backup 镜像的 mysqldump 是 MariaDB 血统（alpine 的 mysql-client~10.11），与
+#     mysql:8.0.39 服务端不兼容的开关（--set-gtid-purged）会让每次 cron 备份在第 2 步
+#     就失败。脚本改为先探测血统再分支，见 scripts/backup-mysql.sh。
 # ============================================================
 
 version: "3.9"
@@ -652,11 +669,18 @@ services:
     command:
       - --path.rootfs=/host
       - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+      # 2026-10-31：textfile collector 目录 = backup 容器落的备份指标
+      # （node_backup_last_success_timestamp_seconds / node_backup_last_exit_code）。
+      # 目录由下面的宿主 bind 提供，backup 服务未启动时目录为空 ⇒ collector 无输出、
+      # 不报错。抓取端现已常开（prometheus.yml 的 node-exporter job），所以
+      # BackupNeverCompleted 还缺的前置只剩【写入端】：--profile backup。
+      - --collector.textfile.directory=/mnt/textfile
     ports:
       # 仅绑定 127.0.0.1（infra #2：9100 无认证）
       - "127.0.0.1:${NODE_EXPORTER_PORT:-9100}:9100"
     volumes:
       - /:/host:ro,rslave
+      - ./backups/node-textfile:/mnt/textfile:ro
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:9100/-/healthy"]
       interval: 30s
@@ -680,8 +704,10 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    profiles:
-      - monitoring
+    # 无 profiles：与 prometheus/grafana/alertmanager 同档常开（2026-11-01）。
+    # 原来它单独挂在 monitoring profile 里，是因为抓取 job 被注释；现在抓取常开，
+    # 再把它留在 profile 里就只剩一个后果——默认部署下 target 长期 DOWN。
+    # 判点：tests/monitoring-wiring.spec.mjs 第 6b 节比对它与 prometheus 的 profiles。
 
   # ---------- MySQL + Redis 定时备份（cron sidecar，P3-D.3 增强）----------
   backup:
@@ -729,12 +755,27 @@ services:
       # 源目录 = 下面只读挂载的 mysql-data 卷里的 datadir。
       BACKUP_BINLOG_ARCHIVE: ${BACKUP_BINLOG_ARCHIVE:-true}
       MYSQL_BINLOG_DIR: /var/lib/mysql
+      # 2026-10-31：mysqldump 血统（alpine 的 mysql-client~10.11 是 MariaDB 线，不认识
+      # --set-gtid-purged；MariaDB 的 mysqlbinlog 也解析不了 MySQL 8 binlog）与
+      # "备份失败要能被看见"两条出路。脚本内部探测/分支，这里只透传、不给魔法默认值。
+      BACKUP_MYSQLDUMP_BIN: ${BACKUP_MYSQLDUMP_BIN:-}
+      BACKUP_MYSQLBINLOG_BIN: ${BACKUP_MYSQLBINLOG_BIN:-}
+      BACKUP_ALLOW_MARIADB_DUMP: ${BACKUP_ALLOW_MARIADB_DUMP:-false}
+      BACKUP_ALERT_URL: ${BACKUP_ALERT_URL:-}
+      BACKUP_TEXTFILE_DIR: ${BACKUP_TEXTFILE_DIR:-/mnt/node-textfile}
       # infra #20：BACKUP_CRON 通过启动命令写入 crontab（不再硬编码 0 2 * * *）
       BACKUP_CRON: ${BACKUP_CRON:-0 2 * * *}
       TZ: Asia/Shanghai
     volumes:
       - ./scripts/backup-mysql.sh:/backup.sh:ro
       - ./backups:/backups
+      # node-exporter textfile collector 目录（宿主 ./backups/node-textfile，两侧共享）：
+      # backup 写 node_backup_last_success_timestamp_seconds / _exit_code，node-exporter 读。
+      # 没有 node-exporter 时这些文件没人读（不影响备份本身）。抓取与 node-exporter
+      # 现都随默认栈常开（2026-11-01），所以这条链剩下的唯一前置就是本 backup 服务
+      # 得起（--profile backup）—— 见 alert-rules.yml 里 BackupNeverCompleted 的
+      # REQUIRES-PROFILE=backup 声明与 tests/monitoring-wiring.spec.mjs 第 6b 节。
+      - ./backups/node-textfile:/mnt/node-textfile
       # P3-D.3：挂载 redis-data 卷（只读）以便复制 dump.rdb
       - redis-data:/data/redis:ro
       # S4-3 PITR：只读挂载 mysql-data，以便归档 datadir 下的 mysql-bin.* 完成 binlog。
@@ -745,10 +786,24 @@ services:
     # infra #20 / FIN-00851：crontab 由启动命令根据 BACKUP_CRON 生成，
     # 以非 root 用户 backup 运行 crond（避免定时任务以 root 运行）
     # apk 包锁主版本（infra #28）：alpine 3.19 仓库中 mysql-client=10.11.x、redis=7.2.x
+    # ⚠️ 2026-10-31 明确记录的事实：本行的 mysql-client~10.11 就是**它自己注释里写的
+    #   alpine 10.11.x = MariaDB 血统**（Alpine 仓库不提供 Oracle MySQL 客户端）。
+    #   而服务端是 mysql:8.0.39。MariaDB 的 mysqldump 不认 --set-gtid-purged、
+    #   它的 mysqlbinlog 解析不了 MySQL 8 的 binlog 事件 ⇒ 原脚本每次 cron 备份
+    #   都会在 mysqldump 那一步非零退出（且只落在 /backup/cron.log 里）。
+    #   现在 scripts/backup-mysql.sh 先探测血统：MariaDB 血统默认硬失败并点名修法；
+    #   确认自担风险可设 BACKUP_ALLOW_MARIADB_DUMP=true（脚本会绕开不支持的开关、
+    #   改用 SQL 取坐标，并放弃 mysqlbinlog 层的归档校验）。
+    #   根治办法（未在本机验证，本机 Docker 引擎停机）：把本服务镜像换成与
+    #   服务端同血统的 mysql:8.0.39（自带 mysqldump/mysqlbinlog/openssl/bash，
+    #   但 Debian 基镜像，需要把下面这行 apk add 换成直接复用镜像内工具），
+    #   或用 BACKUP_MYSQLDUMP_BIN/BACKUP_MYSQLBINLOG_BIN 指到挂载进来的 MySQL 8 客户端。
     # S4-3：补 bash —— backup-mysql.sh 用 `#!/usr/bin/env bash` 且依赖数组/进程替换等
     #   bash-ism，alpine 基础镜像默认只有 busybox sh，缺 bash 会让脚本根本无法执行；
     #   补 openssl —— 供 BACKUP_ENCRYPT=true 时的 AES-256 加解密（openssl 为 alpine 仓库包，
     #   非浮点 latest，随 alpine 3.19.4 基镜像版本走）。
+    # 注：BACKUP_ALERT_URL 直发 Alertmanager 时脚本用 curl（有则用）或 busybox wget 的
+    #   --post-data（启动时探测，两者都不支持则退化为 LOG ONLY），故未新增软件包。
     command: >
       /bin/sh -c "apk add --no-cache bash openssl mysql-client~10.11 redis~7.2 gzip tini &&
       adduser -D -H -s /sbin/nologin backup &&

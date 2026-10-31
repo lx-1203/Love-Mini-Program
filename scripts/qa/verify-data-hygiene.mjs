@@ -217,6 +217,13 @@ function hitOf(value) {
     console.log(`${RK}=FAIL dirty=${dirty.length} ⇒ 用户可见文案里有取证串文/占位词，按 reports/audit/mp-fidelity-2026-10-18/data-hygiene.md 的流程：备份 → 事务内 ROLLBACK 预演 → 真删`);
     process.exit(1);
   }
+  // 分母下限：连上了库但扫到 0 个单元格（连错 schema、空库、被换成 CI 的 fresh 库）
+  // 时，"dirty=0" 是空读数而不是达标——本仓 all-green 骗人有过多次，先在门里堵死。
+  const minCells = Number(process.env.HYGIENE_MIN_CELLS || 500);
+  if (cells < minCells) {
+    console.log(`${RK}=NOT-EVIDENCED cells=${cells} < 下限 ${minCells} ⇒ 扫到的是空库或连错库，这条不是「没有脏行」`);
+    process.exit(2);
+  }
   console.log(`${RK}=PASS cells=${cells} dirty=0`);
   process.exit(0);
 })().catch((e) => { console.log(`${RK}=NOT-EVIDENCED reason=threw err=${String(e && e.message).slice(0, 160)}`); process.exit(2); });
