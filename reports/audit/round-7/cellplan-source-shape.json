@@ -1,8 +1,8 @@
 {
- "generatedAt": "2026-10-24T04:52:59.560Z",
+ "generatedAt": "2026-11-01T08:49:03.164Z",
  "source": "verify-source-shape.mjs",
- "passed": 88,
- "failed": 11,
+ "passed": 80,
+ "failed": 19,
  "patches": [
   {
    "id": "MP-R2-POST-009",
@@ -162,12 +162,6 @@
   },
   {
    "id": "MP-R2-PAGES-HOME-INDEX-112",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
-   "id": "MP-R7-ADMIN-VILLAGE-COMMENTSCOLUMN-001",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
    "why": "不借帧的名义给绿，也不再挂着待修复"
@@ -353,12 +347,6 @@
    "why": "不借帧的名义给绿，也不再挂着待修复"
   },
   {
-   "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
    "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
@@ -378,12 +366,6 @@
   },
   {
    "id": "MP-R2-PAGES-REGISTER-INDEX-012",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
-   "id": "MP-R2-PAGES-REGISTER-INDEX-013",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
    "why": "不借帧的名义给绿，也不再挂着待修复"
@@ -419,25 +401,7 @@
    "why": "不借帧的名义给绿，也不再挂着待修复"
   },
   {
-   "id": "MP-R2-POST-013",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
    "id": "MP-R2-PUB-114",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
    "why": "不借帧的名义给绿，也不再挂着待修复"
@@ -450,12 +414,6 @@
   },
   {
    "id": "MP-R7CLIENT-UPLOAD-EXT-001",
-   "col": 6,
-   "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
-   "why": "不借帧的名义给绿，也不再挂着待修复"
-  },
-  {
-   "id": "MP-R2-CAMPUSPOST-010",
    "col": 6,
    "new": "已修复（源码级判点：判据是代码结构命题，帧与像素两侧都取不到该量；谓词见 statusEvidence，可重跑 verify-source-shape.mjs 复现）",
    "why": "不借帧的名义给绿，也不再挂着待修复"
@@ -647,12 +605,6 @@
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
-   "id": "MP-R7-ADMIN-VILLAGE-COMMENTSCOLUMN-001",
-   "col": 9,
-   "new": "源码判点：后台内容管理列表必须渲染评论数（与赞／藏／看同栏），且两个语言包的 villagePosts 段都有 statsComments 文案 ｜承载 apps/admin/src/views/forum/VillagePosts.vue ＋ apps/admin/src/i18n/locales/zh-CN.ts ＋ apps/admin/src/i18n/locales/en-US.ts",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
    "id": "MP-R2-PAGES-MESSAGES-INDEX-022",
    "col": 9,
    "new": "源码判点：无调用方的 setSessionPinned 旧 action 必须从 store 源码里消失（缺席量只能按 absent 判，不能拿相邻的 console.warn 命中当证据） ｜承载 apps/client/src/stores/messages.ts",
@@ -833,12 +785,6 @@
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
-   "id": "MP-R2-PAGES-MESSAGES-INDEX-020",
-   "col": 9,
-   "new": "源码判点：「标为未读」后有 toast 明示只在本地生效（zh/en 键都在），且「全部已读」只在数据加载完成那一处发生（锁定态的 onShow 不再无条件清）；后端未读元数据同步那半段仍是欠项 ｜承载 apps/client/src/pages/messages/index.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
    "id": "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-001",
    "col": 9,
    "new": "源码判点：两页 meta 同序由共用 formatter 保证：PublicIdentity 与 MyHeader 都 import 且调用 profileMeta*，且都不再就地 split location ｜承载 apps/client/src/components/profile/public/PublicIdentity.vue ＋ apps/client/src/components/profile/mine/MyHeade",
@@ -860,12 +806,6 @@
    "id": "MP-R2-PAGES-REGISTER-INDEX-012",
    "col": 9,
    "new": "源码判点：两次密码比对挪到确认框 @blur（onConfirmBlur），且这条 blur 绑定全页只有一处 ｜承载 apps/client/src/pages/register/index.vue",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
-   "id": "MP-R2-PAGES-REGISTER-INDEX-013",
-   "col": 9,
-   "new": "源码判点：注册页提示语改走 t(register.*)，zh/en 同批配对（举两条为锚，不留裸中文） ｜承载 apps/client/src/pages/register/index.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.ts",
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
@@ -899,27 +839,9 @@
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
-   "id": "MP-R2-POST-013",
-   "col": 9,
-   "new": "源码判点：副标题在「目标是圈子但圈子还没解析出来」时兜到圈内成员可见，与标题兜底、标签同语义，且走 i18n 键（zh/en 都在） ｜承载 apps/client/src/subpackages/village/village/post.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.ts",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
    "id": "MP-R2-PUB-114",
    "col": 9,
    "new": "源码判点：onLoad 回设 campus/circleId 时同步 visibility（campus→school、circle→interest） ｜承载 apps/client/src/subpackages/village/village/publish.vue",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002",
-   "col": 9,
-   "new": "源码判点：圈内置顶公告不再是写死的中文字面量：组件走 i18n 键，且两个语种都真的有这个键 ｜承载 apps/client/src/subpackages/circles/circles/circle-home.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.ts",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
-   "id": "MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006",
-   "col": 9,
-   "new": "源码判点：两个发布入口的圈子候选行结构一致：不再有独立的「已加入」pill 类，成员数并进同一句 desc ｜承载 apps/client/src/subpackages/village/village/post.vue ＋ apps/client/src/subpackages/village/village/publish.vue",
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
@@ -932,12 +854,6 @@
    "id": "MP-R7CLIENT-UPLOAD-EXT-001",
    "col": 9,
    "new": "源码判点：共享上传路径有客户端扩展名闸门，白名单是单一来源且与后端同集合（图片 jpg/jpeg/png/webp、视频 mp4/mov、音频 aac/mp3/m4a/wav） ｜承载 apps/client/src/utils/media.ts ＋ apps/client/src/services/api.ts ＋ apps/client/src/services/voice-upload.ts",
-   "why": "写明这条是靠哪个谓词成立的"
-  },
-  {
-   "id": "MP-R2-CAMPUSPOST-010",
-   "col": 9,
-   "new": "源码判点：配图上传失败由上传这一层自己接住并给专属提示，不会落进发布的 catch 去显示上一次动作留下的陈旧 errorMessage ｜承载 apps/client/src/subpackages/campus/campus/post-topic.vue ＋ apps/client/src/i18n/locales/zh-CN.ts ＋ apps/client/src/i18n/locales/en-US.ts",
    "why": "写明这条是靠哪个谓词成立的"
   },
   {
@@ -1094,7 +1010,7 @@
     {
      "file": "apps/client/src/pages.json",
      "status": "RED",
-     "grew": -91,
+     "grew": -94,
      "why": "apps/client/src/pages.json :: 要求的写法查不到：/\"path\": \"bills\",\\s*\"style\": \\{\\s*\"enablePullD"
     },
     {
@@ -1146,7 +1062,7 @@
     {
      "file": "apps/client/src/pages.json",
      "status": "RED",
-     "grew": -91,
+     "grew": -94,
      "why": "apps/client/src/pages.json :: 要求的写法查不到：/\"path\": \"bills\",\\s*\"style\": \\{\\s*\"enablePullD"
     },
     {
@@ -1174,8 +1090,8 @@
    "manifest": "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json",
    "caseId": "CS26",
    "page": "subpackages/chat/chat-session/index",
-   "ok": true,
-   "why": "",
+   "ok": false,
+   "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: <template> 内计数应为 1，实测 0",
    "carrier": [
     "apps/client/src/subpackages/chat/chat-session/index.vue",
     "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml",
@@ -1204,31 +1120,31 @@
      "file": "apps/client/src/subpackages/chat/chat-session/index.vue",
      "status": "RED",
      "grew": 42,
-     "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: 计数应为 1，实测 2（/class=\"wechat-input-bar__input\"/g）"
+     "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: <template> 内计数应为 1，实测 0"
     },
     {
      "file": "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml",
      "status": "RED",
      "grew": -29,
-     "why": "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 0（/class=\"chat-error-state[\\s\\S]{0,520}<vi）"
+     "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: <template> 内计数应为 1，实测 0"
     },
     {
      "file": "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml",
      "status": "RED",
      "grew": 24,
-     "why": "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 2（/<input[\\s>]/g）"
+     "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: <template> 内计数应为 1，实测 0"
     },
     {
      "file": "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml",
      "status": "RED",
      "grew": -29,
-     "why": "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 0（/class=\"chat-error-state[\\s\\S]{0,520}<vi）"
+     "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: <template> 内计数应为 1，实测 0"
     },
     {
      "file": "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml",
      "status": "RED",
      "grew": 24,
-     "why": "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml :: 计数应为 1，实测 2（/<input[\\s>]/g）"
+     "why": "apps/client/src/subpackages/chat/chat-session/index.vue :: <template> 内计数应为 1，实测 0"
     }
    ]
   },
@@ -1362,7 +1278,7 @@
     {
      "file": "apps/client/src/pages/login/index.vue",
      "status": "RED",
-     "grew": -95,
+     "grew": -96,
      "why": "apps/client/src/pages/login/index.vue :: 要求的写法查不到：/const isCodeValid = computed\\(\\(\\) => passwor"
     },
     {

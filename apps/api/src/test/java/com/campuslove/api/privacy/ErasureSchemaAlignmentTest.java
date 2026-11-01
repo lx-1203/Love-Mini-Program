@@ -121,6 +121,26 @@ class ErasureSchemaAlignmentTest {
                     + "敏感词库导入的<b>管理员</b>，message 为系统生成的进度/异常摘要（非主体自由文本），"
                     + "属平台内容安全运营记录，非 APP 用户注销射程的个人数据。");
 
+    /**
+     * 「无用户归属列、但经外键挂在<b>有归属列的表</b>上（传递闭包，含 {@code users} 这个根）」的
+     * <b>显式豁免表</b>（第六轮 W1c 事项二）。
+     *
+     * <p>这条形状是 F-11 原穷尽门的<b>结构性盲区</b>：门按「CREATE 体里有没有归属列」这一轴派生，
+     * 覆盖度就等于那一轴——{@code post_tags} 只有 {@code post_id/tag_name}，于是整张表从未被点名，
+     * 而它的父表 {@code posts} 是就地匿名不删行、{@code ON DELETE CASCADE} 永不触发，
+     * 主体亲手打的 163 行标签在注销后原样留着。装上门后，同类形状必须<b>逐张</b>点名或在此写理由。</p>
+     *
+     * <p>纪律与 {@link #OWNER_TABLE_EXEMPTIONS} 同族：只减不增、理由须 ≥20 字、
+     * 且该表当下仍必须留在「借归属」集合里且不在清单里，否则判点红。</p>
+     */
+    private static final Map<String, String> BORROWED_OWNER_TABLE_EXEMPTIONS = Map.of(
+            "promo_codes",
+            "本表没有用户归属列，只经 fk_promo_codes_creator（V2026.07.28.0008，created_by→users，"
+                    + "ON DELETE RESTRICT）挂在 users 上。created_by 存的是<b>发放优惠码的后台运营账号</b>"
+                    + "（PromoCodeService 由管理端调用），code/discount/used_count/remark 是平台营销资产而非"
+                    + "APP 主体的个人数据；且它是 users 的<b>子</b>表——主体行只墓碑化不删除，"
+                    + "RESTRICT 永不触发，不会因此产生孤儿行。");
+
     /** 一次对账的产出：问题清单 + 覆盖面计数（覆盖面用来防「空转绿」）。 */
     private record Verdict(List<String> problems, int columnsChecked, int statementsChecked) {
     }
@@ -267,6 +287,140 @@ class ErasureSchemaAlignmentTest {
             assertFalse(named.contains(table),
                     "豁免表 " + table + " 现在已经进了注销清单：豁免与清单并存会造成假绿，必须划掉豁免");
         }
+    }
+
+    /* ================= F-11 补形（第六轮 W1c 事项二）：借父表归属的子表 ================= */
+
+    /**
+     * 「按归属列派生」的穷尽门看不见<b>自己没有归属列</b>的子表，而这些子表的数据同样属主体：
+     * 它靠外键挂在一张有归属列的父表上，主体的行只能<b>借父表</b>找回。
+     * {@code post_tags} 就是这一形状的第一张（163 行、逃出 F-11、父表不删行所以级联永不触发）。
+     *
+     * <p>本判点把轴补成「<b>归属闭包</b>」：T₀＝有归属列的在场表 ∪ {@code users}（主体表自身没有
+     * {@code user_id} 列，但它是所有归属的根）；沿外键边 child→parent 取传递闭包；
+     * 闭包里每一张表都必须被清单点名或在 {@link #BORROWED_OWNER_TABLE_EXEMPTIONS} 里写理由。
+     * 取闭包而不是只看一层，是因为「子表的子表」形状（孙表）与 {@code post_tags} 同理由漏检。</p>
+     *
+     * <p>两套归属派生（本类自己的 {@link #buildOwnerTables()} 与 {@link ErasureMigrationGraph#ownerTables()}）
+     * 必须<b>逐表逐列相等</b>：判点增加了第二个解析器，就必须钉住它们不漂移，
+     * 否则同一件事会有两个答案，而其中一个是绿的。</p>
+     */
+    @Test
+    @DisplayName("F-11 补形：无归属列但经外键挂在归属表上的子表，必须点名或带理由豁免")
+    void everyBorrowedOwnerTableIsNamedOrExempt() {
+        ErasureMigrationGraph graph = ErasureMigrationGraph.load(ErasureMigrationGraph.locateMigrationDir());
+
+        // 0) 反漂移：两个解析器派生的归属表集合必须完全一致
+        Map<String, Set<String>> legacy = buildOwnerTables();
+        Map<String, Set<String>> modern = graph.ownerTables();
+        assertEquals(legacy.keySet(), modern.keySet(),
+                "两个归属列解析器派生出的表集合已分叉（只信哪个？判点必须先解决这件事）：\n"
+                        + "只在旧解析器=" + diff(legacy.keySet(), modern.keySet())
+                        + "\n只在新解析器=" + diff(modern.keySet(), legacy.keySet()));
+        for (Map.Entry<String, Set<String>> e : legacy.entrySet()) {
+            assertEquals(e.getValue(), modern.get(e.getKey()),
+                    "归属表 " + e.getKey() + " 的归属列集在两个解析器里不一致");
+        }
+
+        // 1) 归属闭包（沿外键 child→parent 传递；实现与夹具自证共用同一个 borrowedClosureOf）
+        List<String> borrowedList = borrowedClosureOf(graph);
+        Set<String> borrowed = new LinkedHashSet<>(borrowedList);
+
+        // 2) 防空转地板：这一形状必须真的存在，否则本判点是在空集上假装绿
+        assertTrue(borrowed.size() >= 4,
+                "「借归属」集合只派生出 " + borrowed.size() + " 张表（实测 4：post_tags、temp_chat_message、"
+                        + "temp_chat_contact_exchange、promo_codes），外键图解析可能失效，拒判");
+        assertTrue(borrowed.contains("post_tags"),
+                "借归属集合里没有 post_tags——外键解析或归属轴本身坏了（它是这条门的存在理由）");
+
+        // 3) 穷尽断言
+        Set<String> named = PersonalDataTables.INVENTORY.stream()
+                .map(t -> t.table().toLowerCase(Locale.ROOT))
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        List<String> uncovered = new ArrayList<>();
+        for (String table : borrowed) {
+            if (named.contains(table) || BORROWED_OWNER_TABLE_EXEMPTIONS.containsKey(table)
+                    || OWNER_TABLE_EXEMPTIONS.containsKey(table)) {
+                continue;
+            }
+            List<String> parents = new ArrayList<>();
+            for (com.campuslove.api.privacy.ErasureMigrationGraph.ForeignKey fk : graph.edges()) {
+                if (fk.child().equals(table)) {
+                    parents.add(fk.column() + "→" + fk.parent() + "(" + fk.onDelete() + ")");
+                }
+            }
+            uncovered.add(table + "（借 " + parents + " 的归属）既没进清单、也没写豁免理由");
+        }
+        assertTrue(uncovered.isEmpty(),
+                "注销清单对「借父表归属的子表」不穷尽（post_tags 163 行的同一形状）：\n  "
+                        + String.join("\n  ", uncovered));
+
+        // 4) 反漂移：豁免只在该表当下仍然「借归属且未被点名」时成立
+        for (Map.Entry<String, String> exemption : BORROWED_OWNER_TABLE_EXEMPTIONS.entrySet()) {
+            String table = exemption.getKey();
+            assertTrue(exemption.getValue().length() >= 20,
+                    "借归属豁免表 " + table + " 的理由没写够（<20 字）");
+            assertTrue(borrowed.contains(table),
+                    "豁免表 " + table + " 现在已经不在借归属闭包里（外键被撤/表被 DROP/自己有了归属列）："
+                            + "这条豁免必须划掉");
+            assertFalse(named.contains(table),
+                    "豁免表 " + table + " 现在已经进了注销清单：豁免与清单并存会假绿，必须划掉豁免");
+        }
+    }
+
+    @Test
+    @DisplayName("借归属判点的解析器自证：一层与两层都要认，无外键的孤儿表不许被牵连进来")
+    void borrowedOwnerClosureIsTransitiveAndOrderAware() {
+        ErasureMigrationGraph g = new ErasureMigrationGraph();
+        // 故意把孙表建在子表<b>之前</b>：这样「只扫一遍外键边」的实现会先看到
+        // grandchild→child（此时 child 还没进集合）而漏掉孙表，只有真正的传递闭包才认得出它。
+        // （第一版夹具按 child→grandchild 的顺序写，一遍扫描恰好也能过 ⇒ 变异 M4 抓不到，
+        //  这条顺序就是那次没红换来的加固。）
+        g.applyDdl("CREATE TABLE owner_tbl (id bigint, user_id bigint, PRIMARY KEY (id));"
+                + "CREATE TABLE grandchild_no_owner (id bigint, child_id bigint,"
+                + "  FOREIGN KEY (child_id) REFERENCES child_no_owner(id) ON DELETE CASCADE);"
+                + "CREATE TABLE child_no_owner (id bigint, owner_id bigint,"
+                + "  FOREIGN KEY (owner_id) REFERENCES owner_tbl(id) ON DELETE CASCADE);"
+                + "CREATE TABLE unrelated (id bigint, note varchar(10));");
+        List<String> closure = borrowedClosureOf(g);
+        assertTrue(closure.contains("child_no_owner"), "一层借归属没被认出：" + closure);
+        assertTrue(closure.contains("grandchild_no_owner"), "两层（子表的子表）借归属没被认出：" + closure);
+        assertFalse(closure.contains("unrelated"), "无外键的表不该进借归属闭包：" + closure);
+        assertFalse(closure.contains("owner_tbl"), "自身有归属列的表不该被算成『借』归属：" + closure);
+
+        // 建后即删的父表不该继续把归属借给子表（在场判定按文本位置）
+        ErasureMigrationGraph dropped = new ErasureMigrationGraph();
+        dropped.applyDdl("CREATE TABLE p1 (id bigint, user_id bigint);"
+                + "CREATE TABLE c1 (id bigint, p1_id bigint, FOREIGN KEY (p1_id) REFERENCES p1(id));"
+                + "DROP TABLE p1; DROP TABLE c1;");
+        assertFalse(borrowedClosureOf(dropped).contains("c1"),
+                "已 DROP 的借归属表仍被算进闭包（在场判定失效）");
+    }
+
+    /** 借归属闭包（与 {@link #everyBorrowedOwnerTableIsNamedOrExempt} 同一条路，供夹具复用）。 */
+    private static List<String> borrowedClosureOf(ErasureMigrationGraph graph) {
+        Set<String> linked = new LinkedHashSet<>(graph.ownerTables().keySet());
+        linked.add("users");
+        boolean grew = true;
+        while (grew) {
+            grew = false;
+            for (com.campuslove.api.privacy.ErasureMigrationGraph.ForeignKey fk : graph.edges()) {
+                if (linked.contains(fk.parent()) && graph.existingTables().contains(fk.child())
+                        && linked.add(fk.child())) {
+                    grew = true;
+                }
+            }
+        }
+        List<String> borrowed = new ArrayList<>(linked);
+        borrowed.removeAll(graph.ownerTables().keySet());
+        borrowed.sort(Comparator.naturalOrder());
+        return borrowed;
+    }
+
+    private static Set<String> diff(Set<String> a, Set<String> b) {
+        Set<String> out = new LinkedHashSet<>(a);
+        out.removeAll(b);
+        return out;
     }
 
     /**

@@ -1,8 +1,10 @@
 package com.campuslove.api.privacy;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -27,8 +29,19 @@ import java.util.Set;
  *       由测试禁止（见 {@code noSetClauseDerivesFromSubjectId}）。</li>
  *   <li>字面量全部来自 {@link ErasedValues}，保证「匿名」值既不含主体标识，也不会被
  *       AES 解密路径误判成密文。</li>
- *   <li>执行顺序 = 本清单顺序，按外键自下而上（先删/改引用行，{@code users} 墓碑最后写），
- *       任何一条失败整个事务回滚（不留「昵称改了、身份证还在」的半注销态）。</li>
+ *   <li>执行顺序 = 本清单顺序，任何一条失败整个事务回滚（不留「昵称改了、身份证还在」的半注销态）。
+ *       <b>顺序不变量（第六轮 W1c 改写，旧文案是假的）</b>：旧注释写「按外键自下而上（先删引用行）」，
+ *       而盘上实际是<b>父项一律排在子项之前</b>（{@code posts}→{@code post_likes}、
+ *       {@code circle_topics}→{@code circle_topic_likes} 等 6 组全是父前子后）。
+ *       整链今天不炸，唯一原因是这 6 张父表里有 5 张是 {@code ANONYMISE_IN_PLACE}/{@code viaUserEntity}
+ *       <b>不删行</b>（只有 {@code temp_chat_session} 删行），于是 {@code RESTRICT}/{@code NO ACTION}
+ *       的子表外键从未被真正触发——这是一条靠运气成立的不变量。
+ *       现在它被写成判点而不是注释：{@code ErasureSurfaceAndOrderingGateTest} 从迁移链 DDL 的
+ *       外键图（纯静态，CI 无真库也跑）派生父子关系，钉住三件事——
+ *       ①任何一条删父表的语句，其子表的删除语句必须全部排在它之前；
+ *       ②「被清单删行、且有外键子表」的父表集合必须逐一登记理由（今天只有 {@code temp_chat_session}）；
+ *       ③把上面任何一张匿名父表改成 {@code DELETE_ROWS} 立刻变红。
+ *       因此「保持父前子后的书写顺序」是可行的——前提是不删行的父项永远不删行，而这件事现在有门看着。</li>
  * </ul>
  */
 public final class PersonalDataTables {
@@ -143,6 +156,93 @@ public final class PersonalDataTables {
         return INVENTORY.stream().filter(t -> !t.retained()).count();
     }
 
+    /** 清单展开后的<b>语句总数</b>（执行序分母，与 {@code AccountErasureService#erase} 一一对应）。 */
+    public static int statementCount() {
+        int n = 0;
+        for (PersonalDataTable t : INVENTORY) {
+            n += t.statements().size();
+        }
+        return n;
+    }
+
+    // ---- 作用面归因账（第六轮 W1c 事项三） ----
+
+    /**
+     * 清单项键 → 该语句的「作用面归因」。
+     *
+     * <p>为什么是一张表而不是一个派生值：这件事的<b>两半</b>各有载体——代码写点可以纯静态派生，
+     * 本快照行数只能问真库。所以这里记的是<b>人做的裁定</b>，
+     * 由 {@code ErasureSurfaceAndOrderingGateTest} 拿派生结果逐条对账：
+     * 写点轴在 CI 里对（无库也能红），行数轴在接了库时（{@code -Derasure.db.enabled=true}）对。
+     * 这样「这条语句今天是不是空转」第一次变成机器可读的账，而不是一句注释。</p>
+     *
+     * <p>覆盖要求：键集合必须<b>恰好等于</b>「带语句的清单项键集合」（RETAIN 项零语句，不在账内）。
+     * 新增一项而忘记登记归因，或删了一项而账里还留着，都会立刻红。</p>
+     */
+    private static final Map<String, ErasureStatementSurface> SURFACE_LEDGER = buildSurfaceLedger();
+
+    /** 按清单项键取作用面归因；未登记即抛错（宁可炸也不给默认值——默认值会让新项免检）。 */
+    public static ErasureStatementSurface surfaceOf(String key) {
+        ErasureStatementSurface surface = SURFACE_LEDGER.get(key);
+        if (surface == null) {
+            throw new IllegalStateException("清单项 " + key + " 没有作用面归因（ErasureStatementSurface）登记");
+        }
+        return surface;
+    }
+
+    /** 作用面归因账（只读视图）。 */
+    public static Map<String, ErasureStatementSurface> surfaceLedger() {
+        return SURFACE_LEDGER;
+    }
+
+    /**
+     * 归因账本体。三组键的判据口径（第六轮 W1c，实测自 {@code campus_love} 生产口径库只读快照
+     * + {@code apps/api/src/main} 静态写点扫描）：
+     * <ul>
+     *   <li>{@link ErasureStatementSurface#LIVE_WRITTEN} 44 项——本快照 {@code COUNT(*)>0} 且有代码写点；</li>
+     *   <li>{@link ErasureStatementSurface#EMPTY_WRITTEN} 27 项——本快照 0 行，但写点在盘上
+     *       （实体 + Repository 注入 + 至少一处 save/delete，或原生写 SQL）；</li>
+     *   <li>{@link ErasureStatementSurface#DEAD_TABLE} 5 项——本快照 0 行<b>且</b> Java 侧写点为零
+     *       （无实体，或实体对应的 Repository 从未被注入）；逐张裁定见各项 {@code rationale}。</li>
+     * </ul>
+     * 44 + 27 + 5 = 76 = {@code statementCount()}（W1c 前）；W1c 补进 {@code post_tags}（活表有数据）
+     * 与 {@code temp_chat_contact_exchange}（0 行有写点）后为 45 / 28 / 5 = 78。
+     */
+    private static Map<String, ErasureStatementSurface> buildSurfaceLedger() {
+        Map<String, ErasureStatementSurface> m = new LinkedHashMap<>();
+        for (String key : new String[] {
+                "media_asset", "user_basic_profile", "user_campus_profile", "user_schedule_profile",
+                "real_name_certifications", "campus_certifications",
+                "temp_chat_session", "private_messages_outgoing", "private_messages_inbound_quote",
+                "private_conversations", "whisper_outgoing", "whisper_inbound", "likes_outgoing",
+                "user_follows_outgoing", "heart_signals", "pass_records", "interaction_events", "posts",
+                "comments", "circle_topics", "circle_replies", "campus_topics", "notifications_outgoing",
+                "notifications_inbound", "visitors_outgoing", "post_draft", "recommendation_preferences",
+                "dnd_settings", "post_favorites", "post_likes", "post_view_history", "comment_likes",
+                "search_queries", "daily_answers", "check_ins", "social_progress", "circle_memberships",
+                "activity_enrollments", "official_chat_messages", "audit_log", "user_agreement_consent",
+                "wallet_transaction_log", "user_device_session", "users",
+                "post_tags"}) {
+            m.put(key, ErasureStatementSurface.LIVE_WRITTEN);
+        }
+        for (String key : new String[] {
+                "user_interest_tag", "love_verification_application", "temp_chat_message",
+                "temp_chat_contact_exchange", "campus_topic_replies", "circle_announcements",
+                "profile_visitors", "user_block", "post_shares", "circle_topic_likes",
+                "circle_topic_like_notices", "video_call_records", "video_calls", "wallet_unlocks",
+                "task_claim", "daily_benefits", "make_up_quota", "push_preferences", "push_summaries",
+                "consulting_signup", "invite_code", "feedback_tickets", "payment_callback_log",
+                "vip_order", "vip_bills", "reports", "user_online_status", "third_party_account"}) {
+            m.put(key, ErasureStatementSurface.EMPTY_WRITTEN);
+        }
+        for (String key : new String[] {
+                "user_match_ticket", "chat_ai_session_context", "chat_ai_suggestion_log",
+                "activity_proposal", "user_sessions"}) {
+            m.put(key, ErasureStatementSurface.DEAD_TABLE);
+        }
+        return Map.copyOf(m);
+    }
+
     // ---- 清单 ----
 
     private static List<PersonalDataTable> buildInventory() {
@@ -241,6 +341,25 @@ public final class PersonalDataTables {
                 "显式删消息（虽然下一条删会话时 FK 会级联）：万一级联策略被改动，"
                         + "消息正文也不会残留。临时会话按产品语义 24h 过期 + 每小时保留期清理，"
                         + "整体删除不会破坏对方长期数据。"));
+        list.add(PersonalDataTable.of(
+                "temp_chat_contact_exchange", "temp_chat_contact_exchange", "临时会话的联系交换记录",
+                ErasureAction.DELETE_ROWS, List.of(),
+                List.of("session_id", "proposer", "status"),
+                List.of("DELETE ce FROM temp_chat_contact_exchange ce JOIN temp_chat_session ts "
+                        + "ON ce.session_id = ts.id WHERE ts.user_a_id = {uid} OR ts.user_b_id = {uid}"),
+                List.of(),
+                "与 post_tags 同族的「借归属」形状（第六轮 W1c 事项二）：本表列集 "
+                        + "{@code id/session_id/proposer/status/created_at/updated_at} 里没有用户归属列"
+                        + "（{@code proposer} 存的是 self/peer 字面量，不是 ID），"
+                        + "只经 FK {@code fk_temp_chat_contact_exchange_session}"
+                        + "（V2026.05.27.0001:56，{@code ON DELETE CASCADE}）挂在有归属列的 "
+                        + "{@code temp_chat_session} 上。区别在于：这里的父项<b>确实删行</b>，"
+                        + "所以级联今天真的会触发、行不会残留——但那是<b>把不变量押在数据库策略上</b>，"
+                        + "与 post_tags 炸的是同一条链（父项一旦被改成匿名或级联被改，行就静默留存）。"
+                        + "按 {@code temp_chat_message} 的既有口径显式点名，并<b>必须排在 "
+                        + "{@code temp_chat_session} 之前</b>（判点：ErasureSurfaceAndOrderingGateTest 的顺序不变量）。"
+                        + "行内容（谁发起交换、交换到哪一步）是双方在临时会话里的动作事实，"
+                        + "随会话一起消灭，与 {@code temp_chat_session} 项同裁定。"));
         list.add(PersonalDataTable.of(
                 "temp_chat_session", "temp_chat_session", "临时聊天会话",
                 ErasureAction.DELETE_ROWS, List.of("temp_chat_sessions"),
@@ -369,6 +488,24 @@ public final class PersonalDataTables {
                         + "author_id 指向无身份墓碑行。这是「匿名」而非「化名」：占位值是常量文本，"
                         + "不含 postId/authorId。"));
         list.add(PersonalDataTable.of(
+                "post_tags", "post_tags", "我给动态打的话题标签",
+                ErasureAction.DELETE_ROWS, List.of(),
+                List.of("post_id", "tag_name"),
+                List.of("DELETE pt FROM post_tags pt JOIN posts p ON pt.post_id = p.id "
+                        + "WHERE p.author_id = {uid}"),
+                List.of(),
+                "<b>借父表归属删除</b>的形状（第六轮 W1c 事项二）：本表列集只有 "
+                        + "{@code id/post_id/tag_name/created_at/version}，<b>没有任何用户归属列</b>，"
+                        + "因此逃过 F-11 那条「按 CREATE 体里的用户归属列派生」的穷尽门；"
+                        + "而它的父表 {@code posts} 是 {@code ANONYMISE_IN_PLACE} 不删行 ⇒ "
+                        + "{@code fk_...} 上的 {@code ON DELETE CASCADE}（V2026.05.28.0010:12）<b>永不触发</b> ⇒ "
+                        + "主体亲手打的标签行在注销后原样留着（E2 实盘 163 行）。"
+                        + "标签名是公共词表不含身份，但「谁给哪条动态打过什么标签」是主体的兴趣表态，属主体数据。"
+                        + "归属只能从父表拿：JOIN posts 按 {@code p.author_id} 删（列名以 DDL 为准，"
+                        + "posts 的归属列是 author_id 不是 user_id）。写点在盘上（"
+                        + "{@code PostTagRepository.save}，见 VillagePostService/RealPostTagService），不是死表。"
+                        + "导出清单没有本表（与 love_verification_application 同族的导出缺口）。"));
+        list.add(PersonalDataTable.of(
                 "comments", "comments", "我发的评论",
                 ErasureAction.ANONYMISE_IN_PLACE, List.of("comments"),
                 List.of("content", "images", "owner_circle_path"),
@@ -461,7 +598,16 @@ public final class PersonalDataTables {
         list.add(deleteRows("post_draft", "post_draft", "未发布草稿", "user_id", List.of(),
                 "草稿含正文/位置描述，未发布因而无任何第三方引用，直接删除（导出清单未声明）。"));
         list.add(deleteRows("user_match_ticket", "user_match_ticket", "匹配排队票", "user_id", List.of(),
-                "含话题偏好与临时会话 uid，删除。"));
+                "含话题偏好与临时会话 uid，删除。"
+                        + "<b>W1c 裁定＝保留清单项（归因 DEAD_TABLE）</b>：本快照 0 行，且 Java 侧写点为零"
+                        + "（全仓无 UserMatchTicket 实体、无 Repository）⇒ 这条 DELETE 今天恒 0 行。"
+                        + "留项的理由：①表还在迁移链上（V2026.05.23.0003 建的，链里没有任何一条 DROP 认领过退役），"
+                        + "生产口径库之外的快照（旧环境/备份恢复）里完全可能有历史行；"
+                        + "②行内容含话题偏好与临时会话 uid，是 PIPL 射程内的主体数据，"
+                        + "撤项等于把「已知有人可能有行」转成「没人负责」；"
+                        + "③代价是一次 0 行语句，不换来任何风险。"
+                        + "真要做的是另一件事：由 DBA 出退役迁移把表 DROP 掉，届时 A/B/C 门会因"
+                        + "「迁移链里没有这张表」自动逼着把本项一起划掉。第六轮 W1c 事项三。"));
         list.add(deleteRows("recommendation_preferences", "recommendation_preferences", "推荐偏好",
                 "user_id", List.of(), "偏好时间点/范围，删除。"));
         list.add(deleteRows("dnd_settings", "dnd_settings", "免打扰设置", "user_id", List.of(),
@@ -541,9 +687,21 @@ public final class PersonalDataTables {
                 List.of("context_payload", "chat_thread_id"),
                 List.of("DELETE FROM chat_ai_session_context WHERE user_id = {uid}"),
                 List.of(),
-                "context_payload 是 JSON 化的对话内容，常含主体自述的姓名/校区/作息，删除。"));
+                "context_payload 是 JSON 化的对话内容，常含主体自述的姓名/校区/作息，删除。"
+                        + "<b>W1c 裁定＝保留清单项（归因 DEAD_TABLE）</b>：本快照 0 行 + Java 侧零写点"
+                        + "（无 ChatAiSessionContext 实体、无 Repository）⇒ 语句今天恒 0 行。"
+                        + "留项理由：这张表存的是<b>全清单里敏感度最高的载荷之一</b>（对话原文 JSON，"
+                        + "自述姓名/校区/作息都在里面），一旦退役不彻底、旧快照里躺着行，"
+                        + "撤掉清单项就等于「注销不碰对话上下文」——这正是第五轮 P0 的形状。"
+                        + "表还在链上（V2026.05.23.0003 建）且无 DROP 迁移，所以退役没有落账点。第六轮 W1c 事项三。"));
         list.add(deleteRows("chat_ai_suggestion_log", "chat_ai_suggestion_log", "AI 建议留痕",
-                "user_id", List.of(), "建议日志含对话派生文本，删除。"));
+                "user_id", List.of(), "建议日志含对话派生文本，删除。"
+                        + "<b>W1c 裁定＝保留清单项（归因 DEAD_TABLE）</b>：本快照 0 行 + 零写点"
+                        + "（无 ChatAiSuggestionLog 实体、无 Repository）⇒ 恒 0 行语句。"
+                        + "留项理由与 chat_ai_session_context 同族：它是对话的<b>派生文本</b>，"
+                        + "同样属主体可主张删除的范围；两表要么一起留、要么随退役迁移一起走，"
+                        + "单独摘掉一条会让「AI 语境数据清了没有」这个问题重新变成口供。"
+                        + "表在链上无 DROP（V2026.05.23.0003）。第六轮 W1c 事项三。"));
 
         // ============================================================
         // 8) 工单/提案：行有处理留痕价值，只清主体身份列
@@ -573,7 +731,14 @@ public final class PersonalDataTables {
                 List.of(),
                 "本表有一列<b>明文手机号</b>（submitter_phone NOT NULL，不走 AES）——它是全库唯一"
                         + "把手机号写明文的地方。提案可能已转成公开活动（converted_activity_id），"
-                        + "删行会破坏活动溯源，故行保留、身份列清空/置常量。"));
+                        + "删行会破坏活动溯源，故行保留、身份列清空/置常量。"
+                        + "<b>W1c 裁定＝保留清单项（归因 DEAD_TABLE）</b>：本快照 0 行 + 零写点"
+                        + "（无 ActivityProposal 实体、无 Repository；FeedbackController 的 "
+                        + "createActivityProposal 走的是 feedback 通道，不落本表）⇒ 这条 UPDATE 今天恒 0 行。"
+                        + "留项理由最硬的一条：<b>明文手机号</b>。撤项等于宣布"
+                        + "「注销不处理活动提案里的手机号」，而这张表恰恰是全库唯一写明文手机号的表；"
+                        + "退役状态又没有 DROP 迁移落账（表在 V2026.05.23.0003 建，链上无人认领退役）。"
+                        + "第六轮 W1c 事项三。"));
 
         // ============================================================
         // 9) 日志与凭证（法律义务留存，但身份列必须清除）
@@ -684,7 +849,13 @@ public final class PersonalDataTables {
         // 11) 凭据/设备/会话：全部删除（token 与设备指纹同样属个人信息）
         // ============================================================
         list.add(deleteRows("user_sessions", "user_sessions", "会话令牌", "user_id", List.of(),
-                "session_token 是可重放凭据，必须随账号消灭（黑名单只有 TTL，行必须删）。"));
+                "session_token 是可重放凭据，必须随账号消灭（黑名单只有 TTL，行必须删）。"
+                        + "<b>W1c 裁定＝保留清单项（归因 DEAD_TABLE）</b>：本快照 0 行，"
+                        + "写点为零——注意「零写点」的口径：本表<b>有</b>实体 UserSession 与 "
+                        + "UserSessionRepository，但该接口在全仓除自身声明外<b>零注入</b>（无人调用 save/delete），"
+                        + "登录链路实际走 JWT + TokenBlacklistService，所以它是「有壳没人写」的死表。"
+                        + "凭据类不允许以「现在没人写」为理由不清除：旧环境快照里的 token 行一旦留存就是可重放凭据。"
+                        + "表在链上无 DROP 迁移（V2026.05.18.2200 建）。第六轮 W1c 事项三。"));
         list.add(deleteRows("user_device_session", "user_device_session", "登录设备记录",
                 List.of("user_id", "device_id", "last_token_jti"),
                 "device_id 是设备标识符（PIPL 意义上的个人信息），"
