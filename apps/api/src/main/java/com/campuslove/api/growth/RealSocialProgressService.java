@@ -84,27 +84,25 @@ public class RealSocialProgressService implements SocialProgressService {
     // 修复（R4-00327 埋点事务隔离，2026-08-09）：推荐链路在只读事务内调用本方法
     // （RealRecommendationService.getRecommendations @Transactional(readOnly=true) →
     // RecommendationCacheManager.getCachedRecommendations → recordExposure），
-    // 原 REQUIRED 传播会加入外层只读事务：getOrCreateProgress 对无记录用户的
-    // 懒创建 INSERT 被 MySQL 只读连接拒绝（"Connection is read-only"）→ 事务被
-    // 标记 rollback-only → 异常延迟到外层提交阶段抛 UnexpectedRollbackException → 500
-    // （CacheManager 的 catch 拦不住提交期异常）。REQUIRES_NEW 强制独立可写事务：
-    // 埋点失败仅回滚埋点自身，且异常在方法内抛出、可被调用方 catch 兜底。
+    // 原 REQUIRED 传播会加入外层只读事务：懒创建 INSERT 被 MySQL 只读连接拒绝 → 事务被
+    // 标记 rollback-only → 提交期抛 UnexpectedRollbackException → 500。REQUIRES_NEW 强制
+    // 独立可写事务：埋点失败仅回滚埋点自身，异常在方法内抛出、可被调用方 catch 兜底。
+    // C2（2026-11 第六轮修复波 W1）：计数改由数据库原子自增（incrementExposureCount），
+    // 不再「读实体字段 + 加 + 写回」，并发不丢增量、也不再有该路径上的乐观锁冲突。
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void recordExposure(Long userId) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
         }
 
-        SocialProgress progress = getOrCreateProgress(userId);
-        progress.setExposureCount(progress.getExposureCount() + 1);
-        progress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
-        socialProgressRepository.save(progress);
+        getOrCreateProgress(userId);
+        socialProgressRepository.incrementExposureCount(userId, LocalDateTime.now(TimeZones.BUSINESS));
 
-        log.debug("用户[{}]曝光次数+1，当前曝光次数: {}", userId, progress.getExposureCount());
+        log.debug("用户[{}]曝光次数原子+1", userId);
     }
 
     /**
-     * 记录一次喜欢/点赞事件，并自动评估层级升级。
+     * 记录一次喜欢/点赞事件，并原子自增 L2 喜欢计数（层级在同一 SQL 内单调重算）。
      *
      * @param userId 用户 ID
      */
@@ -115,20 +113,14 @@ public class RealSocialProgressService implements SocialProgressService {
             throw new IllegalArgumentException("userId is required");
         }
 
-        SocialProgress progress = getOrCreateProgress(userId);
-        progress.setLikeCount(progress.getLikeCount() + 1);
-        progress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        getOrCreateProgress(userId);
+        socialProgressRepository.incrementLikeCount(userId, LocalDateTime.now(TimeZones.BUSINESS));
 
-        // 喜欢次数达到阈值后自动升级到 L2
-        evaluateAndUpgradeTier(progress);
-        socialProgressRepository.save(progress);
-
-        log.info("用户[{}]喜欢次数+1，当前喜欢次数: {}，当前层级: {}",
-            userId, progress.getLikeCount(), progress.getCurrentTier());
+        log.info("用户[{}]喜欢次数原子+1", userId);
     }
 
     /**
-     * 记录一次匹配事件，并自动评估层级升级。
+     * 记录一次匹配事件，并原子自增 L3 匹配计数。
      *
      * @param userId 用户 ID
      */
@@ -139,19 +131,14 @@ public class RealSocialProgressService implements SocialProgressService {
             throw new IllegalArgumentException("userId is required");
         }
 
-        SocialProgress progress = getOrCreateProgress(userId);
-        progress.setMatchCount(progress.getMatchCount() + 1);
-        progress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        getOrCreateProgress(userId);
+        socialProgressRepository.incrementMatchCount(userId, LocalDateTime.now(TimeZones.BUSINESS));
 
-        evaluateAndUpgradeTier(progress);
-        socialProgressRepository.save(progress);
-
-        log.info("用户[{}]匹配次数+1，当前匹配次数: {}，当前层级: {}",
-            userId, progress.getMatchCount(), progress.getCurrentTier());
+        log.info("用户[{}]匹配次数原子+1", userId);
     }
 
     /**
-     * 记录一次聊天事件，并自动评估层级升级。
+     * 记录一次聊天事件，并原子自增 L4 聊天计数。
      *
      * @param userId 用户 ID
      */
@@ -162,19 +149,14 @@ public class RealSocialProgressService implements SocialProgressService {
             throw new IllegalArgumentException("userId is required");
         }
 
-        SocialProgress progress = getOrCreateProgress(userId);
-        progress.setChatCount(progress.getChatCount() + 1);
-        progress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        getOrCreateProgress(userId);
+        socialProgressRepository.incrementChatCount(userId, LocalDateTime.now(TimeZones.BUSINESS));
 
-        evaluateAndUpgradeTier(progress);
-        socialProgressRepository.save(progress);
-
-        log.info("用户[{}]聊天次数+1，当前聊天次数: {}，当前层级: {}",
-            userId, progress.getChatCount(), progress.getCurrentTier());
+        log.info("用户[{}]聊天次数原子+1", userId);
     }
 
     /**
-     * 记录一次社区互动事件，并自动评估层级升级。
+     * 记录一次社区互动事件，并原子自增 L5 社区计数。
      *
      * @param userId 用户 ID
      */
@@ -185,19 +167,14 @@ public class RealSocialProgressService implements SocialProgressService {
             throw new IllegalArgumentException("userId is required");
         }
 
-        SocialProgress progress = getOrCreateProgress(userId);
-        progress.setCircleCount(progress.getCircleCount() + 1);
-        progress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        getOrCreateProgress(userId);
+        socialProgressRepository.incrementCircleCount(userId, LocalDateTime.now(TimeZones.BUSINESS));
 
-        evaluateAndUpgradeTier(progress);
-        socialProgressRepository.save(progress);
-
-        log.info("用户[{}]社区互动次数+1，当前社区互动次数: {}，当前层级: {}",
-            userId, progress.getCircleCount(), progress.getCurrentTier());
+        log.info("用户[{}]社区互动次数原子+1", userId);
     }
 
     /**
-     * 记录一次活动参与事件，并自动评估层级升级。
+     * 记录一次活动参与事件，并原子自增 L6 活动计数。
      *
      * @param userId 用户 ID
      */
@@ -208,15 +185,10 @@ public class RealSocialProgressService implements SocialProgressService {
             throw new IllegalArgumentException("userId is required");
         }
 
-        SocialProgress progress = getOrCreateProgress(userId);
-        progress.setActivityCount(progress.getActivityCount() + 1);
-        progress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        getOrCreateProgress(userId);
+        socialProgressRepository.incrementActivityCount(userId, LocalDateTime.now(TimeZones.BUSINESS));
 
-        evaluateAndUpgradeTier(progress);
-        socialProgressRepository.save(progress);
-
-        log.info("用户[{}]活动参与次数+1，当前活动参与次数: {}，当前层级: {}",
-            userId, progress.getActivityCount(), progress.getCurrentTier());
+        log.info("用户[{}]活动参与次数原子+1", userId);
     }
 
     // ---- 私有辅助方法 ----
@@ -245,57 +217,6 @@ public class RealSocialProgressService implements SocialProgressService {
                 newProgress.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
                 return socialProgressRepository.save(newProgress);
             });
-    }
-
-    /**
-     * 根据当前各维度计数评估并自动升级层级。
-     * <p>
-     * 层级判断规则（从高到低检查，确保最高满足的层级生效）：
-     * <ul>
-     *   <li>L6_SCENE：activity_count >= 1</li>
-     *   <li>L5_CIRCLE：circle_count >= 1</li>
-     *   <li>L4_COMMUNICATION：chat_count >= 1</li>
-     *   <li>L3_MATCH：match_count >= 1</li>
-     *   <li>L2_ATTENTION：like_count >= 1</li>
-     *   <li>L1_EXPOSURE：默认（无前置条件）</li>
-     * </ul>
-     * 层级只会升级，不会降级。
-     *
-     * @param progress 社交进度实体
-     */
-    private void evaluateAndUpgradeTier(SocialProgress progress) {
-        String oldTier = progress.getCurrentTier();
-        String newTier = determineTier(progress);
-
-        if (!newTier.equals(oldTier)) {
-            log.info("用户[{}]社交层级升级: {} -> {}", progress.getUserId(), oldTier, newTier);
-            progress.setCurrentTier(newTier);
-        }
-    }
-
-    /**
-     * 根据各维度计数确定当前应处的最高层级。
-     *
-     * @param progress 社交进度实体
-     * @return 层级编码
-     */
-    private String determineTier(SocialProgress progress) {
-        if (progress.getActivityCount() >= 1) {
-            return "L6_SCENE";
-        }
-        if (progress.getCircleCount() >= 1) {
-            return "L5_CIRCLE";
-        }
-        if (progress.getChatCount() >= 1) {
-            return "L4_COMMUNICATION";
-        }
-        if (progress.getMatchCount() >= 1) {
-            return "L3_MATCH";
-        }
-        if (progress.getLikeCount() >= 1) {
-            return "L2_ATTENTION";
-        }
-        return "L1_EXPOSURE";
     }
 
     /**

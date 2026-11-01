@@ -2,8 +2,11 @@
 # MySQL 定时备份 crontab 参考（Task 8.3.1）
 # ============================================================
 # ⚠️ 2026-08-05 起本文件不再挂载到容器（infra #20）：
-#   docker-compose.yml 中 backup 服务的启动命令会根据 BACKUP_CRON 环境变量
-#   动态生成 /etc/crontabs/backup，因此修改 BACKUP_CRON 无需重建镜像：
+#   docker/backup/entrypoint.sh（backup 的 ENTRYPOINT，2026-11-01 起；此前这段
+#   住在 compose 的 command 里，而 `compose run` 会替换 command ⇒ 文档里的
+#   `run --rm backup /backup.sh` 一直跳过装 bash，从未跑通，第六轮 W3 item 2）
+#   会根据 BACKUP_CRON 环境变量动态生成 /etc/crontabs/backup，
+#   因此修改 BACKUP_CRON 无需重建镜像：
 #     docker compose --profile backup up -d   # 读取 .env 中的 BACKUP_CRON
 #   本文件仅作为默认值（每天凌晨 2:00）与格式参考。
 #
@@ -15,6 +18,8 @@
 #     - ./scripts/backup-mysql.sh:/backup.sh:ro
 #   因此 crontab 必须调用 /backup.sh（而非 /usr/local/bin/backup-mysql.sh）。
 #   历史上路径不一致导致 cron 触发后脚本报错 "command not found"，此处对齐。
+#   另：/backup.sh 的 shebang 是 `#!/usr/bin/env bash`，alpine 基镜像没有 bash——
+#   由 entrypoint 安装后才谈得上执行它（这也是 `compose run` 必须走 entrypoint 的原因）。
 # ============================================================
 
 # m h  dom mon dow   command

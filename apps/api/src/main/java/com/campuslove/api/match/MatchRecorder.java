@@ -297,6 +297,11 @@ public class MatchRecorder {
     @Transactional
     public void acceptHeartSignal(Long signalId, Long userId) {
         HeartSignal signal = loadSignalAndVerifyParticipant(signalId, userId);
+        // C3(b)：状态写点前加合法迁移守卫（与 TempChatSessionService 的 status==accepted
+        // 谓词口径统一）。只有 pending 可被接受；expired/declined/accepted 一律 409，
+        // 杜绝「过期信号被复活成已接受」与重复接受。
+        com.campuslove.api.common.StateMachines.assertHeartSignalTransitionAllowed(
+                signal.getStatus(), SignalStatus.accepted);
         signal.setStatus(SignalStatus.accepted);
         signal.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         heartSignalRepository.save(signal);
@@ -308,6 +313,9 @@ public class MatchRecorder {
     @Transactional
     public void declineHeartSignal(Long signalId, Long userId) {
         HeartSignal signal = loadSignalAndVerifyParticipant(signalId, userId);
+        // C3(b)：同 accept，只有 pending 可被拒绝；防止复活已 accepted/expired 的信号。
+        com.campuslove.api.common.StateMachines.assertHeartSignalTransitionAllowed(
+                signal.getStatus(), SignalStatus.declined);
         signal.setStatus(SignalStatus.declined);
         signal.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         heartSignalRepository.save(signal);

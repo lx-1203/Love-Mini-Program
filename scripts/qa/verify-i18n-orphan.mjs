@@ -39,7 +39,7 @@ const SRC = resolve(arg("src", join(REPO, "apps/client/src")));
    删前用脚本断言结构：BEFORE=4169 AFTER=4143、差值恰为 26、
    非 matchHub 键 0 改动 0 新增（见下），删后 zh 键数与孤儿数都由本门重读。
    反证：--allow-orphans 1200 ⇒ exit 1（棘轮真的会咬）。 */
-const ALLOW = Number(arg("allow-orphans", "1251"));
+const ALLOW = Number(arg("allow-orphans", "1243"));
 const VERBOSE = argv.includes("--verbose");
 /* 第二维（第五轮 C-F8 / B-FINDING 14）：i18n 之外的"裸中文文案"棘轮。
    过去这把门只量反方向（定义了没人用的死键），完全看不见"绕过 i18n 直接硬编码进 UI 的中文"——

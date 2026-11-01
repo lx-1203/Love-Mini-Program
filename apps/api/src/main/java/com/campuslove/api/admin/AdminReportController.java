@@ -188,6 +188,9 @@ public class AdminReportController {
         // 根据处理结果映射到对应状态
         String newStatus = RESULT_HANDLE.equals(req.result()) ? STATUS_HANDLED : STATUS_REJECTED;
         report.setStatus(newStatus);
+        // C1(a)：工单结案即让出去重槽位（置 NULL），同一举报人日后仍可对该目标再次举报；
+        // 结案前的活跃 PENDING 举报由 uk_reports_pending_dedup 唯一键挡住重复立案。
+        report.setPendingDedupKey(null);
         report.setHandlerId(handlerId);
         report.setHandleRemark(req.remark());
         report.setHandledAt(LocalDateTime.now(TimeZones.BUSINESS));

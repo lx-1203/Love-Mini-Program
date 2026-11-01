@@ -20,7 +20,12 @@ import org.junit.jupiter.api.Test;
  */
 class GeoServiceTest {
 
-    private final GeoService service = new GeoService(null);
+    /**
+     * 纯计算用例：仓库/拉黑/授权协作者全部传 null。
+     * 这里只测 haversineKm / formatDistance 两个无副作用方法；
+     * 三个协作者为 null 时 findNearby 走 fail-closed 分支（见 GeoServiceNearbyAuthzTest）。
+     */
+    private final GeoService service = new GeoService(null, null, null);
 
     @Test
     @DisplayName("haversineKm: 同一坐标 → 0")

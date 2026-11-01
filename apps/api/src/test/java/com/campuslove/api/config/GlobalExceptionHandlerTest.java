@@ -73,6 +73,41 @@ class GlobalExceptionHandlerTest {
     }
 
     /**
+     * C7（2026-11 第六轮修复波 W1）：余额不足是「资源状态冲突」，不是「请求格式错」。
+     * 后端 handler 原返回 400，而客户端（api.ts / discover 组件）与后端测试注释
+     * 都按 409 契约处理 ⇒ 客户端 409 分支恒不命中。修正为 409，客户端分支才真正生效。
+     */
+    @Test
+    void handleInsufficientBalance_returns409() {
+        com.campuslove.api.wallet.InsufficientBalanceException ex =
+                new com.campuslove.api.wallet.InsufficientBalanceException(1L, 5000L, 100L);
+
+        ResponseEntity<Map<String, Object>> response = handler.handleInsufficientBalance(ex);
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode(), "余额不足应为 409 CONFLICT，不是 400");
+        assertEquals(409, response.getBody().get("status"));
+        assertEquals("Conflict", response.getBody().get("error"));
+        assertEquals("INSUFFICIENT_BALANCE", response.getBody().get("code"));
+    }
+
+    /**
+     * C7：resolveMappedStatus 必须与 handler 映射同表——余额不足 409、业务拒绝 403，
+     * 且「编程错误」IllegalStateException 仍应保持 500（不能一刀切转 400 把真 bug 伪装成用户错误）。
+     */
+    @Test
+    void resolveMappedStatus_c7SplitsBusinessRejectFromInvariantBreak() {
+        // 余额不足：资源状态冲突 → 409（与 handler 一致，供审计切面记录真实状态码）
+        assertEquals(409, GlobalExceptionHandler.resolveMappedStatus(
+                new com.campuslove.api.wallet.InsufficientBalanceException(1L, 5000L, 100L)));
+        // 业务拒绝：功能关闭 / 越权累计上限 → 403（OperationForbiddenException 走 BusinessException 兜底）
+        assertEquals(403, GlobalExceptionHandler.resolveMappedStatus(
+                new com.campuslove.api.common.OperationForbiddenException("demo recharge disabled")));
+        // 不变量破坏 / 装配错误：IllegalStateException 保持 500，不得被塌成 4xx 掩盖真 bug
+        assertEquals(500, GlobalExceptionHandler.resolveMappedStatus(
+                new IllegalStateException("wallet service unavailable")));
+    }
+
+    /**
      * resolveMappedStatus：审计切面用同一张映射表推断客户端实际收到的状态码。
      * 覆盖 AdminAuth 家族先于父类 IllegalArgumentException 判定（401 不得读成 400）、
      * 封存类先于 BusinessException（自带 httpStatus 不得读成兜底）、未匹配兜底 500。

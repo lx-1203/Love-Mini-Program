@@ -70,6 +70,17 @@ public class Report {
     @Column(name = "handled_at")
     private LocalDateTime handledAt;
 
+    /**
+     * C1(a)（2026-11 第六轮修复波 W1）：活跃举报去重键（服务端派生业务唯一键）。
+     *
+     * <p>举报建案时置为 {@code reporterId:targetType:targetId}，配合 DB 唯一键
+     * {@code uk_reports_pending_dedup} ⇒ 同一举报人对同一目标<b>同时只能有一条活跃(PENDING)举报</b>，
+     * 双击/连点/并发不再重复立案。工单被处理（HANDLED/REJECTED）时置回 {@code null}
+     * ——MySQL 唯一键允许多行 NULL，因此历史工单保留、且同一目标日后仍可再次举报。</p>
+     */
+    @Column(name = "pending_dedup_key", length = 256)
+    private String pendingDedupKey;
+
     /** 默认构造方法，JPA 要求 */
     /**
      * 乐观锁版本号（Task 2.1.1 数据一致性基础设施）。
@@ -173,6 +184,14 @@ public class Report {
 
     public void setHandledAt(LocalDateTime handledAt) {
         this.handledAt = handledAt;
+    }
+
+    public String getPendingDedupKey() {
+        return pendingDedupKey;
+    }
+
+    public void setPendingDedupKey(String pendingDedupKey) {
+        this.pendingDedupKey = pendingDedupKey;
     }
 
     public Long getVersion() {

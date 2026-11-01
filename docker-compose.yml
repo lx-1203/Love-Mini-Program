@@ -73,6 +73,20 @@
 #   - backup 镜像的 mysqldump 是 MariaDB 血统（alpine 的 mysql-client~10.11），与
 #     mysql:8.0.39 服务端不兼容的开关（--set-gtid-purged）会让每次 cron 备份在第 2 步
 #     就失败。脚本改为先探测血统再分支，见 scripts/backup-mysql.sh。
+#
+# 2026-11-01 第六轮修复波 W3（部署/可观测/运维文档）：
+#   - backup 的安装段从 command 搬进 ENTRYPOINT（docker/backup/entrypoint.sh）：
+#     `compose run` 替换的是 command，原来那条 `run --rm backup /backup.sh` 每次都跳过
+#     装 bash ⇒ 手动备份从未跑通。判点：tests/deployment-config.spec.mjs I 段。
+#   - textfile 目录（宿主 ./backups/node-textfile）在 entrypoint 里显式 mkdir+chown+
+#     校验"是真挂载点"，并在第一次真实备份前播种 node_backup_last_success_timestamp_seconds=0
+#     ——BackupNeverCompleted 从此"有序列可判"，而不是"序列恒缺、既不告警也不报错"。
+#     判点：tests/monitoring-wiring.spec.mjs 第 6c 节。
+#   - 恢复账号与口令改为【同源配对】（scripts/restore-mysql.sh），不再静默用
+#     `MYSQL_USER:-root`：文档那种"只覆盖 MYSQL_PASSWORD"的写法会把 .env 的业务账号
+#     campus 配到 root 的口令上。判点：tests/deployment-config.spec.mjs H 段。
+#   - 本文件头注与 migrate 段此前对 flyway-maven-plugin 说反话（一处说 pom 里有、
+#     一处说没有），已统一成同一份表述；判点同 deployment-config G 段。
 # ============================================================
 
 version: "3.9"
@@ -216,8 +230,15 @@ services:
   # 只跑一次、成功即退出；api 通过 depends_on.condition: service_completed_successfully
   # 等它跑完再启动，杜绝 N 个 api 副本并发抢跑同一批 DDL。
   # 用的是官方 Flyway CLI 镜像（本仓既有 CLI 方式：database/flyway/flyway.toml +
-  # scripts/launcher/run-flyway.ps1 都指向 flyway CLI，而 apps/api/pom.xml 并无
-  # flyway-maven-plugin——所以不能用 ./mvnw flyway:migrate）。
+  # scripts/launcher/run-flyway.ps1 都指向 flyway CLI）。
+  # 与文件头同一份表述：apps/api/pom.xml 第四轮起也声明了 flyway-maven-plugin
+  # （版本钉 ${flyway.version}，与 BOM 托管的 flyway-core 同版本），因此
+  # `./mvnw flyway:migrate` 同样可用。两条载具都在，但【同一时刻只许一个写者】：
+  # 日常链路由本 compose 的 migrate 服务承担，mvnw 那条留给 CI 与运维手工补跑，
+  # 且都必须显式传 placeholders（mvnw 不读 Spring 配置）。
+  # （此前本段写的是"pom 并无 flyway-maven-plugin——所以不能用 ./mvnw flyway:migrate"，
+  #  与文件头 :45-48 直接矛盾，且 pom 里那个插件自 2026-10-30 就在。判点见
+  #  tests/deployment-config.spec.mjs G 段：两段的表述与 pom 的实际声明三者必须一致。）
   # 版本对齐：pin 到 Spring Boot 3.3.1 托管的 Flyway 10.10.0（flyway-core 版本由
   # spring-boot-starter-parent BOM 决定）；如需精确小版本以 `mvn dependency:tree` 实测为准，
   # 本环境离线无法 docker pull 校验镜像 tag 存在性。
@@ -674,8 +695,12 @@ services:
       - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
       # 2026-10-31：textfile collector 目录 = backup 容器落的备份指标
       # （node_backup_last_success_timestamp_seconds / node_backup_last_exit_code）。
-      # 目录由下面的宿主 bind 提供，backup 服务未启动时目录为空 ⇒ collector 无输出、
-      # 不报错。抓取端现已常开（prometheus.yml 的 node-exporter job），所以
+      # 目录由下面的宿主 bind 提供（:ro——本容器只读它，写入端是 backup 容器）。
+      # backup 服务未启动时目录为空 ⇒ collector 无输出、不报错，BackupNeverCompleted
+      # 也就没有序列可判；启动后由 docker/backup/entrypoint.sh 负责把属主钉成
+      # backup 账号并播种基线指标（第六轮 W3 item 3），两侧绑的是同一个宿主目录，
+      # 这条形状由 tests/monitoring-wiring.spec.mjs 第 6c 节静态对账。
+      # 抓取端现已常开（prometheus.yml 的 node-exporter job），所以
       # BackupNeverCompleted 还缺的前置只剩【写入端】：--profile backup。
       - --collector.textfile.directory=/mnt/textfile
     ports:
@@ -765,11 +790,20 @@ services:
       BACKUP_MYSQLBINLOG_BIN: ${BACKUP_MYSQLBINLOG_BIN:-}
       BACKUP_ALLOW_MARIADB_DUMP: ${BACKUP_ALLOW_MARIADB_DUMP:-false}
       BACKUP_ALERT_URL: ${BACKUP_ALERT_URL:-}
+      # 与下面那条 node-textfile 挂载的**容器内目标路径**同源插值：改这里就得同时改挂载，
+      # 所以两处都用同一个表达式，不给它们各写一个字面量、各漂一次的机会。
+      # （docker/backup/entrypoint.sh 每次启动会校验该目录存在、对 backup 账号可写、
+      #  且真的是挂载点，三者任一不成立就打 LOUD——否则 BackupNeverCompleted 是条死告警。）
       BACKUP_TEXTFILE_DIR: ${BACKUP_TEXTFILE_DIR:-/mnt/node-textfile}
-      # infra #20：BACKUP_CRON 通过启动命令写入 crontab（不再硬编码 0 2 * * *）
+      # infra #20：BACKUP_CRON 由 docker/backup/entrypoint.sh 写入 crontab（不再硬编码 0 2 * * *）
       BACKUP_CRON: ${BACKUP_CRON:-0 2 * * *}
       TZ: Asia/Shanghai
     volumes:
+      # 2026-11-01（W3 item 2）：安装/降权/crontab/指标前置这套动作搬进 ENTRYPOINT。
+      # 搬之前它写在 command 里，而 `docker compose run <service> <命令>` 会【替换 command】
+      # ⇒ 文档给运维的 `run --rm backup /backup.sh` 每次都跳过装 bash 那段，脚本因缺
+      # bash 直接 not found。entrypoint 不受 run 参数影响，这条路才真的能跑。
+      - ./docker/backup/entrypoint.sh:/backup-entrypoint.sh:ro
       - ./scripts/backup-mysql.sh:/backup.sh:ro
       - ./backups:/backups
       # node-exporter textfile collector 目录（宿主 ./backups/node-textfile，两侧共享）：
@@ -777,8 +811,10 @@ services:
       # 没有 node-exporter 时这些文件没人读（不影响备份本身）。抓取与 node-exporter
       # 现都随默认栈常开（2026-11-01），所以这条链剩下的唯一前置就是本 backup 服务
       # 得起（--profile backup）—— 见 alert-rules.yml 里 BackupNeverCompleted 的
-      # REQUIRES-PROFILE=backup 声明与 tests/monitoring-wiring.spec.mjs 第 6b 节。
-      - ./backups/node-textfile:/mnt/node-textfile
+      # REQUIRES-PROFILE=backup 声明与 tests/monitoring-wiring.spec.mjs 第 6b/6c 节。
+      # 目标路径与 BACKUP_TEXTFILE_DIR 同一个插值表达式（item 3：两侧必须绑同一宿主目录，
+      # 且 backup 侧这一条**不能加 :ro**，否则 cron 档写不进指标文件）。
+      - ./backups/node-textfile:${BACKUP_TEXTFILE_DIR:-/mnt/node-textfile}
       # P3-D.3：挂载 redis-data 卷（只读）以便复制 dump.rdb
       - redis-data:/data/redis:ro
       # S4-3 PITR：只读挂载 mysql-data，以便归档 datadir 下的 mysql-bin.* 完成 binlog。
@@ -786,20 +822,34 @@ services:
       # 通过 mysqldump 能读到全库数据，暴露面一致。若不接受，可改用 mysqldump --master-data
       # 记录的坐标 + `mysqlbinlog --read-from-remote-server`（走网络、不挂卷）替代。
       - mysql-data:/var/lib/mysql:ro
-    # infra #20 / FIN-00851：crontab 由启动命令根据 BACKUP_CRON 生成，
+    # ENTRYPOINT / COMMAND 的分工（2026-11-01，第六轮 W3 item 2 改掉的原缺陷）：
+    #   entrypoint = docker/backup/entrypoint.sh —— 装依赖（bash/openssl/mysql-client/
+    #                redis/gzip/tini）、建非 root 运行账号 backup（uid 固定 10001）、
+    #                按 BACKUP_CRON 生成 crontab、把 textfile 目录钉成 backup 可写的
+    #                真挂载点并播种基线指标，最后降权 exec 它的参数。
+    #   command    = 不再定义。默认动作（跑 crond）由 entrypoint 在"没有参数"时决定。
+    # 原来这套动作整段住在 command 里，而 `docker compose run <service> <命令>` 的语义
+    # 是【用 <命令> 替换 service 的 command，entrypoint 保持不动】——于是文档里那条
+    # `docker compose --profile backup run --rm backup /backup.sh` 每次都会跳过装 bash，
+    # 而 /backup.sh 的 shebang 是 `#!/usr/bin/env bash` ⇒ "not found"，手动备份这条路
+    # 从来没跑通过。搬进 entrypoint 后 run 传任何参数都绕不过安装段。
+    # 对照：同文件的 migrate 服务用 `run --rm migrate info` 是安全的，因为它的 ENTRYPOINT
+    # 本来就是 flyway 可执行文件，run 只换子命令（见 doc/DEPLOYMENT.md「手动运行迁移」）。
+    entrypoint: ["/bin/sh", "/backup-entrypoint.sh"]
+    # infra #20 / FIN-00851：crontab 由 entrypoint 根据 BACKUP_CRON 生成，
     # 以非 root 用户 backup 运行 crond（避免定时任务以 root 运行）
     # apk 包锁主版本（infra #28）：alpine 3.19 仓库中 mysql-client=10.11.x、redis=7.2.x
-    # ⚠️ 2026-10-31 明确记录的事实：本行的 mysql-client~10.11 就是**它自己注释里写的
-    #   alpine 10.11.x = MariaDB 血统**（Alpine 仓库不提供 Oracle MySQL 客户端）。
-    #   而服务端是 mysql:8.0.39。MariaDB 的 mysqldump 不认 --set-gtid-purged、
-    #   它的 mysqlbinlog 解析不了 MySQL 8 的 binlog 事件 ⇒ 原脚本每次 cron 备份
-    #   都会在 mysqldump 那一步非零退出（且只落在 /backup/cron.log 里）。
+    # ⚠️ 2026-10-31 明确记录的事实：entrypoint.sh 里那行 mysql-client~10.11 就是
+    #   **它自己注释里写的 alpine 10.11.x = MariaDB 血统**（Alpine 仓库不提供 Oracle
+    #   MySQL 客户端）。而服务端是 mysql:8.0.39。MariaDB 的 mysqldump 不认
+    #   --set-gtid-purged、它的 mysqlbinlog 解析不了 MySQL 8 的 binlog 事件 ⇒ 原脚本
+    #   每次 cron 备份都会在 mysqldump 那一步非零退出（且只落在 /backup/cron.log 里）。
     #   现在 scripts/backup-mysql.sh 先探测血统：MariaDB 血统默认硬失败并点名修法；
     #   确认自担风险可设 BACKUP_ALLOW_MARIADB_DUMP=true（脚本会绕开不支持的开关、
     #   改用 SQL 取坐标，并放弃 mysqlbinlog 层的归档校验）。
     #   根治办法（未在本机验证，本机 Docker 引擎停机）：把本服务镜像换成与
     #   服务端同血统的 mysql:8.0.39（自带 mysqldump/mysqlbinlog/openssl/bash，
-    #   但 Debian 基镜像，需要把下面这行 apk add 换成直接复用镜像内工具），
+    #   但 Debian 基镜像，需要把 entrypoint.sh 里那行 apk add 换成直接复用镜像内工具），
     #   或用 BACKUP_MYSQLDUMP_BIN/BACKUP_MYSQLBINLOG_BIN 指到挂载进来的 MySQL 8 客户端。
     # S4-3：补 bash —— backup-mysql.sh 用 `#!/usr/bin/env bash` 且依赖数组/进程替换等
     #   bash-ism，alpine 基础镜像默认只有 busybox sh，缺 bash 会让脚本根本无法执行；
@@ -807,13 +857,6 @@ services:
     #   非浮点 latest，随 alpine 3.19.4 基镜像版本走）。
     # 注：BACKUP_ALERT_URL 直发 Alertmanager 时脚本用 curl（有则用）或 busybox wget 的
     #   --post-data（启动时探测，两者都不支持则退化为 LOG ONLY），故未新增软件包。
-    command: >
-      /bin/sh -c "apk add --no-cache bash openssl mysql-client~10.11 redis~7.2 gzip tini &&
-      adduser -D -H -s /sbin/nologin backup &&
-      mkdir -p /etc/crontabs /backup &&
-      chown -R backup:backup /etc/crontabs /backup /backups &&
-      printf '%s /backup.sh >> /backup/cron.log 2>&1\n' \"$${BACKUP_CRON:-0 2 * * *}\" > /etc/crontabs/backup &&
-      exec su backup -s /bin/sh -c 'crond -f -l 8 -c /etc/crontabs'"
     healthcheck:
       test: ["CMD-SHELL", "pgrep crond > /dev/null || exit 1"]
       interval: 60s

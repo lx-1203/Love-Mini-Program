@@ -161,28 +161,36 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 处理钱包余额不足异常（Task 2 / Task 15）。
+     * 处理钱包余额不足异常（Task 2 / Task 15 / C7 修正码）。
      *
      * <p>触发场景：</p>
      * <ul>
      *   <li>VIP 自动续费（{@link com.campuslove.api.vip.AutoRenewService#renewVip}）：
      *       内部已捕获并写 FAILED 流水，不会进入本 handler；但若未来有其他钱包扣减场景
-     *       未捕获抛出，本 handler 作为兜底返回 400 响应</li>
+     *       未捕获抛出，本 handler 作为兜底返回 409 响应</li>
      * </ul>
+     *
+     * <p><b>C7（2026-11 第六轮修复波 W1）：状态码 400 → 409。</b>余额不足是「当前请求与资源
+     * 现有状态（余额）冲突」，不是「请求格式错」，语义上是 409 CONFLICT；且客户端
+     * （{@code apps/client/src/services/api.ts} 及 discover 组件）与后端测试注释
+     * （{@code RealWalletUnlockServiceTest}）都按 409 契约处理——原返回 400 使客户端那条
+     * {@code if (status===409)} 分支恒不命中，落到「弹后端原文」的兜底 toast（分类丢失、
+     * 无法走解锁失败专用文案）。改 409 后客户端既有分支才真正生效。与
+     * {@link DataIntegrityViolationException}（同映射 409）保持同一把尺子。</p>
      *
      * <p>响应体格式（含业务错误码，不含余额明细——infra R2-00230: 精简响应避免回显
      * userId/金额/余额等字段放大攻击面，金额明细仅记录在服务端日志）：
      * <pre>{@code
      * {
-     *   "error": "Bad Request",
+     *   "error": "Conflict",
      *   "message": "余额不足",
-     *   "status": 400,
+     *   "status": 409,
      *   "code": "INSUFFICIENT_BALANCE"
      * }
      * }</pre>
      *
      * @param ex 余额不足异常
-     * @return 标准化的 400 错误响应（含 INSUFFICIENT_BALANCE 错误码）
+     * @return 标准化的 409 错误响应（含 INSUFFICIENT_BALANCE 错误码）
      */
     @ExceptionHandler(InsufficientBalanceException.class)
     public ResponseEntity<Map<String, Object>> handleInsufficientBalance(
@@ -190,11 +198,11 @@ public class GlobalExceptionHandler {
         log.warn("钱包余额不足: userId={}, 需要={}, 当前余额={}",
                 ex.getUserId(), ex.getAmountCents(), ex.getBalanceCents());
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("error", "Bad Request");
+        body.put("error", "Conflict");
         body.put("message", "余额不足");
-        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("status", HttpStatus.CONFLICT.value());
         body.put("code", "INSUFFICIENT_BALANCE");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
     /**
@@ -1009,9 +1017,12 @@ public class GlobalExceptionHandler {
                 || ex instanceof MissingServletRequestParameterException
                 || ex instanceof IllegalArgumentException
                 || ex instanceof org.springframework.http.converter.HttpMessageNotReadableException
-                || ex instanceof InsufficientBalanceException
                 || ex instanceof ContentSecurityException) {
             return 400;
+        }
+        // C7：余额不足是资源状态冲突，与 DataIntegrityViolationException 同为 409（不再落 400）
+        if (ex instanceof InsufficientBalanceException) {
+            return 409;
         }
         if (ex instanceof DataIntegrityViolationException) {
             return 409;

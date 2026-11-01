@@ -170,8 +170,12 @@ class WalletControllerTest {
         try (MockedStatic<SecurityUtils> mocked = Mockito.mockStatic(SecurityUtils.class)) {
             mocked.when(SecurityUtils::getCurrentUserId).thenReturn(userId);
 
-            assertThrows(IllegalStateException.class, () -> controller.recharge(request),
-                    "演示充值关闭时应抛业务错误引导走官方渠道");
+            // C7（2026-11 第六轮修复波 W1）：演示充值关闭是「面向用户的业务拒绝」，
+            // 原抛 IllegalStateException 无 handler ⇒ 塌成 500；改抛 403 语义异常。
+            // 断言随之从 IllegalStateException 迁到 OperationForbiddenException（夹具满足新不变量）。
+            assertThrows(com.campuslove.api.common.OperationForbiddenException.class,
+                    () -> controller.recharge(request),
+                    "演示充值关闭时应抛 403 业务拒绝（OperationForbiddenException）引导走官方渠道");
             verify(walletService, never()).recharge(anyLong(), anyLong(), anyString(), any(), any());
         }
     }

@@ -1,6 +1,7 @@
 package com.campuslove.api.official;
 
 import com.campuslove.api.common.ErrorMessages;
+import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.constraints.NotBlank;
@@ -83,8 +84,17 @@ public class OfficialAccountController {
      * 用户向官方号发送一条消息（R16 2026-09-07）。
      * POST /api/v1/official-accounts/{code}/messages { content }
      * 消息落库并返回 [用户消息, 助手回复]（direction 区分）。
+     *
+     * <p>C1(b)（2026-11 第六轮修复波 W1）：本端点一次写入 <b>成对的两行</b>
+     * （用户消息 + 规则化助手回复，见 {@link OfficialChatService#sendUserMessage}）。
+     * 客户端 {@code http.ts} 的网络层指数退避重试会<b>复用同一把 Idempotency-Key</b>
+     * （一次逻辑调用=一把键），原实现缺 {@code @Idempotent} ⇒ 重试把这一对行再写一遍。
+     * 补上 {@code @Idempotent} 后，同键重试由 {@code IdempotentInterceptor} 拦为 409、不再重复落库。
+     * 注意：这治的是「重试成对行」；用户真的连点两次是两把不同的键、两条合法消息（口径同
+     * {@code apps/client/src/services/http.ts} 的「双击=两次逻辑操作」），不在本注解职责内。</p>
      */
     @PostMapping("/{code}/messages")
+    @Idempotent
     @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<List<OfficialMessageView>> sendMessage(

@@ -255,7 +255,12 @@ public class WalletController {
         // P0-15：演示充值开关——生产环境关闭后禁止直接入账（必须走支付网关回调）
         if (!demoRechargeEnabled) {
             log.warn("演示充值已被配置禁用（app.demo-recharge.enabled=false），userId={}", userId);
-            throw new IllegalStateException(ErrorMessages.DEMO_RECHARGE_DISABLED);
+            // C7（2026-11 第六轮修复波 W1）：这是「面向用户的业务拒绝」（引导走官方充值渠道），
+            // 不是编程错误——原先抛 IllegalStateException，本类无对应 handler ⇒ 塌成 500，
+            // 客户端把「功能关闭」当成服务端故障。与本方法下方累计上限分支（同用
+            // OperationForbiddenException）对齐，改抛 403 语义异常。
+            throw new com.campuslove.api.common.OperationForbiddenException(
+                    ErrorMessages.DEMO_RECHARGE_DISABLED);
         }
         // P0-15：每日演示充值次数上限（原子占用额度，超限回滚递增）
         if (!tryIncrementDemoRechargeCount(userId)) {
@@ -407,7 +412,8 @@ public class WalletController {
      *   <li>已解锁：直接返回 {@code {unlocked:true, balance}}，不重复扣费</li>
      *   <li>未解锁：按配置单价（{@code app.unlock-price.liked-me / app.unlock-price.visitor}，
      *       单位分）扣费并记录解锁，返回 {@code {unlocked:true, balance}}</li>
-     *   <li>余额不足：返回 400 INSUFFICIENT_BALANCE 业务错误（GlobalExceptionHandler 统一映射）</li>
+     *   <li>余额不足：返回 409 INSUFFICIENT_BALANCE 业务错误（GlobalExceptionHandler 统一映射；
+     *       C7 修正：语义为资源状态冲突，客户端按 409 分支处理）</li>
      * </ul>
      *
      * <p>幂等：{@link Idempotent}（Idempotency-Key 头）+ 服务层 orderId 唯一索引

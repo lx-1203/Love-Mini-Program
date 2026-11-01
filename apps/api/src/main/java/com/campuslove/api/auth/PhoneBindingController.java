@@ -80,11 +80,21 @@ public class PhoneBindingController {
      *
      * <p>前置条件：用户已登录（JWT 有效），即必须先通过微信/手机号/体验账号登录。</p>
      *
+     * <p><b>F-W1b-3（第六轮 W1b）：绑定必须先查重。</b>改造前这里是
+     * 「AES 密文 phone + 本行原有微信 openid + 零查重」——即 {@code users.phone} 的
+     * <b>第四种形状</b>：注册侧（{@code RealAuthService#registerUser}）、后台建号侧
+     * （{@code AdminUserController#createUser/createAdmin}）、换号侧
+     * （{@code RealAccountSecurityService#changePhone}）都按「派生键优先 + 明文兜底」查重，
+     * 而本路径两条判据都不问，于是同一手机号可以既在 A 账号（注册来的）又在 B 账号（微信绑定来的）身上，
+     * 静默产生第二个主体；{@code uk_users_phone} 也挡不住——AES-GCM 随机 IV 让同一号码每次密文都不同，
+     * 唯一索引用密文等于没有约束。现在绑定与三条写入口共用同一判据、同一 codec 出口。</p>
+     *
      * <p>错误场景：</p>
      * <ul>
      *   <li>code 无效或已过期（微信 errcode=40029）→ 抛出 IllegalArgumentException</li>
      *   <li>access_token 获取失败 → 抛出 IllegalStateException</li>
      *   <li>当前用户不存在 → 抛出 IllegalArgumentException</li>
+     *   <li>该手机号已归属其它主体 → {@link ResourceConflictException}（HTTP 409）</li>
      * </ul>
      *
      * @param request 包含微信 getPhoneNumber 回调 code 的请求体
@@ -108,16 +118,34 @@ public class PhoneBindingController {
         // 3. 调用微信 getuserphonenumber 接口换取手机号
         String phoneNumber = getPhoneNumber(accessToken, request.code());
 
-        // 4. 加密存储手机号（users.phone 的唯一写入口径见 PhoneColumnCodec：
+        // 4. 查重：与注册侧/后台建号侧/换号侧同一套判据——不可逆派生键优先，明文历史行兜底。
+        //    注意不能拿密文查重：随机 IV 让「同一号码的密文」永不相等，密文侧查重恒不命中。
+        String derivedOpenid = PhoneColumnCodec.derivedOpenid(phoneNumber);
+        User owner = userRepository.findByOpenid(derivedOpenid)
+                .or(() -> userRepository.findByPhone(phoneNumber))
+                .orElse(null);
+        if (owner != null && !java.util.Objects.equals(owner.getId(), userId)) {
+            log.warn("微信手机号绑定被拒绝：该手机号已归属另一主体, userId={}, ownerId={}",
+                    userId, owner.getId());
+            throw new com.campuslove.api.common.ResourceConflictException(
+                    ErrorMessages.PHONE_ALREADY_REGISTERED);
+        }
+
+        // 5. 加密存储手机号（users.phone 的唯一写入口径见 PhoneColumnCodec：
         //    只允许 AES 密文或 NULL，注销后的行是 NULL，不允许任何含 userId 的明文哨兵）
-        String phoneCipher = PhoneColumnCodec.store(aesEncryptor, phoneNumber);
-        user.setPhone(phoneCipher);
+        user.setPhone(PhoneColumnCodec.store(aesEncryptor, phoneNumber));
+        // 6. openid 写入口径与注册侧统一：本行若已是「手机号派生键」身份，派生键必须跟着号码走，
+        //    否则旧号码被一个不再持有它的行占着（新号码反而查不到占用）。
+        //    微信/体验账号身份的行走不到这一支——那类行为受本条未闭合边界影响，见交付报告交接项。
+        if (PhoneColumnCodec.isDerivedKey(user.getOpenid())) {
+            user.setOpenid(derivedOpenid);
+        }
         user.setUpdatedAt(java.time.LocalDateTime.now(com.campuslove.api.common.TimeZones.BUSINESS));
         userRepository.save(user);
 
         log.info("手机号绑定成功: userId={}, phone={}", userId, SensitiveDataMasker.maskPhone(phoneNumber));
 
-        // 5. 返回脱敏手机号
+        // 7. 返回脱敏手机号
         String maskedPhone = SensitiveDataMasker.maskPhone(phoneNumber);
         return ApiResponse.ok(Map.of("phone", maskedPhone));
     }

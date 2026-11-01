@@ -552,7 +552,14 @@ async function handleWhisperUnlock(): Promise<void> {
       err !== null && typeof err === "object" && "status" in err
         ? (err as { status: number }).status
         : 0;
-    if (status === 409) {
+    // 409 现在有两个来源：`INSUFFICIENT_BALANCE`（余额不足）与 `IDEMPOTENT_CONFLICT`
+    // （同键重放，动作其实已经发生）。只按 status 分支会把后者也报成「余额不足」，
+    // 所以按业务码排除它——码缺失时仍走本分支（宁可提示保守，也不退回弹后端原文）。
+    const conflictCode =
+      err !== null && typeof err === "object" && "code" in err
+        ? (err as { code?: string }).code
+        : undefined;
+    if (status === 409 && conflictCode !== "IDEMPOTENT_CONFLICT") {
       uni.showToast({ title: t("discover.whisperUnlockFailBalance"), icon: "none" });
       return;
     }

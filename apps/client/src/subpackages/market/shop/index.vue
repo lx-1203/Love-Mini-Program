@@ -15,7 +15,10 @@ import { request } from "../../../services/http";
 import { resolveMediaUrl } from "../../../utils/media";
 // R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+// 第六轮 W2-3：页面级在途请求取消（onHide/onUnmount 触发），防止离开后响应回写本页状态
+import { useAbortOnHide } from "../../../composables/useAbortOnHide";
 const { styleVars: menuStyleVars } = useMenuButtonRect();
+const { signal: pageSignal } = useAbortOnHide();
 
 
 const { t } = useI18n();
@@ -225,6 +228,9 @@ async function fetchShopItems(): Promise<void> {
           page: 0,
           pageSize: 20,
         },
+        // 第六轮 W2-3（W2b 收口）：本页 onShow 会重拉，离开页面时取消在途才是安全的；
+        // 不取消的话旧快照会在回来后覆盖 onShow 因 shopLoading 短路而没重拉的那一次
+        signal: pageSignal.value,
       });
       shopItems.value = (page.items ?? []).map(toShopItem);
     }

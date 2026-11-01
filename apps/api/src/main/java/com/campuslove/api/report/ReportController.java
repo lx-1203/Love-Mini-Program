@@ -88,6 +88,9 @@ public class ReportController {
         report.setDescription(req.description());
         report.setStatus(STATUS_PENDING);
         report.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+        // C1(a)：服务端派生活跃举报去重键（同人+同目标），配合 uk_reports_pending_dedup 唯一键
+        // 拒绝重复立案。重复 PENDING 命中唯一键 ⇒ DataIntegrityViolationException → 409（GlobalExceptionHandler 映射）。
+        report.setPendingDedupKey(reporterId + ":" + req.targetType() + ":" + req.targetId());
 
         Report saved = reportRepository.save(report);
 

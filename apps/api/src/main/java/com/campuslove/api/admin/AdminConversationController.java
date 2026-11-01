@@ -1,5 +1,7 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.admin.audit.Auditable;
+import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.OperationForbiddenException;
 import com.campuslove.api.config.SecurityUtils;
@@ -57,6 +59,11 @@ import org.springframework.web.bind.annotation.RestController;
  * 避免跨校区私信泄露）。</p>
  *
  * <p>安全约束：不打印消息正文；分页大小硬上限 100。</p>
+ *
+ * <p><b>读留痕（F-W1b-2，2026-11-01）</b>：三个只读端点都挂 {@link Auditable}
+ * （操作码 {@code VIEW_CONVERSATION}）。此前本类虽有服务端档位收紧，但 {@code audit_log} 里
+ * 一次读取都不留（实测 0 条）——「谁翻了哪对用户的私信、翻了几页」在事后无从追查；
+ * 档位与留痕是两件事，缺后者时前者只能防住今天、防不住「有人用超管账号翻完再离职」。</p>
  */
 @Profile("real")
 @RestController
@@ -95,6 +102,8 @@ public class AdminConversationController {
      * @return 标准后台分页信封 {@link AdminPageView}
      */
     @GetMapping
+    @Auditable(value = AuditOperation.VIEW_CONVERSATION, targetType = "PRIVATE_CONVERSATION",
+            description = "管理端读取私信会话列表（正文按档位收紧，读出规模由审计切面记入读范围快照）")
     @Transactional(readOnly = true)
     public AdminPageView<AdminConversationView> listConversations(
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
@@ -145,6 +154,8 @@ public class AdminConversationController {
      * @return 详情视图；会话不存在返回 404；校区越权返回 403
      */
     @GetMapping("/{id}")
+    @Auditable(value = AuditOperation.VIEW_CONVERSATION, targetType = "PRIVATE_CONVERSATION",
+            description = "管理端读取单个私信会话详情")
     @Transactional(readOnly = true)
     public ResponseEntity<AdminConversationDetailView> getConversation(
             @PathVariable("id") @Positive Long id) {
@@ -171,6 +182,8 @@ public class AdminConversationController {
      * @return 标准后台分页信封；会话不存在返回 404；校区越权返回 403
      */
     @GetMapping("/{id}/messages")
+    @Auditable(value = AuditOperation.VIEW_CONVERSATION, targetType = "PRIVATE_MESSAGE",
+            description = "管理端分页读取单个私信会话的全部消息正文")
     @Transactional(readOnly = true)
     public AdminPageView<AdminMessageView> listMessages(
             @PathVariable("id") @Positive Long id,

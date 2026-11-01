@@ -1,6 +1,7 @@
 package com.campuslove.api.admin.audit;
 
 import com.campuslove.api.admin.AdminAuditLogService;
+import com.campuslove.api.admin.AdminPageView;
 import com.campuslove.api.entity.AuditLog;
 import com.campuslove.api.entity.User;
 import com.campuslove.api.repository.UserRepository;
@@ -11,8 +12,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -22,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -53,6 +58,20 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  * </ol>
  *
  * <p>注：仅在 real profile 激活（依赖 audit_log 表与 UserRepository）。</p>
+ *
+ * <p><b>读接口（GET）能不能用本切面审计？能——但必须补齐它缺的记录维度。</b>
+ * 切点是 {@code @Around("@annotation(auditable)")}，只按「方法上有注解」匹配，
+ * 与 HTTP 方法无关，所以 {@code @Auditable} 标在 GET 上一样会进切面、一样会落库。
+ * 真正的问题不是拦不住，而是<b>拦到之后记不下</b>：原实现的四个维度里
+ * {@code targetId} 只从 {@code @PathVariable} 取、{@code requestBody} 只从
+ * {@code @RequestBody} 取，而读端点的「读谁」写在 query 参数里、「读多少」写在返回值里
+ * —— 两处都不在它的视野内。直接给敏感 GET 挂一个空注解，产出的只是
+ * 「某管理员某时到过这个 URL」这一行废话，事后追查仍然答不出「那一次带走了多少条悄悄话」。
+ * 故本切面为 GET 补两条记录维度（详见 {@link #buildReadScopeSnapshot}）：
+ * 读选择器（query 快照，敏感键沿用同一张掩码表）与读出规模（返回条数 / 总数）。
+ * 判点：{@code AuditAspectReadDimensionTest}（运行期）与
+ * {@code AdminSensitiveReadAuditStaticGateTest}（形态：返回 PII 明文列的管理端 GET
+ * 必须同时具备档位收紧与审计）。</p>
  */
 @Aspect
 @Component
@@ -129,7 +148,10 @@ public class AuditLogAspect {
         long start = System.currentTimeMillis();
         Integer responseStatus = null;
         String errorMessage = null;
-        Object result;
+        // 刻意声明并初始化为 null：异常路径下 finally 仍要落这一行审计（谁在什么时候试图读、
+        // 失败成什么状态码）。读规模维度在这种情况下记成 null（规模不可判定），
+        // 与「确实读到 0 条」是两回事——缺项与 0 在审计库里不能混成一个值。
+        Object result = null;
         try {
             result = pjp.proceed();
             responseStatus = extractResponseStatus(result);
@@ -144,7 +166,7 @@ public class AuditLogAspect {
         } finally {
             long duration = System.currentTimeMillis() - start;
             try {
-                recordAuditLog(pjp, auditable, responseStatus, errorMessage, duration);
+                recordAuditLog(pjp, auditable, responseStatus, errorMessage, duration, result);
             } catch (DataAccessException e) {
                 // 审计日志写入失败时仅记录 warn，不影响主业务流程
                 log.warn("Failed to record audit log: operation={}, error={}",
@@ -167,7 +189,8 @@ public class AuditLogAspect {
      * 构建并异步写入审计日志。
      */
     private void recordAuditLog(ProceedingJoinPoint pjp, Auditable auditable,
-                                Integer responseStatus, String errorMessage, long durationMs) {
+                                Integer responseStatus, String errorMessage, long durationMs,
+                                Object result) {
         MethodSignature signature = (MethodSignature) pjp.getSignature();
         Method method = signature.getMethod();
         Object[] args = pjp.getArgs();
@@ -193,6 +216,12 @@ public class AuditLogAspect {
             requestUrl = truncate(request.getRequestURI(), 256);
             ip = resolveClientIp(request);
             userAgent = truncate(request.getHeader("User-Agent"), 256);
+        }
+
+        // 读接口没有 @RequestBody ⇒ 该列本来就是空的；这里把它用作「读范围快照」
+        // （见类注释与 buildReadScopeSnapshot），写请求的既有语义逐字节不变。
+        if (requestBody == null && request != null && isReadMethod(httpMethod)) {
+            requestBody = buildReadScopeSnapshot(request, result);
         }
 
         AuditLog auditLog = new AuditLog();
@@ -309,6 +338,105 @@ public class AuditLogAspect {
         if (body == null) return null;
         return sanitizeAndSerialize(body);
     }
+
+    /**
+     * 该 HTTP 方法是否属于「读」——只有读请求才需要补读范围快照（写请求走既有的
+     * {@code @RequestBody} 口径，语义逐字节不变）。
+     *
+     * <p>含 {@code HEAD}（同一处理器、同一泄露面）；{@code OPTIONS} 是 CORS 预检，
+     * 不落到业务方法，故不算读。</p>
+     */
+    private static boolean isReadMethod(String httpMethod) {
+        return "GET".equalsIgnoreCase(httpMethod) || "HEAD".equalsIgnoreCase(httpMethod);
+    }
+
+    /**
+     * 为读接口构建「读范围快照」：本次按什么条件挑人 + 实际带走了多少行。
+     *
+     * <p><b>为什么必须有这一步</b>（第六轮 W1b-2）：{@code @Auditable} 拦得住 GET，
+     * 但原实现为 GET 记下的那一行答不出「读了谁、读了多少」——选择器在 query 里、
+     * 结果在返回值里，两处都不在四个既有维度的视野内。悄悄话/私信/实名这类读接口
+     * 若只留下「某人某时到过这个 URL」，事后无法判定泄露规模，审计等于没做。</p>
+     *
+     * <p>产出形态（写进 {@code audit_log.request_body}，该列对 GET 本来就是空的）：</p>
+     * <pre>{@code {"query":{"status":"PENDING","page":"0"},"read":{"returned":20,"total":137}}}</pre>
+     * <ul>
+     *   <li>{@code query} 里命中 {@link #SENSITIVE_FIELDS} 的键值一律替换为 {@code "***"}
+     *       （与写请求同一张掩码表，不因换了载体就放宽）；</li>
+     *   <li>{@code read.returned}/{@code read.total} 为 {@code null} 表示「规模不可判定」
+     *       （方法抛异常、或返回形态不认识），与「确实读到 0 条」区分开——
+     *       审计库里这两个值必须长得不一样；</li>
+     *   <li>整体截断到 {@link #MAX_BODY_LENGTH}，与写请求同一上限。</li>
+     * </ul>
+     *
+     * @param request 当前 HTTP 请求（非 null，调用方已判空）
+     * @param result  方法返回值；异常路径为 null
+     * @return 读范围快照 JSON 文本
+     */
+    private String buildReadScopeSnapshot(HttpServletRequest request, Object result) {
+        ObjectNode snapshot = objectMapper.createObjectNode();
+        ObjectNode query = snapshot.putObject("query");
+        Map<String, String[]> params = request.getParameterMap();
+        if (params != null) {
+            // TreeMap 口径：同一组参数每次落库的顺序一致，审计日志才可做等值比对与聚合
+            List<String> names = new java.util.ArrayList<>(params.keySet());
+            java.util.Collections.sort(names);
+            for (String name : names) {
+                String[] values = params.get(name);
+                String first = (values == null || values.length == 0) ? null : values[0];
+                query.put(name, SENSITIVE_FIELDS.contains(name.toLowerCase(java.util.Locale.ROOT))
+                        ? "***"
+                        : truncate(first, 128));
+            }
+        }
+        ObjectNode read = snapshot.putObject("read");
+        ReadScale scale = resolveReadScale(result);
+        if (scale == null) {
+            read.putNull("returned");
+            read.putNull("total");
+        } else {
+            read.put("returned", scale.returned());
+            read.put("total", scale.total());
+        }
+        try {
+            return truncate(objectMapper.writeValueAsString(snapshot), MAX_BODY_LENGTH);
+        } catch (JsonProcessingException e) {
+            // 理论上不会发生（全是字符串与数字节点）；真发生时宁可记成明确的失败标记，
+            // 也不要让读审计退化成 null（那就等于没补这一维度）
+            return "{\"query\":{},\"read\":{\"returned\":null,\"total\":null}}";
+        }
+    }
+
+    /**
+     * 从返回值里认出「这次带走了多少行」。支持三种形态：管理端分页信封
+     * {@link AdminPageView}、Spring Data {@link Page}、任意 {@link Collection}；
+     * 外面可能还包一层 {@link ResponseEntity}（多数管理端读接口都这么写）。
+     *
+     * @param result 方法返回值
+     * @return 读出规模；形态不认识或为 null（异常路径）时返回 null，表示不可判定
+     */
+    private ReadScale resolveReadScale(Object result) {
+        Object body = result instanceof ResponseEntity<?> re ? re.getBody() : result;
+        if (body == null) {
+            return null;
+        }
+        if (body instanceof AdminPageView<?> pageView) {
+            int returned = pageView.items() == null ? 0 : pageView.items().size();
+            return new ReadScale(returned, pageView.total());
+        }
+        if (body instanceof Page<?> page) {
+            return new ReadScale(page.getContent().size(), page.getTotalElements());
+        }
+        if (body instanceof Collection<?> collection) {
+            // 无分页信封的读接口（如实名认证列表）：总数就取本次返回数，
+            // 审计里记作「本次带走 N 条」，不假装知道全库有多少
+            return new ReadScale(collection.size(), collection.size());
+        }
+        return null;
+    }
+
+    /** 读出规模：本次返回条数 + 该查询的总条数（无信封时等于本次条数）。 */
+    private record ReadScale(int returned, long total) {}
 
     /**
      * 序列化请求体并对敏感字段做脱敏。

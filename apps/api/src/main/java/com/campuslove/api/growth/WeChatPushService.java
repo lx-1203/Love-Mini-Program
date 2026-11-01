@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
@@ -180,7 +179,12 @@ public class WeChatPushService {
      * @param data       模板数据
      * @return 是否发送成功；熔断 / 重试耗尽时返回 false
      */
-    @Transactional
+    // C6（2026-11 第六轮修复波 W1）：本方法体内是一次打到微信的 HTTP 外呼（restClient），
+    // 且本类无任何 Repository/EntityManager —— 全程不写库。此前带着 @Transactional 只是
+    // 白白从连接池（池上限 20）借一条连接并一直占着，直到微信侧返回（自家文档承认 3s+ 慢调用），
+    // 高并发下先把连接抽干再让整个 API 排队。既然没有写库，事务注解本就毫无意义 —— 直接撤除。
+    // 判点：静态门 TransactionalHttpCallStaticGateTest 扫描 src/main/java，
+    // 断言任何 @Transactional 方法体内不得出现 restClient./webClient./restTemplate./.retrieve() 等外呼。
     @CircuitBreaker(name = Resilience4jConfig.WECHAT_API_BACKEND,
             fallbackMethod = "sendSubscribeMessageFallback")
     @Retry(name = Resilience4jConfig.WECHAT_API_BACKEND)
@@ -272,7 +276,7 @@ public class WeChatPushService {
      * @param interactionCount 互动数
      * @return 是否发送成功
      */
-    @Transactional
+    // C6：同上，仅组装模板数据并委托 sendSubscribeMessage（一次 HTTP 外呼），全程不写库 ⇒ 撤 @Transactional。
     public boolean sendSocialDigestPush(String openId, long visitorCount, long likeCount,
                                          long interactionCount) {        String templateId = weChatConfig.getSocialDigestTemplateId();
         if (templateId == null || templateId.isBlank()) {
@@ -296,7 +300,7 @@ public class WeChatPushService {
      * @param recommendCount  推荐人数
      * @return 是否发送成功
      */
-    @Transactional
+    // C6：同上，仅组装模板数据并委托 sendSubscribeMessage（一次 HTTP 外呼），全程不写库 ⇒ 撤 @Transactional。
     public boolean sendRecommendRefreshPush(String openId, long recommendCount) {
         String templateId = weChatConfig.getRecommendRefreshTemplateId();
         if (templateId == null || templateId.isBlank()) {

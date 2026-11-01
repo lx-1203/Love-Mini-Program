@@ -595,6 +595,7 @@ export default {
     "shareFailed": "分享失败，请重试",
     "saveSuccess": "图片已保存到相册",
     "saveFailed": "保存失败，请重试",
+    "privacyRequiredImage": "需同意隐私协议后才能选择图片",
     "daysLabel": "天",
     "pointsLabel": "积分",
     "downloadFailed": "下载失败",
@@ -1877,6 +1878,7 @@ export default {
     "followFailed": "关注失败，请重试",
     "detail": {
       "back": "返回",
+      "privacyRequiredImage": "需同意隐私协议后才能选择图片",
       "report": "举报",
       "message": "私信",
       "statsView": "浏览",
@@ -2043,17 +2045,7 @@ export default {
     "locationPickFailedToast": "未选择位置，请检查定位权限后重试",
     "topicAlreadyAddedToast": "该话题已添加",
     "maxTopicsToast": "最多 {n} 个话题",
-    "mentionInsertedToast": "已在正文末尾插入 {'@'}，请输入昵称",
-    "presetTags": [
-        "校园日常",
-        "兴趣分享",
-        "找搭子",
-        "求助",
-        "表白墙",
-        "校友动态",
-        "生活记录",
-        "技术交流"
-      ]
+    "mentionInsertedToast": "已在正文末尾插入 {'@'}，请输入昵称"
     },
     "tagPostsMissingParam": "缺少标签参数",
     "authorAgeUnit": "岁",
@@ -2759,6 +2751,7 @@ export default {
     "unlockFailBalanceContent": "解锁需要消耗交友币，是否前往钱包充值？",
     "goRecharge": "去充值",
     "unlockVipFree": "会员免费解锁",
+    "unlockVipStatusUnknown": "会员状态未确认，请稍后重试解锁",
     "unlockHint": "解锁后查看全部列表",
     "emptyLikedMe": "还没有人喜欢我",
     "emptyVisitors": "暂无访客",
@@ -4113,7 +4106,8 @@ export default {
       "amountNegative": "订单金额不能为负数"
     },
     "vip": {
-      "planRequired": "开启自动续费时必须指定套餐"
+      "planRequired": "开启自动续费时必须指定套餐",
+      "statusPending": "账单分页在途，本次不判定会员身份"
     },
     "profile": {
       "photoIndexOutOfRange": "照片索引超出范围（0-5）",

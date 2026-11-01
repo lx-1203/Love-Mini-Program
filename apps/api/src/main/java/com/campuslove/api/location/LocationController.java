@@ -66,21 +66,32 @@ public class LocationController {
     /**
      * LBS Phase 2：查询附近的人。
      *
+     * <p><b>F-W1b-1（第六轮 W1b）：本端点必须先取主体。</b>改造前方法体内一次
+     * {@code getCurrentUserId()} 都没有，任何登录账号传任意坐标即可读全平台有坐标的用户
+     * （{@code userId + 昵称 + 校区 + 距离}），配合 1km 粒度距离二分收敛到约 1km。
+     * 现在主体进入 {@link GeoService#findNearby}，授权判定与最小必要投影都在服务层做。</p>
+     *
+     * <p>限流键从 {@code #clientIp} 收紧为「主体 ID + 客户端 IP」：单按 IP 限流时，
+     * 一个账号换出口 IP 就能把铺网格扫坐标的速率叠上去；主体维度是这条读接口的实际防线。</p>
+     *
      * @param lat      当前纬度
      * @param lng      当前经度
      * @param radiusKm 搜索半径（km，1-20，默认 5）
      */
     @GetMapping("/nearby")
-    @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
+    @RateLimit(capacity = 30, refillTokens = 1,
+            key = "#clientIp + ':' + T(com.campuslove.api.config.SecurityUtils).getCurrentUserId()")
     public ApiResponse<List<GeoService.NearbyPerson>> getNearby(
             @RequestParam BigDecimal lat,
             @RequestParam BigDecimal lng,
             @RequestParam(defaultValue = "5") int radiusKm,
             HttpServletRequest request) {
+        // 取主体：未认证 ⇒ SecurityUtils 抛 401；这一步同时是「谁在以什么坐标读」的审计锚点
+        Long requesterId = SecurityUtils.getCurrentUserId();
         if (geoService == null) {
             return ApiResponse.ok(List.of());
         }
-        List<GeoService.NearbyPerson> people = geoService.findNearby(lat, lng, radiusKm, 50);
+        List<GeoService.NearbyPerson> people = geoService.findNearby(requesterId, lat, lng, radiusKm, 50);
         return ApiResponse.ok(people);
     }
 

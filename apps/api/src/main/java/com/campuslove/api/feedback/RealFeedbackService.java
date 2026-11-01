@@ -262,10 +262,10 @@ public class RealFeedbackService implements FeedbackService {
                     "只有 ACTIVITY_PROPOSAL 类型的反馈可以转换，当前类型: " + feedback.getType());
         }
 
-        // 校验提案尚未被转换
-        if (feedback.getStatus() == SubmissionStatus.CONVERTED) {
-            throw new IllegalStateException(ErrorMessages.PROPOSAL_ALREADY_CONVERTED_PREFIX + proposalId);
-        }
+        // 校验提案尚未被转换。C3(a)：改走与 replyFeedback 共用的 StateMachines 终态表——
+        // CONVERTED 是终态、无自环，重复转化一律 409（原抛 IllegalStateException 会塌成 500）。
+        com.campuslove.api.common.StateMachines.assertFeedbackTransitionAllowed(
+                feedback.getStatus(), SubmissionStatus.CONVERTED);
 
         // R4-00342：转换时真实创建 Activity 记录（原实现仅改状态、convertedActivityId 恒为
         // null，运营闭环断裂）。按提案内容初始化活动：标题/描述取自提案，校区/城市取
@@ -449,6 +449,12 @@ public class RealFeedbackService implements FeedbackService {
 
         // 校区越权拦截：以「提交人所属校区」为归属轴校验，不匹配 → 403（写操作一律不发生）
         adminDataScope.assertCampusAccess(adminDataScope.resolveUserCampusName(feedback.getUserId()));
+
+        // C3(a)：状态机闭合——终态 CONVERTED 无出边，不得被回复回退成 REVIEWED。
+        // 一旦回退，再次 convertProposal 会重复创建 Activity（重复工单/活动）。
+        // 迁移判定与 convertProposal 共用 StateMachines 一处定义，非法迁移抛 409。
+        com.campuslove.api.common.StateMachines.assertFeedbackTransitionAllowed(
+                feedback.getStatus(), SubmissionStatus.REVIEWED);
 
         feedback.setStatus(SubmissionStatus.REVIEWED);
         // 截断过长回复（latestReplySummary 列通常为 255 字符，取前 200 并加省略号）

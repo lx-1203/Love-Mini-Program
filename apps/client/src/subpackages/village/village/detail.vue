@@ -39,6 +39,8 @@ import ActivityCard from "../../../components/village/ActivityCard.vue";
 import { IMAGE_PATHS } from "../../../config/images";
 // Task 0.3.4：上传目录鉴权改造后，所有用户上传图片 URL 需经 resolveMediaUrl 重写为鉴权代理路径
 import { resolveMediaUrl } from "../../../utils/media";
+// 第六轮 W2-5：受限 API（uni.chooseImage）前必须先过微信隐私授权
+import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 // R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 const { styleVars: menuStyleVars } = useMenuButtonRect();
@@ -608,9 +610,18 @@ function appendEmoji(emoji: string) {
 }
 
 /** 选择并上传评论图片（uni.chooseImage → /media/upload 换 URL，限 3 张） */
-function chooseCommentImage() {
+async function chooseCommentImage() {
   if (commentImages.value.length >= 3) {
     uni.showToast({ title: "最多 3 张图片", icon: "none" });
+    return;
+  }
+  // 第六轮 W2-5（W2b）：此前本页是全仓两处「受限 API 前没有隐私授权」的漏页之一——
+  // chooseImage 属微信隐私接口（相册/相机），未同意隐私指引时真机不弹窗、
+  // 静默返回空或报 errno 112，用户只看到「点了没反应」，且越权调用会被平台判违规。
+  try {
+    await ensurePrivacyAuthorized();
+  } catch (_e) {
+    uni.showToast({ title: t("village.detail.privacyRequiredImage"), icon: "none" });
     return;
   }
   const remaining = 3 - commentImages.value.length;

@@ -229,12 +229,13 @@
   <build>
     <plugins>
       <!-- Flyway Maven 插件（2026-10-30 补）。doc/DEPLOYMENT.md 的迁移排障步骤一直写着
-           `./mvnw flyway:info` 与 `./mvnw flyway:repair`，但本 pom 从未声明该插件——
-           照文档执行会直接得到 "No plugin found for prefix 'flyway'"，也就是说
-           「迁移出问题时第一步该看的命令」本身是条死路（本轮排查 doc/DEPLOYMENT 死链时顺带查出）。
+           `./mvnw flyway:info` 与 `./mvnw flyway:repair`，而**补之前**的 pom 里没有这个插件
+           （那是当时的状态，不是现在）——照文档执行会直接得到 "No plugin found for prefix 'flyway'"，
+           也就是说「迁移出问题时第一步该看的命令」当时是条死路（本轮排查 doc/DEPLOYMENT 死链时顺带查出）。
            参数全部取自环境变量（DB_URL / DB_USERNAME / DB_PASSWORD），与
            application-real.yml 的 spring.flyway 配置同源，密码不落进任何文件；
-           版本交给 spring-boot-starter-parent 的依赖管理，避免与 flyway-core 错配。 -->
+           版本在本 plugin 块里显式钉 ${flyway.version}（见下），与 BOM 托管的 flyway-core 同版本——
+           两边必须同版本，否则 migrate 与运行期用的是两套 Flyway。 -->
       <plugin>
         <groupId>org.flywaydb</groupId>
         <artifactId>flyway-maven-plugin</artifactId>

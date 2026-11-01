@@ -4,7 +4,7 @@
  * 展示今日问题，支持回答提交和查看其他人的回答
  */
 import { ref, onMounted } from "vue";
-import { onUnload } from "@dcloudio/uni-app";
+import { onShow, onUnload } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import {
@@ -103,6 +103,21 @@ onMounted(async () => {
   if (todayQuestion.value && hasAnswered.value) {
     void dailyQuestionStore.fetchAnswers(todayQuestion.value.id, 1);
   }
+});
+
+/**
+ * 第六轮 W2-2：本页把 `checkInStore.checkedIn` 当**唯一**渲染依据
+ * （`:162`、`:205` 两处 `v-if="!checkInStore.checkedIn"` 决定锁屏与题目区），
+ * 而它是内存态：`resetForLogout()` 之后归 false，全站 `fetchStatus()` 只有
+ * `services/websocket/store-dispatch.ts:402` 与 `subpackages/market/shop/index.vue:45`
+ * 两个触发点，本页不主动重取 ⇒ 登出重登（当天已签到）后必然落回锁屏。
+ *
+ * 修法走 store 既有刷新入口（不自己拼 storage 读法）：`fetchStatus` 自带 30s 新鲜度短路
+ * 与竞态 token，所以这次补的入口不会多加往返。**签到门槛本身保留**——本页仍只在地
+ * 「已签到」时放题目，只是不再让「状态没取到」冒充「没签到」。
+ */
+onShow(() => {
+  void checkInStore.fetchStatus();
 });
 
 // R4-00157：页面卸载时清理签到动画定时器等 store 资源

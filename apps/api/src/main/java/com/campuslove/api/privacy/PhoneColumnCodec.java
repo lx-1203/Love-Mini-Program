@@ -64,6 +64,12 @@ public final class PhoneColumnCodec {
         return enc != null ? enc.encrypt(plaintext) : plaintext;
     }
 
+    /** 派生键命名空间前缀。全仓只允许本类出现这个字面量（静态门
+     * {@code PhoneIdentityCodecExitStaticGateTest} 守这件事）：注册侧、后台建号侧、
+     * 换号侧、微信绑定侧必须共用同一份派生，任何一处自创前缀都会让
+     * 「该手机号是否已被占用」在不同路径上给出不同答案（同号重复账号的成因）。 */
+    private static final String DERIVED_PREFIX = "phone:";
+
     /**
      * 唯一性派生键：{@code "phone:" + SHA-256(明文) 的小写 hex}，写进 {@code users.openid}。
      *
@@ -82,7 +88,21 @@ public final class PhoneColumnCodec {
         if (plaintext == null || plaintext.isBlank()) {
             return plaintext;
         }
-        return "phone:" + sha256Hex(plaintext);
+        return DERIVED_PREFIX + sha256Hex(plaintext);
+    }
+
+    /**
+     * 该 openid 取值是否属于「手机号派生键」命名空间。
+     *
+     * <p>读取侧判断必须与 {@link #derivedOpenid(String)} 同源：任何在别处写
+     * {@code startsWith("phone:")} 的实现都会在前缀改名/加 pepper 时静默失配，
+     * 而失配的方向是「少同步派生键」⇒ 下一任持有同号码的人查重查不到。</p>
+     *
+     * @param stored {@code users.openid} 列的取值
+     * @return 属于手机号派生键命名空间时为 true
+     */
+    public static boolean isDerivedKey(String stored) {
+        return stored != null && stored.startsWith(DERIVED_PREFIX);
     }
 
     /**

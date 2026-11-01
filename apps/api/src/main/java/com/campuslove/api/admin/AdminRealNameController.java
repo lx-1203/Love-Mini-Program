@@ -1,5 +1,7 @@
 package com.campuslove.api.admin;
 
+import com.campuslove.api.admin.audit.Auditable;
+import com.campuslove.api.admin.audit.AuditOperation;
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.config.AesEncryptor;
 import com.campuslove.api.config.SecurityUtils;
@@ -35,6 +37,18 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>实名认证面向全局运营（不涉及校区数据隔离，与校园认证
  * {@link AdminCertificationController} 的 AdminDataScope 逻辑不同——身份证
  * 核验无校区维度），列表按状态筛选 + 分页，审核时校验仅 PENDING 可操作。</p>
+ *
+ * <p><b>PII 档位与留痕（F-W1b-2，2026-11-01）</b>：本类是管理端少数「返回身份证号」的读面，
+ * 因此两个端点都挂 {@link Auditable}。字段口径逐条说清，避免把「已审计」误读成「已收紧」：</p>
+ * <ul>
+ *   <li>{@code idCardNo}：对所有档位都只出 {@link RealNameCertificationView#maskIdCardNo}
+ *       的掩码值（前 6 后 4），密文不出库、明文不上网 ⇒ 本列不存在明文出口，
+ *       静态门按「掩码函数在判据表达式里」放行；</li>
+ *   <li>{@code userName} 与 {@code idCardFrontUrl/idCardBackUrl}：是实名审核工作面的
+ *       必要输入（审核员必须知道申请人姓名并核对证件照），<b>本条不动其档位</b>，
+ *       改动会直接让审核流程无法进行；正因它们仍是明文可读，本次补的审计留痕
+ *       是这一面目前唯一的事后约束（谁在什么时候看过谁的实名材料）。</li>
+ * </ul>
  */
 @Profile("real")
 @RestController
@@ -66,6 +80,9 @@ public class AdminRealNameController {
      * @return 认证记录列表（分页截断）
      */
     @GetMapping
+    @Auditable(value = AuditOperation.VIEW_REAL_NAME_CERTIFICATION,
+            targetType = "REAL_NAME_CERTIFICATION",
+            description = "管理端读取实名认证申请列表（身份证号一律掩码，读出规模由审计切面记入读范围快照）")
     public ResponseEntity<List<RealNameCertificationView>> listCertifications(
             @RequestParam(name = "status", defaultValue = "PENDING") String status,
             @RequestParam(name = "page", required = false, defaultValue = "0") @PositiveOrZero int page,
@@ -110,6 +127,8 @@ public class AdminRealNameController {
      * 审核为 APPROVED 时由服务层置位 {@code user_basic_profile.id_card_verified}。
      */
     @PostMapping("/{id}/review")
+    @Auditable(value = AuditOperation.REVIEW_CERTIFICATION, targetType = "REAL_NAME_CERTIFICATION",
+            description = "审核实名认证申请（通过/拒绝，会置位 id_card_verified）")
     public ResponseEntity<RealNameCertificationView> reviewCertification(
             @PathVariable("id") @Positive Long certId,
             @Valid @RequestBody ReviewRealNameRequest req) {

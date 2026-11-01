@@ -6,6 +6,8 @@ import com.campuslove.api.growth.SocialProgressService;
 import com.campuslove.api.monitor.MatchMetrics;
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -35,6 +37,11 @@ import org.springframework.stereotype.Component;
 @Profile("real")
 @Component
 public class RecommendationCacheManager {
+
+    // C2（2026-11 第六轮修复波 W1）：社交升温埋点的 catch 原为空体（注释写「仅记录日志」
+    // 却没有任何日志），会把 recordExposure 抛出的异常（含历史上的 @Version 乐观锁冲突）
+    // 静默吞掉。补一个 logger，埋点失败真的写日志。
+    private static final Logger log = LoggerFactory.getLogger(RecommendationCacheManager.class);
 
     private final RecommendationStrategy recommendationStrategy;
     private final RecommendationRanker recommendationRanker;
@@ -122,7 +129,8 @@ public class RecommendationCacheManager {
                 try {
                     socialProgressService.recordExposure(userId);
                 } catch (RuntimeException e) {
-                    // 埋点失败仅记录日志，不阻断推荐返回
+                    // C2：埋点失败不阻断推荐返回，但必须真的记一条日志（原为空体，静默吞异常）
+                    log.warn("社交升温埋点（exposure）失败：userId={}, error={}", userId, e.toString());
                 }
             }
             return views;
@@ -284,7 +292,8 @@ public class RecommendationCacheManager {
                 try {
                     socialProgressService.recordExposure(userId);
                 } catch (RuntimeException e) {
-                    // 埋点失败仅记录日志，不阻断推荐返回
+                    // C2：埋点失败不阻断推荐返回，但必须真的记一条日志（原为空体，静默吞异常）
+                    log.warn("社交升温埋点（exposure）失败：userId={}, error={}", userId, e.toString());
                 }
             }
             return views;

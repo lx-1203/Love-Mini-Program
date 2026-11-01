@@ -194,7 +194,7 @@ const unlockCost = computed(() =>
 
 /**
  * 解锁当前 Tab 全部未解锁记录（与 likes-visitors 独立页同一套逻辑）。
- * VIP 免费放行（受 featureFlags.membershipEnabled 门控）；非 VIP 逐条调用
+ * 会员免费放行（受 featureFlags.membershipEnabled 门控）；非会员逐条调用
  * POST /api/v1/wallet/unlock（服务端幂等），成功后更新 unlocked 并刷新余额。
  */
 async function handleUnlock() {
@@ -210,21 +210,24 @@ async function handleUnlock() {
 
   const targetType = activeTab.value === "likedBy" ? "LIKED_ME" : "VISITOR";
 
-  // VIP 免费放行（R4-00014 修复）：仅当会员功能启用时生效。
-  // 仍逐条调用服务端 /wallet/unlock（幂等，已解锁不重复扣费）以持久化解锁状态，
-  // 避免仅前端置位导致刷新后锁状态回退；服务端放行失败时降级为本地解锁兜底。
+  // 会员闸门（第六轮 W2-1）：先看身份再决定扣不扣钱。取不到会员状态时宁可不扣——
+  // 扣错会员的钱不可逆，这次点击被拒只是稍后重试一次。会员功能未启用时不取数：
+  // 那根本没有会员权益分支，按交友币单价收费就是当期产品口径。
+  if (featureFlags.membershipEnabled) {
+    const vipState = await vipStore.ensureVipStatusLoaded();
+    if (vipState === "unknown") {
+      uni.showToast({ title: t("likesVisitors.unlockVipStatusUnknown"), icon: "none" });
+      return;
+    }
+  }
+
+  // VIP 免费放行（R4-00014 / 第六轮 W2-1）：仅当会员功能启用时生效。
+  // 只做本地解锁、不调 /wallet/unlock——该端点契约即「按单价扣费并记录解锁」，
+  // 后端 RealWalletUnlockService 无身份旁路，调它就是拿会员的钱付非会员的价。
+  // 代价：服务端解锁记录不落库，刷新后锁状态回退，需后端补身份旁路（遗留债）。
   if (featureFlags.membershipEnabled && vipStore.isVip) {
-    try {
-      for (const item of lockedItems) {
-        const result = await likesStore.unlockUser(targetType, item.userId);
-        void result;
-        item.unlocked = true;
-      }
-    } catch (_e) {
-      // 服务端 VIP 免费放行未生效（如余额不足）时降级为本地解锁，保证 VIP 体验不中断
-      for (const item of lockedItems) {
-        item.unlocked = true;
-      }
+    for (const item of lockedItems) {
+      item.unlocked = true;
     }
     uni.showToast({ title: t("likesVisitors.unlockVipFree"), icon: "success" });
     return;

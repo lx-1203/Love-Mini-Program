@@ -20,6 +20,8 @@ import { lightHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 import { VIP_PLANS, type VipPlan, type VipBenefit } from "../../config/vip-plans";
 import { useAutoRenewStore } from "../../stores/vip-auto-renew";
+// 第六轮 W2-1：支付成功后重取会员身份真相源（账单分页）
+import { useVipStore } from "../../stores/vip";
 import { createButtonGuard } from "../../utils/debounce";
 // Sentry 监控：支付失败上报异常，页面切换 / 关键按钮点击记录面包屑
 import { captureException, addBreadcrumb } from "../../services/sentry";
@@ -40,6 +42,7 @@ import { request } from "../../services/http";
 
 const { t } = useI18n();
 const autoRenewStore = useAutoRenewStore();
+const vipStore = useVipStore();
 
 /** P1-08：会员功能是否未启用（未启用时页面整体禁用） */
 const membershipDisabled = computed(() => !featureFlags.membershipEnabled);
@@ -296,6 +299,10 @@ function handlePaymentFailure(rawMsg: string, toastMsg?: string): void {
 
 /** 开通成功提示（真实/mock 流程共用），确认后返回上一页 */
 function showSubscribeSuccess(): void {
+  // 第六轮 W2-1：支付成功后账单真相源已经变了（后端支付回调写 vip_bill），
+  // 这里强制重取一次会员身份；不重取的话本次会话的 isVip 仍停在支付前的结论，
+  // 新会员去解锁还是会按非会员扣钱。失败态由 store 内部收敛（保持 unknown，不降级）。
+  void vipStore.refreshVipStatus({ forceRefresh: true });
   uni.showModal({
     title: t("vip.subscribeSuccess"),
     content: `${t("vip.subscribeSuccessContent", { name: planText(selectedPlan.value, selectedPlan.value?.nameKey, selectedPlan.value?.name ?? ""), period: planText(selectedPlan.value, selectedPlan.value?.periodKey, selectedPlan.value?.period ?? "") })}`,

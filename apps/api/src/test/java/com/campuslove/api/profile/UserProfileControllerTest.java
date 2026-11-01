@@ -69,7 +69,10 @@ class UserProfileControllerTest {
     @BeforeEach
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
-        geoService = new GeoService(userRepository);
+        // F-W1b-1 后 GeoService 多有两个协作者（拉黑关系 / 地理曝光授权判定）。
+        // 本用例只借它的纯数学部分（haversineKm + formatDistance），
+        // findNearby 不在被测路径上，故两个协作者传 null（该路径自带 fail-closed）。
+        geoService = new GeoService(userRepository, null, null);
         controller = new UserProfileController(
                 userRepository,
                 userBasicProfileRepository,

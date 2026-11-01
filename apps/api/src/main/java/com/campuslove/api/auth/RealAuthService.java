@@ -611,7 +611,7 @@ public class RealAuthService implements AuthService {
         // AES-GCM 随机 IV 导致同手机号每次密文不同，无法用密文精确查重；
         // 兼容历史明文数据：openid 派生键未命中时按明文 phone 兜底查询。
         String phoneCipher = com.campuslove.api.privacy.PhoneColumnCodec.store(aesEncryptor, phone);
-        String phoneDerivedOpenid = "phone:" + hashOpenid(phone);
+        String phoneDerivedOpenid = com.campuslove.api.privacy.PhoneColumnCodec.derivedOpenid(phone);
         boolean phoneExists = userRepository.findByOpenid(phoneDerivedOpenid)
                 .or(() -> userRepository.findByPhone(phone))
                 .isPresent();
@@ -684,7 +684,8 @@ public class RealAuthService implements AuthService {
         // R4-00249：登录查询按确定性 openid 派生键（"phone:"+SHA-256(phone)）精确匹配
         // （新注册用户），未命中再按明文 phone 兜底（兼容历史明文数据）。
         // 注：不能用 AES 密文查询——AES-GCM 随机 IV 导致同手机号每次密文不同，无法匹配。
-        User user = userRepository.findByOpenid("phone:" + hashOpenid(phone))
+        User user = userRepository.findByOpenid(
+                        com.campuslove.api.privacy.PhoneColumnCodec.derivedOpenid(phone))
                 .or(() -> userRepository.findByPhone(phone))
                 .orElse(null);
         if (user == null) {

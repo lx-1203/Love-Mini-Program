@@ -19,6 +19,8 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import { successHaptic, errorHaptic } from "../../utils/haptic";
+// 第六轮 W2-5：受限 API（写相册）前必须先过微信隐私授权
+import { ensurePrivacyAuthorized } from "../../utils/privacy";
 
 /**
  * ShareCard Props
@@ -173,6 +175,17 @@ async function handleShare() {
  */
 async function handleSaveImage() {
   if (isProcessing.value) return;
+  // 第六轮 W2-5（W2b）：saveImageToPhotosAlbum 是写相册的隐私接口，此前是全仓
+  // 另一处「受限 API 前没有隐私授权」的漏页——未同意隐私指引时真机直接 fail，
+  // 用户看到的只是「保存失败」这句误导性文案。守卫放在 isProcessing 之前，
+  // 被拒时不进入处理中状态（否则按钮永久 disabled 直到下一次 isProcessing 复位）。
+  try {
+    await ensurePrivacyAuthorized();
+  } catch (_e) {
+    errorHaptic();
+    uni.showToast({ title: t("home.privacyRequiredImage"), icon: "none" });
+    return;
+  }
   isProcessing.value = true;
   try {
     // #ifdef MP-WEIXIN

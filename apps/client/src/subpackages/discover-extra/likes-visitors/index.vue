@@ -190,10 +190,12 @@ function isItemUnlocked(item: LikeRecord | VisitorRecord): boolean {
 /**
  * P0-17：解锁当前 Tab 全部未解锁记录。
  *
- * 逐条调用 POST /api/v1/wallet/unlock（服务端幂等：已解锁不重复扣费），
+ * 非会员逐条调用 POST /api/v1/wallet/unlock（服务端幂等：已解锁不重复扣费），
  * 成功后更新对应记录的 unlocked=true 并刷新余额显示；余额不足时展示后端错误信息。
  *
- * P1-08：会员功能启用且当前用户为 VIP 时免费放行（不发起扣费请求）。
+ * P1-08 / 第六轮 W2-1：会员功能启用且当前用户为会员时免费放行——这一支**不发**
+ * /wallet/unlock（该端点的契约就是「按配置单价扣费并记录解锁」，后端
+ * RealWalletUnlockService 里没有身份旁路），发了就是拿会员的钱付非会员的价。
  */
 async function handleUnlock() {
   // 批次 A / ADR-2：封存态（commerce.coin=false，缺省即封存）禁止解锁，toast 提示
@@ -206,20 +208,23 @@ async function handleUnlock() {
 
   const targetType = activeTab.value === "likedMe" ? "LIKED_ME" : "VISITOR";
 
-  // VIP 免费放行（R4-00021 修复）：仅当会员功能启用时生效（featureFlags.membershipEnabled 控制）。
-  // 仍逐条调用服务端 /wallet/unlock（幂等，已解锁不重复扣费）持久化解锁状态，
-  // 避免仅本地置位导致刷新后锁状态回退；服务端放行失败时降级为本地解锁兜底。
-  if (featureFlags.membershipEnabled && vipStore.isVip) {
-    try {
-      for (const item of lockedItems) {
-        const result = await likesStore.unlockUser(targetType, item.userId);
-        void result;
-        item.unlocked = true;
-      }
-    } catch (_e) {
-      // 服务端 VIP 免费放行未生效（如余额不足）时降级为本地解锁，保证 VIP 体验不中断
-      markAllUnlocked(true);
+  // 会员闸门（第六轮 W2-1）：先看身份再决定扣不扣钱。
+  // 取不到会员状态时**宁可不扣**：扣错会员的钱是不可逆的资产损失（正是本条缺陷的伤害），
+  // 而这次点击被拒最多让用户稍后重试一次。会员功能未启用时不做这次取数——那时
+  // 根本不存在会员权益分支，按既有的交友币单价收费就是产品口径，不该多打一次账单分页。
+  if (featureFlags.membershipEnabled) {
+    const vipState = await vipStore.ensureVipStatusLoaded();
+    if (vipState === "unknown") {
+      uni.showToast({ title: t("likesVisitors.unlockVipStatusUnknown"), icon: "none" });
+      return;
     }
+  }
+
+  // VIP 免费放行（R4-00021 / 第六轮 W2-1）：仅当会员功能启用时生效（featureFlags.membershipEnabled 控制）。
+  // 只做本地解锁、不调扣费端点；服务端解锁记录因此不会落库，刷新后锁状态会回退——
+  // 这是「不扣会员的钱」的代价，需后端在 /wallet/unlock 加身份旁路后才能两全（已登记遗留债）。
+  if (featureFlags.membershipEnabled && vipStore.isVip) {
+    markAllUnlocked(true);
     uni.showToast({ title: t("likesVisitors.unlockVipFree"), icon: "success" });
     return;
   }

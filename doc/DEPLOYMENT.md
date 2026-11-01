@@ -346,17 +346,50 @@ docker compose up -d
 > ⚠️ `backup` 在 `profiles: [backup]` 下，`docker compose up -d` **不会**启动它。
 > 备份不是默认开的——必须显式带上 `--profile backup`，否则等于系统没有备份。
 
+**textfile 指标目录的落地条件**（`BackupNeverCompleted` 能不能响，取决于这四条）：
+写入端是 backup 容器往宿主 `./backups/node-textfile` 里的 `backup.prom` 写
+`node_backup_*`，node-exporter 以只读挂载同一个目录再被抓取。这条链上有四个前提：
+
+1. **两侧绑的是同一个宿主目录** —— compose 里 backup 挂
+   `./backups/node-textfile:${BACKUP_TEXTFILE_DIR:-/mnt/node-textfile}`（可写），
+   node-exporter 挂 `./backups/node-textfile:/mnt/textfile:ro`（只读）。
+2. **backup 侧这一条不能加 `:ro`** —— 加了 cron 档就写不进指标文件，规则既不告警也不报错。
+3. **容器里那个目录要对运行账号可写** —— `docker/backup/entrypoint.sh` 每次启动做
+   `mkdir -p` + `chown backup` + `chmod 775`，并校验它真的是挂载点，不成立就打 `LOUD`。
+   它必须**以 root 起跑**（所以 backup 服务刻意不设 `user:`），降权发生在移交那一步；
+   `chmod 775` 里的 others 位是给 node-exporter 的（镜像默认非 root），不能收成 700。
+4. **宿主目录的创建时机** —— `backups/` 在 `.gitignore` 里，全新克隆没有这个目录：
+   Docker 会在首次 `up` 时按宿主默认属主（通常 root:root）建出来，随后 entrypoint
+   每次启动重新 chown，所以**不需要**运维手工 `mkdir`。反过来说，若你在 NFS/CIFS 之类
+   会做 root squash 的挂载上放 `./backups`，chown 会被静默吃掉 ⇒ 又回到死告警形态，
+   那种宿主请把 `BACKUP_TEXTFILE_DIR` 换成本地盘上的目录。
+
+> 播种：第一次真实备份之前，entrypoint 会写一份 `node_backup_last_success_timestamp_seconds=0`
+> 进 `backup.prom`，让"一份可用备份都还没有"这件事本身就能在 36 小时后响；`backup.prom`
+> 是播种者与 `scripts/backup-mysql.sh` **共用**的文件名——同目录里两个文件暴露同名指标会让
+> textfile collector 判 duplicate 后整目录不导出（等于又没序列）。
+> 判点：`tests/monitoring-wiring.spec.mjs` 第 6c 节（含 11 种静默哑形态的自测）。
+> 判不出的：真容器里 `-w` 是否成立、collector 是否真把文件解析成序列 —— 需要一次真跑。
+
 ```bash
 # 启动 backup 服务（每日凌晨 2 点自动备份，可通过 BACKUP_CRON 修改）
 docker compose --profile backup up -d
-
 # 手动触发一次备份（容器内脚本挂载点为 /backup.sh，infra #38 修正）
+# 首选 exec：backup 容器已在跑，bash/mysql-client 由 ENTRYPOINT 装好了，直连脚本最快
 docker compose --profile backup exec backup /backup.sh
 
 # dry-run：打印将执行的全部动作（含加密/binlog/保留），不写任何文件、不连库
+# ⚠️ run 与 exec 的语义差别（第六轮 W3 item 2）：`compose run <service> <命令>` 会
+#   【替换 service 的 command】，entrypoint 不动。本仓把装 bash/建账号/写 crontab/
+#   钉 textfile 属主这套动作放在 docker/backup/entrypoint.sh 里（2026-11-01 起），
+#   所以 run 传什么都绕不过安装段。此前这段住在 command 里，下面这两条 run 命令
+#   每次都跳过装 bash，而 /backup.sh 的 shebang 是 `#!/usr/bin/env bash` ⇒ 报 not found，
+#   手动备份从未跑通。exec 用的则是容器里已经跑完 entrypoint 的那个环境。
 docker compose --profile backup run --rm backup /backup.sh --dry-run
 
 # 开启加密的一次性备份（密钥只在部署机环境里注入，绝不写进 compose/仓库）
+# 注意：这样传密钥会进 shell history（除非 HISTCONTROL 含 ignorespace 并在行首留空格），
+# 更稳的做法是从部署机的 secrets 文件 source 进来，或放进 .env（已 gitignore）
 BACKUP_ENCRYPT=true BACKUP_ENCRYPTION_KEY='<从密钥管理注入>' \
   docker compose --profile backup run --rm backup /backup.sh
 ```
@@ -477,7 +510,23 @@ BACKUP_ENCRYPT=true BACKUP_ENCRYPTION_KEY='<从密钥管理注入>' \
 | `BACKUP_ALERT_URL` | - | 空 | 备份失败时直发的告警入口（如 `http://alertmanager:9093/api/v2/alerts`）。空 + 无 textfile 目录 ⇒ 脚本每次打 `LOUDD WARN`：失败只有 cron.log 一个去处 | backup |
 | `BACKUP_TEXTFILE_DIR` | - | `/mnt/node-textfile` | node-exporter textfile collector 目录，落 `node_backup_last_success_timestamp_seconds` / `node_backup_last_exit_code`（compose 已把宿主 `./backups/node-textfile` 同时挂给 backup 与 node-exporter） | backup、node-exporter |
 | `MYSQL_BINLOG_DIR` | - | `/var/lib/mysql` | backup 容器内 binlog 源目录（= 只读挂载的 mysql-data 卷）（S4-3） | backup |
-| `BACKUP_CRON` | - | `0 2 * * *` | 备份 cron 表达式（由 backup 服务启动命令写入 crontab） | backup |
+| `BACKUP_CRON` | - | `0 2 * * *` | 备份 cron 表达式（由 backup 的 **ENTRYPOINT** `docker/backup/entrypoint.sh` 写入 `/etc/crontabs/backup`；2026-11-01 起不再住在 `command:` 里，`compose run` 绕不过它） | backup |
+| `RESTORE_BIN` | - | `mysql` | 恢复脚本用的 mysql 客户端二进制；宿主/容器只有 MariaDB 客户端时用它指到 MySQL 8 的客户端 | 宿主执行 `scripts/restore-mysql.sh` |
+| `RESTORE_MYSQLBINLOG_BIN` | - | `mysqlbinlog` | 同上，mysqlbinlog 的二进制名/路径 | 宿主执行 `scripts/restore-mysql.sh` |
+| `RESTORE_ALLOW_MARIADB_BINLOG` | - | `false` | 默认**拒绝**用 MariaDB 血统的 mysqlbinlog 解析 MySQL 8 binlog（解析不了会静默产出空日志）；置真才继续，自担风险 | 宿主执行 `scripts/restore-mysql.sh` |
+| `BACKUP_LIVE_SCHEMA` | - | `campus_love` | 被脚本视为"生产库名"的名字：目标等于它就拒绝，除非显式 `--allow-live-target` | backup、restore |
+| `RESTORE_MYSQL_USER` + `RESTORE_MYSQL_PASSWORD` | - | 无（**必须成对给**） | 恢复凭据【配对 A】：任意管理员账号。只给其中一个 ⇒ 脚本硬失败并点名，不会再回落到别的账号 | 宿主执行 `scripts/restore-mysql.sh` |
+| `MYSQL_ROOT_PASSWORD`（账号取 `MYSQL_ROOT_USER`，缺省 `root`） | - | 无 | 恢复凭据【配对 B】：键名本身就指名 root 账号，账号与口令同源；脚本每次打印 `credential pair` 行（只打印账号名，口令不回显） | restore |
+| `MYSQL_USER` / `DB_USERNAME` / `MYSQL_PASSWORD` | - | — | ⚠️ **不参与恢复认证**（那是 compose 里的业务账号 `campus`，无 CREATE / SESSION_VARIABLES_ADMIN）。旧文档「只覆盖 `MYSQL_PASSWORD`」的写法之所以跑不通，就是因为脚本曾把 `MYSQL_USER` 当恢复账号（第六轮 W3 item 1） | backup |
+
+> **恢复脚本的宿主前置**（2026-11-01 补，第六轮 W3b item 8）：`scripts/restore-mysql.sh`
+> 在打印完计划就 `command -v "${RESTORE_BIN}"` / `command -v "${RESTORE_MYSQLBINLOG_BIN}"`
+> 硬检查（两者默认 `mysql` / `mysqlbinlog`），缺任一个直接 die；openssl 是解密 `.enc`
+> 产物的必需件。⇒ **一台只有 Docker、没有 MySQL 客户端二进制的机器上，
+> 照文档跑第一条命令就会 die**。要么在宿主装 `mysql-community-client`，
+> 要么用 `RESTORE_BIN` / `RESTORE_MYSQLBINLOG_BIN` 指到挂载/容器里的客户端。
+> 这一条以前只写在脚本头注释里，文档没登记，运维在演练现场才会撞上。
+
 | `BACKUP_DIR` | - | `/backups` | 备份存储目录（容器内，与宿主 `./backups` bind 挂载对齐） | backup |
 | `FLYWAY_ENABLED` | - | compose 下 api 为 `false`；`application-real.yml` 直跑为 `true` | api 启动时迁移开关（S3-2 single writer：compose 关闭，由 `migrate` 服务负责）。置 `true` 可退回单容器启动即迁移 | api |
 | `TAG` | - | `dev` | Docker 镜像 tag（生产必须注入 git sha / release tag，禁止 latest） | api、admin |
@@ -660,13 +709,15 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/profile/me
 （compose 只透传）。清理覆盖所有落盘类型（`.sql.gz`/`.sql.gz.enc`/`.rdb`/`.rdb.enc`/
 binlog 归档），避免加密或 binlog 引入后新产物永不轮转。
 
-**手动触发备份**：见上方「启动数据库备份」小节。
+**手动触发备份**：见上方「启动数据库备份」小节（`exec` 走已起好的容器，`run --rm` 会重跑
+一遍 ENTRYPOINT 的安装段再执行脚本——两条都能通，是因为装 bash 那段自 2026-11-01 起住在
+entrypoint 里，`run` 替换 command 替换不到它）。
 
 ```bash
-# 立即执行一次备份（不等待 cron 调度）
-docker compose --profile backup run --rm backup /backup.sh
+# 立即执行一次备份（不等待 cron 调度；backup 容器已在跑时首选 exec）
+docker compose --profile backup exec backup /backup.sh
 
-# dry-run 模式（仅打印不实际执行）
+# dry-run 模式（仅打印不实际执行）；run 会先跑 entrypoint 的安装段
 docker compose --profile backup run --rm backup /backup.sh --dry-run
 ```
 
@@ -685,18 +736,30 @@ docker compose exec backup cat /backup/cron.log 2>/dev/null || true
 口令走 `--defaults-extra-file` 的临时 0600 文件，不进进程参数；目标库默认是影子库
 `campus_love_drill`，指向 `campus_love` 会被直接拒绝，除非显式 `--allow-live-target`）。
 
+**凭据配对（2026-11-01 更正，第六轮 W3 item 1）**：恢复用的是**管理员档**——账号
+`MYSQL_ROOT_USER`（缺省 `root`）配口令 `MYSQL_ROOT_PASSWORD`，脚本按名字同源配对，
+两边缺任何一侧就硬失败。`.env` 里的 `MYSQL_USER` / `DB_USERNAME`（业务账号 `campus`）
+与 `MYSQL_PASSWORD` **不参与**恢复认证：脚本从不再写 `MYSQL_USER="${MYSQL_USER:-root}"`
+那种静默回落，也就不会再被 source 进来的 `campus` 顺手顶掉。
+> 旧写法 `MYSQL_PASSWORD="${MYSQL_ROOT_PASSWORD}" scripts/restore-mysql.sh …` 是**跑不通的**：
+> `set -a; . ./.env` 之后 `MYSQL_USER=campus` 已经进了环境（见 `.env.example:79`），
+> 旧脚本据此拿 `campus` 去配 root 的口令 ⇒ 认证必然失败；不 source `.env` 时它又静默用
+> `root`。同一条命令在两种环境下错得不一样，所以本轮把配对显式化，判点见
+> `tests/deployment-config.spec.mjs` G/H 段。
+
 ```bash
 # 0. 先跑 dry-run：打印计划 + 位置算式（PITR-COVERAGE 行），什么都不做
 set -a; . ./.env; set +a          # ⚠️ shell 不会自动 source .env，不写这步 MYSQL_* 全是空的
-MYSQL_PASSWORD="${MYSQL_ROOT_PASSWORD}" \
-  scripts/restore-mysql.sh --artifact ./backups/campus_love-<YYYYMMDD-HHMMSS>.sql.gz
+scripts/restore-mysql.sh --artifact ./backups/campus_love-<YYYYMMDD-HHMMSS>.sql.gz
+#    ↑ 凭据已由 .env 的 MYSQL_ROOT_PASSWORD 提供（配对 B，账号 root）；什么都不用再覆盖。
+#      非 root 的管理员账号走配对 A，两个变量必须成对给：
+#      RESTORE_MYSQL_USER=dbadmin RESTORE_MYSQL_PASSWORD=… scripts/restore-mysql.sh --artifact …
 
 # 1. 停 API 避免恢复期间有写入
 docker compose stop api
 
 # 2. 真执行（先在影子库演练成功，再谈生产）
-MYSQL_PASSWORD="${MYSQL_ROOT_PASSWORD}" \
-  scripts/restore-mysql.sh --artifact ./backups/campus_love-<YYYYMMDD-HHMMSS>.sql.gz \
+scripts/restore-mysql.sh --artifact ./backups/campus_love-<YYYYMMDD-HHMMSS>.sql.gz \
     --target-schema campus_love_drill --apply
 
 # 3. 验证关键表行数
@@ -729,10 +792,11 @@ gunzip -c ./backups/campus_love-<YYYYMMDD-HHMMSS>.sql.gz \
 # 首选：restore 脚本自己算覆盖（dump 坐标 ↔ 归档首末文件 ↔ 缺口），
 # 覆盖不足会直接拒绝执行；位置参数从 manifest/SQL 头部读，不用手抄
 set -a; . ./.env; set +a
-MYSQL_PASSWORD="${MYSQL_ROOT_PASSWORD}" scripts/restore-mysql.sh \
+scripts/restore-mysql.sh \
   --artifact ./backups/campus_love-<YYYYMMDD-HHMMSS>.sql.gz \
   --point-in-time '2026-10-31 15:30:00' --target-schema campus_love_drill      # 先看计划
 # ……确认 PITR-COVERAGE 那行 gaps=none 之后，把上面的 --target-schema 配上 --apply 再跑一遍
+# 凭据同「MySQL 恢复（全量）」：管理员配对（MYSQL_ROOT_PASSWORD ⇒ root），别再覆盖 MYSQL_PASSWORD
 ```
 
 手工路径（顺序固定：**先解密 → 再 gunzip → 才喂给 mysqlbinlog**，且必须先落成真实文件，
@@ -1000,48 +1064,109 @@ server {
 
 ### Nginx 健康检查
 
-外层 Nginx 自身可用性可通过 `doc/RUNBOOKS.md#通用第一步` 中的 `nginx -t` 与 `systemctl status nginx` 验证；后端服务健康检查由 Docker Compose healthcheck 与 Prometheus blackbox 探针负责。
+外层 Nginx 自身可用性可通过 `doc/RUNBOOKS.md#通用第一步` 中的 `nginx -t` 与 `systemctl status nginx` 验证；后端服务健康检查由 Docker Compose healthcheck 与 Prometheus 抓取 `up{job="campuslove-api"}`（规则 `ApiDown`）负责。**blackbox 探针当前不在本编排里**（见「抓取目标」一节），admin 的可用性只能靠容器内 `wget -qO- http://admin:80/healthz` 黑盒检查。
 
 ## 监控与告警
 
 ### 监控栈组件
 
-| 组件 | 镜像 | 端口 | 配置文件 | 职责 |
+| 组件 | 镜像 | 宿主端口 → 容器端口 | 配置文件 | 职责 |
 |------|------|------|----------|------|
-| Prometheus | `prom/prometheus:v2.55.0` | 9090 | `docker/prometheus/prometheus.yml` | 指标采集与告警评估 |
-| Grafana | `grafana/grafana:11.3.0` | 3000 | `docker/grafana/provisioning/` | 可视化面板 |
-| Alertmanager | `prom/alertmanager:v0.27.0` | 9093 | `docker/alertmanager/alertmanager.yml` | 告警路由与通知 |
-| Node Exporter | `prom/node-exporter:v1.8.2` | 9100 | - | 主机指标采集 |
+| Prometheus | `prom/prometheus:v2.55.0` | `127.0.0.1:9090` → 9090 | `docker/prometheus/prometheus.yml` | 指标采集与告警评估 |
+| Grafana | `grafana/grafana:11.3.0` | `127.0.0.1:3001` → 3000 | `docker/grafana/provisioning/` | 可视化面板 |
+| Alertmanager | `prom/alertmanager:v0.27.0` | `127.0.0.1:9093` → 9093 | `docker/alertmanager/alertmanager.yml` | 告警路由与通知 |
+| Node Exporter | `prom/node-exporter:v1.8.2` | `127.0.0.1:9100` → 9100 | - | 主机指标采集 |
+
+> 端口一律只绑 `127.0.0.1`（infra #2：监控栈自身无认证，不能暴露公网）。
+> 四个宿主端口都可被 `PROMETHEUS_PORT` / `GRAFANA_PORT` / `ALERTMANAGER_PORT` /
+> `NODE_EXPORTER_PORT` 覆盖，本表写的是 `.env.example` 的缺省值。
+> ⚠️ Grafana 的**容器内**端口是 3000、**宿主**是 3001，早前一版本表只写 `3000`，
+> 与本文档「访问 `http://localhost:3001`」自相矛盾（第六轮 W3 item 6 更正）。
 
 ### 抓取目标
 
-Prometheus 默认抓取以下目标（详见 `docker/prometheus/prometheus.yml`）：
+Prometheus **现役只有 3 个抓取任务**（`docker/prometheus/prometheus.yml`）：
 
-- `campuslove-api`：`http://api:8080/actuator/prometheus`（Spring Boot Actuator）
-- `node-exporter`：`http://node-exporter:9100/metrics`（主机 CPU/内存/磁盘）
-- `mysql-exporter`（可选）：`http://mysql-exporter:9104/metrics`
-- `redis-exporter`（可选）：`http://redis-exporter:9121/metrics`
-- `blackbox-http`：外部依赖（微信 API、Agnes AI）与内部服务（Admin 后台）可用性探针
-- `prometheus`：自身指标
+| job | 目标 | 说明 |
+|-----|------|------|
+| `prometheus` | 自身 | 自监控 |
+| `campuslove-api` | `http://api:8080/actuator/prometheus` | Spring Boot Actuator |
+| `node-exporter` | `http://node-exporter:9100/metrics` | 主机 CPU/内存/磁盘 + `node_backup_*` textfile 指标 |
+
+以下三个任务**已从 `prometheus.yml` 移除**（不是注释掉，是整段不存在，含注释态也没有），
+原因是 compose 未部署对应 exporter，抓取目标会常年 DOWN 并产生无效告警（infra #18）：
+
+- ~~`mysql-exporter`~~、~~`redis-exporter`~~、~~`blackbox-http`~~
+
+⇒ 运维手册里**不要再写「取消 blackbox-http 抓取任务的注释」**——那段注释已经不在了，
+照做的人找不到落点。真要恢复这三条，正确顺序是：
+① 在 compose 里部署对应 exporter 服务 → ② 在 `prometheus.yml` 里**新增**抓取任务 →
+③ 在 `docker/prometheus/rules/alert-rules.yml` 里**新增**规则（`AdminDown` 目前也在
+注释态）→ ④ 同步本表与 `tests/monitoring-wiring.spec.mjs` 第 8 节的对账口径。
 
 ### 告警规则
 
-告警规则定义在 `docker/prometheus/rules/alert-rules.yml`，主要类别：
+规则定义在 `docker/prometheus/rules/alert-rules.yml`。**下表是现役 20 条的全量清单**，
+告警名、阈值、`for` 持续窗口与严重级都是照规则文件逐条抄的（第六轮 W3 item 6 整节重写；
+此前这里列的 8 个名字里有 7 个在规则文件里根本不存在，阈值 `>85%`/`>90%` 也与实值不符）。
+这份清单由 `tests/monitoring-wiring.spec.mjs` 第 8 节与规则文件双向对账——
+**文档写了不存在的告警名 ⇒ 门红；规则新增/改了阈值而本表没跟着改 ⇒ 同样门红。**
 
-- **服务可用性**：`ApiDown` / `MysqlDown` / `RedisDown` / `AdminDown`
-- **主机资源**：`HostDiskHigh`（>85%）、`HostMemoryHigh`（>90%）、`HostCpuHigh`（>80%）
-- **JVM**：`JvmMemoryHigh`、`JvmGcPauseHigh`
-- **业务**：`MatchSuccessRateLow`、`ChatMessageLatencyHigh`、`AuthFailureSpike`
+| 组 | 告警名 | 触发条件 | `for` | 严重级 |
+|----|--------|----------|-------|--------|
+| api-availability | `ApiDown` | `up{job="campuslove-api"} == 0` | 5m | critical |
+| api-availability | `ApiHealthCheckFailed` | `app_health_status{status="DOWN"} > 0` | 2m | critical |
+| api-performance | `ApiHighLatencyP99` | P99 > 2s | 5m | warning |
+| api-performance | `ApiHighLatencyP95` | P95 > 1s | 10m | info |
+| api-performance | `ApiSlowAverageResponse` | 平均响应 > 0.5s | 10m | info |
+| api-errors | `ApiHighErrorRate` | 5xx 比例 > 1% | 5m | warning |
+| api-errors | `ApiHighClientErrorRate` | 4xx 比例 > 5% | 15m | info |
+| jvm-health | `JvmHeapMemoryHigh` | 堆使用率 > 85% | 5m | warning |
+| jvm-health | `JvmThreadsHigh` | 线程数 > 500 | 10m | info |
+| jvm-health | `JvmFrequentFullGc` | 5 分钟内 GC 暂停 > 5 次 | 5m | warning |
+| database-health | `DbConnectionPoolHigh` | HikariCP 活跃/上限 > 80% | 5m | warning |
+| database-health | `DbSlowQuery` | 平均获取连接 > 1s | 5m | warning |
+| host-resources | `HostDiskHigh` | 磁盘使用率 > 80% | 5m | warning |
+| host-resources | `HostMemoryHigh` | 内存使用率 > 85% | 5m | warning |
+| host-resources | `HostCpuHigh` | CPU 使用率 > 80% | 10m | info |
+| host-resources | `BackupNeverCompleted` | 距上次成功备份 > 129600s（36h） | 30m | warning |
+| business-metrics | `HighLoginFailureRate` | 登录失败率 > 10% | 5m | warning |
+| business-metrics | `PaymentCallbackFailure` | 5 分钟内回调失败 > 0 次 | 无 `for`（即时） | warning |
+| business-metrics | `ChatMessageSendFailure` | 失败速率 > 0 | 5m | warning |
+| business-metrics | `MatchRecommendSlowP99` | 推荐 P99 > 1.5s | 5m | warning |
+
+**规则文件里存在但当前停用（注释态）的 3 条**，本表不列进现役清单，文档提到它们时必须
+带上「停用」限定：`AdminDown`（依赖未部署的 blackbox-exporter）、
+`WechatApiUnreachable`、`AgnesApiUnreachable`（后两条属整组注释掉的
+`third-party-availability`）。
+
+**两条数据源前提**（不满足时规则「既不触发也不报错」，与 2026-10-29 的
+`spring_boot_health_status` 死告警同一类）：
+
+- `BackupNeverCompleted` 需要 `--profile backup` 起 backup 容器——`node_backup_*` 是
+  backup 容器写进 textfile 目录的文件，没起它就没有写入端（`for: 30m` + 129600s 阈值
+  意味着最早也要在容器起来 36.5 小时后才有意义；首次启动前 entrypoint 播种
+  `node_backup_last_success_timestamp_seconds=0`，所以"一份可用备份都还没有"这件事
+  本身是**会**响的）。
+- `PaymentCallbackFailure` / `ChatMessageSendFailure` / `HighLoginFailureRate` 查的是
+  业务代码动态注册的 Counter，对应失败路径一次没走过就没有序列。
+
+> ⚠️ 规则文件开头那句「触发后 5 分钟内持续异常才告警」是**设计原则**，不是事实陈述：
+> 现役 20 条的 `for` 实际取 2m / 5m / 10m / 15m / 30m 五种，逐条实值见上表最后一列。
+> 其中 `PaymentCallbackFailure` 根本没有 `for`——评估到就立刻进 pending，没有缓冲窗口。
+> 一律以本表逐条实值为准。
 
 ### 告警路由
 
-Alertmanager 按严重级路由（详见 `docker/alertmanager/alertmanager.yml`）：
+Alertmanager 按严重级路由（详见 `docker/alertmanager/alertmanager.yml`；顶层
+`group_by: [alertname, service, severity]`、`group_interval: 5m`）：
 
 | 级别 | 接收者 | 等待 | 重复间隔 | 渠道 |
 |------|--------|------|----------|------|
-| `critical` | `critical-email` | 0s | 1h | ⚠ 当前未配置任何渠道（见下节） |
+| `critical` | `critical-email` | 0s | 1h | ⚠ 当前未配置任何渠道（见下节）；该路由带 `continue: true`，所以同一条告警还会继续往下匹配 |
 | `warning` | `warning-webhook` | 30s | 4h | ⚠ 同上 |
-| `info` / 其它 | `null-pager` | - | - | 静默丢弃（默认 receiver） |
+| `info` | `null-pager` | - | - | 静默丢弃 |
+| 其它（未匹配任何 route） | `null-pager`（顶层默认 receiver） | 30s | 4h | 静默丢弃 |
 
 ### 通知渠道配置（当前状态：没有可达渠道，且这是显式声明的）
 
@@ -1259,7 +1384,9 @@ docker compose stop api
 
 # 2. 从备份恢复 MySQL —— 用脚本（默认 dry-run，先看清位置算式再 --apply）
 set -a; . ./.env; set +a
-MYSQL_PASSWORD="${MYSQL_ROOT_PASSWORD}" scripts/restore-mysql.sh \
+#    凭据走管理员配对（MYSQL_ROOT_PASSWORD ⇒ 账号 root），不再覆盖 MYSQL_PASSWORD：
+#    那样会把 root 的口令配到 .env 带进来的业务账号 campus 上（第六轮 W3 item 1）。
+scripts/restore-mysql.sh \
   --artifact ./backups/campus_love-<YYYYMMDD-HHMMSS>.sql.gz --target-schema campus_love --apply
 #    ↑ 只有影子库演练成功之后才允许 --target-schema campus_love（脚本会拒绝，需 --allow-live-target）
 

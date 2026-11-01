@@ -605,7 +605,13 @@ async function handleWhisperUnlock(): Promise<void> {
       err !== null && typeof err === "object" && "status" in err
         ? (err as { status: number }).status
         : 0;
-    if (status === 409) {
+    // 与 CardDetailOverlay 同一口径：409 还可能是 `IDEMPOTENT_CONFLICT`（同键重放），
+    // 那种情况下钱已扣、动作已发生，提示「余额不足」是假的。
+    const conflictCode =
+      err !== null && typeof err === "object" && "code" in err
+        ? (err as { code?: string }).code
+        : undefined;
+    if (status === 409 && conflictCode !== "IDEMPOTENT_CONFLICT") {
       uni.showToast({ title: t("discover.whisperUnlockFailBalance"), icon: "none" });
       return;
     }

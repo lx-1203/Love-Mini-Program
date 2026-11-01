@@ -30,13 +30,21 @@ docker compose exec api sh -c 'wget -qO- http://localhost:8080/actuator/health'
 
 ## admin-下线
 
-`AdminDown`（当前停用）依赖 blackbox-exporter 的 `probe_success`，本编排未部署该 exporter。
-恢复办法：部署 blackbox-exporter → 取消 `docker/prometheus/prometheus.yml` 中 `blackbox-http` 抓取任务与规则注释。
+`AdminDown` **当前是停用状态**（`docker/prometheus/rules/alert-rules.yml` 里整条是注释态），
+它依赖 blackbox-exporter 的 `probe_success`，而本编排未部署该 exporter。
+⚠️ 恢复办法**不是**「取消 `prometheus.yml` 里 `blackbox-http` 抓取任务的注释」——
+那个注释块自 infra #18 起已经从文件里删掉了，全文（含注释态）再无这三个 job，照做会找不到落点。
+真要恢复，顺序是新增而非解注释：
+① 在 `docker-compose.yml` 部署 blackbox-exporter 服务 →
+② 在 `docker/prometheus/prometheus.yml` **新增** `blackbox-http` 抓取任务 →
+③ 在 `alert-rules.yml` 取消 `AdminDown` 的注释 →
+④ 同步 `doc/DEPLOYMENT.md` 的「抓取目标」与「告警规则」两张表，并跑
+`npm run test:monitoring`（第 8 节会把文档与规则文件双向对账）。
 在恢复之前，请直接对 admin 容器做 `wget -qO- http://admin:80/healthz` 的黑盒检查。
 
 ## 性能退化
 
-`ApiLatencyHigh` / P99 类规则触发时：
+`ApiHighLatencyP99`（P99 > 2s，持续 5m）/ `ApiHighLatencyP95` / `MatchRecommendSlowP99` 触发时：
 
 1. 看是整体还是单端点：`http_server_requests_seconds_bucket` 按 `uri` 聚合。
 2. 常见根因（本仓实测过的）：列表接口 N+1（循环内查库）、`findAll()` 后在内存过滤、
@@ -55,7 +63,8 @@ docker compose exec api sh -c 'wget -qO- http://localhost:8080/actuator/health'
 
 ## jvm-oom
 
-`JvmHeapHigh` / `jvm_gc_pause_seconds_count` 激增时：
+`JvmHeapMemoryHigh`（堆使用率 > 85%，持续 5m）触发、或 `JvmFrequentFullGc`
+（`jvm_gc_pause_seconds_count` 5 分钟内 > 5 次）激增时：
 
 1. `docker compose stats` 确认容器内存是否触顶（compose 对 api 设有 memory limit）。
 2. 本仓已知的内存放大点：`CaffeineCacheConfig` 历史上只设 `expireAfterWrite` 未设 `maximumSize`；
@@ -108,6 +117,13 @@ docker compose exec api sh -c 'wget -qO- http://localhost:8080/actuator/health'
   的 0600 临时文件；目标库默认影子库 `campus_love_drill`，指向 `campus_love` 直接拒绝）。
   它按 openssl 解密 → gunzip → mysqlbinlog 的正确顺序处理 `.gz.enc` 归档，
   并在覆盖有缺口时拒绝执行 PITR。
+- **恢复的凭据是「管理员配对」，不是业务账号**（2026-11-01，第六轮 W3 item 1）：
+  账号取 `MYSQL_ROOT_USER`（缺省 `root`）配 `MYSQL_ROOT_PASSWORD`，或用
+  `RESTORE_MYSQL_USER` + `RESTORE_MYSQL_PASSWORD` 成对指定；凑不齐配对就硬失败。
+  `.env` 里的 `MYSQL_USER` / `DB_USERNAME`（`campus`）和 `MYSQL_PASSWORD` 不参与恢复认证。
+  旧文档那种「只覆盖 `MYSQL_PASSWORD="${MYSQL_ROOT_PASSWORD}"`」的写法会让脚本用
+  `campus` 去配 root 的口令（`campus` 也没有 CREATE / SESSION_VARIABLES_ADMIN），
+  认证必然失败——现在照下面的步骤跑就不存在这个坑。
 - ⚠️ 异地容灾仍非本脚本职责：脚本只清 `./backups`，**不会**过期任何异地副本；若用 rclone/S3
   同步，异地保留须在同步工具/桶策略里单独配置，否则异地副本无限增长。密钥只放部署机环境，绝不入库。
 
@@ -121,9 +137,16 @@ set -a; . ./.env; set +a
 
 # 1. 先跑一次带加密的备份（影子产物，不动生产）
 docker compose --profile backup run --rm backup /backup.sh --dry-run   # 看计划与血统探测
-docker compose --profile backup run --rm backup /backup.sh            # 真跑一次
+docker compose --profile backup exec backup /backup.sh                # 真跑一次（容器在跑时首选）
+#   ↑ run 与 exec 都合法：装 bash 那套动作在 docker/backup/entrypoint.sh 里，
+#     `compose run` 替换 command 替换不到它（2026-11-01 之前的写法住在 command 里，
+#     那条 run 命令每次跳过安装 ⇒ /backup.sh 因缺 bash 直接 not found）。
 
 # 2. 恢复演练到影子库：先 dry-run 看位置算式，再 --apply
+#    凭据用管理员配对：账号 MYSQL_ROOT_USER（缺省 root）+ 口令 MYSQL_ROOT_PASSWORD，
+#    上面 source 进来的 .env 已经提供 MYSQL_ROOT_PASSWORD，所以这里什么都不用覆盖。
+#    不要写 MYSQL_PASSWORD="${MYSQL_ROOT_PASSWORD}"：那会把 root 的口令配到 .env 带进来的
+#    业务账号 campus 上（脚本已不再接受这种错配，会硬失败并点名）。
 scripts/restore-mysql.sh --artifact ./backups/campus_love-<TS>.sql.gz
 scripts/restore-mysql.sh --artifact ./backups/campus_love-<TS>.sql.gz \
   --point-in-time "$(date '+%Y-%m-%d %H:%M:%S')" --target-schema campus_love_drill --apply

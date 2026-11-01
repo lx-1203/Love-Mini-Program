@@ -36,6 +36,10 @@ import { useSessionStore } from "../../../stores/session";
 // 3-J 任务与积分 real 链路：GET /tasks + POST /tasks/{code}/claim（mock 保留本地演示逻辑）
 import { useMock } from "../../../stores/helpers/use-mock";
 import { request } from "../../../services/http";
+// 第六轮 W2-3：任务列表是纯读请求且 onShow 会重拉 ⇒ 离开页面时取消在途，
+// 而 POST /tasks/{code}/claim 是「领积分」的写操作，刻意**不**接 signal（切后台不该撤销一次领奖）
+import { useAbortOnHide } from "../../../composables/useAbortOnHide";
+const { signal: pageSignal } = useAbortOnHide();
 
 /** 任务项 */
 interface TaskItem {
@@ -189,7 +193,7 @@ async function loadRealTasks(force = false): Promise<void> {
   if (!force && realTasks.value !== null) return;
   loadingRealTasks.value = true;
   try {
-    const list = await request<TaskView[]>({ url: "/tasks", method: "GET" });
+    const list = await request<TaskView[]>({ url: "/tasks", method: "GET", signal: pageSignal.value });
     realTasks.value = (list ?? []).map(toRealTask);
   } catch (_e) {
     // 拉取失败保留当前列表（不阻塞页面展示）

@@ -20,7 +20,10 @@ import { request } from "../../../services/http";
 import { resolveMediaUrl } from "../../../utils/media";
 // R10-P1-003：注入 --statusbar/--capsule-right（DevTools env(safe-area-inset-top) 恒 0，标题叠印状态栏）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
+// 第六轮 W2-3：页面销毁时取消在途商品请求（abortOnHide 关闭，理由见 loadProduct 处注释）
+import { useAbortOnHide } from "../../../composables/useAbortOnHide";
 const { styleVars: menuStyleVars } = useMenuButtonRect();
+const { signal: pageSignal } = useAbortOnHide({ abortOnHide: false });
 
 
 const { t } = useI18n();
@@ -218,6 +221,9 @@ async function loadProduct(id: string): Promise<void> {
     const view = await request<ProductDetail>({
       url: `/products/${encodeURIComponent(id)}`,
       method: "GET",
+      // 第六轮 W2-3：本页只在 onLoad 取一次数（没有 onShow 重拉），
+      // 所以只关「卸载后取消」——切后台取消会把页面永久留在错误态，得不偿失
+      signal: pageSignal.value,
     });
     product.value = view;
   } catch (loadError) {

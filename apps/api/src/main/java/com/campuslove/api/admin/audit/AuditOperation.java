@@ -80,7 +80,21 @@ public enum AuditOperation {
     PUBLISH_SHOP_ITEM("上架商城商品"),
     UNPUBLISH_SHOP_ITEM("下架商城商品"),
     ADJUST_WALLET("调整钱包余额"),
-    AUDIT_MEDIA_ASSET("审核媒体图片");
+    AUDIT_MEDIA_ASSET("审核媒体图片"),
+    /**
+     * 第六轮 W1b-2：敏感<b>读</b>操作码。
+     *
+     * <p>此前本枚举只有写操作码，导致「谁翻了多少条悄悄话/私信/实名证件」在审计库里
+     * 一条都不留 —— 读面泄露（悄悄话正文原样吐给 ADMIN/AUDITOR）在事后追溯里是隐形的。
+     * 读操作必须与写操作同等留痕，否则「已审计」这句话对读接口不成立。</p>
+     */
+    VIEW_WHISPER("查看悄悄话列表"),
+    /** 查看私信会话列表/详情/消息分页（正文按档位脱敏，元数据全量可读） */
+    VIEW_CONVERSATION("查看私信会话与消息"),
+    /** 查看实名认证申请列表（含姓名、证件号掩码值与证件照地址） */
+    VIEW_REAL_NAME_CERTIFICATION("查看实名认证申请"),
+    /** 删除悄悄话单行（对私密内容的破坏性写操作，必须与读操作同样留痕） */
+    DELETE_WHISPER("删除悄悄话");
 
     private final String description;
 

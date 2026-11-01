@@ -32,6 +32,14 @@ groups:
       # 指标 app_health_status 由 apps/api/.../monitor/HealthMetrics.java 显式注册
       # （按 status 标签各一条 gauge，命中的取 1）；2026-10-29 修正：原表达式引用的
       # spring_boot_health_status 从未被任何代码注册，规则自建立起就没有数据源、永不触发。
+      # 2026-11-01（第六轮 W3 item 7）：描述里的 {{ $labels.component }} 是**不可达标签**——
+      # HealthMetrics 只打 status 一个 tag（见该类 .tag("status", status)），序列上从来没有
+      # component 这个标签，也没有任何一层（recording rule / scrape job / external label）
+      # 能凭空造出它：HealthEndpoint 把所有 indicator 折叠成一个聚合状态后才注册，组件名
+      # 在这一刻就已经丢了。原文案这一段永远渲染成空。要知道是哪个组件 DOWN，只能查
+      # /actuator/health 的 JSON（未认证不可读，见 SecurityConfig）。
+      # 想恢复"按组件告警"必须先在后端加带 component 标签的指标——那是 apps/api 的改动，
+      # 不在监控配置这一侧能闭合（已写进本轮交接项）。
       - alert: ApiHealthCheckFailed
         expr: app_health_status{status="DOWN"} > 0
         for: 2m
@@ -40,7 +48,8 @@ groups:
           service: campuslove-api
         annotations:
           summary: "API 健康检查 DOWN"
-          description: "组件 {{ $labels.component }} 健康检查失败，请查看日志定位根因。"
+          description: "实例 {{ $labels.instance }} 的聚合健康状态为 {{ $labels.status }}（服务 {{ $labels.service }}）；具体是哪个组件 DOWN 请查 /actuator/health 的 JSON——app_health_status 只带 status 标签，不带组件名。"
+          runbook: "doc/RUNBOOKS.md#api-下线"
 
       # Admin 后台下线（P3-D.4：通过 blackbox 探针监控，5 分钟持续失败告警）
       # ⚠️ 2026-08-05：compose 未部署 blackbox-exporter，probe_success 无数据源，
@@ -268,6 +277,14 @@ groups:
       # node-exporter 的 textfile collector 目录：宿主 ./backups/node-textfile，
       # compose 里 backup 写、node-exporter 读，指标名 node_backup_*）。
       # 阈值 = BACKUP_CRON 日备份 + 1 天缓冲（86400*1.5 ≈ 129600s）。
+      # 2026-11-01（第六轮 W3 item 3）：写入端的前提从"目录存在"升到"目录可写且有序列"——
+      #   docker/backup/entrypoint.sh 现在负责 mkdir + chown backup 账号 + 校验它是真挂载点，
+      #   并在第一次真实备份之前播种 node_backup_last_success_timestamp_seconds=0。
+      #   播种的意义：一条"永远没有序列"的告警和一条"从来没触发过"的告警在 Prometheus 里
+      #   长得一模一样（都不评估、都不报错）；播种把它变成"有序列 ⇒ 36h 无成功备份就响"。
+      #   整条形状（两侧绑同一宿主目录、backup 侧可写、node-exporter 侧只读同一目录、
+      #   BACKUP_TEXTFILE_DIR 与挂载目标同源）由 tests/monitoring-wiring.spec.mjs 第 6c 节
+      #   静态对账；容器里**真的写进去**那一步仍只能靠一次真跑证明（见本轮报告"判不出"）。
       # ⚠️ 本规则仍有自己的前置条件（REQUIRES-PROFILE=backup）：node_backup_* 是
       #   backup 容器里的脚本落进 textfile 目录的文件，由 node-exporter 读出来。
       #   抓取任务现已常开，所以缺 profile 时缺的是【写入端】而不是抓取端：
@@ -353,9 +370,14 @@ groups:
       # reason 标签区分 signature_invalid/order_not_found/duplicate_notify/persist_error 等）。
       # 注：BillingService（vip 包）回调失败路径接入 recordCallbackFailure 之前该指标
       # 无序列，本规则静默不触发（与登录失败率规则的动态指标语义一致）。
+      # 2026-11-01（第六轮 W3 item 7）：聚合改成 `sum by (reason)`。原来写的是裸
+      # `sum(increase(...))`——聚合会把 reason 连同其它标签一起抹掉，于是文案里的
+      # {{ $labels.reason }} 恒为空（"原因 "后面什么都没有）：指标有 reason 标签
+      # （PaymentMetrics.java:40 TAG_REASON="reason"），但那条规则自己把它丢掉了。
+      # 按 reason 分组还顺带把"哪种失败"直接暴露在告警名里，不再需要点进 Prometheus。
       - alert: PaymentCallbackFailure
         expr: |
-          sum(increase(payment_callback_failure_total[5m])) > 0
+          sum by (reason) (increase(payment_callback_failure_total[5m])) > 0
         labels:
           severity: warning
           service: campuslove-api
@@ -366,9 +388,11 @@ groups:
       # 聊天消息发送失败（2026-10-05 补充）：连续 5 分钟有失败记录
       # 指标名对齐 ChatMetrics.recordMessageFailed 的 chat.message.failed
       # （Prometheus 导出为 chat_message_failed_total，reason 标签区分失败原因）
+      # 2026-11-01（第六轮 W3 item 7）：同 PaymentCallbackFailure，裸 sum() 会抹掉
+      # reason ⇒ 改 sum by (reason)（ChatMetrics.java:36 TAG_REASON="reason"）。
       - alert: ChatMessageSendFailure
         expr: |
-          sum(rate(chat_message_failed_total[5m])) > 0
+          sum by (reason) (rate(chat_message_failed_total[5m])) > 0
         for: 5m
         labels:
           severity: warning

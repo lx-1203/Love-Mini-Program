@@ -26,8 +26,20 @@
 #       [--point-in-time '2026-10-31 15:30:00'] \
 #       [--target-schema campus_love_drill] [--apply]
 #
-# 凭据（只经 --defaults-extra-file 的临时 0600 文件传给 mysql/mysqlbinlog，不进参数）：
-#   MYSQL_HOST (默认 127.0.0.1) / MYSQL_PORT (3306) / MYSQL_USER (root) / MYSQL_PASSWORD (必填)
+# 凭据（只经 --defaults-extra-file 的临时 0600 文件传给 mysql/mysqlbinlog，不进参数）。
+# **账号与口令必须同源配对**，脚本不再猜任何一个（2026-11-01 第六轮 W3 item 1）：
+#   配对 A（首选，任意账号）：RESTORE_MYSQL_USER + RESTORE_MYSQL_PASSWORD
+#   配对 B（管理员档）：       MYSQL_ROOT_PASSWORD（账号名由 MYSQL_ROOT_USER 给出，
+#                              缺省时即 root——这与 MYSQL_ROOT_PASSWORD 的命名同源自洽，
+#                              不是"shell 默认"）
+#   其余一律**硬失败并点名**：以前这里写的是 `MYSQL_USER="${MYSQL_USER:-root}"`，
+#   而文档的用法是 `set -a; . ./.env; set +a` 后只覆盖 MYSQL_PASSWORD——.env 里
+#   MYSQL_USER=campus / DB_USERNAME=campus 是业务账号，于是"看起来在用 root"的命令
+#   实际拿 campus 去配 root 的口令，两条演练命令各错一种，必然认证失败。
+#   现在 MYSQL_USER / DB_USERNAME / MYSQL_PASSWORD 都**不参与**恢复身份判定
+#   （它们描述的是 compose 的业务账号，不是恢复用的管理员账号）。
+#   ⚠️ 本脚本只打印账号名，永不打印口令。
+# 其它变量：
 #   BACKUP_ENCRYPTION_KEY      —— 恢复 .enc 产物时必填，缺失即硬失败
 #   BACKUP_LIVE_SCHEMA         —— 被视为"生产库名"的名字（默认 campus_love）
 #   RESTORE_BIN                / RESTORE_MYSQLBINLOG_BIN —— 指定二进制（血统自查同备份脚本）
@@ -49,8 +61,13 @@ export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin/bin:${PATH}
 
 MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
 MYSQL_PORT="${MYSQL_PORT:-3306}"
-MYSQL_USER="${MYSQL_USER:-root}"
-MYSQL_PASSWORD="${MYSQL_PASSWORD:-}"
+# 恢复账号/口令在下面的"凭据配对"一节解析；这里**不设任何带默认值的账号变量**，
+# 免得 MYSQL_USER / DB_USERNAME（.env 里的业务账号）被顺手当成交货身份。
+RESTORE_MYSQL_USER="${RESTORE_MYSQL_USER:-}"
+RESTORE_MYSQL_PASSWORD="${RESTORE_MYSQL_PASSWORD:-}"
+MYSQL_ROOT_USER="${MYSQL_ROOT_USER:-}"
+MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-}"
+BUSINESS_ACCOUNTS=""
 BACKUP_ENCRYPTION_KEY="${BACKUP_ENCRYPTION_KEY:-}"
 BACKUP_LIVE_SCHEMA="${BACKUP_LIVE_SCHEMA:-campus_love}"
 RESTORE_BIN="${RESTORE_BIN:-mysql}"
@@ -92,6 +109,13 @@ Usage: restore-mysql.sh --artifact FILE [options]
   --allow-live-target          允许目标是 BACKUP_LIVE_SCHEMA（默认拒绝，防手滑）
   --skip-checksum              跳过与 manifest 的 sha256 比对（不推荐）
   --help                       本帮助
+
+凭据（账号与口令必须同源配对，脚本不猜、不再回落 shell 默认）：
+  配对 A  RESTORE_MYSQL_USER + RESTORE_MYSQL_PASSWORD   任意管理员账号（两个都要给）
+  配对 B  MYSQL_ROOT_PASSWORD（账号取 MYSQL_ROOT_USER，缺省 root）
+  不参与认证：MYSQL_USER / DB_USERNAME / MYSQL_PASSWORD —— 那是 compose 的业务账号
+  campus（无 CREATE / SESSION_VARIABLES_ADMIN），以前被 `:-root` 与 .env 的 source 顺手
+  带进恢复路径，是"文档命令跑不通"的根因。
 EOF
 }
 
@@ -135,8 +159,39 @@ log "target schema     : ${TARGET_SCHEMA}"
 log "point-in-time     : ${POINT_IN_TIME:-（不指定 ⇒ 只回到全量快照点）}"
 log "apply             : ${APPLY}（0 = 不执行任何写操作）"
 
-# ---------- 口令绝不进进程参数：临时 0600 defaults 文件 ----------
-[[ -n "${MYSQL_PASSWORD}" ]] || die "MYSQL_PASSWORD 未设置（本脚本不接受 -p 传参，也不猜 .env）"
+# ---------- 凭据配对（账号与口令同源），口令绝不进进程参数 ----------
+# 解析优先级：配对 A（RESTORE_MYSQL_*）⇒ 配对 B（MYSQL_ROOT_PASSWORD + root/MYSQL_ROOT_USER）。
+# 两对都凑不齐就 die 并点名变量；不再回落到 shell 默认的 root，也不再读 MYSQL_USER。
+if [[ -n "${RESTORE_MYSQL_USER}" && -n "${RESTORE_MYSQL_PASSWORD}" ]]; then
+    RESOLVE_USER="${RESTORE_MYSQL_USER}"
+    RESOLVE_PASSWORD="${RESTORE_MYSQL_PASSWORD}"
+    RESOLVE_VIA="RESTORE_MYSQL_USER + RESTORE_MYSQL_PASSWORD"
+elif [[ -n "${MYSQL_ROOT_PASSWORD}" ]]; then
+    RESOLVE_USER="${MYSQL_ROOT_USER:-root}"
+    RESOLVE_PASSWORD="${MYSQL_ROOT_PASSWORD}"
+    RESOLVE_VIA="MYSQL_ROOT_PASSWORD（账号取 MYSQL_ROOT_USER，缺省 root）"
+elif [[ -n "${RESTORE_MYSQL_USER}" || -n "${RESTORE_MYSQL_PASSWORD}" ]]; then
+    die "凭据配对不完整：RESTORE_MYSQL_USER 与 RESTORE_MYSQL_PASSWORD 必须同时给出（当前只给了其中一个）。账号与口令不同源的组合一律拒绝。"
+else
+    if [[ -n "${MYSQL_PASSWORD:-}" ]]; then
+        log "提示：检测到你传了 MYSQL_PASSWORD——那是 .env 里业务账号（MYSQL_USER=campus）的口令，"
+        log "  从 2026-11-01 起不再参与恢复身份判定（旧文档「只覆盖 MYSQL_PASSWORD」的写法正是缺陷本身）。"
+    fi
+    die "没有可用的恢复凭据配对。二选一：RESTORE_MYSQL_USER=root RESTORE_MYSQL_PASSWORD=… 或 直接给 MYSQL_ROOT_PASSWORD=…（账号默认 root，可用 MYSQL_ROOT_USER 覆盖）。本脚本不接受 -p 传参、不猜 .env，也不会拿 MYSQL_USER/DB_USERNAME（业务账号 campus）当恢复账号——它没有 CREATE/SESSION_VARIABLES_ADMIN 权限，连 CREATE DATABASE 与 sql_log_bin=0 都跑不动。"
+fi
+
+# 业务账号名与被解析出的账号重名 ⇒ 极可能是"账号选错了"，点名提醒（不中止，只喊）
+for _b in "${MYSQL_USER:-}" "${DB_USERNAME:-}"; do
+    [[ -n "${_b}" ]] || continue
+    BUSINESS_ACCOUNTS="${BUSINESS_ACCOUNTS}${_b} "
+    if [[ "${_b}" == "${RESOLVE_USER}" ]]; then
+        log "WARN: 解析出的恢复账号 ${RESOLVE_USER} 与 .env 的业务账号同名——请确认这个账号真的有"
+        log "WARN:   CREATE/SESSION_VARIABLES_ADMIN 权限；若只是被 MYSQL_USER 顺手带出来的，改用 RESTORE_MYSQL_USER。"
+    fi
+done
+log "credential pair   : ${RESOLVE_VIA}；账号=${RESOLVE_USER}（口令不回显）"
+log "业务账号（不参与恢复认证）: ${BUSINESS_ACCOUNTS:-（.env 未提供 MYSQL_USER/DB_USERNAME）}"
+
 CNF_FILE=$(mktemp "${TMPDIR:-/tmp}/restore-my-cnf.XXXXXX")
 chmod 600 "${CNF_FILE}"
 trap cleanup EXIT
@@ -144,8 +199,8 @@ cat > "${CNF_FILE}" <<EOF
 [client]
 host=${MYSQL_HOST}
 port=${MYSQL_PORT}
-user=${MYSQL_USER}
-password=${MYSQL_PASSWORD}
+user=${RESOLVE_USER}
+password=${RESOLVE_PASSWORD}
 connect-timeout=10
 default-character-set=utf8mb4
 EOF

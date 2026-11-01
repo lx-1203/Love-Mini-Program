@@ -95,7 +95,8 @@ public class BillingService {
      *       type=SUBSCRIBE、paymentMethod=WALLET）并按<b>套餐时长</b>顺延 VIP 到期时间</li>
      * </ol>
      *
-     * <p>余额不足抛 {@link InsufficientBalanceException}（HTTP 400 INSUFFICIENT_BALANCE）；
+     * <p>余额不足抛 {@link InsufficientBalanceException}（HTTP 409 INSUFFICIENT_BALANCE，
+     * C7 修正：资源状态冲突语义，客户端按 409 分支处理）；
      * 套餐非法/已下架/优惠码无效抛 IllegalArgumentException（HTTP 400）。
      * 全部操作在同一事务内，任一步失败整体回滚（优惠码使用记录与扣款一并回滚）。
      * 事务内仅远程数据库读写，目录为进程内常量，无外部网络调用。</p>

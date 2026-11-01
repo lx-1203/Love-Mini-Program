@@ -12,10 +12,7 @@ import com.campuslove.api.entity.User;
 import com.campuslove.api.privacy.PhoneColumnCodec;
 import com.campuslove.api.repository.UserRepository;
 import io.jsonwebtoken.JwtException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.LocalDateTime;
-import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -171,9 +168,14 @@ public class RealAccountSecurityService implements AccountSecurityService {
             throw new OperationForbiddenException(ErrorMessages.OLD_PASSWORD_WRONG);
         }
 
-        // 新手机号占用校验（与 registerUser 同一加密口径：先密文后明文，兼容历史数据）
+        // 新手机号占用校验（与 registerUser / 后台建号 / 微信绑定完全同一套判据）：
+        // 先问不可逆派生键，再按明文兜底兼容历史行。
+        // 原先这里问的是「AES 密文相等」——AES-GCM 用随机 IV，同一号码每次密文都不同，
+        // 那次 findByPhone(newPhoneCipher) 在线上恒不命中，等于占用校验形同虚设
+        // （同号重复账号的第二个来源，见 W1b F-W1b-3 交付正文）。
         String newPhoneCipher = PhoneColumnCodec.store(aesEncryptor, newPhone);
-        boolean occupied = userRepository.findByPhone(newPhoneCipher)
+        String newPhoneDerivedOpenid = PhoneColumnCodec.derivedOpenid(newPhone);
+        boolean occupied = userRepository.findByOpenid(newPhoneDerivedOpenid)
                 .or(() -> userRepository.findByPhone(newPhone))
                 .isPresent();
         if (occupied) {
@@ -181,11 +183,11 @@ public class RealAccountSecurityService implements AccountSecurityService {
             throw new ResourceConflictException(ErrorMessages.PHONE_ALREADY_REGISTERED);
         }
 
-        // 更新 phone（加密存储）+ 同步 openid 派生键（phone:hash），
-        // 释放旧派生键避免未来旧手机号重新注册时唯一约束冲突
+        // 更新 phone（加密存储）+ 同步 openid 派生键，释放旧派生键避免未来旧手机号重新注册时唯一约束冲突。
+        // 命名空间判断走 PhoneColumnCodec.isDerivedKey，前缀字面量只允许存在于 codec 一处。
         user.setPhone(newPhoneCipher);
-        if (user.getOpenid() != null && user.getOpenid().startsWith("phone:")) {
-            user.setOpenid("phone:" + deriveSha256Hex(newPhone));
+        if (PhoneColumnCodec.isDerivedKey(user.getOpenid())) {
+            user.setOpenid(newPhoneDerivedOpenid);
         }
         user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         userRepository.save(user);
@@ -323,22 +325,5 @@ public class RealAccountSecurityService implements AccountSecurityService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorMessages.USER_NOT_FOUND_CN_PREFIX + userId));
-    }
-
-    /**
-     * SHA-256 hex（小写），用于 phone 派生 openid（与 RealAuthService.registerUser 口径一致）。
-     */
-    private String deriveSha256Hex(String input) {
-        try {
-            MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-            byte[] digest = sha256.digest(input.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder(digest.length * 2);
-            for (byte b : digest) {
-                sb.append(String.format(Locale.ROOT, "%02x", b));
-            }
-            return sb.toString();
-        } catch (java.security.NoSuchAlgorithmException ex) {
-            throw new IllegalStateException(ErrorMessages.SHA256_UNAVAILABLE, ex);
-        }
     }
 }
