@@ -114,7 +114,18 @@ t("S3[仍拦] 注销/解绑/退出登录 类词条照旧按词拒",
 t("S3[仍拦] 证明不了宾语是字段的「清空」默认拒（保守侧）",
   D.deniesTap("清空后观察") && D.deniesTap("清空 storage") && D.deniesTap("清空数据源"));
 
-/* ───────────── ④ 守恒：1107 条上拒绝集合只允许少这两行 ───────────── */
+/* ───────────── ④ 守恒：各语料目录的用例总数必须等于登记基线 ─────────────
+   原来这里钉的是一个跨目录共用的字面 1107，于是「新建一份合法 manifest」会把一条守恒断言
+   判成红（第六轮 W5 给 tools/security 补了 16 条 ops 判据格 ⇒ 实得 1123，护栏本身没错）。
+   守恒这条轴要守的是「不许有人悄悄删格」，所以基线按目录显式登记，且每次变动都要留出处；
+   没登记的目录一律判红，不许静默放行。
+   1107：#69 盖章时的两份语料；
+   1123 = 1107 + 16：reports/audit/round-6/ops 新增 SUBPACKAGES-TOOLS-SECURITY-INDEX.json
+   （guest-landing 两条自检件判出 policy 第 30 条对该页有裁定而判据台 0 行）。 */
+const CORPUS_TOTAL_BASELINE = {
+  "reports/audit/round-7/ops": 1107,
+  "reports/audit/round-6/ops": 1123,
+};
 const deltas = {};
 for (const dir of OPS_DIRS) {
   const rows = loadCorpus(dir);
@@ -123,7 +134,11 @@ for (const dir of OPS_DIRS) {
   const released = [...before].filter((x) => !after.has(x)).sort();
   const added = [...after].filter((x) => !before.has(x)).sort();
   deltas[dir] = { total: rows.length, before: before.size, after: after.size, released, added };
-  t("S4 " + dir + " 判据总数守恒 = 1107", rows.length === 1107, "实得 " + rows.length);
+  const baseline = CORPUS_TOTAL_BASELINE[dir];
+  t("S4 " + dir + " 判据总数守恒" + (baseline === undefined ? "（该目录未登记基线）" : " = " + baseline),
+    baseline !== undefined && rows.length === baseline,
+    baseline === undefined ? "CORPUS_TOTAL_BASELINE 里没有这个目录 ⇒ 先登记再跑，不许静默放行"
+      : "实得 " + rows.length + "（增删判据格必须同时在本文件留下出处）");
   t("S4 " + dir + " 拒绝集合只减少 TD03/OT09 两行",
     released.length === 2 && REL.every((k) => released.includes(k)),
     "released=" + JSON.stringify(released));

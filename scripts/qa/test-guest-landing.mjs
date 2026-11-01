@@ -117,7 +117,17 @@ let realOut = ""; // 块 1 存一份真数据 stdout，块 3 的守恒可见性�
   t("成员账三方互算：载具印的数 == 账本头 == 账本逐组相加",
     !!mDebt && Number(mDebt[2]) === booked.debtRows && booked.debtRows === sumDebt,
     "印=" + (mDebt ? mDebt[2] : "(读不到)") + " 账本头=" + booked.debtRows + " 逐组相加=" + sumDebt);
-  t("真数据锚点全可核", /锚点可核=11（不可核 0）/.test(r.out), finalLine);
+  /* 锚点这条轴要守的是「在册锚点全部可核（不可核 = 0）」，不是「可核的条数恰好等于某个数」。
+     原来这里把两个数一起钉成字面 11，于是每补一份合法判据格就把护栏判红——本文件 :220 附近
+     已经记过一次同形假红（换登录页名册时实测 4/11，门红了而依据一条没丢）。
+     第六轮 W5 给 tools/security 建了 16 条格 ⇒ 实得 18，所以改成：不可核必须为 0，
+     可核数不得低于历史下限（只许涨不许悄悄跌），并把当次读数一起印出来。 */
+  const mAnchor = /锚点可核=(\d+)（不可核 (\d+)）/.exec(r.out);
+  const ANCHOR_VERIFIABLE_FLOOR = 18;
+  t("真数据锚点全可核（不可核必须 0，可核数不得低于登记下限）",
+    !!mAnchor && Number(mAnchor[2]) === 0 && Number(mAnchor[1]) >= ANCHOR_VERIFIABLE_FLOOR,
+    "读不到锚点行" + (mAnchor ? "" : "") + " 可核=" + (mAnchor ? mAnchor[1] : "(无)")
+      + " 不可核=" + (mAnchor ? mAnchor[2] : "(无)") + " 下限=" + ANCHOR_VERIFIABLE_FLOOR);
   /* 「出例数 = 组数」这条 2026-09-29 换判法：#67 之前名册遍历**跑测观察到的组**（那时两个数同为 26），
      之后名册遍历 **policy 裁定条数**（27），旧断言 rows.length===26 于是变成设计搬家的假红
      （实跑 rows=27、groups=26，两者本就不是一个东西）。现在两轴各钉一条，并补一条真正要守的东西：

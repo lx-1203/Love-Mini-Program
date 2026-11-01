@@ -245,15 +245,23 @@ for (const [m, e] of ops) {
 }
 /* 落盘后复算要分两个宇宙，别拿"整个语料目录的总数"去比"本次点名到的那些 manifest 之和"：
    第一版就是这么写出一个永假的 MISMATCH（640 当然不等于 1107），把一次成功的落盘说成失败。
-   现在两条各自成立：点名到的那些不许增删；整个目录必须仍是 1107 条。 */
+   现在两条各自成立：点名到的那些不许增删；整个目录必须仍是 DIR_TOTAL_BASELINE 条。 */
+/* DIR_TOTAL_BASELINE：ops 语料全目录用例总数的显式基线。
+   它只能因为「有人新增/删除了一份 manifest 或整批 case」而变动，且每次变动都必须在这里
+   留下一行出处（谁、为什么、几条）——不许在跑红时顺手改数把它哄绿。
+   1107（#69 盖章时）→ 1123：第六轮 W5 车道新建
+   reports/audit/round-6/ops/SUBPACKAGES-TOOLS-SECURITY-INDEX.json（+16 条 case，逐条锚回
+   apps/client/src/subpackages/tools/security/index.vue 的真实分支），
+   起因是 guest-landing 两条自检件判出「policy 第 30 条对该页有裁定、判据台 0 行」。 */
+const DIR_TOTAL_BASELINE = 1123;
 let dirTotal = 0, dirFiles = 0;
 for (const f of readdirSync(OPS).filter((x) => x.endsWith(".json"))) {
   dirTotal += (JSON.parse(readFileSync(join(OPS, f), "utf8")).cases || []).length; dirFiles++;
 }
 let touchedAfter = 0;
 for (const [, e] of ops) if (e.j) touchedAfter += (JSON.parse(readFileSync(e.file, "utf8")).cases || []).length;
-const perOk = touchedAfter === totalAfter, dirOk = dirTotal === 1107;
-console.log(`OPSCELL_REREAD 点名到的 ${ops.size} 个 manifest 用例数=${touchedAfter}（改前=${totalAfter}）${perOk ? "OK" : "MISMATCH"}｜全目录 ${dirFiles} 份=${dirTotal} ${dirOk ? "OK（=1107，没增删条目）" : "MISMATCH ⇒ 有条目被增删"}`);
+const perOk = touchedAfter === totalAfter, dirOk = dirTotal === DIR_TOTAL_BASELINE;
+console.log(`OPSCELL_REREAD 点名到的 ${ops.size} 个 manifest 用例数=${touchedAfter}（改前=${totalAfter}）${perOk ? "OK" : "MISMATCH"}｜全目录 ${dirFiles} 份=${dirTotal} ${dirOk ? `OK（=${DIR_TOTAL_BASELINE}，没增删条目）` : `MISMATCH ⇒ 有条目被增删（基线 ${DIR_TOTAL_BASELINE}，改基线要在本文件留下出处）`}`);
 const allOk = perOk && dirOk;
 console.log(`OPSCELL_RESULT=${allOk ? "OK" : "FAIL"} 落盘完成；B 组盖章=${todoB.length} 条（另有 ${already.length} 行是复跑幂等跳过的）只打了标记没删条目。下一步：重新 --write 语料戳（#69）→ 重建三档产物 → 定向复测。`);
 process.exit(allOk ? 0 : 1);
