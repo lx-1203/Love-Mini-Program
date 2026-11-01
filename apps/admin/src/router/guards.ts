@@ -79,6 +79,24 @@ export function getCurrentRole(): string {
 }
 
 /**
+ * 从 localStorage 读取当前登录管理员主体 id（字符串），未登录/解析失败返回空串。
+ *
+ * 用途（第五轮 B-FINDING 15）：与 menuStore.loadedFor 比对，判断「按需加载」是否需要为
+ * 换账号重拉菜单树。localStorage 可被前端篡改，但此处只用于决定「要不要再发一次 GET 菜单」，
+ * 真正的越权仍由后端 403 兜住；与 getCurrentRole 属同一「展示层粗粒度控制」范畴。
+ */
+export function getCurrentAdminUserId(): string {
+  const raw = localStorage.getItem("admin_v2_user");
+  if (!raw) return "";
+  try {
+    const user = JSON.parse(raw) as { id?: unknown };
+    return user.id === undefined || user.id === null ? "" : String(user.id);
+  } catch {
+    return "";
+  }
+}
+
+/**
  * 校验登录回跳 redirect 参数：仅允许站内相对路径。
  *
  * 防开放重定向：拒绝 //evil.com、https://evil.com、javascript: 等外部/伪协议地址，
@@ -117,9 +135,10 @@ export function setupRouterGuards(router: Router): void {
     // 已登录访问登录页 → 加载动态菜单后跳转首页（避免 Dashboard 动态路由未注册导致 router 启动失败）
     if (to.name === "Login" && authenticated) {
       const menuStore = useMenuStore();
-      if (!menuStore.loaded) {
+      const currentUserId = getCurrentAdminUserId();
+      if (!menuStore.loaded || menuStore.loadedFor !== currentUserId) {
         try {
-          await menuStore.loadMenus();
+          await menuStore.loadMenus(currentUserId);
           addDynamicRoutes(menuStore.menuTree);
           // notFoundRoute 为常量路由（name 恒为 "NotFound"），此处显式断言非空
           if (!router.hasRoute(notFoundRoute.name!)) {
@@ -142,10 +161,13 @@ export function setupRouterGuards(router: Router): void {
 
     if (authenticated && protectedRoute) {
       const menuStore = useMenuStore();
-      // 首次进入：按需加载动态菜单并注册 Layout 子路由
-      if (!menuStore.loaded) {
+      const currentUserId = getCurrentAdminUserId();
+      // 首次进入或换了登录主体：按需加载动态菜单并注册 Layout 子路由。
+      // loadedFor 与当前用户 id 不一致时（SPA 软跳转换账号）即使 loaded 为真也必须重拉，
+      // 否则上一角色的动态路由会残留（第五轮 B-FINDING 15）。
+      if (!menuStore.loaded || menuStore.loadedFor !== currentUserId) {
         try {
-          await menuStore.loadMenus();
+          await menuStore.loadMenus(currentUserId);
           addDynamicRoutes(menuStore.menuTree);
           // 动态路由注册完成后再追加 404 兜底，避免通配符优先于业务路由
           if (!router.hasRoute(notFoundRoute.name!)) {

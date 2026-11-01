@@ -16,6 +16,7 @@ import com.campuslove.api.entity.UserFollow;
 import com.campuslove.api.entity.UserInterestTag;
 import com.campuslove.api.entity.VipBill;
 import com.campuslove.api.entity.VipBillingLog;
+import com.campuslove.api.entity.WhisperMessage;
 import com.campuslove.api.repository.AuditLogRepository;
 import com.campuslove.api.repository.CampusCertificationRepository;
 import com.campuslove.api.repository.CheckInRepository;
@@ -38,6 +39,7 @@ import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
 import com.campuslove.api.repository.VipBillRepository;
 import com.campuslove.api.repository.VipBillingLogRepository;
+import com.campuslove.api.repository.WhisperMessageRepository;
 import com.campuslove.api.privacy.PersonalDataTables;
 import com.campuslove.api.privacy.PhoneColumnCodec;
 import com.campuslove.api.utils.SensitiveDataMasker;
@@ -129,6 +131,7 @@ public class PersonalDataService {
     private final TaskClaimRepository taskClaimRepository;
     private final UserAgreementConsentRepository userAgreementConsentRepository;
     private final AuditLogRepository auditLogRepository;
+    private final WhisperMessageRepository whisperMessageRepository;
 
     /**
      * AES 加密器（可选装配）：{@code users.phone} 列里存的是 AES-GCM 密文，
@@ -164,7 +167,8 @@ public class PersonalDataService {
             CheckInRepository checkInRepository,
             TaskClaimRepository taskClaimRepository,
             UserAgreementConsentRepository userAgreementConsentRepository,
-            AuditLogRepository auditLogRepository) {
+            AuditLogRepository auditLogRepository,
+            WhisperMessageRepository whisperMessageRepository) {
         this.userRepository = userRepository;
         this.userBasicProfileRepository = userBasicProfileRepository;
         this.userCampusProfileRepository = userCampusProfileRepository;
@@ -190,6 +194,7 @@ public class PersonalDataService {
         this.taskClaimRepository = taskClaimRepository;
         this.userAgreementConsentRepository = userAgreementConsentRepository;
         this.auditLogRepository = auditLogRepository;
+        this.whisperMessageRepository = whisperMessageRepository;
     }
 
     /**
@@ -248,6 +253,7 @@ public class PersonalDataService {
         categories.add(tempChatMessageCategory(userId, tempChatSessions));
         categories.add(privateConversationCategory(userId, privateConversations));
         categories.add(privateMessageCategory(userId, privateConversations));
+        categories.add(whisperCategory(userId));
         categories.add(walletCategory(userId));
         categories.add(walletTransactionCategory(userId));
         categories.add(vipBillCategory(userId));
@@ -602,6 +608,23 @@ public class PersonalDataService {
         return truncated
                 ? PersonalDataCategory.truncated("private_messages", "我的私信消息", columns, rows)
                 : PersonalDataCategory.of("private_messages", "我的私信消息", columns, rows);
+    }
+
+    /**
+     * 我发出的悄悄话（whisper_message 表；只导出 {@code senderId == 本人} 的行）。
+     *
+     * <p>与「我的私信消息」同类：接收方 ID 仅作定位用，正文是我亲手写的付费留言，属本人。
+     * 发给我的悄悄话属发送方，不在本人的查阅权范围内，故不导出（清除清单里以
+     * {@code whisper_inbound} 就地把其正文匿名，口径相反、边界一致）。</p>
+     */
+    private PersonalDataCategory whisperCategory(Long userId) {
+        List<String> columns = List.of("id", "receiver_id", "content", "status",
+                "price_cents", "created_at", "read_at", "refunded_at");
+        List<WhisperMessage> items =
+                whisperMessageRepository.findBySenderIdOrderByCreatedAtDesc(userId);
+        return capped("whispers", "我发出的悄悄话", columns, items,
+                w -> row(w.getId(), w.getReceiverId(), w.getContent(), w.getStatus(),
+                        w.getPriceCents(), w.getCreatedAt(), w.getReadAt(), w.getRefundedAt()));
     }
 
     /** 钱包余额（user_wallet 表） */

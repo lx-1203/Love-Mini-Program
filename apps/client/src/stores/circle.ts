@@ -852,5 +852,16 @@ export const useCircleStore = defineStore("circle", {
         this.loading = false;
       }
     },
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * 圈子列表、话题、回复与分页游标都是「按当前账号/学校可见」的内容，
+     * `currentTopic` 更带着 A 点进去的那条帖子。state 内没有设备级偏好
+     * （进圈提示等一次性标记走 `storage-keys.ts` 的设备级键，不在这里），故 `$reset()`。
+     */
+    resetForLogout() {
+      this.$reset();
+    },
   },
 });

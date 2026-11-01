@@ -15,7 +15,7 @@ import { useSessionStore } from "../../../stores/session";
 import { useI18n } from "vue-i18n";
 import { useVillageStore, formatRelativeTime, MAX_CONTENT_LENGTH, type CommentItem } from "../../../stores/village";
 // R4-00087：评论分页加载更多（契约 CommentListResponse 含 total/page/pageSize）
-import { mapToCommentItem } from "../../../stores/village/utils";
+import { mapToCommentItem, isPostAuthor } from "../../../stores/village/utils";
 import type { CommentListResponse } from "../../../stores/village/types";
 import { request } from "../../../services/http";
 // 2026-09-06 评论图片上传：复用 clientApi.uploadPostImage（/media/upload）
@@ -519,11 +519,9 @@ async function handleLike() {
  */
 // MP-R8-OWNPOST-001（2026-09-16）：自己的帖子不渲染关注按钮
 const sessionStore = useSessionStore();
-const isOwnPost = computed(() => {
-  const uid = sessionStore.userSession?.userId;
-  const aid = currentPost.value?.author?.userId;
-  return uid != null && aid != null && String(uid) === String(aid);
-});
+const isOwnPost = computed(() =>
+  isPostAuthor(sessionStore.userSession?.userId, currentPost.value?.author?.userId),
+);
 
 async function handleFollow() {
   if (!currentPost.value) return;

@@ -42,8 +42,11 @@
 #   - Flyway 迁移既不挂载到 MySQL initdb.d，也不再于 api 启动时执行（S3-2：
 #     多副本并发启动会同时抢跑同一批 DDL）。改由一次性 `migrate` 服务运行官方 Flyway CLI
 #     （本仓既有 CLI 方式，见 database/flyway/flyway.toml + scripts/launcher/run-flyway.ps1；
-#     注意 apps/api/pom.xml 只有 flyway-core/flyway-mysql 依赖，无 flyway-maven-plugin，
-#     故不存在 `./mvnw flyway:migrate`）。api 以 depends_on.condition:service_completed_successfully
+#     注意 apps/api/pom.xml 第四轮起也声明了 flyway-maven-plugin（版本钉 ${flyway.version}，
+#     与 BOM 托管的 flyway-core 同版本），因此 `./mvnw flyway:migrate` 同样可用。
+#     两条载具都在，但【同一时刻只许一个写者】：日常链路由本 compose 的 migrate 服务承担，
+#     mvnw 那条留给 CI 与运维手工补跑，且都必须显式传 placeholders（mvnw 不读 Spring 配置）。
+#     api 以 depends_on.condition:service_completed_successfully
 #     等其成功退出后再启动。单容器开发可用 FLYWAY_ENABLED=true 重开 api 启动时迁移，届时
 #     迁移目录仍以只读挂载 ./database/flyway/sql:/app/db/migration:ro 供该路径使用。
 #   - 全部服务增加 deploy.resources.limits（防止 JVM/容器无限制占用宿主机资源）

@@ -293,6 +293,26 @@ export const useVipStore = defineStore("vip", () => {
     }
   }
 
+  /**
+   * 登出清理（第五轮 FINDING 15）：会员身份、到期日、账单列表与分页游标都是账号态。
+   *
+   * 不清的后果与 `coins` 同一类：账号 B 登录后先看到账号 A 的「已是会员」与到期日，
+   * 页面按 A 的身份渲染门控，直到异步重取才纠正。`selectedPlan` 回落成默认档位
+   * 而不是留着 A 选中的那一个；`plans` 是目录（与账号无关）不动。
+   */
+  function resetForLogout(): void {
+    isVipRaw.value = false;
+    expireDate.value = null;
+    selectedPlan.value = "quarterly";
+    bills.value = [];
+    billsTotal.value = 0;
+    billsPage.value = 0;
+    billsSize.value = 20;
+    billsTotalPages.value = 1;
+    billsLoading.value = false;
+    billsLoaded.value = false;
+  }
+
   return {
     isVip,
     expireDate,
@@ -309,5 +329,6 @@ export const useVipStore = defineStore("vip", () => {
     billsLoading,
     billsLoaded,
     fetchBills,
+    resetForLogout,
   };
 });

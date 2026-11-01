@@ -211,6 +211,17 @@ export const usePromoCodeStore = defineStore("promo-code", () => {
     redeeming.value = false;
   }
 
+  /**
+   * 登出清理（第五轮 FINDING 15）。
+   *
+   * `lastRedeemResult` 是「这个账号兑掉了哪张码、到账多少」——B 进优惠码页会直接
+   * 看到 A 的兑换成功态（页面按它渲染成功卡）。与页面级 `reset()` 同义，单独命名
+   * 是为了让登出登记表按统一约定调用。
+   */
+  function resetForLogout() {
+    reset();
+  }
+
   return {
     lastValidation,
     lastRedeemResult,
@@ -219,5 +230,6 @@ export const usePromoCodeStore = defineStore("promo-code", () => {
     validateCode,
     redeemCode,
     reset,
+    resetForLogout,
   };
 });

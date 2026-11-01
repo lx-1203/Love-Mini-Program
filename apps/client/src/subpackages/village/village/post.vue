@@ -143,11 +143,11 @@ function addCustomTopic() {
   if (!raw) return;
   const tag = "#" + raw;
   if (topics.value.includes(tag)) {
-    uni.showToast({ title: "该话题已添加", icon: "none" });
+    uni.showToast({ title: t("village.post.topicAlreadyAddedToast"), icon: "none" });
     return;
   }
   if (topics.value.length >= POST_MAX_CUSTOM_TAGS) {
-    uni.showToast({ title: `最多 ${POST_MAX_CUSTOM_TAGS} 个话题`, icon: "none" });
+    uni.showToast({ title: t("village.post.maxTopicsToast", { n: POST_MAX_CUSTOM_TAGS }), icon: "none" });
     return;
   }
   topics.value.push(tag);
@@ -171,7 +171,7 @@ function addCustomLocation() {
 /** 提及好友：向正文末尾插入 @，可直接续打昵称（轻量可编辑方案） */
 function insertMention() {
   content.value = content.value.replace(/\s*$/, "") + " @";
-  uni.showToast({ title: "已在正文末尾插入 @，请输入昵称", icon: "none" });
+  uni.showToast({ title: t("village.post.mentionInsertedToast"), icon: "none" });
 }
 
 /** 发布成功返回定时器，卸载时清理 */
@@ -374,7 +374,7 @@ async function chooseImage() {
       : String(e ?? "");
     if (errMsg.includes("112") || errMsg.includes("privacy agreement")) {
       console.error("选择图片失败: 隐私协议未声明相册/相机 scope", e);
-      uni.showToast({ title: "请在微信后台隐私指引声明相册/相机权限", icon: "none" });
+      uni.showToast({ title: t("village.post.privacyScopeMissingToast"), icon: "none" });
     } else {
       console.error("选择图片失败:", e);
       uni.showToast({ title: t("village.post.selectImageFailed"), icon: "none" });
@@ -748,7 +748,7 @@ async function submitPublish() {
     <scroll-view class="post-body" scroll-y :show-scrollbar="false">
       <!-- 发布到（圈子选择卡片） -->
       <view class="post-to">
-        <text class="post-to__label">发布到</text>
+        <text class="post-to__label">{{ t("village.post.publishToLabel") }}</text>
         <view
           class="post-to__card press-feedback"
           hover-class="press-feedback--active"
@@ -787,10 +787,10 @@ async function submitPublish() {
         <view v-if="targetOpen" class="post-target-sheet" @tap="targetOpen = false">
           <view class="post-target-sheet__panel" @tap.stop>
             <view class="post-target-sheet__head">
-              <text class="post-target-sheet__title">选择发布到</text>
+              <text class="post-target-sheet__title">{{ t("village.post.targetSheetTitle") }}</text>
             </view>
 
-            <text class="post-target-sheet__group">公域 · 所有人可见</text>
+            <text class="post-target-sheet__group">{{ t("village.post.targetGroupPublic") }}</text>
             <view
               class="post-target-sheet__option press-feedback"
               hover-class="press-feedback--active"
@@ -798,8 +798,8 @@ async function submitPublish() {
               role="button"
               @tap="chooseGeneral"
             >
-              <text class="post-target-sheet__name">个人动态</text>
-              <text class="post-target-sheet__desc">默认公开，所有人可见</text>
+              <text class="post-target-sheet__name">{{ t("village.post.targetGeneralName") }}</text>
+              <text class="post-target-sheet__desc">{{ t("village.post.targetGeneralDesc") }}</text>
               <image
                 v-if="targetType === 'general'"
                 class="post-target-sheet__check"
@@ -809,7 +809,7 @@ async function submitPublish() {
               />
             </view>
 
-            <text class="post-target-sheet__group">校园私域 · 同校可见</text>
+            <text class="post-target-sheet__group">{{ t("village.post.targetGroupCampus") }}</text>
             <view
               class="post-target-sheet__option press-feedback"
               hover-class="press-feedback--active"
@@ -817,8 +817,8 @@ async function submitPublish() {
               role="button"
               @tap="chooseCampus"
             >
-              <text class="post-target-sheet__name">校园圈</text>
-              <text class="post-target-sheet__desc">仅认证同校同学可见</text>
+              <text class="post-target-sheet__name">{{ t("village.post.targetCampusName") }}</text>
+              <text class="post-target-sheet__desc">{{ t("village.post.targetCampusDesc") }}</text>
               <image
                 v-if="targetType === 'campus'"
                 class="post-target-sheet__check"
@@ -830,16 +830,16 @@ async function submitPublish() {
 
             <!-- MP-R1-POST-202：加载中/失败/空态（原 v-if 静默隐藏「兴趣圈子」分组） -->
             <template v-if="circlesLoading">
-              <text class="post-target-sheet__desc post-target-sheet__hint">兴趣圈子加载中…</text>
+              <text class="post-target-sheet__desc post-target-sheet__hint">{{ t("village.post.circlesLoadingHint") }}</text>
             </template>
             <template v-else-if="circlesLoadFailed">
-              <text class="post-target-sheet__desc post-target-sheet__hint">圈子列表加载失败，请稍后重试</text>
+              <text class="post-target-sheet__desc post-target-sheet__hint">{{ t("village.post.circlesLoadFailedHint") }}</text>
               <view class="post-target-sheet__option press-feedback" role="button" @tap="retryLoadCircles">
-                <text class="post-target-sheet__name">重试加载</text>
+                <text class="post-target-sheet__name">{{ t("village.post.retryLoadCirclesLabel") }}</text>
               </view>
             </template>
             <template v-else-if="joinedCircles.length > 0">
-              <text class="post-target-sheet__group">兴趣圈子 · 圈内成员可见</text>
+              <text class="post-target-sheet__group">{{ t("village.post.targetGroupInterest") }}</text>
               <!-- MP-R2-POST-009：列表源由 circleStore.circles.slice(0,8)（全量圈，含未加入）
                    改为 joinedCircles（先按 isJoined 过滤再截 8）——与 publish.vue:632-645 同口径。
                    未加入的圈不可选为发布目标（real 模式后端成员校验必 403 CIRCLE_JOIN_REQUIRED，
@@ -854,7 +854,7 @@ async function submitPublish() {
                 @tap="selectTarget(circle)"
               >
                 <text class="post-target-sheet__name">{{ circle.name }}</text>
-                <text class="post-target-sheet__desc">已加入 · {{ formatMemberShort(circle.memberCount) }} 成员</text>
+                <text class="post-target-sheet__desc">{{ t("village.post.circleJoinedMembers", { n: formatMemberShort(circle.memberCount) }) }}</text>
                 <image
                   v-if="isCircleTarget && targetId === Number(circle.id)"
                   class="post-target-sheet__check"
@@ -865,7 +865,7 @@ async function submitPublish() {
               </view>
             </template>
             <template v-else>
-              <text class="post-target-sheet__desc post-target-sheet__hint">尚未加入兴趣圈子，可先在「附近 - 热门兴趣圈」加入</text>
+              <text class="post-target-sheet__desc post-target-sheet__hint">{{ t("village.post.noJoinedCirclesHint") }}</text>
             </template>
           </view>
         </view>
@@ -878,9 +878,9 @@ async function submitPublish() {
           v-model="title"
           class="post-title__input"
           :maxlength="POST_TITLE_MAX_LENGTH"
-          placeholder="填写标题会有更多赞哦～"
+          :placeholder="t('village.post.titlePromptPlaceholder')"
           placeholder-class="post-title__placeholder"
-          :aria-label="'标题'"
+          :aria-label="t('village.post.titleAria')"
         />
         <view class="post-title__count">
           <text>{{ title.length }}/{{ POST_TITLE_MAX_LENGTH }}</text>
@@ -943,8 +943,8 @@ async function submitPublish() {
           @tap="topicSheetOpen = true"
         >
           <text class="post-row__icon post-row__icon--glyph">#</text>
-          <text class="post-row__label">添加话题</text>
-          <text class="post-row__meta">已选 {{ topics.length }}/{{ POST_MAX_CUSTOM_TAGS }}</text>
+          <text class="post-row__label">{{ t("village.post.addTopicLabel") }}</text>
+          <text class="post-row__meta">{{ t("village.post.selectedTopicCount", { n: topics.length, max: POST_MAX_CUSTOM_TAGS }) }}</text>
           <text class="post-row__arrow">›</text>
         </view>
         <view
@@ -959,8 +959,8 @@ async function submitPublish() {
                （config/images.ts MESSAGE_ICONS.LOCATION，stroke/fill #3CC99A 单色），
                与话题 #、提及 @ 同族单色，不改资产文件。 -->
           <image class="post-row__icon" :src="resolveMediaUrl(IMAGE_PATHS.MESSAGE_ICONS.LOCATION)" mode="aspectFit" alt="" />
-          <text class="post-row__label">添加位置</text>
-          <text class="post-row__meta">{{ location || '选择或输入位置' }}</text>
+          <text class="post-row__label">{{ t("village.post.addLocationLabel") }}</text>
+          <text class="post-row__meta">{{ location || t("village.post.locationInputFallback") }}</text>
           <text class="post-row__arrow">›</text>
         </view>
         <view
@@ -971,8 +971,8 @@ async function submitPublish() {
           @tap="insertMention"
         >
           <text class="post-row__icon post-row__icon--glyph">@</text>
-          <text class="post-row__label">提及好友</text>
-          <text class="post-row__meta">插入 @ 到正文</text>
+          <text class="post-row__label">{{ t("village.post.mentionTitle") }}</text>
+          <text class="post-row__meta">{{ t("village.post.mentionInsertHint") }}</text>
           <text class="post-row__arrow">›</text>
         </view>
         <view
@@ -983,7 +983,7 @@ async function submitPublish() {
           @tap="visibilitySheetOpen = true"
         >
           <image class="post-row__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.EYE)" mode="aspectFit" alt="" />
-          <text class="post-row__label">谁可以看</text>
+          <text class="post-row__label">{{ t("village.post.visibilityLabel") }}</text>
           <text class="post-row__meta">{{ visibilityText }}</text>
           <text class="post-row__arrow">›</text>
         </view>
@@ -1009,9 +1009,9 @@ async function submitPublish() {
         <view class="post-tip__text-wrap">
           <view class="post-tip__title">
             <image class="post-tip__title-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.SPROUT)" mode="aspectFit" alt="" />
-            <text>发帖小贴士</text>
+            <text>{{ t("village.post.publishTipTitle") }}</text>
           </view>
-          <text class="post-tip__desc">真实分享校园生活，友善互动，让更多人认识有趣的你～</text>
+          <text class="post-tip__desc">{{ t("village.post.publishTipDesc") }}</text>
         </view>
         <view
           class="post-tip__close press-feedback"
@@ -1037,7 +1037,7 @@ async function submitPublish() {
         @tap="chooseImage"
       >
         <image class="post-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.IMAGE)" mode="aspectFit" alt="" />
-        <text class="post-tool__label">图片</text>
+        <text class="post-tool__label">{{ t("village.post.toolImageLabel") }}</text>
       </view>
       <view
         v-if="!isCircleTarget"
@@ -1048,7 +1048,7 @@ async function submitPublish() {
         @tap="topicSheetOpen = true"
       >
         <text class="post-tool__icon post-tool__icon--glyph">#</text>
-        <text class="post-tool__label">话题</text>
+        <text class="post-tool__label">{{ t("village.post.toolTopicLabel") }}</text>
       </view>
       <view
         class="post-tool press-feedback"
@@ -1058,7 +1058,7 @@ async function submitPublish() {
         @tap="customLocation = location; locationSheetOpen = true"
       >
         <image class="post-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.MESSAGE_ICONS.LOCATION)" mode="aspectFit" alt="" />
-        <text class="post-tool__label">位置</text>
+        <text class="post-tool__label">{{ t("village.post.toolLocationLabel") }}</text>
       </view>
       <view
         class="post-tool press-feedback"
@@ -1068,7 +1068,7 @@ async function submitPublish() {
         @tap="insertMention"
       >
         <text class="post-tool__icon post-tool__icon--glyph">@</text>
-        <text class="post-tool__label">提及</text>
+        <text class="post-tool__label">{{ t("village.post.toolMentionLabel") }}</text>
       </view>
       <view
         class="post-tool press-feedback"
@@ -1078,7 +1078,7 @@ async function submitPublish() {
         @tap="visibilitySheetOpen = true"
       >
         <image class="post-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.EYE)" mode="aspectFit" alt="" />
-        <text class="post-tool__label">更多</text>
+        <text class="post-tool__label">{{ t("common.more") }}</text>
       </view>
     </view>
 
@@ -1086,8 +1086,8 @@ async function submitPublish() {
     <view v-if="topicSheetOpen" class="post-sheet" @tap="topicSheetOpen = false">
       <view class="post-sheet__panel" @tap.stop>
         <view class="post-sheet__head">
-          <text class="post-sheet__title">添加话题</text>
-          <text class="post-sheet__sub">已选 {{ topics.length }}/{{ POST_MAX_CUSTOM_TAGS }}</text>
+          <text class="post-sheet__title">{{ t("village.post.addTopicLabel") }}</text>
+          <text class="post-sheet__sub">{{ t("village.post.selectedTopicCount", { n: topics.length, max: POST_MAX_CUSTOM_TAGS }) }}</text>
         </view>
         <view class="post-sheet__chips">
           <view
@@ -1109,10 +1109,10 @@ async function submitPublish() {
             v-model="customTopic"
             class="post-sheet__input"
             maxlength="16"
-            placeholder="输入自定义话题（16 字内）"
+            :placeholder="t('village.post.customTopicPlaceholder', { n: 16 })"
             placeholder-class="post-sheet__placeholder"
             confirm-type="done"
-            :aria-label="'自定义话题'"
+            :aria-label="t('village.post.customTopicAria')"
           />
           <view
             class="post-sheet__confirm press-feedback"
@@ -1121,7 +1121,7 @@ async function submitPublish() {
             role="button"
             @tap="addCustomTopic"
           >
-            <text class="post-sheet__confirm-text">添加</text>
+            <text class="post-sheet__confirm-text">{{ t("village.post.addTag") }}</text>
           </view>
         </view>
       </view>
@@ -1131,8 +1131,8 @@ async function submitPublish() {
     <view v-if="locationSheetOpen" class="post-sheet" @tap="locationSheetOpen = false">
       <view class="post-sheet__panel" @tap.stop>
         <view class="post-sheet__head">
-          <text class="post-sheet__title">添加位置</text>
-          <text v-if="location" class="post-sheet__sub">当前：{{ location }}</text>
+          <text class="post-sheet__title">{{ t("village.post.addLocationLabel") }}</text>
+          <text v-if="location" class="post-sheet__sub">{{ t("village.post.currentLocationLabel", { location }) }}</text>
         </view>
         <view class="post-sheet__chips">
           <view
@@ -1154,10 +1154,10 @@ async function submitPublish() {
             v-model="customLocation"
             class="post-sheet__input"
             maxlength="30"
-            placeholder="输入自定义位置（30 字内）"
+            :placeholder="t('village.post.customLocationPlaceholder', { n: 30 })"
             placeholder-class="post-sheet__placeholder"
             confirm-type="done"
-            :aria-label="'自定义位置'"
+            :aria-label="t('village.post.customLocationAria')"
           />
           <view
             class="post-sheet__confirm press-feedback"
@@ -1166,11 +1166,11 @@ async function submitPublish() {
             role="button"
             @tap="addCustomLocation"
           >
-            <text class="post-sheet__confirm-text">使用</text>
+            <text class="post-sheet__confirm-text">{{ t("village.post.useActionLabel") }}</text>
           </view>
         </view>
         <view v-if="location" class="post-sheet__clear-row">
-          <text class="post-sheet__clear" @tap="location = ''">清除当前位置</text>
+          <text class="post-sheet__clear" @tap="location = ''">{{ t("village.post.clearCurrentLocationLabel") }}</text>
         </view>
       </view>
     </view>
@@ -1179,7 +1179,7 @@ async function submitPublish() {
     <view v-if="visibilitySheetOpen" class="post-sheet" @tap="visibilitySheetOpen = false">
       <view class="post-sheet__panel" @tap.stop>
         <view class="post-sheet__head">
-          <text class="post-sheet__title">谁可以看</text>
+          <text class="post-sheet__title">{{ t("village.post.visibilityLabel") }}</text>
         </view>
         <view
           v-for="opt in visibilityOptions"

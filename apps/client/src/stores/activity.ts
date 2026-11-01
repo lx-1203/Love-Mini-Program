@@ -434,5 +434,18 @@ export const useActivityStore = defineStore("activity", {
         coverImage: raw.coverImage ?? undefined,
       };
     },
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * `activities[].isEnrolled` 与 `enrollingActivityIds` 是「这个人报没报名 /
+     * 哪几个活动正在提交」——A 的报名态留在内存里，B 首屏就会看见一排「已参与」，
+     * 且 `enrollingActivityIds` 里的残留 id 会让 B 点报名被当成重复提交直接吞掉。
+     * 分页游标（`page`/`hasMore`）同样跟账号走（按学校过滤后的结果集）。
+     * state 里没有设备级数据 ⇒ `$reset()`。
+     */
+    resetForLogout() {
+      this.$reset();
+    },
   },
 });

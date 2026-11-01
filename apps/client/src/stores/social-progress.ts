@@ -193,6 +193,16 @@ export const useSocialProgressStore = defineStore('socialProgress', () => {
   }
 
   // ---- 导出 ----
+  /**
+   * 登出清理（第五轮 FINDING 15）：升温进度按「这一段关系」算，跟账号走。
+   * `tierNames` 是静态配置，复位它没有依据。
+   */
+  function resetForLogout() {
+    progress.value = null
+    loading.value = false
+    errorMessage.value = null
+  }
+
   return {
     // 状态
     progress,
@@ -207,5 +217,6 @@ export const useSocialProgressStore = defineStore('socialProgress', () => {
     isMaxLevel,
     // 操作
     fetchProgress,
+    resetForLogout,
   }
 })

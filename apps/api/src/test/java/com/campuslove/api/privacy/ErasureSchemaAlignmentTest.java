@@ -74,6 +74,53 @@ class ErasureSchemaAlignmentTest {
     private static final Pattern ALTER_TABLE = Pattern.compile(
             "ALTER\\s+TABLE\\s+`?([A-Za-z0-9_]+)`?([\\s\\S]*?);", Pattern.CASE_INSENSITIVE);
 
+    /**
+     * {@code DROP TABLE [IF EXISTS] t}（第五轮 F-11 穷尽门用：建后又删的表不算「在盘上」）。
+     * 与 {@link #CREATE_TABLE} 一道按文本位置排序处理，正确识别「同文件 drop→create」的幂等重建。
+     */
+    private static final Pattern DROP_TABLE = Pattern.compile(
+            "DROP\\s+TABLE\\s+(?:IF\\s+EXISTS\\s+)?`?([A-Za-z0-9_]+)`?", Pattern.CASE_INSENSITIVE);
+
+    /**
+     * 用户归属列的精确名单（第五轮 F-11）。判据只认 <b>CREATE TABLE 体里</b>这些列——它们把一行数据
+     * 归到某个自然人（{@code user_a_id/user_b_id} 是会话双方、{@code host_id} 是被访者、
+     * {@code caller_id/callee_id/claimer_id} 是通话/红包参与人，都在本仓承载主体关系）。
+     * 另加两条后缀规则覆盖 {@code *_user_id}（mentioned/replier/submitter/…）与 {@code *_author_id}。
+     */
+    private static final Set<String> OWNER_COLUMNS = Set.of(
+            "user_id", "author_id", "sender_id", "receiver_id", "visitor_id", "reporter_id",
+            "caller_id", "callee_id", "claimer_id", "operator_id", "follower_id", "following_id",
+            "user_a_id", "user_b_id", "host_id");
+
+    /** 「带用户归属列」的表集合（表名小写 → 该表在 CREATE 体里出现的归属列）。 */
+    private static boolean isOwnerColumn(String column) {
+        return OWNER_COLUMNS.contains(column)
+                || column.endsWith("_user_id") || column.endsWith("_author_id");
+    }
+
+    /**
+     * 「有用户归属列、经代码核对确认不属注销主体个人数据」的<b>显式豁免表</b>（表名 → 不可省略的理由）。
+     *
+     * <p>纪律与 {@code tests/gate-wiring.spec.mjs:156-161} 的 {@code TEST_EXECUTION_BASELINE}、
+     * {@code tests/entity-ddl-drift.spec.mjs} 的 {@code PHANTOM_DML_EXEMPTIONS} 同族：
+     * 只许写明确理由且<b>只减不增</b>；{@link #exhaustivenessResidueAreCovered} 里有一条反漂移断言，
+     * 一旦某张豁免表在盘上已消失（被删/不再有归属列）或已进清单，就必须从本表划掉，否则判点变红。</p>
+     */
+    private static final Map<String, String> OWNER_TABLE_EXEMPTIONS = Map.of(
+            // 第五轮 A 车道 F-04「找不到 Java 构造点」的死表之一。
+            "post_mentions",
+            "有 CREATE（V2026.10.28.0005）与实体 PostMention，但全仓无 new/save/insert 写点；"
+                    + "已被 content_mentions 取代——content_mentions 迁移注释自证『旧表 post_mentions 保留一个"
+                    + "发布周期，回填后不再写入』，且其数据由 content_mentions 清单项覆盖。",
+            "feedback_admin_reply",
+            "有 CREATE（V2026.05.18.1600），但全仓 grep『feedback_admin_reply』零命中——无实体映射、无构造点、"
+                    + "无写入 SQL（死表）；语义上 replier_user_id 是处置人（管理员）非 APP 主体，"
+                    + "主体反馈正文在 feedback_tickets 清单项里已匿名。",
+            "sensitive_word_import_task",
+            "有 CREATE（V2026.08.09.0014）且 SensitiveWordImportService 有原生 INSERT，但 operator_id 是执行"
+                    + "敏感词库导入的<b>管理员</b>，message 为系统生成的进度/异常摘要（非主体自由文本），"
+                    + "属平台内容安全运营记录，非 APP 用户注销射程的个人数据。");
+
     /** 一次对账的产出：问题清单 + 覆盖面计数（覆盖面用来防「空转绿」）。 */
     private record Verdict(List<String> problems, int columnsChecked, int statementsChecked) {
     }
@@ -166,6 +213,197 @@ class ErasureSchemaAlignmentTest {
                 "ADD (多列) 形态没被解析：" + schema.get("a"));
     }
 
+    /* ================= F-11：schema ↔ 清单 的穷尽性对账（纯静态、不需要真库） ================= */
+
+    /**
+     * 第五轮 A 车道 F-11 的结构性根因闭合：A/B/C 只校「清单 → 迁移链」的自洽，从不问「迁移链里还有哪些
+     * 带用户归属列的表没被清单点名」——于是清单漏表时门全绿（F-01/F-02/F-03/F-04 就是这么活下来的）。
+     *
+     * <p>本判点反向派生 T＝「CREATE 体里含用户归属列、且没被后续 DROP TABLE 删掉」的表集合，
+     * 断言 {@code T ⊆ 清单点名表 ∪ 显式豁免表}。装上门后，任何「新增一张带归属列的表却既没进清单、
+     * 也没写理由」在提交当场变红。</p>
+     *
+     * <p>防空转下限：解析到的归属表数 / 归属列总数 / 清单点名表数都设了地板，清单被整体清空或解析器失效时
+     * 本判点不会假绿。豁免表用同族反漂移纪律：每张豁免表必须<b>当下仍</b>在 T 里、且仍不在清单里，否则划掉。</p>
+     */
+    @Test
+    @DisplayName("F-11 穷尽门：带用户归属列的表必须被清单点名或带理由显式豁免")
+    void everyOwnerColumnTableIsNamedOrExempt() {
+        Map<String, Set<String>> ownerTables = buildOwnerTables();
+
+        // 防空转下限（归属表 / 归属列 / 清单点名表三处地板）
+        assertTrue(ownerTables.size() >= 60,
+                "从迁移链只解析出 " + ownerTables.size() + " 张带归属列的表（<60），schema 派生本身失效，拒判");
+        int ownerColumnCount = ownerTables.values().stream().mapToInt(Set::size).sum();
+        assertTrue(ownerColumnCount >= 80,
+                "只解析出 " + ownerColumnCount + " 个归属列引用（<80），判据可能在空转");
+        Set<String> named = PersonalDataTables.INVENTORY.stream()
+                .map(t -> t.table().toLowerCase(Locale.ROOT))
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        assertTrue(named.size() >= 50,
+                "注销清单只点名 " + named.size() + " 张不同的表（<50），覆盖面不足以谈『穷尽』");
+
+        List<String> uncovered = new ArrayList<>();
+        for (Map.Entry<String, Set<String>> e : ownerTables.entrySet()) {
+            String table = e.getKey();
+            if (named.contains(table) || OWNER_TABLE_EXEMPTIONS.containsKey(table)) {
+                continue;
+            }
+            uncovered.add(table + "（归属列 " + new ArrayList<>(e.getValue())
+                    + "）既没进清单、也没写豁免理由");
+        }
+        assertTrue(uncovered.isEmpty(),
+                "注销清单不穷尽——这些有用户归属列的表没人管（第五轮 F-01/F-02/F-03/F-04 的同一失效形态）：\n  "
+                        + String.join("\n  ", uncovered));
+
+        // 反漂移（照 gate-wiring:156-161 / PHANTOM_DML_EXEMPTIONS 的同族纪律）：豁免只能在盘上还成立时存在。
+        for (Map.Entry<String, String> exemption : OWNER_TABLE_EXEMPTIONS.entrySet()) {
+            String table = exemption.getKey();
+            assertTrue(exemption.getValue() != null && exemption.getValue().length() >= 20,
+                    "豁免表 " + table + " 没写够理由（<20 字）——豁免不是随手填的名字，必须能被读者反驳");
+            assertTrue(ownerTables.containsKey(table),
+                    "豁免表 " + table + " 现在已经不在 T 里（表被 DROP 了、或 CREATE 体里不再有归属列）："
+                            + "这条豁免必须从 OWNER_TABLE_EXEMPTIONS 划掉");
+            assertFalse(named.contains(table),
+                    "豁免表 " + table + " 现在已经进了注销清单：豁免与清单并存会造成假绿，必须划掉豁免");
+        }
+    }
+
+    /**
+     * 穷尽门解析器自证（第五轮 C 泳道的「循环补列盲区」约束）：
+     * 1. 建后即删（含同文件 drop→create 的幂等重建）要按<b>文本位置</b>判定，不能被后写的 create 复活、
+     *    也不能被前写的 drop 误杀；
+     * 2. 归属列检测只认 CREATE 体——{@code CALL add_version_column_if_missing('t')} 这类循环补列
+     *    不得凭空造出归属列（否则会把无主表假报成有主、或把清单点名表漏掉）。
+     */
+    @Test
+    @DisplayName("穷尽门解析器：建后即删按序判定、循环补列不伪造归属列")
+    void exhaustivenessParserIsOrderAwareAndLoopProof() {
+        Map<String, Set<String>> ownerCols = new LinkedHashMap<>();
+        Set<String> exists = new LinkedHashSet<>();
+
+        // 建后即删：最终不存在，不应进 T
+        applySchemaText("create table gone (id bigint, user_id bigint);"
+                + "drop table gone;", ownerCols, exists);
+        assertFalse(ownerTablesFrom(ownerCols, exists).containsKey("gone"),
+                "已 DROP 的表仍被算作带归属列的在场表");
+
+        // 同文件先 drop 再 create（create_temp_chat_tables.sql 的幂等形态）：最终存在且在 T
+        applySchemaText("drop table if exists rebuilt;"
+                + "create table rebuilt (id bigint, author_id bigint);", ownerCols, exists);
+        assertTrue(ownerTablesFrom(ownerCols, exists).containsKey("rebuilt"),
+                "drop→create 同文件应判定为在场");
+        assertTrue(ownerTablesFrom(ownerCols, exists).get("rebuilt").contains("author_id"),
+                "create 体里的归属列没被识别");
+
+        // 循环补列过程形态：CREATE 体里没有归属列，只有 CALL add_*_column_if_missing 补的版本列——
+        // 归属检测只读 CREATE 体，必须把这种表挡在 T 外（不伪造 user 归属）。
+        applySchemaText("create table looped (id bigint);"
+                + "call add_version_column_if_missing('looped');"
+                + "call add_created_at_column_if_missing_v6('looped');", ownerCols, exists);
+        assertFalse(ownerTablesFrom(ownerCols, exists).containsKey("looped"),
+                "只被循环补列过程补了非归属列的表，不应因解析器盲区被算进 T");
+    }
+
+    /** 把一段迁移文本按<b>文本位置</b>顺序施加到 {@code ownerCols}/{@code exists}（create 记归属列、drop 撤在场）。 */
+    private static void applySchemaText(String text, Map<String, Set<String>> ownerCols,
+                                        Set<String> exists) {
+        String stripped = stripSqlComments(text);
+        List<SchemaEvent> events = new ArrayList<>();
+        for (Matcher m = DROP_TABLE.matcher(stripped); m.find(); ) {
+            events.add(new SchemaEvent(m.start(), false, m.group(1).toLowerCase(Locale.ROOT), null));
+        }
+        for (Matcher m = CREATE_TABLE.matcher(stripped); m.find(); ) {
+            String table = m.group(1).toLowerCase(Locale.ROOT);
+            Set<String> owners = new LinkedHashSet<>();
+            for (String column : columnsOfCreateBody(stripped, m)) {
+                if (isOwnerColumn(column)) {
+                    owners.add(column);
+                }
+            }
+            events.add(new SchemaEvent(m.start(), true, table, owners));
+        }
+        events.sort(Comparator.comparingInt(e -> e.pos));
+        for (SchemaEvent e : events) {
+            if (e.create) {
+                ownerCols.computeIfAbsent(e.table, k -> new LinkedHashSet<>()).addAll(e.owners);
+                exists.add(e.table);
+            } else {
+                exists.remove(e.table);
+            }
+        }
+    }
+
+    /** 当前在场的带归属列表集合（只有 CREATE 体里出现过归属列、且没被后续 DROP 掉的表才进 T）。 */
+    private static Map<String, Set<String>> ownerTablesFrom(Map<String, Set<String>> ownerCols,
+                                                             Set<String> exists) {
+        Map<String, Set<String>> t = new LinkedHashMap<>();
+        for (Map.Entry<String, Set<String>> e : ownerCols.entrySet()) {
+            if (exists.contains(e.getKey()) && !e.getValue().isEmpty()) {
+                t.put(e.getKey(), e.getValue());
+            }
+        }
+        return t;
+    }
+
+    /** 从迁移链派生「带用户归属列的在场表」（跨文件按版本序、文件内按文本序处理 CREATE/DROP）。 */
+    private static Map<String, Set<String>> buildOwnerTables() {
+        Path dir = locateMigrationDir();
+        List<Path> files;
+        try (Stream<Path> stream = Files.list(dir)) {
+            files = stream.filter(p -> p.getFileName().toString().endsWith(".sql"))
+                    .sorted(Comparator.comparing(ErasureSchemaAlignmentTest::versionKey)
+                            .thenComparing(p -> p.getFileName().toString()))
+                    .toList();
+        } catch (IOException ex) {
+            throw new IllegalStateException("列不出迁移目录 " + dir + "：", ex);
+        }
+        Map<String, Set<String>> ownerCols = new LinkedHashMap<>();
+        Set<String> exists = new LinkedHashSet<>();
+        for (Path file : files) {
+            String text;
+            try {
+                text = Files.readString(file, StandardCharsets.UTF_8);
+            } catch (IOException ex) {
+                throw new IllegalStateException("读不了迁移文件 " + file + "：", ex);
+            }
+            applySchemaText(text, ownerCols, exists);
+        }
+        return ownerTablesFrom(ownerCols, exists);
+    }
+
+    /** 取一段 CREATE TABLE 体里的全部列名（复用 {@link #columnName} 的类型词/约束行排除逻辑）。 */
+    private static List<String> columnsOfCreateBody(String text, Matcher createMatcher) {
+        int open = createMatcher.end() - 1;
+        int close = matchingParen(text, open);
+        if (close < 0) {
+            return List.of();
+        }
+        List<String> cols = new ArrayList<>();
+        for (String part : splitTopLevel(text.substring(open + 1, close))) {
+            String first = columnName(part.replaceAll("^\\s*\\(+", ""));
+            if (first != null && !NOT_A_COLUMN.contains(first)) {
+                cols.add(first);
+            }
+        }
+        return cols;
+    }
+
+    /** 迁移文件内按文本位置排队的 CREATE/DROP 事件。 */
+    private static final class SchemaEvent {
+        final int pos;
+        final boolean create;
+        final String table;
+        final Set<String> owners;
+
+        SchemaEvent(int pos, boolean create, String table, Set<String> owners) {
+            this.pos = pos;
+            this.create = create;
+            this.table = table;
+            this.owners = owners;
+        }
+    }
+
     /* ================= 对账主体（纯函数，真实清单与夹具共用同一条路） ================= */
 
     private static Verdict checkEntries(List<PersonalDataTable> entries, Map<String, Set<String>> schema) {
@@ -252,9 +490,18 @@ class ErasureSchemaAlignmentTest {
                     + "`?([A-Za-z][A-Za-z0-9_]*)`?",
             Pattern.CASE_INSENSITIVE);
 
-    /** {@code CALL add_column_if_missing('table','column', ...)} 形态。 */
+    /**
+     * 幂等「加列」存储过程的调用形态。
+     *
+     * <p>不写死过程名：本仓的链里有 {@code add_column_if_missing}（22 次）、
+     * {@code add_version_column_if_missing}（65 次）、
+     * {@code add_created_at_column_if_missing}（52 次）、
+     * {@code add_updated_at_column_if_missing}（31 次）等同族过程，
+     * 签名都是 {@code ('表名','列名',定义)}。逐个列名字面量去枚举是会被新过程名漏掉的，
+     * 所以按族匹配（第五轮 C 泳道指出这一点）。</p>
+     */
     private static final Pattern ADD_COLUMN_PROC = Pattern.compile(
-            "add_column_if_missing\\(\\s*'([A-Za-z0-9_]+)'\\s*,\\s*'([A-Za-z0-9_]+)'",
+            "add(?:_[a-z0-9_]*?)?_column_if_missing(?:_v\\d+)?\\(\\s*'([A-Za-z0-9_]+)'\\s*,\\s*'([A-Za-z0-9_]+)'",
             Pattern.CASE_INSENSITIVE);
 
     /** {@code ALTER TABLE t DROP [COLUMN] c} 的成对形态（不认 DROP INDEX/KEY/CONSTRAINT）。 */

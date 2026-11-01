@@ -246,5 +246,32 @@ export const useSearchStore = defineStore("search", {
         // ignore
       }
     },
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * `history` 是「这个人搜过什么」（本地存储那份由 clearUserScopedStorage 负责删，
+     * 内存这份必须一起清，否则同一会话内换账号立刻可见），`keyword`/`posts`/游标同理。
+     * `hotSearches` 是服务端公共热词，清掉只是重进页面重拉一次，不值得为它开例外。
+     *
+     * state 里挂着两枚**非数据**资源：`searchTimer`（防抖句柄）与 `searchController`（在途请求）。
+     * `$reset()` 只是把引用置成初始值，既不会取消已排队的防抖回调（300ms 后仍会拿
+     * A 的关键词发一次搜索），也不会 abort 在途请求 ⇒ 先显式回收再回冷启动形态。
+     */
+    resetForLogout() {
+      if (this.searchTimer) {
+        clearTimeout(this.searchTimer);
+        this.searchTimer = null;
+      }
+      if (this.searchController) {
+        try {
+          this.searchController.abort();
+        } catch (_e) {
+          // abort 失败忽略
+        }
+        this.searchController = null;
+      }
+      this.$reset();
+    },
   },
 });

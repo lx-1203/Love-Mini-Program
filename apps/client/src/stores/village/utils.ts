@@ -650,3 +650,30 @@ export function formatRelativeTime(dateStr: string): string {
   return formatSharedRelativeTime(Date.parse(dateStr), getCurrentLocale());
 }
 
+/**
+ * 「这条帖子是不是当前账号发的」的唯一判定处（第五轮 FINDING 3）。
+ *
+ * 为什么单独成函数：`session.userId` 是客户端会话里的字符串 ID，而帖子作者 ID 走后端
+ * `PostAuthorView.userId`（Java 侧是 `Long`，运行时可能是数字）——同仓已有多处
+ * `String(a) === String(b)` 的散装写法，口径漂移时无人能对账，也没有一条运行时判点
+ * 能证明「作者真的看得见删除项」。抽到这里后，页面只负责取两个值，判定规则在此，
+ * 判点由 `src/tests/pages/village-post-delete.spec.ts` 直接跑这个函数（不是匹配源码文本）。
+ *
+ * 语义：任一侧为空（未登录 / 后端未下发作者 ID）一律 false —— 宁可看不见入口，
+ * 也不能把「删不掉的别人的帖子」显示成可删。
+ *
+ * @param sessionUserId 当前会话用户 ID（字符串或数字，可空）
+ * @param postAuthorUserId 帖子作者 ID（字符串或数字，可空）
+ */
+export function isPostAuthor(
+  sessionUserId: string | number | null | undefined,
+  postAuthorUserId: string | number | null | undefined,
+): boolean {
+  if (sessionUserId === null || sessionUserId === undefined) return false;
+  if (postAuthorUserId === null || postAuthorUserId === undefined) return false;
+  const left = String(sessionUserId).trim();
+  const right = String(postAuthorUserId).trim();
+  if (left === "" || right === "") return false;
+  return left === right;
+}
+

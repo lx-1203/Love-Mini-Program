@@ -200,7 +200,9 @@ const currentAdminId = computed<number | null>(() => {
 /**
  * 当前登录管理员角色（大写；解析失败时返回空串）。
  * 用于对齐后端权限模型：
- * - 新增用户 / 修改密码仅 SUPER_ADMIN 可用（后端 @PreAuthorize）
+ * - 新增用户仅 SUPER_ADMIN 可用（后端 AdminUserController POST = hasRole('SUPER_ADMIN')）
+ * - 修改密码：后端 change-password 类级 hasAnyRole 经 SecurityConfig URL 写档收敛为
+ *   ADMIN/SUPER_ADMIN（R4-00389 已放开给校区 ADMIN），故挂 canWrite，不再要求 SUPER_ADMIN
  * - 仅 SUPER_ADMIN 可对 ADMIN 行执行禁用/启用；SUPER_ADMIN 行任何人不允许
  */
 const currentAdminRole = computed<string>(() => {
@@ -674,6 +676,7 @@ async function handleCreateUser() {
 
 /** 打开修改密码弹窗（打开时重置表单与错误提示） */
 function openChangePwd() {
+  if (!sessionStore.canWrite) return;
   oldPassword.value = "";
   newPassword.value = "";
   confirmPassword.value = "";
@@ -693,6 +696,7 @@ function closeChangePwd() {
  * 成功后关闭弹窗；当前会话 token 不受影响，无需重新登录。
  */
 async function handleChangePwd() {
+  if (!sessionStore.canWrite) return;
   if (changingPwd.value) return;
   if (!oldPassword.value) {
     modalError.value = t("users.changePwdOldRequired");
@@ -766,11 +770,14 @@ onMounted(() => {
           {{ idLookupLoading ? t("common.loading") : t("users.idLookupBtn") }}
         </button>
       </view>
-      <!-- 新增用户 + 修改密码入口：仅超级管理员显示（后端 @PreAuthorize SUPER_ADMIN） -->
-      <template v-if="currentAdminRole === 'SUPER_ADMIN'">
-        <button v-if="sessionStore.canWrite" class="primary-button" @click="openCreateUser">{{ t("users.actionCreateUser") }}</button>
-        <button class="ghost-button" @click="openChangePwd">{{ t("users.actionChangePassword") }}</button>
-      </template>
+      <!-- 新增用户：后端 POST /api/v1/admin/users = hasRole('SUPER_ADMIN') ⇒ 仅超管位。
+           修改密码：后端 POST /api/v1/admin/account/change-password 类级 hasAnyRole('ADMIN','SUPER_ADMIN','AUDITOR')
+           经 SecurityConfig 的 URL 写规则（POST /api/v1/admin/** = hasAnyRole("ADMIN","SUPER_ADMIN")）
+           收敛为 ADMIN/SUPER_ADMIN（AUDITOR 在 URL 层即被拦），R4-00389 已放开给校区 ADMIN ⇒ 挂 canWrite。
+           第五轮 B-FINDING 4/5：此前用 currentAdminRole==='SUPER_ADMIN' 外壳把两者一起藏起来，
+           导致校区 ADMIN 看不见「修改密码」（前端比后端严的功能倒退），现按各自真实档位分别挂载。 -->
+      <button v-if="sessionStore.canSuperAdminWrite" class="primary-button" @click="openCreateUser">{{ t("users.actionCreateUser") }}</button>
+      <button v-if="sessionStore.canWrite" class="ghost-button" @click="openChangePwd">{{ t("users.actionChangePassword") }}</button>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchUsers" />

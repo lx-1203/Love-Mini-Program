@@ -101,6 +101,19 @@ public class AdminUserController {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.campuslove.api.repository.circle.CircleLayerRepository circleLayerRepository;
 
+    /**
+     * 手机号列的加密器（第五轮 A 泳道判红后接上）。
+     *
+     * <p>仍然用字段注入，理由与上面两个一致：既有单测以固定签名的便捷构造器 new 出本控制器。</p>
+     * <p>它决定 {@code users.phone} 存的是密文还是明文：本类此前无条件写明文，而
+     * {@code RealAuthService}（R4-00249）写的是 AES-GCM 密文——同一列两种语义，
+     * 于是后台建出来的号在注册侧查重查不到、导出/管理端读它要走兜底分支，
+     * 且 openid 里还多存了一份明文手机号。生产由 Spring 注入非 null；
+     * 未装配（单测）时 {@code PhoneColumnCodec.store} 退化为明文，与历史行为一致。</p>
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.config.AesEncryptor aesEncryptor;
+
     public AdminUserController(
             UserRepository userRepository,
             UserCampusProfileRepository userCampusProfileRepository,
@@ -161,16 +174,22 @@ public class AdminUserController {
         }
 
         // 手机号唯一性校验（与注册链路 registerUser 一致，防重复创建）
-        boolean phoneExists = userRepository.findByPhone(req.phone()).isPresent();
+        // 口径必须是「派生键优先 + 明文兜底」：AES-GCM 随机 IV 让同手机号每次密文不同，
+        // 拿明文等值查密文列永远查不到 ⇒ 原先这条校验对已注册用户形同虚设。
+        String derivedOpenid = com.campuslove.api.privacy.PhoneColumnCodec.derivedOpenid(req.phone());
+        boolean phoneExists = userRepository.findByOpenid(derivedOpenid).isPresent()
+                || userRepository.findByPhone(req.phone()).isPresent();
         if (phoneExists) {
             throw new IllegalArgumentException(ErrorMessages.PHONE_ALREADY_REGISTERED);
         }
 
         User user = new User();
-        // 约定：openid 字段存 "phone:{phone}"，与 AuthService.registerUser 保持一致，
-        // 保证同手机号用户可通过 openid/phone 两种途径被唯一识别
-        user.setOpenid("phone:" + req.phone());
-        user.setPhone(req.phone());
+        // 约定：openid 存不可逆派生键 "phone:"+SHA-256(手机号)，phone 存 AES 密文——
+        // 与 RealAuthService#registerUser（R4-00249）逐字同口径。
+        // 此前这里写的是 "phone:" + 明文 + 明文 phone，等于同一手机号在两个列里各存一遍，
+        // 库里泄露一次就暴露两遍，且注销时漏掉 openid 就仍然可识别（第五轮 A 泳道判红）。
+        user.setOpenid(derivedOpenid);
+        user.setPhone(com.campuslove.api.privacy.PhoneColumnCodec.store(aesEncryptor, req.phone()));
         user.setPassword(passwordEncoder.encode(req.password()));
         user.setNickname(req.nickname().trim());
         user.setRole("USER");
@@ -266,8 +285,10 @@ public class AdminUserController {
         }
 
         String role = req.normalizedRole();
-        // 手机号唯一性校验（与注册链路 registerUser 一致，防重复创建）
-        if (userRepository.findByPhone(req.phone()).isPresent()) {
+        // 手机号唯一性校验：与 createUser / registerUser 同一条派生键口径
+        String derivedAdminOpenid = com.campuslove.api.privacy.PhoneColumnCodec.derivedOpenid(req.phone());
+        if (userRepository.findByOpenid(derivedAdminOpenid).isPresent()
+                || userRepository.findByPhone(req.phone()).isPresent()) {
             throw new IllegalArgumentException(ErrorMessages.PHONE_ALREADY_REGISTERED);
         }
         // 校区管理员必须指定管辖校区（否则与全局管理员语义冲突）。
@@ -284,8 +305,8 @@ public class AdminUserController {
         }
 
         User user = new User();
-        user.setOpenid("phone:" + req.phone());
-        user.setPhone(req.phone());
+        user.setOpenid(derivedAdminOpenid);
+        user.setPhone(com.campuslove.api.privacy.PhoneColumnCodec.store(aesEncryptor, req.phone()));
         user.setPassword(passwordEncoder.encode(req.password()));
         user.setNickname(req.nickname().trim());
         user.setRole(role);
@@ -772,16 +793,19 @@ public class AdminUserController {
     }
 
     /**
-     * 手机号脱敏：保留前 3 位与后 4 位，中间用 **** 替换。
+     * 手机号脱敏：交给 {@link com.campuslove.api.privacy.PhoneColumnCodec} 的读侧口径。
      *
-     * @param phone 原始手机号
-     * @return 脱敏后的字符串；空值原样返回
+     * <p>本类写侧改为密文后，这里的入参是<b>列里的原始值</b>（可能是 AES 密文、
+     * 迁移前的历史明文，或注销后的 NULL），不能再自己截字符串：
+     * 自己截会把密文的前 3 位与后 4 位当成「手机号片段」显示出来，
+     * 而注销行（NULL）会被原样返回。codec 三种形态都有定义好的结果，
+     * 且解密失败返回空串而不是抛错——管理端列表不该因一行的密文认证失败整页 500。</p>
+     *
+     * @param stored {@code users.phone} 列里的原始值
+     * @return {@code 138****5678} 形态；NULL/空/解密失败为空串
      */
-    private String maskPhone(String phone) {
-        if (phone == null || phone.length() < 7) {
-            return phone;
-        }
-        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
+    private String maskPhone(String stored) {
+        return com.campuslove.api.privacy.PhoneColumnCodec.displayMasked(aesEncryptor, stored);
     }
 
     /**

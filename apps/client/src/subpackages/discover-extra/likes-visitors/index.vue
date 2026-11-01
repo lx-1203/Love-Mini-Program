@@ -15,7 +15,7 @@ import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useLikesStore, type LikeRecord, type VisitorRecord } from "../../../stores/likes";
 import { useProfileStore } from "../../../stores/profile";
-import { useCoinsStore, UNLOCK_COST_YUAN } from "../../../stores/coins";
+import { useCoinsStore } from "../../../stores/coins";
 import { useVipStore } from "../../../stores/vip";
 // P1-08：会员功能开关（关闭时 VIP 页/解锁免费放行全部降级）
 import { featureFlags } from "../../../config/feature-flags";
@@ -108,9 +108,14 @@ const tabItems = computed(() => [
  */
 const hasLockedItems = computed(() => currentList.value.some((item) => item.unlocked !== true));
 
-/** 当前 Tab 解锁单价（元，仅用于文案展示；实际扣费由服务端 /wallet/unlock 定价） */
+/** 当前 Tab 解锁单价（元，仅用于文案展示；实际扣费由服务端 /wallet/unlock 定价）
+ *
+ * 第五轮 FINDING 7：与 `discover-extra/likes` 同一条出口走 `costYuanFor()`，
+ * 不再直读定价镜像表——服务端回传过实测扣减额时展示价跟着服务端价走，
+ * 否则回落镜像表；两处各读各的会让同一次购买在两个页面报两个价。
+ */
 const unlockCost = computed(() =>
-  UNLOCK_COST_YUAN[activeTab.value === "likedMe" ? "LIKES" : "VISITORS"],
+  coinsStore.costYuanFor(activeTab.value === "likedMe" ? "LIKES" : "VISITORS"),
 );
 
 /**

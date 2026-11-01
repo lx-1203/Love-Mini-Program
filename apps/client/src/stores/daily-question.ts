@@ -342,7 +342,15 @@ export const useDailyQuestionStore = defineStore("daily-question", {
 
       try {
         if (useMock()) {
-          this.todayQuestion = { ...mockTodayQuestion };
+          /**
+           * P2 活错修复（第五轮 B 道）：mock 档没有「服务端记住我答没答」这条轴，
+           * 本会话里提交过就算答过（`submitAnswer` 置真），重新拉取不得把它抹回 false
+           * —— 否则用户刷新一次页面就能再答一遍，与 real 档（后端下发 hasAnswered=true）
+           * 的语义相反。首屏（未答过）仍取演示数据里的 false。
+           */
+          const answered = this.hasAnswered || mockTodayQuestion.hasAnswered;
+          this.todayQuestion = { ...mockTodayQuestion, hasAnswered: answered };
+          this.hasAnswered = answered;
           // 2026-08-12：mock 分支同样刷新缓存时间戳（与 real 分支语义一致）
           setCachedValue("daily-question:today", true);
           return;
@@ -357,6 +365,16 @@ export const useDailyQuestionStore = defineStore("daily-question", {
         // 2026-08-10 切换提速：拉取成功后刷新缓存时间戳
         setCachedValue("daily-question:today", true);
         this.todayQuestion = mapToDailyQuestion(data);
+        /**
+         * P2 活错修复（第五轮 B 道）：后端 `DailyQuestionView.hasAnswered` 是
+         * 「今天这个账号答过没有」的唯一权威，而页面按 `hasAnswered` 决定要不要拉回答列表
+         * （`subpackages/tools/daily-question/index.vue` 的 onMounted 分支）。
+         * 此前本函数只把它塞进 `todayQuestion`（`mapToDailyQuestion` 里那份是视图字段，
+         * 与 store 顶层的 `hasAnswered` 不是同一个位置），顶层只有 `submitAnswer` 会写 ⇒
+         * 「昨天答过、今天重进页面」永远拉不到回答，回答区整块消失。
+         * 后端说是就是：包括「服务端说没答过」这个方向（跨天/撤回都要能翻回来）。
+         */
+        this.hasAnswered = data.hasAnswered;
       } catch (error) {
         this.errorMessage = error instanceof Error ? error.message : t("storeErrors.dailyQuestion.loadQuestionFailed");
       } finally {
@@ -490,6 +508,23 @@ export const useDailyQuestionStore = defineStore("daily-question", {
       } finally {
         this.answerLoading = false;
       }
+    },
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * 每日一问整块是账号数据：`hasAnswered` 是「这个账号今天答过没有」，
+     * `answers` 是「A 拉到的回答列表」。留在内存里 ⇒ 账号 B 在同一次 app 生命周期内
+     * 继承 A 的 `hasAnswered=true`，页面按已答状态去拉回答并命中后端 422，
+     * 而 `fetchAnswers` 的 catch 不动列表 ⇒ A 看到的回答原样出现在 B 的屏幕上。
+     *
+     * 用 `$reset()` 而不是逐字段赋值：state 初始化器就是这个 store 的冷启动形态，
+     * 里面没有任何设备级偏好（分页游标、加载标志都是会话态）。
+     * 同时清掉 30s TTL 新鲜度的**宿主**（`todayQuestion`）——TTL 判定要求
+     * `todayQuestion` 非空，置空后下一次 `fetchTodayQuestion` 必然重新出网。
+     */
+    resetForLogout() {
+      this.$reset();
     },
   },
 });

@@ -69,19 +69,30 @@ vi.mock("../../services/http", () => ({
   clearTokens: () => {},
 }));
 
-vi.mock("../../stores/coins", () => ({
-  useCoinsStore: () =>
-    reactive({
-      balanceYuan: 0,
-      balanceCents: 0,
-      transactions: [],
-      fetchBalance: () => Promise.resolve(0),
-      listTransactions: () =>
-        Promise.resolve({ items: [], total: 0, page: 0, size: 20, totalPages: 1 }),
-      spend: () => Promise.resolve(0),
-    }),
-  UNLOCK_COST_YUAN: { MESSAGE: 1, VISITORS: 3, LIKES: 3, WHISPER: 2 },
-}));
+/**
+ * 只桩掉 store 本体，换算函数用真身。
+ *
+ * 钱包页的金额出口是 `stores/coins` 的 `centsToYuan`/`formatCentsAsYuan`（第五轮
+ * FINDING 8/9 把 toast 金额与账单换算都收进这一处），整模块替换会让这两个函数变成
+ * undefined ⇒ 充值流程在取文案金额那一步就抛 TypeError，一条请求都发不出去，
+ * 本测的「键跟着操作走」全部判点会以「没派发」的形式假失败。
+ */
+vi.mock("../../stores/coins", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../stores/coins")>();
+  return {
+    ...actual,
+    useCoinsStore: () =>
+      reactive({
+        balanceYuan: 0,
+        balanceCents: 0,
+        transactions: [],
+        fetchBalance: () => Promise.resolve(0),
+        listTransactions: () =>
+          Promise.resolve({ items: [], total: 0, page: 0, size: 20, totalPages: 1 }),
+        spend: () => Promise.resolve(0),
+      }),
+  };
+});
 
 vi.mock("../../stores/app-config", () => ({
   useAppConfigStore: () => reactive({ isCommerceOn: () => true }),

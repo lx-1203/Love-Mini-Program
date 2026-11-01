@@ -1102,5 +1102,20 @@ export const useLikesStore = defineStore("likes", {
     setSearchQuery(query: string) {
       this.searchQuery = query ?? "";
     },
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * 喜欢列表 / 喜欢我的 / 访客 / 心动信号全是「谁对谁做了什么」——账号级内容，
+     * 下一个账号不该在内存里接着看到（解锁状态 `item.unlocked` 也是按人计的乐观值）。
+     * `searchQuery` / `batchMode` / `selectedIds` 一并回冷启动形态：
+     * 空关键词会让 B 的搜索框带着 A 输入过的那串字，批量选中集更是直接
+     * 决定 B 下一次「解锁全部」的 target 列表。
+     * state 里没有设备级偏好（模块级 AbortController 由 fetch 自身的「新请求 abort 旧请求」管理），
+     * 故 `$reset()` 就是冷启动。
+     */
+    resetForLogout() {
+      this.$reset();
+    },
   },
 });

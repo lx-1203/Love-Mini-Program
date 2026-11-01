@@ -65,6 +65,54 @@ public final class PhoneColumnCodec {
     }
 
     /**
+     * 唯一性派生键：{@code "phone:" + SHA-256(明文) 的小写 hex}，写进 {@code users.openid}。
+     *
+     * <p>为什么必须有这个派生键而不是直接拿手机号当 openid：AES-GCM 用随机 IV，
+     * 同一手机号每次密文都不同，密文既不能当唯一键也不能等值查重；而 openid 列是
+     * NOT NULL + UNIQUE，历史上被写成 {@code "phone:" + 明文}，等于把同一个明文手机号
+     * 在两个列里各存一遍——库里泄露一次就同时暴露两遍，且注销时只要漏掉 openid 就仍然可识别。</p>
+     *
+     * <p>口径与 {@code RealAuthService}（R4-00249）逐字一致，注册与后台建号必须走同一个派生，
+     * 否则「同手机号已注册」的查重在两条路径上会给出不同答案。</p>
+     *
+     * @param plaintext 明文手机号
+     * @return {@code "phone:<64 位小写 hex>"}；{@code null}/空白原样返回（沿用旧 hashOpenid 的宽容）
+     */
+    public static String derivedOpenid(String plaintext) {
+        if (plaintext == null || plaintext.isBlank()) {
+            return plaintext;
+        }
+        return "phone:" + sha256Hex(plaintext);
+    }
+
+    /**
+     * 不可逆小写 hex 摘要（SHA-256）。{@code derivedOpenid} 与 {@code RealAuthService#hashOpenid}
+     * 共用这一份实现——两条路径的派生口径必须逐字相同，否则「该手机号是否已注册」
+     * 在注册侧与后台建号侧会给出不同答案。
+     *
+     * @param value 原值；{@code null}/空白原样返回
+     * @return 64 位小写 hex
+     */
+    public static String sha256Hex(String value) {
+        if (value == null || value.isBlank()) {
+            return value;
+        }
+        try {
+            byte[] digest = java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                hex.append(String.format(java.util.Locale.ROOT, "%02x", b));
+            }
+            return hex.toString();
+        } catch (java.security.NoSuchAlgorithmException ex) {
+            // SHA-256 是 JLS 要求每个实现都支持的算法；真到这一步只能显式失败，
+            // 绝不能退回「存明文」——那正是本方法要消灭的形态。
+            throw new IllegalStateException("SHA-256 不可用，无法生成不可逆派生键", ex);
+        }
+    }
+
+    /**
      * 读取侧：把列里存的任何合法取值渲染成「本人可见的掩码手机号」。
      *
      * <p>不抛异常的保证：密文认证失败（密钥轮换/数据被篡改）时返回空串，既不泄露密文片段，

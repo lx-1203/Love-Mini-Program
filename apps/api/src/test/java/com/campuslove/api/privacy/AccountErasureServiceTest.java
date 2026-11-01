@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,7 +30,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * {@link AccountErasureService} 与 {@link PersonalDataTables} 清除清单的单元测试
@@ -258,7 +262,8 @@ class AccountErasureServiceTest {
                 "profile_schedule", "interest_tags", "campus_certification",
                 "real_name_certification", "posts", "comments", "likes_given", "likes_received",
                 "heart_signals", "follows_given", "follows_received", "temp_chat_sessions",
-                "temp_chat_messages", "private_conversations", "private_messages", "wallet",
+                "temp_chat_messages", "private_conversations", "private_messages", "whispers",
+                "wallet",
                 "wallet_transactions", "vip_bills", "vip_billing_logs", "notifications",
                 "check_ins", "task_claims", "agreement_consents", "audit_logs");
         assertDoesNotThrow(() -> PersonalDataTables.assertMatchesExportCategories(frozen));
@@ -340,6 +345,265 @@ class AccountErasureServiceTest {
         jdbc.selectResults.put("SELECT url FROM media_asset WHERE user_id = ?", List.of("/u/1/a.jpg"));
         assertDoesNotThrow(() -> noMedia.erase(SUBJECT));
         assertFalse(jdbc.statements.isEmpty(), "库内语句仍须执行");
+    }
+
+    // ---- F-10（第五轮审查）：失败/回滚边界的可判点 + 「实体写 ↔ 原生写」一致性静态门 ----
+
+    /**
+     * F-10 第①步：让第 k 条语句抛 {@link DataIntegrityViolationException}，断言「users 墓碑没被写下去」。
+     *
+     * <p>异常选型纠正：反证报告原文写的是「抛 {@code DataUpdateException}」，
+     * 该类在本仓依赖（Spring 6.1 / spring-tx）里<b>不存在</b>，以盘上为准改用
+     * {@link DataIntegrityViolationException} —— 同为 {@code DataAccessException} 家族、
+     * 是 {@code JdbcTemplate} 在 FK RESTRICT / NOT NULL 撞值时真正抛出的类型，
+     * 也是 {@code @Transactional} 默认回滚规则覆盖的类型（ RuntimeException）。</p>
+     *
+     * <p>本机没有真库，所以这条判的是<b>代理边界与调用序列</b>，不是「MySQL 真的回滚了」：
+     * <ul>
+     *   <li>异常必须<b>原样冒出去</b>（不 catch ⇒ Spring 声明式事务的默认回滚规则会被触发；
+     *       若这里被 catch 掉，@Transactional 根本不会回滚，才是真的「留半注销态」）；</li>
+     *   <li>炸点之后的语句一条都不执行（写序被硬中断）；</li>
+     *   <li>清单里那条唯一的 users 原生写（interest_tags）必须落在炸点之后 ⇒ 没被执行；</li>
+     *   <li>文件物理删除一条都不发生。</li>
+     * </ul>
+     */
+    @Test
+    @DisplayName("F-10①：第 k 条语句抛 DataIntegrityViolationException ⇒ 异常冒出去、users 墓碑语句与文件删除都不发生")
+    void midSweepFailureStopsBeforeUsersTombstoneStatement() {
+        final int failAtUpdate = 5;
+        ThrowingJdbcTemplate failing = new ThrowingJdbcTemplate(failAtUpdate);
+        @SuppressWarnings("unchecked")
+        ObjectProvider<MediaStorageService> provider = mock(ObjectProvider.class);
+        when(provider.getIfAvailable()).thenReturn(mediaStorage);
+        AccountErasureService withFailingJdbc = new AccountErasureService(failing, provider);
+        failing.selectResults.put("SELECT url FROM media_asset WHERE user_id = ?",
+                List.of("/u/1/a.jpg"));
+
+        DataIntegrityViolationException ex = assertThrows(DataIntegrityViolationException.class,
+                () -> withFailingJdbc.erase(SUBJECT),
+                "清单中途失败必须把异常冒出去（@Transactional 的回滚靠它触发；被 catch 掉才是真半注销态）");
+        assertTrue(ex.getMessage().contains("第 5 条"), "异常应指明炸点，实际: " + ex.getMessage());
+
+        assertEquals(failAtUpdate, failing.failedUpdate,
+                "炸点之后的 UPDATE 一条都不许再执行（调用序列被硬中断）");
+        assertTrue(failing.statements.stream().noneMatch(s -> s.startsWith("UPDATE users")),
+                "users 行的原生墓碑写必须在炸点之后 ⇒ 实际已执行语句=" + failing.statements);
+        verify(mediaStorage, never()).delete(anyString());
+    }
+
+    /**
+     * F-10 第①步的配套：文件物理删除只允许发生在<b>提交后</b>。
+     *
+     * <p>这是「不留半注销态」的另一半：若回滚后仍把对象存储里的文件删了，
+     * 就得到「库里数据完好、文件没了」的第三种坏状态。本用例用
+     * {@link TransactionSynchronizationManager} 手工激活同步，分别触发
+     * 回滚完成与提交两个回调，钉住只有提交才删文件。</p>
+     */
+    @Test
+    @DisplayName("F-10①：文件删除挂在 afterCommit —— 回滚不删、提交才删")
+    void filePurgeRunsOnlyOnCommitAndNotOnRollback() {
+        jdbc.selectResults.put("SELECT url FROM media_asset WHERE user_id = ?",
+                List.of("/u/1/a.jpg"));
+        TransactionSynchronizationManager.initSynchronization();
+        try {
+            service.erase(SUBJECT);
+            List<TransactionSynchronization> synchronizations =
+                    TransactionSynchronizationManager.getSynchronizations();
+            assertFalse(synchronizations.isEmpty(),
+                    "erase 必须把文件删除注册成提交后回调，而不是当场执行");
+
+            for (TransactionSynchronization synchronization : synchronizations) {
+                synchronization.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
+            }
+            verify(mediaStorage, never()).delete(anyString());
+
+            org.springframework.transaction.support.TransactionSynchronizationUtils
+                    .invokeAfterCommit(synchronizations);
+            verify(mediaStorage).delete("/u/1/a.jpg");
+        } finally {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
+    /**
+     * F-10 第②步（静态门）：users 项「原生 SQL 写的列」与「User 实体映射的列」必须互不相交，
+     * 且声明列里<b>未映射</b>的那些必须<b>全部</b>由原生 SQL 覆盖。
+     *
+     * <p><b>防的是哪一种漂移</b>（反证审查 F-10 原文）：{@code users} 行同时被
+     * 「原生 SQL（interest_tags）」与「Hibernate 整行回写（其余列）」写。清单靠
+     * 「interest_tags 未被 User 映射」这条<b>脆弱事实</b>成立。哪天有人给 {@code User}
+     * 加一个映射了 {@code interest_tags} 的字段（加个需求太正常了），
+     * 实体写就会在提交时把原生语句刚清掉的值覆盖回去，而全库没有任何用例能变红
+     * —— 既不会红于本清单（列仍在），也不会红于 entity-ddl 门（它管枚举/列宽，不管这个）。
+     * 这条门把「映射关系」本身变成判点：两侧不一致即红。</p>
+     *
+     * <p>映射集合是<b>反射</b> {@code User} 实体的持久字段得到的（{@code @Column(name)}
+     * 优先，否则驼峰转下划线），不是手抄第二份列清单 —— 手抄的那份正是会漂移的东西。</p>
+     */
+    @Test
+    @DisplayName("F-10②：users 项原生 SQL 只许写实体未映射的列；已映射列必须走实体写")
+    void usersNativeWritesStayDisjointFromEntityMapping() {
+        Set<String> mapped = mappedColumnsOfUserEntity();
+        assertTrue(mapped.size() >= 20,
+                "反射只取到 " + mapped.size() + " 个 User 映射列 ⇒ 这条门已经空转，先修反射：" + mapped);
+        assertTrue(mapped.contains("nickname") && mapped.contains("circle_path"),
+                "反射没取到已知的映射列，判据不成立：" + mapped);
+
+        PersonalDataTable users = PersonalDataTables.byKey("users");
+        assertTrue(users.viaUserEntity(), "users 项不再是 viaUserEntity ⇒ 本门的语义前提没了");
+        assertEquals(List.of(), usersWritePathProblems(users, mapped),
+                "users 的「实体写 ↔ 原生写」两侧不一致（详见断言消息）");
+
+        // 反证（判点必须能咬）：两个合成项分别踩中两种不一致，检查函数必须各报一条。
+        // 没有这一段的话，「门是绿的」可能只是因为「检查根本没做事」。
+        PersonalDataTable mappedButNativeWritten = PersonalDataTable.viaUserEntity(
+                "synthetic_mapped_native", "users", "合成：已映射列被原生写",
+                ErasureAction.ANONYMISE_IN_PLACE, List.of(),
+                List.of("nickname"),
+                List.of("UPDATE users SET nickname = '已注销' WHERE id = {uid}"),
+                List.of(), "合成夹具，只为证明方向一能红。");
+        assertTrue(usersWritePathProblems(mappedButNativeWritten, mapped).stream()
+                        .anyMatch(p -> p.contains("已被 User 实体映射")),
+                "方向一失效：把已映射列写成原生 SQL 都没被抓到");
+
+        PersonalDataTable unmappedNotWritten = PersonalDataTable.viaUserEntity(
+                "synthetic_unmapped_missing", "users", "合成：未映射列没人写",
+                ErasureAction.ANONYMISE_IN_PLACE, List.of(),
+                List.of("some_json_column_not_in_entity"),
+                List.of("UPDATE users SET interest_tags = JSON_ARRAY() WHERE id = {uid}"),
+                List.of(), "合成夹具，只为证明方向二能红。");
+        assertTrue(usersWritePathProblems(unmappedNotWritten, mapped).stream()
+                        .anyMatch(p -> p.contains("some_json_column_not_in_entity")),
+                "方向二失效：未映射列没有任何原生语句清除都没被抓到（注销后原值仍可读回）");
+    }
+
+    /**
+     * F-10② 的判据本体（做成纯函数是为了能被合成坏项反证，口径同
+     * {@code ErasureSchemaAlignmentTest#detectorBitesOnSyntheticTypo}）。
+     *
+     * @return 问题描述列表；空列表 = 两侧一致
+     */
+    private static List<String> usersWritePathProblems(PersonalDataTable users, Set<String> mapped) {
+        List<String> problems = new ArrayList<>();
+        Set<String> nativelyWritten = new LinkedHashSet<>();
+        for (String sql : users.statements()) {
+            nativelyWritten.addAll(setColumnsOfUpdate(sql));
+        }
+        if (nativelyWritten.isEmpty()) {
+            problems.add("users 项没有任何原生 SET 语句 ⇒ 未被实体映射的列就没人清了");
+        }
+        // 方向一：原生 SQL 不得写「已被实体映射」的列
+        for (String column : nativelyWritten) {
+            if (mapped.contains(column)) {
+                problems.add("users 列 " + column + " 已被 User 实体映射，却又被清单里的原生 SQL 写："
+                        + "注销时 Hibernate 的整行回写会用内存里的旧值覆盖这条 UPDATE"
+                        + "（= 注销把数据复活）。要么把该列改由 tombstone 实体写负责，要么先撤销 User 上的映射。");
+            }
+        }
+        // 方向二：声明列里未被实体映射的，必须由原生 SQL 覆盖（实体写不到它们）
+        for (String column : users.identifyingColumns()) {
+            if (!mapped.contains(column) && !nativelyWritten.contains(column)) {
+                problems.add("users 列 " + column + " 既没被 User 实体映射、又不在原生 SET 里"
+                        + " ⇒ 注销后原值仍可读回（实体写不到它，原生写又没写它）");
+            }
+        }
+        return problems;
+    }
+
+    /** 反射取 {@code User} 实体的持久化列名（@Column(name) 优先，否则驼峰转下划线）。 */
+    private static Set<String> mappedColumnsOfUserEntity() {
+        Set<String> columns = new LinkedHashSet<>();
+        for (Field field : User.class.getDeclaredFields()) {
+            int modifiers = field.getModifiers();
+            if (java.lang.reflect.Modifier.isStatic(modifiers)
+                    || java.lang.reflect.Modifier.isTransient(modifiers)
+                    || field.isSynthetic()) {
+                continue;
+            }
+            if (field.isAnnotationPresent(jakarta.persistence.Transient.class)) {
+                continue;
+            }
+            // 关系字段不是 users 表的列（本实体目前也没有关系字段，防御性地排除）
+            if (field.isAnnotationPresent(jakarta.persistence.ManyToOne.class)
+                    || field.isAnnotationPresent(jakarta.persistence.OneToMany.class)
+                    || field.isAnnotationPresent(jakarta.persistence.ManyToMany.class)
+                    || field.isAnnotationPresent(jakarta.persistence.ElementCollection.class)) {
+                continue;
+            }
+            jakarta.persistence.Column column = field.getAnnotation(jakarta.persistence.Column.class);
+            if (column != null && !column.name().isBlank()) {
+                columns.add(column.name().toLowerCase(Locale.ROOT));
+            } else {
+                columns.add(camelToSnake(field.getName()));
+            }
+        }
+        return columns;
+    }
+
+    private static String camelToSnake(String name) {
+        StringBuilder out = new StringBuilder(name.length() + 8);
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (Character.isUpperCase(c)) {
+                if (i > 0) {
+                    out.append('_');
+                }
+                out.append(Character.toLowerCase(c));
+            } else {
+                out.append(c);
+            }
+        }
+        return out.toString();
+    }
+
+    /** 取 {@code UPDATE t SET a = x, b = y WHERE …} 里被写的列名集合（只认 SET 段）。 */
+    private static Set<String> setColumnsOfUpdate(String sql) {
+        Set<String> columns = new LinkedHashSet<>();
+        String upper = sql.toUpperCase(Locale.ROOT);
+        int setIndex = upper.indexOf(" SET ");
+        if (setIndex < 0) {
+            return columns;
+        }
+        int whereIndex = upper.indexOf(" WHERE ", setIndex);
+        String setClause = sql.substring(setIndex + 5, whereIndex < 0 ? sql.length() : whereIndex);
+        for (String assignment : setClause.split(",")) {
+            int equals = assignment.indexOf('=');
+            if (equals > 0) {
+                columns.add(assignment.substring(0, equals).trim()
+                        .replace("`", "").toLowerCase(Locale.ROOT));
+            }
+        }
+        return columns;
+    }
+
+    /**
+     * 在第 k 条 UPDATE 上抛 {@link DataIntegrityViolationException} 的 JdbcTemplate 替身
+     * （F-10 第①步用；其余行为与 {@link RecordingJdbcTemplate} 一致）。
+     */
+    static class ThrowingJdbcTemplate extends RecordingJdbcTemplate {
+        private final int failAtUpdate;
+        private int updatesSeen;
+        /** 炸点序号（== failAtUpdate 时表示「后续 UPDATE 一条都没再执行」）。 */
+        int failedUpdate;
+
+        ThrowingJdbcTemplate(int failAtUpdate) {
+            this.failAtUpdate = failAtUpdate;
+        }
+
+        @Override
+        public int update(String sql, Object... args) {
+            updatesSeen++;
+            statements.add(sql);
+            parameters.add(args);
+            if (updatesSeen == failAtUpdate) {
+                failedUpdate = updatesSeen;
+                throw new DataIntegrityViolationException("第 " + updatesSeen + " 条清除语句失败（测试注入）：" + sql);
+            }
+            if (updatesSeen < failAtUpdate) {
+                return 1;
+            }
+            throw new IllegalStateException("炸点之后的 UPDATE 不应该被执行：" + sql);
+        }
     }
 
     /*

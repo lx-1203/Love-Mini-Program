@@ -131,5 +131,23 @@ export const useUnlockGuideStore = defineStore("unlock-guide", {
         // 写入失败时忽略，下次可能再次展示（不影响主流程）
       }
     },
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * `completionPercent` 是**这个人**的资料完善度（锁屏文案与门槛判定都读它），
+     * 留着等于 B 一进来就看见 A 的「已完成 80%」。`visible`/`overlayVisible`/`featureName`
+     * 是弹窗会话态，一并回冷启动。
+     *
+     * `steps` 不清：它是 `/api/v1/config/unlock-guide-steps` 下发的全站文案配置
+     * （与账号无关，等价于 `app-config` 那类公域数据），清掉只会多一次无意义请求。
+     * 「本设备是否已看过教学蒙层」也不在这里——那是 `STORAGE_KEYS.UNLOCK_GUIDE_SHOWN`
+     * 的设备级键，由 storage-keys 的白名单保证登出时不被删。
+     */
+    resetForLogout() {
+      this.visible = false;
+      this.overlayVisible = false;
+      this.completionPercent = 0;
+    },
   },
 });

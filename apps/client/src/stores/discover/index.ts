@@ -60,6 +60,7 @@ import {
   saveToStorage,
   forceResetDailyLimit,
   dispose,
+  resetForLogout,
 } from "./actions/storage";
 import {
   setFilter,
@@ -203,6 +204,7 @@ const _useDiscoverStore = defineStore("discover", {
     saveToStorage,
     forceResetDailyLimit,
     dispose,
+    resetForLogout,
 
     // === 筛选相关 Actions（来自 ./actions/filter） ===
     setFilter,

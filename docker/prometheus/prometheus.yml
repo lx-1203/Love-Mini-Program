@@ -11,11 +11,11 @@
 #   - 移除 mysql-exporter / redis-exporter / blackbox-http 抓取任务
 #     （compose 未部署对应服务，target 永久 DOWN 产生无效告警，infra #25/#18）；
 #     如需启用，请先部署对应 exporter 容器再恢复本配置
-#   - node-exporter 抓取任务默认注释：compose 中 node-exporter 服务受
-#     monitoring profile 门控（docker-compose.yml profiles: monitoring），
-#     默认 compose up 不含该容器，常开抓取会使 target 持续 DOWN 产生告警噪音
-#     （与上方 mysql/redis exporter 同一理由，R4-00486）；
-#     启用 monitoring profile 后取消注释即可
+#   - node-exporter 抓取任务【常开】（2026-11-01 改）：node-exporter 服务与 prometheus
+#     一样是无 profile 常开、同在 app-net，所以不存在"容器没起、target 长期 DOWN"的形态；
+#     以前它被注释掉时，HostDiskHigh/HostMemoryHigh/HostCpuHigh/BackupNeverCompleted
+#     四条规则查的 node_* 序列数恒为 0 ⇒ 规则永不触发也不报错。
+#     这条常开状态与 compose 的 profile 档位由 tests/monitoring-wiring.spec.mjs 第 6/6b 节钉住
 # ============================================================
 
 global:

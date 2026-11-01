@@ -1149,4 +1149,13 @@ public final class ErrorMessages {
     /** 反馈功能已关闭（app_switch.feedback_open=false） */
     public static final String FEEDBACK_CLOSED = "反馈功能暂未开放，请稍后再试";
 
+    /**
+     * 注销数据清除服务未装配（F-07，第五轮审查）。
+     * <p>real 档下 {@code AccountErasureService} 缺席时注销必须返回 503，
+     * 而不是「只写 users 墓碑 + 返回成功」——后者会让主体以为已注销，
+     * 但实名/校园认证/聊天/行为数据仍在库里，且 token 已吊销导致无法重跑。</p>
+     */
+    public static final String ACCOUNT_ERASURE_SERVICE_UNAVAILABLE =
+            "注销服务暂不可用，请稍后重试或联系客服";
+
 }

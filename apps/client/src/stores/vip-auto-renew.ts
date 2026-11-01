@@ -208,6 +208,11 @@ export const useAutoRenewStore = defineStore("vip-auto-renew", () => {
     loaded.value = false;
   }
 
+  /** 登出复位（第五轮 FINDING 15）：续费开关与下次扣费日期都跟账号走。 */
+  function resetForLogout(): void {
+    reset();
+  }
+
   return {
     status,
     loading,
@@ -218,5 +223,6 @@ export const useAutoRenewStore = defineStore("vip-auto-renew", () => {
     disableAutoRenew,
     setEnabled,
     reset,
+    resetForLogout,
   };
 });

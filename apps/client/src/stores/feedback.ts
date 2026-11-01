@@ -99,5 +99,15 @@ export const useFeedbackStore = defineStore("feedback", {
     clearError() {
       this.errorMessage = null;
     },
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * `submissions` 是「这个人提过的反馈」（GET 自 `/feedback/mine` 语义的列表），
+     * 留在内存里等于 B 能翻出 A 写过什么。state 三项全是账号态/会话态 ⇒ `$reset()`。
+     */
+    resetForLogout() {
+      this.$reset();
+    },
   },
 });

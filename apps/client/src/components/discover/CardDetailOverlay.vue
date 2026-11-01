@@ -18,7 +18,7 @@
 import { ref, computed, watch, nextTick, onUnmounted } from "vue";
 import { useI18n } from "vue-i18n";
 import type { DiscoverCard } from "../../stores/discover";
-import { useCoinsStore, UNLOCK_COST_YUAN } from "../../stores/coins";
+import { useCoinsStore } from "../../stores/coins";
 import { useVipStore } from "../../stores/vip";
 import { useSessionStore } from "../../stores/session";
 import { useReportStore } from "../../stores/report";
@@ -444,7 +444,7 @@ function handleMessage(): void {
 
   uni.showModal({
     title: t("discover.unlockMessage"),
-    content: t("discover.privateMsgPaidHint", { coins: UNLOCK_COST_YUAN.MESSAGE }),
+    content: t("discover.privateMsgPaidHint", { coins: coinsStore.costYuanFor("MESSAGE") }),
     confirmText: t("discover.unlockAndChat"),
     cancelText: t("common.cancel"),
     success: async (res) => {

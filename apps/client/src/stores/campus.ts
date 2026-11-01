@@ -986,5 +986,20 @@ export const useCampusStore = defineStore("campus", {
       this.currentTopic = null;
       this.replies = [];
     },
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * 账号级的是 `certificationStatus` / `certificationInfo`（A 的学校、学生证、审核意见）、
+     * `replies`（A 写过的回复）与按校区拉取的话题/活动列表；
+     * `activeCategory` 只是本页当前停在哪个 tab（不落盘，冷启动本来就走默认值），
+     * `dynamicCategoryMap` 是后端分类字典缓存（公域内容，重进本页会重拉）。
+     * 两者都不属设备级偏好 ⇒ `$reset()` 就是冷启动形态。
+     * 其中 `certificationStatus` 尤其要紧：留成 "verified" 会让 B 在校缘页看到
+     * A 的认证态，进而放行「本校已认证」才该出现的内容。
+     */
+    resetForLogout() {
+      this.$reset();
+    },
   },
 });

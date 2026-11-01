@@ -113,6 +113,71 @@ export function forceResetDailyLimit(this: DiscoverStoreThis): void {
 }
 
 /**
+ * 登出清理（第五轮 FINDING 15）。
+ *
+ * 与 `dispose()` 的差别只有一件事：`dispose()` 会先 **flush** 防抖存储
+ * （R2-00095：页面销毁时别丢最后那次操作），而登出的顺序是「先清用户级本地存储、
+ * 后清内存」——在这里 flush 等于把「A 今天看过谁」原样写回刚刚被
+ * `clearUserScopedStorage()` 删掉的 `discover_daily_record` 键。
+ * 所以本 action 是**丢弃**在途写入，而不是补一次写入。
+ *
+ * 清的是账号/会话态：推荐卡片、已看/历史/已拒三张记录集、今日挽回与反悔计数、
+ * 配额耗尽标记、在线状态映射、最近一次滑动结果、搜索关键字。
+ * 留的是设备级使用习惯：`activeFilter` / `sortBy` / `matchScope` /
+ * `recommendationFilter` / `advancedFilter` —— 与 `storage-keys.ts` 把
+ * `VILLAGE_LAST_CHANNEL`、`THEME_MODE` 归入设备级同一口径（「这台设备上次怎么筛」
+ * 不含任何账号内容），一刀切清掉它们会让 B 的首页筛选条件被无故重置。
+ */
+export function resetForLogout(this: DiscoverStoreThis): void {
+  if (timers.saveTimer) {
+    clearTimeout(timers.saveTimer);
+    timers.saveTimer = null;
+  }
+  if (timers.searchDebounceTimer) {
+    clearTimeout(timers.searchDebounceTimer);
+    timers.searchDebounceTimer = null;
+  }
+  if (timers.swipeRightDebounceTimer) {
+    clearTimeout(timers.swipeRightDebounceTimer);
+    timers.swipeRightDebounceTimer = null;
+  }
+  if (timers.swipeRightQueue) {
+    // 排队项的调用方仍要 settle，否则登出时挂在防抖窗口里的 await 永远不返回
+    for (const item of timers.swipeRightQueue) {
+      item.resolvers.forEach((r) => r());
+    }
+    timers.swipeRightQueue = null;
+  }
+  if (timers.fetchCardsController) {
+    try {
+      timers.fetchCardsController.abort();
+    } catch (_e) {
+      // abort 失败忽略
+    }
+    timers.fetchCardsController = null;
+  }
+
+  this.cards = [];
+  this.viewedCards = [];
+  this.historyCards = [];
+  this.passedCards = [];
+  this.lastRefreshTime = null;
+  this.nextRefreshTime = getNextNoonString();
+  this.hasRewoundToday = false;
+  this.undoCount = 0;
+  this.extraQuota = 0;
+  this.dailyLimit = DAILY_LIMIT_TOTAL;
+  this.quotaExhausted = false;
+  this.onlineStatusMap = {};
+  this.lastSwipeResult = null;
+  this.searchKeyword = "";
+  this.isFilterDrawerOpen = false;
+  this.hasMore = true;
+  this.loading = false;
+  this.errorMessage = null;
+}
+
+/**
  * 清理 store 持有的所有定时器与请求资源。
  *
  * 修复（P1 BUG）：模块级定时器在 HMR 热更新或页面切换时未清理，

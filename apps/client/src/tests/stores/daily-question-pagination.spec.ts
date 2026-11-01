@@ -2,12 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 
 /**
- * 每日一问：回答分页在途守卫（P2-3）+ 契约漂移（P2-5a/5b）回归。
+ * 每日一问：回答分页在途守卫（P2-3）+ 契约漂移（P2-5a/5b）+ 首屏 hasAnswered（第五轮 FINDING 2）。
  *
- * 本文件跑在 real 档（useMock=false），因为线上出事的就是真实分页链路：
+ * 默认跑在 real 档（useMock=false），因为线上出事的就是真实分页链路：
  * 页面守卫读的是 `fetchTodayQuestion` 的 loading，`fetchAnswers` 从不置位，
  * 于是快速两次 scrolltolower 会双发同一页并双份 append。
+ * `hasAnswered` 落盘那组用例需要 mock 档也跑一遍（演示档的「答过一次再刷新」是同一条
+ * 状态轴的另一半），故 useMock 换成可切换的旗标，每个用例开头复位为 false。
  */
+const mockFlag = vi.hoisted(() => ({ value: false }));
+
 vi.mock("../../services/env", () => ({
   appEnv: {
     apiMode: "real",
@@ -17,7 +21,7 @@ vi.mock("../../services/env", () => ({
 }));
 
 vi.mock("../../stores/helpers/use-mock", () => ({
-  useMock: () => false,
+  useMock: () => mockFlag.value,
 }));
 
 vi.mock("../../services/http", () => ({
@@ -69,6 +73,7 @@ const mockedRequest = vi.mocked(request);
 beforeEach(() => {
   setActivePinia(createPinia());
   vi.clearAllMocks();
+  mockFlag.value = false;
 });
 
 describe("daily-question 回答分页在途守卫（P2-3）", () => {
@@ -201,5 +206,69 @@ describe("daily-question 回答长度契约（P2-5a）", () => {
     const store = useDailyQuestionStore();
     await expect(store.submitAnswer("q1", "x".repeat(MAX_ANSWER_LENGTH + 1), false)).rejects.toThrow();
     expect(store.errorMessage).toContain(String(MAX_ANSWER_LENGTH));
+  });
+});
+
+/**
+ * 第五轮 FINDING 2（P2 活错）：`fetchTodayQuestion` 必须把后端下发的 `hasAnswered`
+ * 写进 store **顶层** state。
+ *
+ * 病灶：顶层 `hasAnswered` 此前只有 `submitAnswer` 会写，`mapToDailyQuestion` 把后端
+ * 那个同名字段放进了 `todayQuestion.hasAnswered`（视图字段，另一个位置）。而页面
+ * `subpackages/tools/daily-question/index.vue` 的 onMounted 读的是顶层那份
+ * （`if (todayQuestion.value && hasAnswered.value) fetchAnswers(...)`）⇒
+ * 「今天已经答过、重进页面」永远不拉回答，回答列表 + 整条分页链路在首屏不可达，
+ * EmptyState 分支也永不成立。
+ *
+ * 判点取两个方向：后端说答过 ⇒ true；后端说没答过 ⇒ false（回退也要能发生，
+ * 跨天/撤回都走这一条）。mock 档另测「本会话答过之后重取不得抹回 false」。
+ */
+function questionView(hasAnswered: boolean) {
+  return {
+    id: 91,
+    questionDate: "2026-11-01",
+    questionText: "今天有没有想到谁？",
+    hasAnswered,
+    category: "恋爱",
+    answerCount: hasAnswered ? 3 : 0,
+  };
+}
+
+describe("daily-question fetchTodayQuestion 落 hasAnswered（FINDING 2）", () => {
+  it("real 档：后端下发 hasAnswered=true ⇒ store 顶层为 true", async () => {
+    const store = useDailyQuestionStore();
+    mockedRequest.mockResolvedValue(questionView(true) as never);
+
+    await store.fetchTodayQuestion();
+
+    expect(store.todayQuestion).not.toBeNull();
+    expect(store.hasAnswered).toBe(true);
+  });
+
+  it("real 档：后端下发 hasAnswered=false ⇒ store 顶层为 false（含从 true 回退）", async () => {
+    const store = useDailyQuestionStore();
+    // 人为置真，证明这一判点吃的是后端下发值而不是「只要拿到过问题就算答过」
+    store.hasAnswered = true;
+    mockedRequest.mockResolvedValue(questionView(false) as never);
+
+    await store.fetchTodayQuestion();
+
+    expect(store.hasAnswered).toBe(false);
+  });
+
+  it("mock 档：未答过取演示值 false，答过之后重取保持 true", async () => {
+    mockFlag.value = true;
+    const store = useDailyQuestionStore();
+
+    await store.fetchTodayQuestion();
+    expect(store.hasAnswered).toBe(false);
+
+    await store.submitAnswer(store.todayQuestion!.id, "想了一下下", false);
+    expect(store.hasAnswered).toBe(true);
+
+    // 清掉 todayQuestion 以绕开 30s TTL 命中，模拟「重进页面重新拉一次」
+    store.todayQuestion = null;
+    await store.fetchTodayQuestion();
+    expect(store.hasAnswered).toBe(true);
   });
 });

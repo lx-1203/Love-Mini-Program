@@ -1635,6 +1635,28 @@ export const useMessagesStore = defineStore("messages", {
         throw new Error(t("storeErrors.messages.markAllInteractionsReadFailed"));
       }
     },
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * 会话列表、消息流、心动信号、系统通知、互动事件、未读角标、`dashboard`
+     * 全部是「这个账号和谁聊了什么」——B 登录后不该在首帧看见 A 的会话与红点。
+     * `activeSessionId` 也在其中：它是「B 正在看哪个会话」的判定输入，留着会让
+     * 新会话的消息被当成已读会话处理（见 onNewMessage 的 isActive 分支）。
+     *
+     * `typingMap` 对应的 `typingResetTimers` 是**模块级**定时器（不在 state 里，
+     * `$reset()` 碰不到）：定时器回调会在 3s 后往已经清空的 map 里写回 true，
+     * 必须一并清掉。`filterType` 是通知页的一次性筛选态（不落盘），回默认值即可。
+     */
+    resetForLogout() {
+      for (const timer of Object.values(typingResetTimers)) {
+        clearTimeout(timer);
+      }
+      for (const key of Object.keys(typingResetTimers)) {
+        delete typingResetTimers[key];
+      }
+      this.$reset();
+    },
   },
 });
 

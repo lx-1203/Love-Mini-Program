@@ -554,5 +554,23 @@ export const useCheckInStore = defineStore("checkin", {
         successAnimationTimer = null;
       }
     },
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * 与上面 `dispose()` 的区别是语义，不是偷懒的第二份实现：
+     * `dispose()` 只回收定时器（页面 onUnload 调它，状态要留着给同账号的下次进入），
+     * 本 action 负责**账号级状态**——最关键的一枚是 `checkedIn`。
+     *
+     * 不清的后果（从源码分支推导，判点见 session.spec）：每日一问页
+     * `subpackages/tools/daily-question/index.vue` 用 `v-if="!checkInStore.checkedIn"`
+     * 当签到门槛，B 账号在同一次 app 生命周期里没签到也能看到题目与回答框 ⇒ 业务闸门被绕过。
+     * 状态本身全是账号态（签到天数/积分/补签次数），没有设备级偏好，故走 `$reset()`；
+     * 顺带 `dispose()` 掉动画定时器，避免它在登出后把 `showSuccessAnimation` 又点亮。
+     */
+    resetForLogout() {
+      this.dispose();
+      this.$reset();
+    },
   },
 });

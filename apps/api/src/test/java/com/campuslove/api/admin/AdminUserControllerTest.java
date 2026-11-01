@@ -1,9 +1,13 @@
 package com.campuslove.api.admin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -84,12 +88,55 @@ class AdminUserControllerTest extends ControllerTestBase {
             ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
             verify(userRepository).save(captor.capture());
             User saved = captor.getValue();
-            assertEquals("phone:" + PHONE, saved.getOpenid(), "openid 按约定存储 phone:{phone}");
+            // 口径改为「不可逆派生键 + 密文列」（第五轮 A 泳道判红：本类曾把明文手机号
+            // 同时写进 phone 与 openid 两处，等于同一 PII 存两遍，注销漏掉 openid 就仍可识别）。
+            // 这两行断言原先写的是 assertEquals("phone:" + PHONE, …) 与 assertEquals(PHONE, …)——
+            // 即把缺陷本身当成了期望；改动生产代码时它们必须一起翻面，否则门在替 bug 站岗。
+            assertEquals(com.campuslove.api.privacy.PhoneColumnCodec.derivedOpenid(PHONE),
+                    saved.getOpenid(), "openid 应存 phone:{SHA-256(手机号)} 派生键");
+            assertFalse(saved.getOpenid().contains(PHONE), "openid 里不得出现明文手机号");
+            // 本测试未装配 AesEncryptor（字段注入，单测下为 null）⇒ codec 退化为原样存，
+            // 与历史行为一致；密文路径由下面 createUser_withEncryptor_* 单独覆盖。
             assertEquals(PHONE, saved.getPhone());
             assertEquals("USER", saved.getRole());
             assertEquals("active", saved.getStatus());
             assertTrue(passwordEncoder.matches(PASSWORD, saved.getPassword()),
                     "密码应以 BCrypt 哈希存储且可匹配");
+        });
+    }
+
+    @Test
+    @DisplayName("装配加密器时：phone 列存密文、openid 存派生键，两处都不得出现明文手机号")
+    void createUser_withEncryptor_storesCipherAndDerivedOpenid() {
+        com.campuslove.api.config.AesEncryptor enc =
+                mock(com.campuslove.api.config.AesEncryptor.class);
+        when(enc.encrypt(anyString())).thenReturn("CIPHER-PHONE-BLOB");
+        // 生产由 Spring 注入；单测里 controller 是 new 出来的，用反射补上这个字段
+        org.springframework.test.util.ReflectionTestUtils.setField(controller, "aesEncryptor", enc);
+        when(userRepository.findByOpenid(anyString())).thenReturn(Optional.empty());
+        when(userRepository.findByPhone(anyString())).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> {
+            User u = inv.getArgument(0);
+            u.setId(1000L);
+            return u;
+        });
+
+        withUserId(ADMIN_ID, () -> {
+            controller.createUser(new AdminCreateUserRequest(PHONE, PASSWORD, NICKNAME));
+
+            ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(captor.capture());
+            User saved = captor.getValue();
+            assertEquals("CIPHER-PHONE-BLOB", saved.getPhone(),
+                    "phone 列必须走 PhoneColumnCodec.store：与 RealAuthService#registerUser 同一口径，"
+                            + "否则同一列两种语义，注册侧查重与导出读侧都会判错");
+            assertNotEquals(PHONE, saved.getPhone());
+            assertFalse(saved.getOpenid().contains(PHONE), "openid 里不得出现明文手机号");
+            assertEquals(com.campuslove.api.privacy.PhoneColumnCodec.derivedOpenid(PHONE),
+                    saved.getOpenid());
+            // 查重必须先问派生键：AES-GCM 随机 IV 让密文不可等值查重，
+            // 只查明文列等于对已注册的密文行永远查不到（可重复建号）。
+            verify(userRepository).findByOpenid(com.campuslove.api.privacy.PhoneColumnCodec.derivedOpenid(PHONE));
         });
     }
 

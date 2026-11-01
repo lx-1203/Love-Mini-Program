@@ -58,6 +58,12 @@ function stripSqlComments(text) {
   return text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ");
 }
 
+/**
+ * 「只对链里不存在的表做 DML」的例外表。
+ * 只许写明确理由且只减不增；空集是默认期望（下面判点会先把现状全量报出来）。
+ */
+const PHANTOM_DML_EXEMPTIONS = new Set();
+
 const created = new Map(); // 小写表名 => 首次创建它的迁移文件
 for (const file of migrations) {
   const body = stripSqlComments(readFileSync(join(SQL_DIR, file), "utf8"));
@@ -69,19 +75,44 @@ for (const file of migrations) {
 assert.ok(created.size > 100, `迁移链应建出 100+ 张表（当前 ${created.size}）`);
 
 // —— 判点 2：引用先于创建 ——
+// 判点 2b（第五轮 C 泳道判红后补）：DML 的目标表在整条链里【从没被 CREATE 过】。
+// 原实现在这里 `continue` 跳过，等于把本判点存在的理由本身漏掉：
+// 「链里没有这张表」在空库上同样必炸，而且是比"引用先于创建"更严重的形态
+// （circle_layer / admin_layer 两张表当初就是这样，见 V2026.10.13.0001 头注）。
 const referencedTooEarly = [];
+const phantomDmlTargets = [];
 for (const file of migrations) {
   const body = stripSqlComments(readFileSync(join(SQL_DIR, file), "utf8"));
-  for (const m of body.matchAll(/\b(?:UPDATE|INSERT\s+INTO|REPLACE\s+INTO)\s+`?([A-Za-z0-9_]+)`?/gi)) {
+  // 必须是【语句级】DML：前一个非空字符得是 `;` 或换行（或文件开头）。
+  // 少了这个锚点，`ON UPDATE CURRENT_TIMESTAMP` 与 `ON DUPLICATE KEY UPDATE hero_mode = VALUES(...)`
+  // 会被当成"对 current_timestamp / hero_mode 这张表做 DML"——实测一次性造出 60+ 条假红。
+  for (const m of body.matchAll(/(?:^|(?<=[;\n]))\s*(?:UPDATE|INSERT\s+INTO|REPLACE\s+INTO)\s+`?([A-Za-z0-9_]+)`?/gi)) {
     const name = m[1].toLowerCase();
     if (/^(select|set|ignore|into|values|low_priority|delayed)$/.test(name)) continue;
     const creator = created.get(name);
-    if (creator === undefined) continue; // 不是链里建的表（视图/临时表/外部对象），交给判点 1 管实体侧
+    if (creator === undefined) {
+      if (!PHANTOM_DML_EXEMPTIONS.has(name)) {
+        phantomDmlTargets.push(`${file} 对 ${name} 做 DML，但整条链里没有任何 CREATE TABLE ${name}`);
+      }
+      continue;
+    }
     if (migrations.indexOf(creator) > migrations.indexOf(file)) {
       referencedTooEarly.push(`${file} 里引用 ${name}，但它直到 ${creator} 才被 CREATE`);
     }
   }
 }
+// 例外只许列明理由且只减不增（同 gate-wiring 的基线纪律）
+for (const name of PHANTOM_DML_EXEMPTIONS) {
+  assert.ok(
+    phantomDmlTargets.some((line) => line.includes(` ${name} 做 DML`)),
+    `PHANTOM_DML_EXEMPTIONS 里的 ${name} 现在已经不出现了：要么补上了 CREATE，要么这条 DML 被删了，例外必须划掉`,
+  );
+}
+assert.deepEqual(
+  phantomDmlTargets,
+  [],
+  `迁移链存在「只对一张链里根本不存在的表做 DML」（空库按链建库必炸）：\n${phantomDmlTargets.join("\n")}`,
+);
 assert.deepEqual(
   referencedTooEarly,
   [],

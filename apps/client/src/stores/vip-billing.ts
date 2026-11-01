@@ -240,6 +240,11 @@ export const useVipBillingStore = defineStore("vip-billing", () => {
     loaded.value = false;
   }
 
+  /** 登出复位（第五轮 FINDING 15）：账单列表与分页游标是账号数据。 */
+  function resetForLogout(): void {
+    reset();
+  }
+
   return {
     bills,
     total,
@@ -250,5 +255,6 @@ export const useVipBillingStore = defineStore("vip-billing", () => {
     loaded,
     listBills,
     reset,
+    resetForLogout,
   };
 });

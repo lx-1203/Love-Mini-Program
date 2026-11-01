@@ -9,7 +9,7 @@
 import { ref, computed, watch } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
-import { useCoinsStore } from "../../../stores/coins";
+import { useCoinsStore, centsToYuan, formatCentsAsYuan } from "../../../stores/coins";
 import { useAppConfigStore } from "../../../stores/app-config";
 import { request } from "../../../services/http";
 // P1 修复（2026-10-31）：充值幂等键要跨「页面卸载 / H5 刷新」存活 ⇒ 落盘，键名统一登记
@@ -192,7 +192,26 @@ function acquireRechargeIdempotencyKey(amountCents: number): string {
   return created.key;
 }
 
-/** 演示充值：+100 元（wallet/recharge 双 profile 可用：mock 内存 / real 数据库） */
+/**
+ * 这笔充值是否已经到账（服务端判重）。
+ *
+ * 后端契约（只读核对）：`IdempotentInterceptor` 命中 Redis SETNX 时抛
+ * `IdempotencyException`（`IDEMPOTENT_CONFLICT`，HTTP 409），
+ * 而 `apps/api/.../common/Idempotent.java` 的语义是「仅本次自己 SETNX 成功者」
+ * 才能在业务失败（≥400）时释放键 —— 也就是说**能拿到 409 就证明上一次同键请求
+ * 已走到终态且服务端已入账**。此时把钱当「没到账」弹后端原文给用户是错的：
+ * 用户看得见余额已经涨了，却收到一句「重复请求已被拦截」。
+ *
+ * 判据同时看 `code`（`toAppApiError` 保留的后端业务码）与 `error`
+ * （`http.buildError` 把业务码写进这一位），任一处命中即算，避免上游一改映射就失效。
+ */
+function isAlreadyCreditedConflict(err: unknown): boolean {
+  const e = err as { status?: unknown; code?: unknown; error?: unknown } | null;
+  if (Number(e?.status) !== 409) return false;
+  return e?.code === "IDEMPOTENT_CONFLICT" || e?.error === "IDEMPOTENT_CONFLICT";
+}
+
+/** 演示充值：`RECHARGE_AMOUNT_CENTS`（wallet/recharge 双 profile 可用：mock 内存 / real 数据库） */
 async function handleRecharge() {
   // MP-R1-C26REQ-002：在途/冷却期内忽略重复点击
   if (recharging.value) return;
@@ -208,6 +227,9 @@ async function handleRecharge() {
   // P1 修复（2026-10-31）：幂等键在**派发之前**按「这一次充值操作」取得并落盘
   // —— 与 :119 注释一致（键单次流程内固定），且响应丢失/刷新后的重试撞的是同一个键。
   const orderId = acquireRechargeIdempotencyKey(RECHARGE_AMOUNT_CENTS);
+  // 到账文案金额与上送的请求体金额取同一个源：改额度只改常量一处，
+  // 不会再出现「扣的是 50 元、toast 报 100 元」（第五轮 FINDING 8）。
+  const rechargeYuan = centsToYuan(RECHARGE_AMOUNT_CENTS);
   try {
     await request<{ balanceAfterCents: number }, { amountCents: number }>({
       url: "/wallet/recharge",
@@ -222,8 +244,21 @@ async function handleRecharge() {
       coinsStore.listTransactions({ page: 0, size: 20 }),
     ]);
     successHaptic();
-    uni.showToast({ title: t("wallet.rechargeSuccess", { n: 100 }), icon: "success" });
+    uni.showToast({ title: t("wallet.rechargeSuccess", { n: rechargeYuan }), icon: "success" });
   } catch (err) {
+    if (isAlreadyCreditedConflict(err)) {
+      // 409 判重 = 上一笔（同键）已入账 ⇒ 按成功收尾：清键 + 重取余额，
+      // 让页面显示到账后的数字，而不是把后端原文当失败弹给用户。
+      clearPendingRecharge();
+      await Promise.all([
+        coinsStore.fetchBalance(true),
+        coinsStore.listTransactions({ page: 0, size: 20 }),
+      ]);
+      successHaptic();
+      // 复用既有键：钱确实到了，「充值成功 +¥{n}」就是中性事实，不新造文案
+      uni.showToast({ title: t("wallet.rechargeSuccess", { n: rechargeYuan }), icon: "success" });
+      return;
+    }
     // 非终态（超时/断网/响应丢失）：**保留**键不清 —— 重试复用同一个 Idempotency-Key，
     // 由服务端 @Idempotent 拒掉「其实已经入账成功」的那一次重复提交。
     const message = err instanceof Error ? err.message : String(err);
@@ -263,20 +298,35 @@ function isIncome(type?: string): boolean {
  * 现在的口径：符号只决定一次 —— 金额自带符号时以金额为准（后端是资金权威），
  * 金额无符号（历史/种子数据恒正）时以 type 为准；展示的数字一律取绝对值，
  * 所以两条来源不可能叠加成「-¥-3.00」。
+ *
+ * 第五轮 FINDING 9：`amount` 按后端契约是可空 `Long`，未知（null/undefined/NaN）
+ * 时**不能**当 0 支出算 —— 退化成「按 type 判」，与金额缺失前的行为一致。
  */
-function isDebitRow(item: { type?: string; amount: number }): boolean {
-  if (item.amount < 0) return true;
+function isDebitRow(item: { type?: string; amount?: number | null }): boolean {
+  if (typeof item.amount === "number" && Number.isFinite(item.amount) && item.amount < 0) return true;
   return !isIncome(item.type);
 }
 
 /** 流水类型文案（收入/支出）——与符号同一个判定（isDebitRow），不许各判一次 */
-function typeLabel(item: { type?: string; amount: number }): string {
+function typeLabel(item: { type?: string; amount?: number | null }): string {
   return isDebitRow(item) ? t("wallet.expense") : t("wallet.income");
 }
 
-/** 金额文本（收入 +，支出 -；数字取绝对值 ⇒ 符号只出现一次） */
-function amountText(item: { type?: string; amount: number }): string {
-  const yuan = Math.abs(item.amount) / 100;
+/**
+ * 金额文本（收入 +，支出 -；数字取绝对值 ⇒ 符号只出现一次）。
+ *
+ * 第五轮 FINDING 9：分→元不再手写 `/ 100`，走 `stores/coins.centsToYuan()`
+ * 这个全仓唯一换算出口（`coins.ts` 的注释就写着「其余站点请不要再手写 / 100」）。
+ * 金额未知（后端 `Long amount` 下发 null）时印 `--`，与 `formatCentsAsYuan`
+ * 的未知保护同一口径 —— 原实现在这里会印出 `+¥NaN`。
+ */
+function amountText(item: { type?: string; amount?: number | null }): string {
+  const cents = item.amount;
+  if (cents === null || cents === undefined || !Number.isFinite(cents)) {
+    // 未知就不配 `¥` 前缀：`¥--` 会让「--」看起来像个被截断的金额
+    return formatCentsAsYuan(cents);
+  }
+  const yuan = centsToYuan(Math.abs(cents));
   return `${isDebitRow(item) ? "-" : "+"}¥${yuan.toFixed(2)}`;
 }
 </script>

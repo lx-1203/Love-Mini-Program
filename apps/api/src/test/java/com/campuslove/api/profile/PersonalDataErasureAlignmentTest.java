@@ -96,6 +96,7 @@ class PersonalDataErasureAlignmentTest {
     @Mock private TaskClaimRepository taskClaimRepository;
     @Mock private UserAgreementConsentRepository userAgreementConsentRepository;
     @Mock private AuditLogRepository auditLogRepository;
+    @Mock private com.campuslove.api.repository.WhisperMessageRepository whisperMessageRepository;
 
     private PersonalDataService service;
     private AesEncryptor encryptor;
@@ -112,7 +113,7 @@ class PersonalDataErasureAlignmentTest {
                 privateMessageRepository, userWalletRepository, walletTransactionLogRepository,
                 vipBillRepository, vipBillingLogRepository, notificationRepository,
                 checkInRepository, taskClaimRepository, userAgreementConsentRepository,
-                auditLogRepository);
+                auditLogRepository, whisperMessageRepository);
         encryptor = realEncryptor();
         // aesEncryptor 是 required=false 的字段注入（不改 25 参构造器），测试里同样反射塞进去
         Field field = PersonalDataService.class.getDeclaredField("aesEncryptor");

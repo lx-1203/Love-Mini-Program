@@ -21,8 +21,9 @@ export interface WallPost {
   createdAt: string;
 }
 
-export const useCampusWallStore = defineStore("campus-wall", () => {
-  const posts = ref<WallPost[]>([
+/** 演示帖的初始形态（登出复位与 store 初始化共用一份，避免两处各写一份种子数据） */
+function seedPosts(): WallPost[] {
+  return [
     {
       id: "1",
       avatar: IMAGE_PATHS.AVATARS.AVATAR_1,
@@ -77,7 +78,11 @@ export const useCampusWallStore = defineStore("campus-wall", () => {
       isFollowing: false,
       createdAt: "2026-05-26T18:00:00Z",
     },
-  ]);
+  ];
+}
+
+export const useCampusWallStore = defineStore("campus-wall", () => {
+  const posts = ref<WallPost[]>(seedPosts());
 
   const loading = ref(false);
 
@@ -112,11 +117,22 @@ export const useCampusWallStore = defineStore("campus-wall", () => {
     posts.value.unshift(newPost);
   }
 
+  /**
+   * 登出清理（第五轮 FINDING 15）：`isLiked` / `isFollowing` 是「这个账号点过没有」的
+   * 账号态，留在内存里下一个账号会看到上一个账号的点赞与关注标记（计数也随之偏）。
+   * 演示种子由 `seedPosts()` 单点提供，复位与初始化走同一份。
+   */
+  function resetForLogout(): void {
+    posts.value = seedPosts();
+    loading.value = false;
+  }
+
   return {
     posts,
     loading,
     toggleLike,
     toggleFollow,
     addPost,
+    resetForLogout,
   };
 });

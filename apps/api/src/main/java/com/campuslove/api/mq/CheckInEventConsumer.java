@@ -4,6 +4,7 @@ import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.Notification;
 import com.campuslove.api.entity.Notification.NotificationType;
 import com.campuslove.api.entity.Notification.ReferenceType;
+import com.campuslove.api.privacy.ErasureSubjectGuard;
 import com.campuslove.api.repository.NotificationRepository;
 import java.time.LocalDateTime;
 import org.slf4j.Logger;
@@ -72,6 +73,13 @@ public class CheckInEventConsumer {
     /** 通知持久化 Repository */
     @Autowired(required = false)
     private NotificationRepository notificationRepository;
+
+    /**
+     * 用户 Repository（F-08：落库前判主体是否已注销）。
+     * 与其它消费者同口径走 {@code required=false}，mock profile 下为 null ⇒ 不拦。
+     */
+    @Autowired(required = false)
+    private com.campuslove.api.repository.UserRepository userRepository;
 
     /** WebSocket 消息模板，用于推送实时通知 */
     @Autowired(required = false)
@@ -234,6 +242,12 @@ public class CheckInEventConsumer {
                                      LocalDateTime createdAt) {
         if (notificationRepository == null) {
             log.debug("NotificationRepository 不可用，跳过持久化：userId={}", userId);
+            return;
+        }
+        // F-08（第五轮审查）：注销是终态。已注销主体不得再被追加 notifications 行
+        //（签到事件可能来自注销前的排队消息，或 outbox 补偿重投）。
+        if (ErasureSubjectGuard.isErasedSubject(userRepository, userId)) {
+            log.info("签到主体已注销，丢弃签到通知：userId={}, title={}", userId, title);
             return;
         }
 

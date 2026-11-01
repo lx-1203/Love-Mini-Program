@@ -5,6 +5,7 @@ import com.campuslove.api.entity.Notification;
 import com.campuslove.api.entity.Notification.NotificationType;
 import com.campuslove.api.entity.Notification.ReferenceType;
 import com.campuslove.api.growth.WeChatPushService;
+import com.campuslove.api.privacy.ErasureSubjectGuard;
 import com.campuslove.api.repository.NotificationRepository;
 import com.campuslove.api.repository.UserRepository;
 import java.time.LocalDateTime;
@@ -178,6 +179,17 @@ public class NotificationConsumer {
         }
 
         try {
+            // 0. F-08（第五轮审查）：注销是终态。已注销主体不得再被追加 notifications 行——
+            //    outbox 补偿投递（MessageProducer 每 30s）会在注销之后重投同一事件，
+            //    原实现按 message.userId 直接 INSERT，墓碑 user_id 上会长出新行。
+            //    这里「丢弃 + ack」（不抛 ⇒ 幂等登记不撤销，同一条重投也永久不再处理）。
+            if (ErasureSubjectGuard.isErasedSubject(userRepository, message.getUserId())) {
+                log.info("接收者已注销，丢弃通知（不写 notifications、不推微信订阅消息）："
+                        + "userId={}, type={}, dedupKey={}",
+                        message.getUserId(), message.getType(), dedupKey);
+                return;
+            }
+
             // 1. 落库前先做类型判定：未知类型重试永远不会变好，直接拒绝进 DLQ 留证据
             NotificationType type = toNotificationType(message);
 

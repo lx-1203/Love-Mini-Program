@@ -51,6 +51,7 @@ const showToast = vi.fn();
 };
 
 import { useVillageStore } from "../../stores/village";
+import { isPostAuthor } from "../../stores/village/utils";
 
 /** 最小可用的 PostItem（本用例只关心 id 是否从各列表消失） */
 function postItem(id: string, authorId = "u-9") {
@@ -263,5 +264,46 @@ describe("村口详情页删除入口契约（detail.vue）", () => {
     expect(body).not.toContain('"确定要删除');
     expect(body).not.toContain('"删除失败');
     expect(body).not.toContain('"已删除"');
+  });
+
+  it("删除入口的作者判定委托给 stores/village/utils 的 isPostAuthor", () => {
+    // 判点成立的前提：detail.vue 的 isOwnPost 只是取两个值再交给同一个函数，
+    // 口径本身由下面的运行时用例钉住（否则这里断言的只是文本，不是行为）。
+    expect(detailSource).toMatch(
+      /isOwnPost\s*=\s*computed\(\(\)\s*=>\s*\n?\s*isPostAuthor\(\s*sessionStore\.userSession\?\.userId,\s*currentPost\.value\?\.author\?\.userId/,
+      "detail.vue 的 isOwnPost 必须走 isPostAuthor（判定规则只允许一处）"
+    );
+    expect(detailSource).toContain("isPostAuthor");
+  });
+});
+
+/**
+ * 作者可见性的运行时判点（第五轮 FINDING 3）。
+ *
+ * 原状态：所有断言都建立在 detail.vue 的源码文本上，没有一条证明
+ * `isOwnPost` 在 real 档能真的为真。这里直接跑判定函数本身：
+ * `session.userId`（客户端会话，字符串）与 `post.author.userId`
+ * （后端 `PostAuthorView.userId`，Java `Long` ⇒ 运行时可能是数字）任一侧口径漂移，
+ * 作者都会「看不见删除项」而无人报警。
+ */
+describe("isPostAuthor 运行时口径（FINDING 3）", () => {
+  it("会话 ID 是字符串、作者 ID 是数字时仍判为本人（口径漂移方向）", () => {
+    expect(isPostAuthor("9", 9)).toBe(true);
+    expect(isPostAuthor(9, "9")).toBe(true);
+    expect(isPostAuthor("u-9", "u-9")).toBe(true);
+  });
+
+  it("userSession 为空（未登录）时判为非本人，删除入口不出现", () => {
+    expect(isPostAuthor(undefined, 9)).toBe(false);
+    expect(isPostAuthor(null, 9)).toBe(false);
+    expect(isPostAuthor("", 9)).toBe(false);
+    // 作者 ID 缺失同样为 false：宁可看不见入口，也不把别人的帖子标成可删
+    expect(isPostAuthor("9", undefined)).toBe(false);
+    expect(isPostAuthor("9", null)).toBe(false);
+  });
+
+  it("两个不同的账号 ID 不得被判成本人", () => {
+    expect(isPostAuthor("u-9", 8)).toBe(false);
+    expect(isPostAuthor("9", "10")).toBe(false);
   });
 });

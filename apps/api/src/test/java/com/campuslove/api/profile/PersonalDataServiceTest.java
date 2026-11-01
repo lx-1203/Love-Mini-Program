@@ -128,6 +128,7 @@ class PersonalDataServiceTest {
     @Mock private TaskClaimRepository taskClaimRepository;
     @Mock private UserAgreementConsentRepository userAgreementConsentRepository;
     @Mock private AuditLogRepository auditLogRepository;
+    @Mock private com.campuslove.api.repository.WhisperMessageRepository whisperMessageRepository;
 
     private PersonalDataService service;
 
@@ -143,7 +144,7 @@ class PersonalDataServiceTest {
                 privateMessageRepository, userWalletRepository, walletTransactionLogRepository,
                 vipBillRepository, vipBillingLogRepository, notificationRepository,
                 checkInRepository, taskClaimRepository, userAgreementConsentRepository,
-                auditLogRepository);
+                auditLogRepository, whisperMessageRepository);
         authenticate(CALLER);
         stubEmptyPages();
     }
@@ -403,7 +404,7 @@ class PersonalDataServiceTest {
     // ==================== 形态与渲染 ====================
 
     @Test
-    @DisplayName("27 个类别齐全，且每行取值数与列名数一致（防手改字段时整列错位）")
+    @DisplayName("28 个类别齐全，且每行取值数与列名数一致（防手改字段时整列错位）")
     void build_shouldCoverEveryCategoryWithAlignedColumns() {
         when(postRepository.findByAuthorId(CALLER)).thenReturn(List.of(post(700L, "我的动态内容")));
         when(commentRepository.findByAuthorIdOrderByCreatedAtDesc(eq(CALLER), any(Pageable.class)))
@@ -420,7 +421,7 @@ class PersonalDataServiceTest {
 
         PersonalDataExport export = service.exportForCurrentUser();
 
-        assertEquals(27, export.categories().size(), "类别数量变化意味着查阅/复制范围被改动");
+        assertEquals(28, export.categories().size(), "类别数量变化意味着查阅/复制范围被改动");
         for (PersonalDataCategory category : export.categories()) {
             assertFalse(category.columns().isEmpty(), "类别 " + category.name() + " 无列定义");
             for (List<String> row : category.rows()) {
@@ -436,6 +437,22 @@ class PersonalDataServiceTest {
         assertEquals(1, category(export, "wallet").rows().size());
         // 空类别仍在场：区分"查过但为空"与"没查"
         assertTrue(export.categories().stream().anyMatch(c -> c.rows().isEmpty()));
+    }
+
+    @Test
+    @DisplayName("我发出的悄悄话按主体取回并进 whispers 类别；发给我的不导出")
+    void whisperCategoryExportsOnlyOutgoingContent() {
+        when(whisperMessageRepository.findBySenderIdOrderByCreatedAtDesc(CALLER))
+                .thenReturn(List.of(whisper(900L, PEER, "写给 TA 的悄悄话正文")));
+        PersonalDataExport export = service.exportForCurrentUser();
+        verify(whisperMessageRepository).findBySenderIdOrderByCreatedAtDesc(CALLER);
+        PersonalDataCategory whispers = category(export, "whispers");
+        assertEquals(1, whispers.rows().size());
+        int contentIdx = whispers.columns().indexOf("content");
+        assertEquals("写给 TA 的悄悄话正文", whispers.rows().get(0).get(contentIdx));
+        // receiver_id 只是定位列（对方），正文属我
+        assertEquals(String.valueOf(PEER),
+                whispers.rows().get(0).get(whispers.columns().indexOf("receiver_id")));
     }
 
     @Test
@@ -628,6 +645,18 @@ class PersonalDataServiceTest {
         c.setContent("我的评论");
         c.setCreatedAt(LocalDateTime.now());
         return c;
+    }
+
+    private static com.campuslove.api.entity.WhisperMessage whisper(long id, long receiverId,
+            String content) {
+        com.campuslove.api.entity.WhisperMessage w = new com.campuslove.api.entity.WhisperMessage();
+        w.setId(id);
+        w.setSenderId(CALLER);
+        w.setReceiverId(receiverId);
+        w.setContent(content);
+        w.setStatus("SENT");
+        w.setPriceCents(200L);
+        return w;
     }
 
     private static Notification notification() {

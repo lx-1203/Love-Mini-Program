@@ -63,5 +63,16 @@ export const useReportStore = defineStore("report", {
     clearError() {
       this.errorMessage = null;
     },
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * 举报本身不留内容（state 只有 `submitting` / `errorMessage`），但 `submitting`
+     * 若卡在 true（A 提交途中登出），B 的举报按钮会被这把不属于自己的锁按死。
+     * 登记进登出清单也让「新增 store 必须登记」这条门保持闭合。
+     */
+    resetForLogout() {
+      this.$reset();
+    },
   },
 });

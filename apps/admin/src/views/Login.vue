@@ -45,8 +45,9 @@ async function handleLogin() {
 
   try {
     await sessionStore.login(form.value);
-    // 登录成功后立即拉取动态菜单并注册路由，保证跳转目标可用
-    await menuStore.loadMenus();
+    // 登录成功后立即拉取动态菜单并注册路由，保证跳转目标可用。
+    // 传入当前登录主体 id：menuStore.loadedFor 记下它，守卫据此在换账号（SPA 软跳转）时必定重拉。
+    await menuStore.loadMenus(sessionStore.user ? String(sessionStore.user.id) : null);
     addDynamicRoutes(menuStore.menuTree);
     // 优先回跳 redirect 查询参数指向的站内路径（已校验 + 已注册，防止 404/越权路径）；
     // 否则跳转当前角色菜单树中第一个可跳转菜单（校区管理员无 Dashboard 权限时避免 403）

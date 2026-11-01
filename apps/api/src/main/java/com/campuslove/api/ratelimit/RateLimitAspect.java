@@ -108,6 +108,20 @@ public class RateLimitAspect {
     private final ClientIpResolver clientIpResolver;
 
     /**
+     * PII 键引用用的服务端密钥（{@code app.security.aes-secret}）。
+     *
+     * <p>字段注入而不是加构造参数：{@code RateLimitConfig} 与既有单测都以固定签名
+     * {@code new RateLimitAspect(registry, trustedProxies)} 造本切面，扩构造器会波及它们。</p>
+     *
+     * <p>它是 {@code #pii.ref(...)} 这个 SpEL 变量的密钥来源：限流键里禁止出现手机号/账号本体
+     * （Redis 以 AOF 持久化，key 名会落盘并随备份长期留存，value 的 TTL 管不到它）。
+     * 未注入时为空串，{@code PiiKeyReference.of} 退化为不加密钥的 SHA-256 摘要——
+     * 落盘的仍然只是 32 位摘要，不含原值，这一点由 {@code RateLimitKeyAuditTest} 逐条断言。</p>
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.security.aes-secret:}")
+    private String piiKeySecret = "";
+
+    /**
      * 构造函数注入注册表与可信代理配置（保留的兼容签名，单测直接 new 时用）。
      *
      * @param registry       令牌桶注册表 Bean
@@ -227,6 +241,9 @@ public class RateLimitAspect {
                 context.setVariable("httpRequest", request);
             }
             context.setVariable("clientIp", clientIp);
+            // #pii.ref(x)：把敏感标识（手机号/账号）换成定长摘要再进 key。
+            // 变量名不得与方法参数同名，由 RateLimitKeyAuditTest 统一保证。
+            context.setVariable("pii", new PiiRef(piiKeySecret));
 
             Object value = expression.getValue(context);
             if (value == null) {
@@ -278,5 +295,29 @@ public class RateLimitAspect {
     /** 测试/诊断用：暴露 IP 解析器，便于断言可信代理配置解析结果。 */
     ClientIpResolver clientIpResolver() {
         return clientIpResolver;
+    }
+
+    /**
+     * SpEL 变量 {@code #pii} 的载体：把敏感标识换成定长摘要，供 {@code @RateLimit(key=...)} 使用。
+     *
+     * <p>例：{@code key = "#pii.ref(#payload.phone)"} ⇒ 键里落的是
+     * {@code ratelimit:...:<32 位 hex>}，不是裸手机号。必须是 public 嵌套类 + public 方法，
+     * 否则 SpEL 反射调不到。</p>
+     *
+     * <p>原值为 null/空时返回空串——此时键会退化到该端点的其它段（方法限定名 + 档位），
+     * 而 {@code RateLimitKeyAuditTest} 已经禁止任何键解析出 {@code :null-value:} 桶。</p>
+     */
+    public static final class PiiRef {
+
+        private final String secret;
+
+        PiiRef(String secret) {
+            this.secret = secret;
+        }
+
+        /** 定长小写十六进制引用；永不含输入原值。 */
+        public String ref(String value) {
+            return com.campuslove.api.auth.PiiKeyReference.of(secret, "ratelimit", value);
+        }
     }
 }

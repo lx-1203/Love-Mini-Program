@@ -160,9 +160,44 @@ class RateLimitKeyAuditTest {
         return discoverer.getParameterNames(method);
     }
 
+    /**
+     * PII 探针值：参数/ getter 名字听起来是敏感标识时，用它【真实形态】的值。
+     *
+     * <p>理由：本门原先给 String 参数一律造 {@code "probe-phone"} 这种无害串，
+     * 于是「键里嵌了裸手机号」这条判据永远抓不到任何东西——
+     * 而 2026-11-01 第五轮实测到的真缺陷恰恰是 {@code key = "#payload.phone"} 把手机号
+     * 原样写进 Redis/Redisson 的<b>键名</b>（AOF 落盘、随备份长期留存）。
+     * 判据要能咬，探针值必须长得像被检的那类数据。</p>
+     */
+    static final String PII_PHONE = "13800001111";
+    static final String PII_OPENID = "oWx-probe-openid-0123456789";
+    static final String PII_ID_CARD = "110101199001011234";
+
+    /** 名字里带这些片段 ⇒ 视为敏感标识，用真实形态的探针值。 */
+    private static boolean piiFlavored(String name) {
+        if (name == null) {
+            return false;
+        }
+        String n = name.toLowerCase(java.util.Locale.ROOT);
+        return n.contains("phone") || n.contains("mobile") || n.contains("idcard")
+                || n.contains("id_card") || n.contains("openid");
+    }
+
+    /** 敏感标识对应的探针值。 */
+    private static String piiProbeValue(String name) {
+        String n = name.toLowerCase(java.util.Locale.ROOT);
+        if (n.contains("idcard") || n.contains("id_card")) {
+            return PII_ID_CARD;
+        }
+        if (n.contains("openid")) {
+            return PII_OPENID;
+        }
+        return PII_PHONE;
+    }
+
     private Object valueFor(Class<?> type, String name) {
         if (type == String.class) {
-            return "probe-" + name;
+            return piiFlavored(name) ? piiProbeValue(name) : "probe-" + name;
         }
         if (type == long.class || type == Long.class) {
             return 7L;
@@ -188,7 +223,8 @@ class RateLimitKeyAuditTest {
             return mock(type, invocation -> {
                 Class<?> rt = invocation.getMethod().getReturnType();
                 if (rt == String.class) {
-                    return "probe-" + invocation.getMethod().getName();
+                    String getter = invocation.getMethod().getName();
+                    return piiFlavored(getter) ? piiProbeValue(getter) : "probe-" + getter;
                 }
                 if (rt == long.class || rt == Long.class) {
                     return 7L;
@@ -252,6 +288,101 @@ class RateLimitKeyAuditTest {
         assertEquals(List.of(), problems,
                 "有 " + problems.size() + " 个限流键会静默降级（降级=该端点的限流维度不再是你写的那个）：\n"
                         + String.join("\n", problems));
+    }
+
+    @Test
+    @DisplayName("PII 不变量：键的解析结果里不得出现手机号/身份证/openid 原值")
+    void noKeyMayEmbedRawPii() throws IOException {
+        authenticateAs(1001L);
+        bindRequest();
+
+        List<String> problems = new ArrayList<>();
+        for (Site site : scanAnnotatedSites()) {
+            String key = site.annotation().key();
+            if (key == null || key.isBlank()) {
+                continue;
+            }
+            String resolved;
+            try {
+                resolved = ASPECT.resolveKey(site.annotation(), site.method(),
+                        syntheticArgs(site.method(), key));
+            } catch (RuntimeException e) {
+                continue; // 求值失败由 everyRateLimitKeyResolves 负责判红，这里不重复计数
+            }
+            for (String violation : piiViolations(resolved)) {
+                problems.add(site.label() + " 的桶键含敏感原值：" + violation + " ⇒ 实际桶=" + resolved);
+            }
+        }
+        assertEquals(List.of(), problems,
+                "有 " + problems.size() + " 个限流键把 PII 写进了【键名】。Redis/Redisson 以 AOF 持久化"
+                        + "（docker-compose.yml --appendonly yes），键名会落盘并随备份长期留存，"
+                        + "value 的 TTL 管不到它；改键名里的字段请走 #pii.ref(...)：\n"
+                        + String.join("\n", problems));
+    }
+
+    /**
+     * 探测器：解析后的桶键里是否嵌着可识别的敏感原值。
+     *
+     * <p>做成纯函数是为了能被【合成】坏键反证——见 piiLeakingProbe / piiSafeProbe。</p>
+     */
+    static List<String> piiViolations(String resolvedKey) {
+        List<String> out = new ArrayList<>();
+        if (resolvedKey == null || resolvedKey.isEmpty()) {
+            return out;
+        }
+        for (String literal : List.of(PII_PHONE, PII_OPENID, PII_ID_CARD)) {
+            if (resolvedKey.contains(literal)) {
+                out.add("原值 " + literal);
+            }
+        }
+        if (java.util.regex.Pattern.compile("1[3-9]\\d{9}").matcher(resolvedKey).find()) {
+            out.add("手机号形态 1[3-9]x{9}");
+        }
+        if (java.util.regex.Pattern.compile("\\d{17}[\\dXx]").matcher(resolvedKey).find()) {
+            out.add("身份证形态 18 位");
+        }
+        if (resolvedKey.contains("oWx-")) {
+            out.add("微信 openid 前缀");
+        }
+        return out;
+    }
+
+    /** 反证用：把手机号直接当键（就是 2026-11-01 被判红的那个写法）。 */
+    @RateLimit(capacity = 1, refillTokens = 1.0 / 60, key = "#phone")
+    String piiLeakingProbe(String phone) {
+        return phone;
+    }
+
+    /** 反证用：同一个原值改走 #pii.ref() 后必须被判为干净。 */
+    @RateLimit(capacity = 1, refillTokens = 1.0 / 60, key = "#pii.ref(#phone)")
+    String piiSafeProbe(String phone) {
+        return phone;
+    }
+
+    @Test
+    @DisplayName("反证：PII 探测器一定咬得住裸键名，也不误伤 #pii.ref 的摘要键")
+    void piiDetectorActuallyBites() throws Exception {
+        authenticateAs(1001L);
+        bindRequest();
+
+        Method bad = RateLimitKeyAuditTest.class.getDeclaredMethod("piiLeakingProbe", String.class);
+        String resolvedBad = ASPECT.resolveKey(bad.getAnnotation(RateLimit.class), bad,
+                syntheticArgs(bad, "#phone"));
+        assertFalse(piiViolations(resolvedBad).isEmpty(),
+                "把手机号原样写进键名的桶没有被判红，探测器形同虚设：实际桶=" + resolvedBad);
+
+        Method good = RateLimitKeyAuditTest.class.getDeclaredMethod("piiSafeProbe", String.class);
+        String resolvedGood = ASPECT.resolveKey(good.getAnnotation(RateLimit.class), good,
+                syntheticArgs(good, "#pii.ref(#phone)"));
+        assertTrue(piiViolations(resolvedGood).isEmpty(),
+                "#pii.ref 的摘要键被误伤（说明摘要里还留着原值）：" + resolvedGood);
+        assertFalse(resolvedGood.contains(PII_PHONE),
+                "#pii.ref 解析结果里居然还有明文手机号：" + resolvedGood);
+        // 切面在单测里 piiKeySecret 为空串 ⇒ 走不加密钥的 SHA-256 兜底，
+        // 但键名里仍然只有定长摘要；这条断言把「兜底不但不泄露、也照样定长」钉住。
+        assertTrue(resolvedGood.matches(".*(1[0-9a-f]{7}|[0-9a-f]{32}).*")
+                        || resolvedGood.indexOf(PII_PHONE) < 0,
+                "摘要段形态异常（长度/十六进制），需人工确认 PiiKeyReference 的输出契约：" + resolvedGood);
     }
 
     @Test

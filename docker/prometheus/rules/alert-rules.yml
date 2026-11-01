@@ -285,7 +285,7 @@ groups:
           summary: "数据库备份超过 36 小时没有成功过"
           description: "实例 {{ $labels.instance }} 最近一次成功备份于 {{ $value | humanizeDuration }} 前，PITR 窗口正在失效；查 `docker compose logs backup` 与 /backup/cron.log。"
           runbook: "doc/RUNBOOKS.md#备份与恢复"
-          precondition: "REQUIRES-PROFILE=backup（指标由 backup 容器写 textfile 文件；只起 monitoring 时本规则无序列）"
+          precondition: "REQUIRES-PROFILE=backup（指标由 backup 容器写 textfile 文件；没起 --profile backup 时本规则无序列。抓取端已常开，与 monitoring profile 无关——那个 profile 已不存在）"
 
   # ---------- 第三方依赖可用性 ----------
   # ⚠️ 2026-08-05：以下规则依赖 blackbox-exporter 的 probe_success 指标，

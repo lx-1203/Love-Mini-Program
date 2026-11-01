@@ -244,7 +244,7 @@ function selectTarget(circle: CircleItem) {
   // 切过去时必须关弹层并显式告知——否则用户已选的话题会在提交时被静默丢弃
   topicSheetOpen.value = false;
   if (topics.value.length > 0) {
-    uni.showToast({ title: "兴趣圈子发帖暂不支持话题，所选话题不会随本条发布", icon: "none" });
+    uni.showToast({ title: t("village.post.circleTopicUnsupportedHint"), icon: "none" });
   }
 }
 
@@ -290,7 +290,7 @@ async function chooseImage() {
       : String(e ?? "");
     if (errMsg.includes("112") || errMsg.includes("privacy agreement")) {
       console.error("选择图片失败: 隐私协议未声明相册/相机 scope", e);
-      uni.showToast({ title: "请在微信后台隐私指引声明相册/相机权限", icon: "none" });
+      uni.showToast({ title: t("village.post.privacyScopeMissingToast"), icon: "none" });
     } else {
       console.error("选择图片失败:", e);
     }
@@ -440,7 +440,7 @@ function pickLocationFromMap(): void {
     success: (res: UniApp.ChooseLocationSuccess) => {
       const text = String(res?.name || res?.address || "").trim();
       if (!text) {
-        uni.showToast({ title: "未获取到选点结果，请重新选择", icon: "none" });
+        uni.showToast({ title: t("village.post.locationPickEmptyToast"), icon: "none" });
         return;
       }
       location.value = text;
@@ -449,12 +449,12 @@ function pickLocationFromMap(): void {
          前端不许编造 ⇒ 所选位置只进本页表单与草稿，不随本条对外发布。当场说清去向，
          并在行下渲染常驻说明 + 清除入口（见模板 .publish-location-note），不留「选了就会发出去」
          的空头承诺（同页「圈子发帖暂不支持话题，所选话题不会随本条发布」hint 的既有诚实范式）。 */
-      uni.showToast({ title: "位置已选择（暂不随本条帖子对外展示）", icon: "none" });
+      uni.showToast({ title: t("village.post.locationPickedToast"), icon: "none" });
     },
     fail: (_err: unknown) => {
       // 与 profile-extra/profile/location.vue 的 pickFromMap 同口径：主动返回与权限被拒都走 fail，
       // 一律给可见反馈，不静默（静默=死按钮）
-      uni.showToast({ title: "未选择位置，请检查定位权限后重试", icon: "none" });
+      uni.showToast({ title: t("village.post.locationPickFailedToast"), icon: "none" });
     },
   });
   // #endif
@@ -857,18 +857,18 @@ onUnmounted(() => {
       <view class="publish-header__close press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.closeAria')" @tap="requestLeave">
         <image class="publish-header__x" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CLOSE)" mode="aspectFit" alt="" />
       </view>
-      <text class="publish-header__title">发布动态</text>
+      <text class="publish-header__title">{{ t("village.post.headerTitle") }}</text>
       <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005：页内唯一无按压反馈的 @tap view
            （同页其余 @tap 节点均已按 .publish-image__remove 范式补齐） -->
       <view class="publish-header__submit press-feedback" :class="{ 'publish-header__submit--disabled': !canSubmit }" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.publish')" @tap="submitPublish">
-        <text class="publish-header__submit-text">发布</text>
+        <text class="publish-header__submit-text">{{ t("common.publish") }}</text>
       </view>
     </view>
 
     <scroll-view class="publish-body" scroll-y :show-scrollbar="false">
       <!-- 发布到 -->
       <view class="publish-to">
-        <text class="publish-to__label">发布到</text>
+        <text class="publish-to__label">{{ t("village.post.publishToLabel") }}</text>
         <view class="publish-to__card press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="targetOpen = !targetOpen">
           <view class="publish-to__avatar">
             <image v-if="isCircleTarget && targetCircle" class="publish-to__avatar-img" :src="resolveMediaUrl(IMAGE_PATHS.CIRCLE_COVERS.DEFAULT)" mode="aspectFill" alt="" />
@@ -883,8 +883,8 @@ onUnmounted(() => {
               <text class="publish-to__name">{{ targetTitle }}</text>
               <!-- R2b-L03-D18（空态文案 P3）：原状态胶囊整枚 v-if="isCircleTarget"，general 目标下
                    标题行右侧一整块空位。补一枚中性灰「公开可见」胶囊（复用 .publish-to__tag 结构 + --neutral 变体）。 -->
-              <text v-if="isCircleTarget" class="publish-to__tag">圈内成员可见</text>
-              <text v-else class="publish-to__tag publish-to__tag--neutral">公开可见</text>
+              <text v-if="isCircleTarget" class="publish-to__tag">{{ t("village.post.visibilityCircleMembers") }}</text>
+              <text v-else class="publish-to__tag publish-to__tag--neutral">{{ t("village.post.publicBadge") }}</text>
             </view>
             <text class="publish-to__subtitle">{{ targetSubtitle }}</text>
           </view>
@@ -898,7 +898,7 @@ onUnmounted(() => {
   cursor-spacing="20"
           v-model="content"
           class="publish-content__input"
-          placeholder="分享一点最近发生的事…"
+          :placeholder="t('village.post.publishContentPlaceholder')"
           :maxlength="MAX_CONTENT_LENGTH"
           :show-confirm-bar="false"
           :aria-label="t('village.post.contentPlaceholder')"
@@ -939,8 +939,8 @@ onUnmounted(() => {
           @tap="topicSheetOpen = true"
         >
           <text class="publish-row__icon">#</text>
-          <text class="publish-row__label">添加话题</text>
-          <text class="publish-row__meta">已选 {{ topics.length }}/{{ POST_MAX_CUSTOM_TAGS }}</text>
+          <text class="publish-row__label">{{ t("village.post.addTopicLabel") }}</text>
+          <text class="publish-row__meta">{{ t("village.post.selectedTopicCount", { n: topics.length, max: POST_MAX_CUSTOM_TAGS }) }}</text>
           <!-- R9-L02-D27（位置 P2）：R2b-L03-D19 为消「一个箭头 + 三行裸文本」的参差把四行 › 全删，
                削掉的却是本组唯一真可点的那一行——「添加话题」有 @tap + role="button"（:842 打开
                话题弹层），其余三行是只读信息（位置钉死当前城市 / 提及只弹说明 / 可见范围随目标推导）。
@@ -961,11 +961,11 @@ onUnmounted(() => {
           hover-class="press-feedback--active"
           hover-stay-time="120"
           role="button"
-          :aria-label="'添加位置'"
+          :aria-label="t('village.post.addLocationLabel')"
           @tap="pickLocationFromMap"
         >
           <image class="publish-row__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION)" mode="aspectFit" alt="" />
-          <text class="publish-row__label">添加位置</text>
+          <text class="publish-row__label">{{ t("village.post.addLocationLabel") }}</text>
           <!-- R3：原「北京市 · 当前位置」语义混拼，改为可读的定位说明 -->
           <!-- MP-R1-PUBLISH-006：无定位缓存时不再宣称「自动定位」（原恒显示缺省「北京市 · 自动定位」） -->
           <!-- R1-B33/D16 的「位置选择即将开放」陈述串在小程序端已不是唯一状态（见上方三态），
@@ -975,14 +975,14 @@ onUnmounted(() => {
         </view>
         <!-- R10-L02-D14：后端 posts 表无位置列 ⇒ 所选位置只落草稿，当场明示 + 给真能生效的清除入口 -->
         <view v-if="location" class="publish-location-note">
-          <text class="publish-location-note__text">位置仅保存在草稿，暂不随本条帖子对外展示</text>
-          <text class="publish-location-note__clear" @tap="location = ''">清除位置</text>
+          <text class="publish-location-note__text">{{ t("village.post.locationDraftOnlyNote") }}</text>
+          <text class="publish-location-note__clear" @tap="location = ''">{{ t("village.post.clearLocationLabel") }}</text>
         </view>
         <!-- 2026-10-28：@提及已接通关注列表（最多 10 人），正文插入 @昵称并提交 mentionedUserIds；
              圈子目标下隐藏——createTopic 请求体暂无 mentions，避免 UI 承诺了却静默丢弃。 -->
         <view v-if="!isCircleTarget" class="publish-row" @tap="openMentionPicker">
           <text class="publish-row__icon">@</text>
-          <text class="publish-row__label">提及好友</text>
+          <text class="publish-row__label">{{ t("village.post.mentionTitle") }}</text>
         </view>
         <!-- MP-R2-PUB-105：friends 目标锁定可见范围（原可轮换落入 interest 桶，UI 当场失真）
              MP-R1-VILLAGE-PUBLISH-103：cycleVisibility 四目标轮换列表均为单值（点击永远
@@ -990,7 +990,7 @@ onUnmounted(() => {
              可见范围随「发布到」目标推导（对齐「添加位置」行的只读形态） -->
         <view class="publish-row">
           <image class="publish-row__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.EYE)" mode="aspectFit" alt="" />
-          <text class="publish-row__label">谁可以看</text>
+          <text class="publish-row__label">{{ t("village.post.visibilityLabel") }}</text>
           <text class="publish-row__meta">{{ visibilityText }}</text>
         </view>
       </view>
@@ -1000,7 +1000,7 @@ onUnmounted(() => {
       <view v-if="topics.length > 0" class="publish-topics">
         <!-- 圈子目标下话题行隐藏（后端 CreateTopicRequest 无 tags），但已选话题仍会随草稿恢复
              出现——不藏起来，改为当场明示「不会随本条发布」，否则又是「UI 承诺即丢数据」 -->
-        <text v-if="isCircleTarget" class="publish-topics__hint">兴趣圈子发帖暂不支持话题，所选话题不会随本条发布</text>
+        <text v-if="isCircleTarget" class="publish-topics__hint">{{ t("village.post.circleTopicUnsupportedHint") }}</text>
         <view v-for="(tag, idx) in topics" :key="`${tag}-${idx}`" class="publish-topic-chip">
           <text class="publish-topic-chip__text">{{ tag }}</text>
           <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005：原判据「给 × 移除钮补 hover-class」
@@ -1011,7 +1011,7 @@ onUnmounted(() => {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="button"
-            :aria-label="'移除话题 ' + tag"
+            :aria-label="t('village.post.removeTopicAria', { tag })"
             @tap="removeTopic(idx)"
           >×</view>
         </view>
@@ -1026,13 +1026,13 @@ onUnmounted(() => {
           <view class="publish-tip__title">
             <view class="publish-tip__title-main">
               <image class="publish-tip__title-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.SPROUT)" mode="aspectFit" alt="" />
-              <text>发帖小贴士</text>
+              <text>{{ t("village.post.publishTipTitle") }}</text>
             </view>
             <view class="publish-tip__close press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="tipVisible = false">
               <image class="publish-tip__close-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CLOSE)" mode="aspectFit" alt="" />
             </view>
           </view>
-          <text class="publish-tip__desc">真实分享校园生活，友善互动，让更多人认识有趣的你～</text>
+          <text class="publish-tip__desc">{{ t("village.post.publishTipDesc") }}</text>
         </view>
       </view>
 
@@ -1056,11 +1056,11 @@ onUnmounted(() => {
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
-        :aria-label="'添加图片'"
+        :aria-label="t('village.post.addImageAria')"
         @tap="chooseImage"
       >
         <image class="publish-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.IMAGE)" mode="aspectFit" alt="" />
-        <text class="publish-tool__label">图片</text>
+        <text class="publish-tool__label">{{ t("village.post.toolImageLabel") }}</text>
       </view>
       <view
         v-if="!isCircleTarget"
@@ -1068,22 +1068,22 @@ onUnmounted(() => {
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
-        :aria-label="'添加话题'"
+        :aria-label="t('village.post.addTopicLabel')"
         @tap="topicSheetOpen = true"
       >
         <text class="publish-tool__icon publish-tool__icon--glyph">#</text>
-        <text class="publish-tool__label">话题</text>
+        <text class="publish-tool__label">{{ t("village.post.toolTopicLabel") }}</text>
       </view>
       <view
         class="publish-tool press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
-        :aria-label="'添加位置'"
+        :aria-label="t('village.post.addLocationLabel')"
         @tap="pickLocationFromMap"
       >
         <image class="publish-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LOCATION)" mode="aspectFit" alt="" />
-        <text class="publish-tool__label">位置</text>
+        <text class="publish-tool__label">{{ t("village.post.toolLocationLabel") }}</text>
       </view>
       <view
         v-if="!isCircleTarget"
@@ -1091,22 +1091,22 @@ onUnmounted(() => {
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
-        :aria-label="'提及好友'"
+        :aria-label="t('village.post.mentionTitle')"
         @tap="openMentionPicker"
       >
         <text class="publish-tool__icon publish-tool__icon--glyph">@</text>
-        <text class="publish-tool__label">提及</text>
+        <text class="publish-tool__label">{{ t("village.post.toolMentionLabel") }}</text>
       </view>
       <view
         class="publish-tool press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
-        :aria-label="'谁可以看'"
+        :aria-label="t('village.post.visibilityLabel')"
         @tap="showVisibilityHint"
       >
         <image class="publish-tool__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.EYE)" mode="aspectFit" alt="" />
-        <text class="publish-tool__label">谁可以看</text>
+        <text class="publish-tool__label">{{ t("village.post.visibilityLabel") }}</text>
       </view>
     </view>
 
@@ -1116,32 +1116,32 @@ onUnmounted(() => {
     <view v-if="targetOpen" class="publish-target-sheet" @tap="targetOpen = false">
       <view class="publish-target-sheet__panel" @tap.stop>
         <view class="publish-target-sheet__head">
-          <text class="publish-target-sheet__title">选择发布到</text>
+          <text class="publish-target-sheet__title">{{ t("village.post.targetSheetTitle") }}</text>
         </view>
-        <text class="publish-target-sheet__group">公域 · 所有人可见</text>
+        <text class="publish-target-sheet__group">{{ t("village.post.targetGroupPublic") }}</text>
         <view class="publish-target-sheet__option press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="chooseGeneral">
-          <text class="publish-target-sheet__name">个人动态</text>
-          <text class="publish-target-sheet__desc">默认公开，所有人可见</text>
+          <text class="publish-target-sheet__name">{{ t("village.post.targetGeneralName") }}</text>
+          <text class="publish-target-sheet__desc">{{ t("village.post.targetGeneralDesc") }}</text>
           <image v-if="targetType === 'general'" class="publish-target-sheet__check" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHECK)" mode="aspectFit" alt="" />
         </view>
-        <text class="publish-target-sheet__group">校园私域 · 同校可见</text>
+        <text class="publish-target-sheet__group">{{ t("village.post.targetGroupCampus") }}</text>
         <view class="publish-target-sheet__option press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="chooseCampus">
-          <text class="publish-target-sheet__name">校园圈</text>
-          <text class="publish-target-sheet__desc">仅认证同校同学可见</text>
+          <text class="publish-target-sheet__name">{{ t("village.post.targetCampusName") }}</text>
+          <text class="publish-target-sheet__desc">{{ t("village.post.targetCampusDesc") }}</text>
           <image v-if="targetType === 'campus'" class="publish-target-sheet__check" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHECK)" mode="aspectFit" alt="" />
         </view>
         <template v-if="circlesLoading">
-          <text class="publish-target-sheet__hint">兴趣圈子加载中…</text>
+          <text class="publish-target-sheet__hint">{{ t("village.post.circlesLoadingHint") }}</text>
         </template>
         <!-- MP-R2-PUB-103：失败态区别于空态（原失败渲染「尚未加入兴趣圈子」误导已加入用户），可重试 -->
         <template v-else-if="circlesLoadFailed">
-          <text class="publish-target-sheet__hint">圈子列表加载失败，请稍后重试</text>
+          <text class="publish-target-sheet__hint">{{ t("village.post.circlesLoadFailedHint") }}</text>
           <view class="publish-target-sheet__option press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="retryLoadCircles">
-            <text class="publish-target-sheet__name">重试加载</text>
+            <text class="publish-target-sheet__name">{{ t("village.post.retryLoadCirclesLabel") }}</text>
           </view>
         </template>
         <template v-else-if="joinedCircles.length > 0">
-          <text class="publish-target-sheet__group">兴趣圈子 · 圈内成员可见</text>
+          <text class="publish-target-sheet__group">{{ t("village.post.targetGroupInterest") }}</text>
           <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-POST-006：两个发布入口的圈子候选行统一为
                「圈名 + 一条描述（已加入 · N 成员）」两段结构，与 post.vue:849-850 同构。
                裁决取多数侧：本域 6 个目标行里 5 个（本页 :900/:906 与 post.vue :795/:814/:850）
@@ -1158,12 +1158,12 @@ onUnmounted(() => {
             @tap="selectTarget(circle)"
           >
             <text class="publish-target-sheet__name">{{ circle.name }}</text>
-            <text class="publish-target-sheet__desc">已加入 · {{ formatMemberShort(circle.memberCount) }} 成员</text>
+            <text class="publish-target-sheet__desc">{{ t("village.post.circleJoinedMembers", { n: formatMemberShort(circle.memberCount) }) }}</text>
             <image v-if="isCircleTarget && targetId === Number(circle.id)" class="publish-target-sheet__check" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CHECK)" mode="aspectFit" alt="" />
           </view>
         </template>
         <template v-else>
-          <text class="publish-target-sheet__hint">尚未加入兴趣圈子，可先在「附近 - 热门兴趣圈」加入</text>
+          <text class="publish-target-sheet__hint">{{ t("village.post.noJoinedCirclesHint") }}</text>
         </template>
       </view>
     </view>
@@ -1174,8 +1174,8 @@ onUnmounted(() => {
     <view v-if="topicSheetOpen" class="publish-sheet" @tap="topicSheetOpen = false">
       <view class="publish-sheet__panel" @tap.stop>
         <view class="publish-sheet__head">
-          <text class="publish-sheet__title">添加话题</text>
-          <text class="publish-sheet__sub">已选 {{ topics.length }}/{{ POST_MAX_CUSTOM_TAGS }}</text>
+          <text class="publish-sheet__title">{{ t("village.post.addTopicLabel") }}</text>
+          <text class="publish-sheet__sub">{{ t("village.post.selectedTopicCount", { n: topics.length, max: POST_MAX_CUSTOM_TAGS }) }}</text>
         </view>
         <view class="publish-sheet__chips">
           <view
@@ -1186,7 +1186,7 @@ onUnmounted(() => {
             hover-class="press-feedback--active"
             hover-stay-time="40"
             role="button"
-            :aria-label="'选择话题 ' + topic"
+            :aria-label="t('village.post.selectTopicAria', { topic })"
             @tap="toggleTopic(topic)"
           >
             <text class="publish-sheet__chip-text"># {{ topic }}</text>
@@ -1198,10 +1198,10 @@ onUnmounted(() => {
             class="publish-sheet__input"
             cursor-spacing="20"
             :maxlength="CUSTOM_TOPIC_MAX_LENGTH"
-            :placeholder="'输入自定义话题（' + CUSTOM_TOPIC_MAX_LENGTH + ' 字内）'"
+            :placeholder="t('village.post.customTopicPlaceholder', { n: CUSTOM_TOPIC_MAX_LENGTH })"
             placeholder-class="publish-sheet__placeholder"
             confirm-type="done"
-            :aria-label="'自定义话题'"
+            :aria-label="t('village.post.customTopicAria')"
             @confirm="addCustomTopic"
           />
           <view

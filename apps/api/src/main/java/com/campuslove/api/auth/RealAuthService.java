@@ -1194,20 +1194,12 @@ public class RealAuthService implements AuthService {
      * @return SHA-256 hex 字符串（小写），长度 64
      */
     private String hashOpenid(String openid) {
-        if (openid == null || openid.isBlank()) {
-            return openid;
-        }
+        // 算法本体在 PhoneColumnCodec.sha256Hex：注册侧与后台建号侧必须共用同一份派生，
+        // 否则「该手机号是否已注册」在两条路径上会给出不同答案（第五轮 A 泳道实测到的正是这种漂移）。
+        // 这里只保留本类既有的错误口径（ErrorMessages.SHA256_UNAVAILABLE）。
         try {
-            java.security.MessageDigest sha256 = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = sha256.digest(openid.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            // 转换为小写 hex 字符串
-            StringBuilder sb = new StringBuilder(hashBytes.length * 2);
-            for (byte b : hashBytes) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (java.security.NoSuchAlgorithmException ex) {
-            // SHA-256 是 JDK 内置算法，理论上不会缺失
+            return com.campuslove.api.privacy.PhoneColumnCodec.sha256Hex(openid);
+        } catch (IllegalStateException ex) {
             throw new IllegalStateException(ErrorMessages.SHA256_UNAVAILABLE, ex);
         }
     }

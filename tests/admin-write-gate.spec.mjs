@@ -31,6 +31,16 @@
  *   2. 调用点的「所在函数」按脚本块顶层 function/const 箭头函数的边界切；
  *      写在别的函数内部的内联箭头回调会被归到外层顶层函数，守卫若挂在内层小函数里会被误报。
  *      （宁可误报也不能漏报，故没有为此加豁免。）
+ *      ⚠ 第五轮结构缺口收口（报告「门可信度」节末 a/b）：
+ *        - 脚本块顶层【直接】出现的写调用（不落在任何顶层函数体内）不再享受「整文件守卫并集」，
+ *          改为直接判红（见 analyze 的 `(顶层)` 分支）——过去一个缺守卫的处理函数可被同文件
+ *          另一个处理函数的守卫蒙混。扫描前先用 stripJavaComments 把脚本注释洗成空格，
+ *          于是 JSDoc 里提到的函数名（如 Roles.vue:10 的 `assignRoleMenus(...)`）不再被误当写调用。
+ *        - guardsIn 只认字面 `!sessionStore.<位>`：把档位赋给中间变量再判会被算成"无守卫"（误报，
+ *          保守，可接受），两种失败方向写在 guardsIn 的函数头注释里。
+ *   2b. 档位轴同时识别模板同一标签门控表达式里的裸角色字面比较（`x === 'SUPER_ADMIN'` 等，
+ *      见 BARE_ROLE_CMP），据此判「前端比后端严」（后端写档含某角色、UI 却把它藏起来）→ 判红；
+ *      刻意不识别 isSuperAdmin 这类把角色藏进 .value 的 computed，以免误伤合法的超管专属控件。
  *   3. 端点匹配靠静态正则，不展开 SecurityConfig 里除「四条 admin 写规则」以外的规则；
  *      Service 层的校区/圈层校验（AdminDataScope）不在本门射程内 —— 那是
  *      scripts/verify-admin-scope.mjs（运行时门）的活。
@@ -60,21 +70,57 @@ const API_FILE_IGNORE = (name) => name === "http.ts" || name.includes(".test.");
 const VIEW_EXEMPTIONS = new Map();
 
 /**
- * 「自助类写端点」白名单：这些处理函数调的端点连只读角色（AUDITOR）都允许，
- * 因此【不该】有 canWrite 守卫——加了反而是功能倒退。
+ * 「自助类写端点」白名单（第五轮 B-FINDING 4 后为空，机制保留）。
  *
- * 依据（读后端源码，不是在门里编理由）：
- *   AdminAccountController 类级 @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN','AUDITOR')")
- *   的 POST /api/v1/admin/account/change-password 改的是【当前登录者自己】的口令。
- * 校区 AUDITOR 必须能改自己的密码；用 canWrite 挡住会让 ta 卡在改密弹窗里。
- * 新增条目必须同时给出后端注解出处，否则这条白名单会慢慢变成"不想判就塞进来"。
+ * 这里豁免的是【没有任何档位守卫、但按后端确实该连只读角色都能调】的自助写处理函数。
+ * 曾经唯一的条目 content/Users.vue#handleChangePwd 的理由「change-password 接受 AUDITOR
+ * （类级 hasAnyRole）」是【错的】：SecurityConfig 的 URL 级写规则
+ * `POST /api/v1/admin/** → hasAnyRole("ADMIN","SUPER_ADMIN")` 在过滤器层就把 AUDITOR 拦了，
+ * 方法级类注解根本没机会生效；api/http.ts 的本地写闸同样拦 AUDITOR。所以那条豁免据以成立的
+ * 前提不成立，门据此报「无守卫处理函数 0」是假数。
+ * 修法（本文件 + apps/admin/src/views/content/Users.vue）：给改密入口挂真实档位守卫 canWrite
+ * （后端把 change-password 收敛到 ADMIN/SUPER_ADMIN，R4-00389 已放开校区 ADMIN 自助改密），
+ * 并划掉这条豁免。
+ *
+ * 元判点（metaCheckSelfServiceExemptions，判红方向见 --self-test）：白名单里若还有条目，
+ * 它 reason 里引用的端点【必须能在门自己的 expandAuthorities 结果里放行 reason 声称的角色】，
+ * 否则门自身判红——豁免理由写错方向（声称放宽实则被 URL 层拦）不再能蒙过本门。
+ * 新增条目必须同时给出后端注解出处 + 可被元判点校验的端点，否则这条白名单会慢慢变成"不想判就塞进来"。
  */
-const SELF_SERVICE_WRITE_HANDLERS = new Map([
-  ["content/Users.vue#handleChangePwd", "POST /v1/admin/account/change-password 接受 AUDITOR（类级 hasAnyRole），改的是自己的口令"],
-]);
+const SELF_SERVICE_WRITE_HANDLERS = new Map();
+
+/**
+ * 元判点的解析辅助：从豁免 reason 文本里抠出「HTTP 动词 + 路径」与「声称放行的角色集合」。
+ * reason 约定含形如 `POST /v1/admin/xxx 接受 ADMIN/SUPER_ADMIN` 的片段；解析不出来即判红
+ * （拒绝「写条含糊的豁免」混过去）。
+ */
+function parseExemptionReason(reason) {
+  const ep = reason.match(/\b(GET|POST|PUT|PATCH|DELETE)\s+(\/[\w./{}-]+)/u);
+  const roles = (reason.match(/接受\s*([A-Z_/]+)/u) || [])[1];
+  return {
+    verb: ep ? ep[1] : null,
+    path: ep ? ep[2] : null,
+    roles: roles ? roles.split("/") : null,
+  };
+}
 
 const WRITE_CALL = /(?:^|[^.\w])(post|put|patch|del)\s*(?:<[^()]*>)?\s*\(/;
-const ADMIN_WRITE_BITS = ["canWrite", "canSuperAdminWrite", "canAdminOnlyWrite"];
+const ADMIN_WRITE_BITS = ["canWrite", "canSuperAdminWrite"];
+/** 档位位名的正则交替串（单一来源，别在各条正则里各写一份位名，避免与 ADMIN_WRITE_BITS 漂移）。 */
+const WRITE_BITS_ALT = ADMIN_WRITE_BITS.join("|");
+
+/**
+ * 裸角色字面比较的词表（第五轮 B-FINDING 5）。
+ *
+ * 模板里除 `sessionStore.<位>` 之外，还存在把角色直接摊平进 v-if 的写法
+ * （`v-if="currentAdminRole === 'SUPER_ADMIN'"`）。这类「裸角色比较」过去完全在档位轴的射程外，
+ * 于是「前端比后端严」（后端允许校区 ADMIN、UI 却只放开 SUPER_ADMIN）这个方向没有任何判点。
+ * 现在把 `X === 'ADMIN'|'SUPER_ADMIN'|'AUDITOR'`（含反写 `'ROLE' === X`）识别成该角色的单元素集合。
+ * 刻意【不】识别 `isSuperAdmin` 这类 computed（它把角色藏进 .value，静态无法确证），
+ * 以免把大量合法的 `isSuperAdmin && canSuperAdminWrite` 同档控件误判——那类控件本就档位对齐。
+ */
+const ROLE_LITERALS = ["ADMIN", "SUPER_ADMIN", "AUDITOR"];
+const BARE_ROLE_CMP = /([A-Za-z_$][\w$]*)\s*===?\s*['"](ADMIN|SUPER_ADMIN|AUDITOR)['"]|['"](ADMIN|SUPER_ADMIN|AUDITOR)['"]\s*===?\s*([A-Za-z_$][\w$]*)/g;
 
 /** 事件表达式里不是处理函数的标识符（避免把 `page--`、`$event` 之类当函数名）。 */
 const EVENT_EXPR_STOPWORDS = new Set([
@@ -319,8 +365,16 @@ function guardsIn(text) {
   // 于是 saveAnnouncement 的 `if (!circle || !sessionStore.canWrite || saving) return;`
   // 被算成"无守卫"——门把自己的写法偏好当成了产品缺陷（4 条假盲区）。
   // 现在按语义判：任何 if(条件) … return 的早退，条件里出现 !sessionStore.<档位> 即算守卫。
+  //
+  // ⚠ 本判点的两个失败方向（第五轮 门可信度结构缺口 b，务必读）：
+  //   (1) 保守方向【误报】：把档位赋给中间变量再判（`const can = sessionStore.canWrite; if (!can) return;`），
+  //       这里看不见 `!sessionStore.<位>`，会把有守卫的函数算成"无守卫"→ 上 unguardedHandlers 棘轮并判红。
+  //       方向保守（宁可误报），可接受；要消红就把守卫写成字面 `!sessionStore.<位>`。
+  //   (2) 放宽方向【漏报】：本函数只在早退里找守卫，若守卫写法命中了但角色档位算错，
+  //       由 guardsIn 之外的档位交集逻辑负责，不会因本函数漏判而假绿。
+  const bitAlt = ADMIN_WRITE_BITS.join("|");
   for (const m of text.matchAll(/if\s*\(([^{};]*)\)\s*(?:\{)?[^{}]*?\breturn\b/gu)) {
-    for (const g of m[1].matchAll(/!\s*sessionStore\.(canWrite|canSuperAdminWrite|canAdminOnlyWrite)\b/gu)) {
+    for (const g of m[1].matchAll(new RegExp(`!\\s*sessionStore\\.(${bitAlt})\\b`, "gu"))) {
       bits.add(g[1]);
     }
   }
@@ -361,18 +415,38 @@ function controlBindings(tplSrc, tierRoles) {
       }
     }
     let roles = null;
+    // 裸角色字面比较单独算一份集合（第五轮 B-FINDING 5）：只有"由裸比较造成的收窄"才触发
+    // 「前端比后端严」判红，避免把合法按位收窄的控件也拉进这条新判点。
+    let bareRoles = null;
     for (const m of attrs.matchAll(/(?:v-if|v-show|:disabled|v-bind:disabled)="([^"]*)"/g)) {
       const expr = m[1];
-      const bits = [...expr.matchAll(/sessionStore\.(canWrite|canSuperAdminWrite|canAdminOnlyWrite)/g)].map((x) => x[1]);
-      if (bits.length === 0) continue;
-      const combine = /\|\|/.test(expr) && bits.length > 1 ? union : intersect;
-      let acc = tierRoles[bits[0]];
-      for (const b of bits.slice(1)) acc = combine(acc, tierRoles[b]);
+      const bits = [...expr.matchAll(new RegExp(`sessionStore\\.(${WRITE_BITS_ALT})`, "g"))].map((x) => x[1]);
+      const bareSets = [];
+      for (const rc of expr.matchAll(BARE_ROLE_CMP)) {
+        const role = rc[2] || rc[3];
+        if (role) bareSets.push([role]);
+      }
+      if (bits.length === 0 && bareSets.length === 0) continue;
+      const combine = /\|\|/.test(expr) ? union : intersect;
+      let acc = null;
+      if (bits.length > 0) {
+        acc = tierRoles[bits[0]];
+        for (const b of bits.slice(1)) acc = combine(acc, tierRoles[b]);
+      }
+      if (bareSets.length > 0) {
+        let bacc = bareSets[0];
+        for (const rs of bareSets.slice(1)) bacc = combine(bacc, rs);
+        acc = acc === null ? bacc : intersect(acc, bacc);
+        bareRoles = bareRoles === null ? bacc : intersect(bareRoles, bacc);
+      }
       roles = roles === null ? acc : intersect(roles, acc);
     }
     for (const h of handlers) {
       if (!bindings.has(h)) bindings.set(h, []);
-      bindings.get(h).push(roles === null ? null : [...new Set(roles)]);
+      bindings.get(h).push({
+        roles: roles === null ? null : [...new Set(roles)],
+        bare: bareRoles === null ? null : [...new Set(bareRoles)],
+      });
     }
   }
   return bindings;
@@ -398,6 +472,8 @@ function relativeViewPath(absolute) {
 function analyze(input) {
   const problems = [];
   const blindSpots = { unattachedControls: [], unmatchedAdminCalls: [], ungardedHandlers: [] };
+  // 自助豁免表默认取模块级全局；--self-test 可注入一份"坏方向"的表来证明元判点会咬。
+  const selfService = input.selfServiceExemptions || SELF_SERVICE_WRITE_HANDLERS;
 
   // —— 档位：从 write-policy.ts 源码解析角色集合，而不是在门里抄一份 ——
   const tiers = {};
@@ -542,10 +618,11 @@ function analyze(input) {
     writeViews += 1;
     if (VIEW_EXEMPTIONS.has(rel)) continue;
 
-    // 存在性判据（旧版保留，但按三档泛化）：视图必须同时藏控件 + 挡函数入口。
-    // 档位轴（下面）负责「挂的是不是对的位」，这里只负责「有没有位」。
-    const ANY_BIT_TEMPLATE = /(?:v-if|v-show)="[^"]*sessionStore\.(canWrite|canSuperAdminWrite|canAdminOnlyWrite)|:disabled="[^"]*sessionStore\.(canWrite|canSuperAdminWrite|canAdminOnlyWrite)/;
-    const ANY_BIT_HANDLER = /if\s*\(\s*!sessionStore\.(canWrite|canSuperAdminWrite|canAdminOnlyWrite)\s*\)\s*return/;
+    // 存在性判据（旧版保留，按档位泛化）：视图必须同时藏控件 + 挡函数入口。
+    // 档位轴（下面）负责「挂的是不是对的位」，这里只负责「有没有位」。位名取自 ADMIN_WRITE_BITS
+    // 单一来源，别在此重复写死位名（档位增减时只改一处）。
+    const ANY_BIT_TEMPLATE = new RegExp(`(?:v-if|v-show)="[^"]*sessionStore\\.(${WRITE_BITS_ALT})|:disabled="[^"]*sessionStore\\.(${WRITE_BITS_ALT})`);
+    const ANY_BIT_HANDLER = new RegExp(`if\\s*\\(\\s*!sessionStore\\.(${WRITE_BITS_ALT})\\s*\\)\\s*return`);
     const templateGated = ANY_BIT_TEMPLATE.test(src);
     const handlerGated = ANY_BIT_HANDLER.test(src);
     if (!templateGated && !handlerGated) {
@@ -560,14 +637,18 @@ function analyze(input) {
     if (!script) continue;
     const tpl = src.replace(/<script setup[^>]*>[\s\S]*?<\/script>/g, "");
     const bindings = controlBindings(tpl, tiers);
-    const funcs = topLevelFunctions(script.body);
+    // 洗掉脚本块里的 // 与 /* */ 注释（长度不变，偏移对齐）：这样写在 JSDoc 里提到的
+    // 函数名（第五轮 Roles.vue:10 的 `assignRoleMenus(id, checkedIds)`）不会被 callRe 当成
+    // 真实写调用而误归到 (顶层)；(顶层) 从此只反映真实落在脚本块顶层的写调用。
+    const scriptBody = stripJavaComments(script.body);
+    const funcs = topLevelFunctions(scriptBody);
     const funcNames = new Set(funcs.map((f) => f.name));
 
     // 顶层函数之间的调用图：控件常常绑在「打开弹窗」的函数上，真写调用在 handleSubmit 里，
     // 不做传递闭包就只能把整批控件记成盲区（第一版正是这样，68 处全盲）。
     const refGraph = new Map();
     for (const f of funcs) {
-      const text = script.body.slice(f.start, f.end);
+      const text = scriptBody.slice(f.start, f.end);
       const callees = new Set();
       for (const g of funcs) {
         if (g.name === f.name || g.name.length < 4) continue;
@@ -577,11 +658,11 @@ function analyze(input) {
     }
     const writesByFunc = new Map();
     const callRe = new RegExp(`\\b(${writes.map((w) => w.replace(/\W/g, "\\$&")).join("|")})\\s*\\(`, "g");
-    for (const c of script.body.matchAll(callRe)) {
+    for (const c of scriptBody.matchAll(callRe)) {
       const fn = c[1];
       const meta = fnTier.get(fn);
       if (!meta) continue;
-      const host = enclosingFunction(script.body, c.index);
+      const host = enclosingFunction(scriptBody, c.index);
       const key = host ? host.name : "(顶层)";
       if (!writesByFunc.has(key)) writesByFunc.set(key, []);
       writesByFunc.get(key).push({ host: key, fn, tier: meta.tier, matched: meta.matched });
@@ -603,17 +684,31 @@ function analyze(input) {
     // —— 守卫轴：写调用所在函数自己必须有档位兼容的守卫 ——
     const attached = new Set();
     for (const [hostName, calls] of writesByFunc) {
+      // 第五轮结构缺口 (a) 收口：脚本块顶层直接出现的写调用【不再】享受「整文件守卫并集」
+      // （过去 hostText=整个脚本、守卫取全文件并集，一个缺守卫的处理函数可被同文件另一个
+      // 处理函数的守卫蒙混过去）。改为直接判红——写调用要么落在有守卫的顶层函数里，要么就是债。
+      // 因脚本已做注释剥离，正常情况下 (顶层) 不再被 JSDoc 里的函数名误触发；一旦这里报红，
+      // 就是真实的「模块作用域直接发写请求」，必须人工核实并包进带守卫的函数。
+      if (hostName === "(顶层)") {
+        for (const call of calls) {
+          problems.push(
+            `${rel}#(顶层)：写调用 ${call.fn} → ${call.matched.join(", ")} 直接落在脚本块顶层，`
+            + "无法确定它受哪个档位守卫保护（第五轮起此形态即红，不收全文件守卫并集）",
+          );
+        }
+        continue;
+      }
       const f = funcs.find((x) => x.name === hostName);
-      const hostText = f ? script.body.slice(f.start, f.end) : script.body;
+      const hostText = f ? scriptBody.slice(f.start, f.end) : "";
       const guards = [...guardsIn(hostText)];
       if (guards.length === 0) {
-        if (!SELF_SERVICE_WRITE_HANDLERS.has(`${rel}#${hostName}`)) {
+        if (!selfService.has(`${rel}#${hostName}`)) {
           blindSpots.ungardedHandlers.push(`${rel}#${hostName}`);
         }
         continue; // 无守卫由 unguardedHandlers 上界（必须为 0）负责，不与档位违规重复计数
       }
       // 豁免只减不增：自助端点哪天真的加了守卫，就把白名单条目划掉。
-      if (SELF_SERVICE_WRITE_HANDLERS.has(`${rel}#${hostName}`)) {
+      if (selfService.has(`${rel}#${hostName}`)) {
         problems.push(
           `${rel}#${hostName} 现在有守卫了（${[...guards].join("/")}）`
             + "，SELF_SERVICE_WRITE_HANDLERS 里的豁免必须划掉",
@@ -636,14 +731,16 @@ function analyze(input) {
     }
 
     // —— 控件轴：模板标签（含传递可达）的可点击角色 vs 后端档位 ——
-    for (const [handler, roleSets] of bindings) {
+    for (const [handler, entries] of bindings) {
       if (!funcNames.has(handler)) continue;
       const reach = closure(handler);
       for (const call of reach) attached.add(`${call.host}::${call.fn}`);
-      for (const roles of roleSets) {
-        if (roles === null) continue; // 标签上没挂任何位：交给存在性判据
+      for (const entry of entries) {
+        const roles = entry.roles;
+        if (roles === null) continue; // 标签上没挂任何位/裸比较：交给存在性判据
         for (const call of reach) {
           const accepted = acceptedOf(call.tier);
+          // (a) 前端比后端松：UI 放过了后端不接受的角色 → ADMIN/AUDITOR 白吃 403。
           const bad = roles.filter((r) => !accepted.includes(r));
           if (bad.length > 0) {
             tierViolations.push(
@@ -651,6 +748,21 @@ function analyze(input) {
               + `但 ${call.fn} → ${call.matched.join(", ")} 后端只接受 ${accepted.join("/")}`
               + `（应挂 ${compatibleOf(accepted).join(" 或 ")}）`
             );
+          }
+          // (b) 前端比后端严（第五轮 B-FINDING 5）：仅当收窄来自【裸角色字面比较】时判红——
+          //     后端写档放行的角色被裸比较藏了起来（例：change-password 后端=ADMIN/SUPER_ADMIN，
+          //     UI 用 `currentAdminRole === 'SUPER_ADMIN'` 外壳把校区 ADMIN 挡在门外）。
+          //     按位（sessionStore.<位>）造成的收窄不在这里判红，避免误伤合法的超管专属控件；
+          //     那是另一条轴（守卫轴 + compatibleOf 建议）的职责。
+          if (entry.bare) {
+            const missing = accepted.filter((r) => ["ADMIN", "SUPER_ADMIN"].includes(r) && !entry.bare.includes(r));
+            if (missing.length > 0) {
+              tierViolations.push(
+                `${rel}：<绑定 ${handler}() 的控件> 用裸角色比较 ${entry.bare.join("/")} 只放开这些角色，`
+                + `但 ${call.fn} → ${call.matched.join(", ")} 后端还接受 ${missing.join("/")}（前端比后端严，功能倒退），`
+                + `应改挂 ${compatibleOf(accepted).join(" 或 ")} 而不是写死角色比较`
+              );
+            }
           }
         }
       }
@@ -667,10 +779,72 @@ function analyze(input) {
   for (const [fn, meta] of fnTier) {
     if (meta.tier !== "any-write") tierReport.push(`${fn} [${meta.tier}] → ${meta.matched.join(", ")}`);
   }
+
+  // —— 元判点（第五轮 B-FINDING 4）：SELF_SERVICE_WRITE_HANDLERS 的每条豁免方向必须自证 ——
+  // 豁免的语义是「该端点连声称角色都能调、所以处理函数不该有写档守卫」。若某条豁免 reason 里
+  // 引用的端点，在门【自己】的 expandAuthorities 结果里根本放行不了它声称的角色（就像旧那条
+  // 「change-password 接受 AUDITOR」——URL 级写规则早把 AUDITOR 拦了），则这条豁免方向写反了，
+  // 会掩盖真正的无守卫处理函数。此时门自身判红：豁免写错方向不再能蒙过本门。
+  for (const [handlerKey, reason] of selfService) {
+    const parsed = parseExemptionReason(reason);
+    if (!parsed.verb || !parsed.path || !parsed.roles || parsed.roles.length === 0) {
+      problems.push(`豁免 ${handlerKey} 的 reason 解析不出「动词 + 路径 + 接受角色」三要素：${reason}`);
+      continue;
+    }
+    const probe = { verb: parsed.verb, path: parsed.path };
+    const hits = resolveEndpoints(probe, endpoints);
+    if (hits.length === 0) {
+      problems.push(`豁免 ${handlerKey} 声称的端点 ${parsed.verb} ${parsed.path} 在 Java 端点表里找不到`);
+      continue;
+    }
+    const acceptedUnion = [...new Set(hits.flatMap((h) => h.accepted))];
+    const notAccepted = parsed.roles.filter((r) => !acceptedUnion.includes(r));
+    if (notAccepted.length > 0) {
+      problems.push(
+        `豁免 ${handlerKey} 声称「${parsed.verb} ${parsed.path} 接受 ${parsed.roles.join("/")}」，`
+        + `但 expandAuthorities 得出该端点实际只放行 ${acceptedUnion.join("/") || "(无人)"}，`
+        + `${notAccepted.join("/")} 根本过不去 ⇒ 豁免方向写反，本门拒绝据此把无守卫处理函数抹掉`,
+      );
+    }
+  }
+
+  // —— 死位判点（第五轮 B-FINDING 12）：每个档位位必须有视图消费方，否则位↔消费方不一致即红 ——
+  // 位声明在 write-policy.ts（本门按 ADMIN_WRITE_BITS 解析），但没有一个视图引用它，
+  // 就是一条永不执行的空契约（canAdminOnlyWrite 正是如此被删）。新增位必须先接消费者。
+  const bitConsumers = {};
+  for (const bit of ADMIN_WRITE_BITS) bitConsumers[bit] = 0;
+  for (const vf of input.viewFiles) {
+    for (const bit of ADMIN_WRITE_BITS) {
+      const n = (vf.src.match(new RegExp(`sessionStore\\.${bit}\\b`, "g")) || []).length;
+      if (n > 0) bitConsumers[bit] += 1;
+    }
+  }
+  for (const bit of ADMIN_WRITE_BITS) {
+    if (bitConsumers[bit] === 0) {
+      problems.push(`档位位 ${bit} 没有任何视图引用（sessionStore.${bit} 命中 0 个视图）= 死位，要么接消费方要么删位`);
+    }
+  }
+
+  // —— B-FINDING 13：打印「Java 注解数」与「门归档 super-only 函数数」并断言单调关系 ——
+  let superAdminAnnotations = 0;
+  for (const jf of input.javaFiles) {
+    const stripped = stripJavaComments(jf.src);
+    for (const _ of stripped.matchAll(/@PreAuthorize\s*\(\s*["']hasRole\(\s*'SUPER_ADMIN'\s*\)["']/gu)) {
+      superAdminAnnotations += 1;
+    }
+  }
+  let superOnlyArchivedFunctions = 0;
+  for (const [, meta] of fnTier) if (meta.tier === "super-only") superOnlyArchivedFunctions += 1;
+
   return {
     problems,
     tierReport,
     blindSpots,
+    counts: {
+      superAdminAnnotations,
+      superOnlyArchivedFunctions,
+      bitConsumers,
+    },
     stats: {
       writeApiFunctions: writeApiFunctions.size,
       writeViews,
@@ -681,16 +855,13 @@ function analyze(input) {
 }
 
 /* ------------------------------------------------------------------ *
- * --self-test：两个方向都必须能红
+ * --self-test：每个判点方向都必须能红
  * ------------------------------------------------------------------ */
 
-const POLICY_SNIPPET = `
-export const ROLE_TIER_SNAPSHOT = {
-  canWrite: ["ADMIN", "SUPER_ADMIN"],
-  canSuperAdminWrite: ["SUPER_ADMIN"],
-  canAdminOnlyWrite: ["ADMIN"],
-} as const;
-`;
+// 档位快照读【真实】write-policy.ts（第五轮 B-FINDING 12：旧自测把 canAdminOnlyWrite 写成
+// ["ADMIN"]，与真实文件的 ["ADMIN","SUPER_ADMIN"] 不同 ⇒ 真实档位从未被用例走过）。
+// 现在自测与真跑共用同一份档位源，档位一旦漂移自测立即失配。
+const POLICY_SNIPPET = readFileSync(WRITE_POLICY_FILE, "utf8");
 const SEC_CFG = `
                 .requestMatchers(HttpMethod.POST, "/api/v1/admin/**")
                         .hasAnyRole("ADMIN", "SUPER_ADMIN")
@@ -730,14 +901,16 @@ public class FixAdminController {
   const api = [
     { name: "fix.ts", src: `export function createFix() {\n  return post("/v1/admin/fix", {});\n}\n\nexport function replyFix(id) {\n  return put(\`/v1/admin/fix/\${id}/reply\`, {});\n}\n` },
   ];
-  const view = (bit) => ({
+  // 两个写函数分别挂到两个位上：档位快照（真实文件）有 canWrite + canSuperAdminWrite 两把位，
+  // 若某位没有任何视图引用会被死位判点判红；这里让正例引用两把位，避免自测被死位噪声干扰。
+  const view = () => ({
     rel: "Fix.vue",
-    src: `<script setup lang="ts">\nimport { createFix, replyFix } from "@/api/fix";\nfunction doCreate() {\n  if (!sessionStore.${bit}) return;\n  createFix();\n}\nfunction doReply() {\n  if (!sessionStore.${bit}) return;\n  replyFix(1);\n}\n</script>\n<template>\n  <button v-if="sessionStore.${bit}" @click="doCreate()">a</button>\n  <button v-if="sessionStore.${bit}" @click="doReply()">b</button>\n</template>\n`,
+    src: `<script setup lang="ts">\nimport { createFix, replyFix } from "@/api/fix";\nfunction doCreate() {\n  if (!sessionStore.canWrite) return;\n  if (!sessionStore.canSuperAdminWrite) return;\n  createFix();\n}\nfunction doReply() {\n  if (!sessionStore.canWrite) return;\n  if (!sessionStore.canSuperAdminWrite) return;\n  replyFix(1);\n}\n</script>\n<template>\n  <button v-if="sessionStore.canSuperAdminWrite" @click="doCreate()">a</button>\n  <button v-if="sessionStore.canSuperAdminWrite" @click="doReply()">b</button>\n</template>\n`,
   });
   return {
     javaFiles: java,
     apiFiles: api,
-    viewFiles: [view("canWrite")],
+    viewFiles: [view()],
     policySrc: POLICY_SNIPPET,
     securityConfigSrc: SEC_CFG,
     authority: { superAdminCarriesAdmin: authority },
@@ -745,35 +918,137 @@ public class FixAdminController {
 }
 
 if (process.argv.includes("--self-test")) {
-  // (a) 超管端点挂在只有 canWrite 的控件上 ⇒ 必须红
-  const redA = analyze(fixture({ superOnly: true, adminOnly: false, authority: true }));
+  // (a) 超管端点挂在只有 canWrite 的控件上 ⇒ 必须红（档位轴方向"前端比后端松"）
+  const redA = analyze({
+    ...fixture({ superOnly: true, adminOnly: false, authority: true }),
+    viewFiles: [{
+      rel: "Fix.vue",
+      src: `<script setup lang="ts">\nimport { createFix, replyFix } from "@/api/fix";\nfunction doCreate() {\n  if (!sessionStore.canWrite) return;\n  createFix();\n}\nfunction doReply() {\n  if (!sessionStore.canWrite) return;\n  replyFix(1);\n}\n</script>\n<template>\n  <button v-if="sessionStore.canWrite" @click="doCreate()">a</button>\n  <button v-if="sessionStore.canWrite" @click="doReply()">b</button>\n</template>\n`,
+    }],
+  });
   assert.ok(
     redA.problems.some((p) => p.includes("Fix.vue#doCreate") && p.includes("canSuperAdminWrite")),
     `自测失败：方向 (a)（超管端点 + canWrite 控件）没有被判红，实际问题清单=${JSON.stringify(redA.problems)}`
   );
   // (b) 后端只认纯 ADMIN（认证图不再让 SUPER_ADMIN 持有 ROLE_ADMIN）而 UI 位放过 SUPER_ADMIN ⇒ 必须红
-  const redB = analyze(fixture({ superOnly: false, adminOnly: true, authority: false }));
+  const redB = analyze({
+    ...fixture({ superOnly: false, adminOnly: true, authority: false }),
+    viewFiles: [{
+      rel: "Fix.vue",
+      src: `<script setup lang="ts">\nimport { createFix, replyFix } from "@/api/fix";\nfunction doCreate() {\n  if (!sessionStore.canWrite) return;\n  createFix();\n}\nfunction doReply() {\n  if (!sessionStore.canWrite) return;\n  replyFix(1);\n}\n</script>\n<template>\n  <button v-if="sessionStore.canWrite" @click="doCreate()">a</button>\n  <button v-if="sessionStore.canWrite" @click="doReply()">b</button>\n</template>\n`,
+    }],
+  });
   assert.ok(
     redB.problems.some((p) => p.includes("Fix.vue#doReply") && p.includes("ADMIN")),
     `自测失败：方向 (b)（纯 ADMIN 端点 + 含 SUPER_ADMIN 的位）没有被判红，实际问题清单=${JSON.stringify(redB.problems)}`
   );
-  // 正控：档位对齐时必须绿，且扫描面确实识别到了端点（否则上面两条红是空转）
+  // (c) 前端比后端严（第五轮 B-FINDING 5）：any-write 端点被裸角色比较 currentAdminRole==='SUPER_ADMIN'
+  //     藏掉校区 ADMIN ⇒ 必须红。这是新增的"档位轴看得见裸比较"判点。
+  const strictJava = [{
+    path: "FixAny.java",
+    src: `@RequestMapping("/api/v1/admin/fix")
+public class FixAnyController {
+    @PostMapping
+    public String create() { return "ok"; }
+}`,
+  }];
+  const redC = analyze({
+    javaFiles: strictJava,
+    apiFiles: [{ name: "fix.ts", src: `export function createFix() {\n  return post("/v1/admin/fix", {});\n}\n` }],
+    viewFiles: [{
+      rel: "Fix.vue",
+      src: `<script setup lang="ts">\nimport { createFix } from "@/api/fix";\nfunction doCreate() {\n  if (!sessionStore.canWrite) return;\n  createFix();\n}\nfunction doReply() {\n  if (!sessionStore.canSuperAdminWrite) return;\n}\n</script>\n<template>\n  <button v-if="currentAdminRole === 'SUPER_ADMIN'" @click="doCreate()">a</button>\n  <button v-if="sessionStore.canSuperAdminWrite" @click="doReply()">b</button>\n</template>\n`,
+    }],
+    policySrc: POLICY_SNIPPET,
+    securityConfigSrc: SEC_CFG,
+    authority: { superAdminCarriesAdmin: true },
+  });
+  assert.ok(
+    redC.problems.some((p) => p.includes("前端比后端严") && p.includes("doCreate")),
+    `自测失败：方向 (c)（裸角色比较把后端放开的 ADMIN 藏起来）没有被判红，实际问题清单=${JSON.stringify(redC.problems)}`
+  );
+  // (d) 元判点（第五轮 B-FINDING 4）：豁免声称端点接受 AUDITOR，但 URL 写档只放 ADMIN/SUPER_ADMIN
+  //     ⇒ 豁免方向写反 ⇒ 门自身判红。
+  const metaJava = [{
+    path: "FixSelf.java",
+    src: `@RequestMapping("/api/v1/admin/account")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPER_ADMIN', 'AUDITOR')")
+public class FixSelfController {
+    @PostMapping("/change-password")
+    public String chg() { return "ok"; }
+}`,
+  }];
+  const redD = analyze({
+    javaFiles: metaJava,
+    apiFiles: [{ name: "account.ts", src: `export function changePassword() {\n  return post("/v1/admin/account/change-password", {});\n}\n` }],
+    viewFiles: [{
+      rel: "content/Users.vue",
+      src: `<script setup lang="ts">\nimport { changePassword } from "@/api/account";\nfunction handleChangePwd() {\n  changePassword();\n}\n</script>\n<template>\n  <button @click="handleChangePwd">x</button>\n</template>\n`,
+    }],
+    policySrc: POLICY_SNIPPET,
+    securityConfigSrc: SEC_CFG,
+    authority: { superAdminCarriesAdmin: true },
+    selfServiceExemptions: new Map([
+      ["content/Users.vue#handleChangePwd", "POST /v1/admin/account/change-password 接受 AUDITOR（类级 hasAnyRole）"],
+    ]),
+  });
+  assert.ok(
+    redD.problems.some((p) => p.includes("豁免方向写反") || p.includes("豁免方向写反，本门拒绝")),
+    `自测失败：元判点 (d)（豁免声称放宽给 URL 层拦掉的角色）没有被判红，实际问题清单=${JSON.stringify(redD.problems)}`
+  );
+  // (e) 脚本块顶层直接写调用 ⇒ 判红（第五轮结构缺口 a）。
+  const redE = analyze({
+    javaFiles: [{
+      path: "FixTop.java",
+      src: `@RequestMapping("/api/v1/admin/fix")\npublic class FixTopController {\n    @PostMapping\n    public String create() { return "ok"; }\n}`,
+    }],
+    apiFiles: [{ name: "fix.ts", src: `export function createFix() {\n  return post("/v1/admin/fix", {});\n}\n` }],
+    viewFiles: [{
+      rel: "Top.vue",
+      src: `<script setup lang="ts">\nimport { createFix } from "@/api/fix";\ncreateFix();\nfunction noop() {\n  if (!sessionStore.canWrite) return;\n}\nfunction noop2() {\n  if (!sessionStore.canSuperAdminWrite) return;\n}\n</script>\n<template>\n  <button v-if="sessionStore.canWrite" @click="noop()">a</button>\n  <button v-if="sessionStore.canSuperAdminWrite" @click="noop2()">b</button>\n</template>\n`,
+    }],
+    policySrc: POLICY_SNIPPET,
+    securityConfigSrc: SEC_CFG,
+    authority: { superAdminCarriesAdmin: true },
+  });
+  assert.ok(
+    redE.problems.some((p) => p.includes("#(顶层)") && p.includes("脚本块顶层")),
+    `自测失败：判点 (e)（脚本块顶层写调用不吃全文件守卫并集）没有被判红，实际问题清单=${JSON.stringify(redE.problems)}`
+  );
+  // (f) 死位判点（第五轮 B-FINDING 12）：视图一个位都不引用 ⇒ 位↔消费方不一致即红。
+  const redF = analyze({
+    javaFiles: [],
+    apiFiles: [{ name: "fix.ts", src: `export function createFix() {\n  return post("/v1/admin/fix", {});\n}\n` }],
+    viewFiles: [{
+      rel: "Dead.vue",
+      src: `<script setup lang="ts">\nimport { createFix } from "@/api/fix";\nfunction doCreate() {\n  createFix();\n}\n</script>\n<template>\n  <button @click="doCreate()">a</button>\n</template>\n`,
+    }],
+    policySrc: POLICY_SNIPPET,
+    securityConfigSrc: SEC_CFG,
+    authority: { superAdminCarriesAdmin: true },
+  });
+  assert.ok(
+    redF.problems.some((p) => p.includes("死位")),
+    `自测失败：判点 (f)（死位无消费方）没有被判红，实际问题清单=${JSON.stringify(redF.problems)}`
+  );
+  // 正控：档位对齐且两位都有消费方时必须绿，且扫描面确实识别到了端点（否则上面几条红是空转）
   const greenSuper = analyze({
     ...fixture({ superOnly: true, adminOnly: false, authority: true }),
     viewFiles: [{
       rel: "Fix.vue",
-      src: `<script setup lang="ts">\nimport { createFix, replyFix } from "@/api/fix";\nfunction doCreate() {\n  if (!sessionStore.canWrite) return;\n  if (!sessionStore.canSuperAdminWrite) return;\n  createFix();\n}\n</script>\n<template>\n  <button v-if="sessionStore.canWrite && sessionStore.canSuperAdminWrite" @click="doCreate()">a</button>\n</template>\n`,
+      src: `<script setup lang="ts">\nimport { createFix, replyFix } from "@/api/fix";\nfunction doCreate() {\n  if (!sessionStore.canWrite) return;\n  if (!sessionStore.canSuperAdminWrite) return;\n  createFix();\n}\nfunction doReply() {\n  if (!sessionStore.canWrite) return;\n  if (!sessionStore.canSuperAdminWrite) return;\n  replyFix(1);\n}\n</script>\n<template>\n  <button v-if="sessionStore.canWrite && sessionStore.canSuperAdminWrite" @click="doCreate()">a</button>\n  <button v-if="sessionStore.canWrite" @click="doReply()">b</button>\n</template>\n`,
     }],
   });
   assert.equal(
-    greenSuper.problems.find((p) => p.includes("doCreate")),
+    greenSuper.problems.find((p) => p.includes("doCreate") || p.includes("死位") || p.includes("脚本块顶层")),
     undefined,
     `自测失败：档位对齐的正例被判红（误报）：${JSON.stringify(greenSuper.problems)}`
   );
   assert.ok(greenSuper.stats.endpoints >= 1, "自测失败：Java 端点表为空，判据是空门");
   assert.ok(greenSuper.stats.tieredFunctions >= 1, "自测失败：没有 api 函数被归到任何档位");
   console.log(
-    `admin write-gate self-test ok（(a)超管档位、(b)纯 ADMIN 档位双向判红，正控绿；端点 ${greenSuper.stats.endpoints} / 归档函数 ${greenSuper.stats.tieredFunctions}）`
+    `admin write-gate self-test ok（(a)超管档位 (b)纯 ADMIN 档位 (c)前端比后端严 (d)豁免方向写反 `
+    + `(e)脚本块顶层写调用 (f)死位 六向判红，正控绿；端点 ${greenSuper.stats.endpoints} / 归档函数 ${greenSuper.stats.tieredFunctions}）`
   );
   process.exit(0);
 }
@@ -835,11 +1110,16 @@ if (result.stats.endpoints < 30) {
 }
 
 /**
- * 盲区上界（棘轮，只降不升）：这三类是「本门判不到」的清单，
- * 不封顶就等于「反正判不到」。新增盲区必须显式写进这里并说明理由。
+ * 盲区上界（棘轮，第五轮 C-F6 改为「实测值 + 双向收缩」）：这三类是「本门判不到」的清单。
+ *   - unattachedControls：过去写死 30 而实测 23，注释声称「只降不升」却没有任何收缩判点，
+ *     等于给未来 7 个盲区留了静默扩张空间（与同族 tz/collation/openapi/parity/i18n 的双向纪律不一致）。
+ *     现把基线钉成【实测值】，并补一条收缩红：实测 < 基线 即红（要求把基线同步下调），
+ *     实测 > 基线 即红（新盲区）——两个方向都必须显式改这个数字并说明理由。
+ *   - unmatchedAdminCalls / ungardedHandlers：基线 0，本就只允许为 0（>0 即红）；0 无法再收缩，
+ *     不做收缩红。
  */
 const BLIND_SPOT_CEILING = {
-  unattachedControls: 30,
+  unattachedControls: 22,
   unmatchedAdminCalls: 0,
   ungardedHandlers: 0,
 };
@@ -853,6 +1133,21 @@ if (process.env.ADMIN_WRITE_GATE_VERBOSE === "1") {
 }
 console.log(diagnostics.join("\n"));
 
+// B-FINDING 13：打印两个口径读数（Java 注解 vs 门归档函数），并断言单调关系。
+// 归档到 super-only 的 TS 写函数【不可能】多于后端 hasRole('SUPER_ADMIN') 注解数
+// （门只归档落在 /api/v1/admin 且被 TS 命中的端点，是注解数的子集）。
+// 一旦「归档函数数 > 注解数」，说明档位解析把非超管端点错归成 super-only（结构漂移），判红。
+console.log(
+  `SUPER_ADMIN 口径（B-FINDING 13）：Java 注解 hasRole('SUPER_ADMIN')=${result.counts.superAdminAnnotations} 处 / `
+  + `门归档 super-only TS 写函数=${result.counts.superOnlyArchivedFunctions} 个（后者必须 ≤ 前者）`
+);
+const countViolations = [];
+if (result.counts.superOnlyArchivedFunctions > result.counts.superAdminAnnotations) {
+  countViolations.push(
+    `归档 super-only 函数 ${result.counts.superOnlyArchivedFunctions} > Java hasRole('SUPER_ADMIN') 注解 ${result.counts.superAdminAnnotations}：档位解析越界，单调关系破了`
+  );
+}
+
 const blindOverruns = [];
 for (const [key, ceiling] of Object.entries(BLIND_SPOT_CEILING)) {
   if (result.blindSpots[key].length > ceiling) {
@@ -860,15 +1155,20 @@ for (const [key, ceiling] of Object.entries(BLIND_SPOT_CEILING)) {
     const named = result.blindSpots[key].slice(0, 12).join("、");
     const more = result.blindSpots[key].length > 12 ? `…（共 ${result.blindSpots[key].length} 条）` : "";
     blindOverruns.push(`${key}: 实测 ${result.blindSpots[key].length} > 上界 ${ceiling} ⇒ ${named}${more}`);
+  } else if (result.blindSpots[key].length < ceiling) {
+    // 收缩红（C-F6）：盲区变少了却不下调基线 = 基线高于实测 = 给未来退化留余量，
+    // 与同族 tz/collation/openapi/parity/i18n 的"缩了不降也红"一致。
+    blindOverruns.push(`${key}: 实测 ${result.blindSpots[key].length} < 基线 ${ceiling} ⇒ 基线可以且必须降到 ${result.blindSpots[key].length}（只降不升，双向收缩）`);
   }
 }
 
-if (result.problems.length > 0 || blindOverruns.length > 0) {
+if (result.problems.length > 0 || blindOverruns.length > 0 || countViolations.length > 0) {
   console.error(
     `admin write-gate contract FAIL（写视图 ${result.stats.writeViews} 个，端点 ${result.stats.endpoints} 个，不中 ${result.problems.length} 条）`
   );
   for (const p of result.problems) console.error(`  - ${p}`);
   for (const p of blindOverruns) console.error(`  × 盲区扩张: ${p}`);
+  for (const p of countViolations) console.error(`  × 档位计数越界: ${p}`);
   process.exit(1);
 }
 

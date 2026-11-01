@@ -98,7 +98,9 @@ public class SmsCodeController {
      * @return 发送结果（mock profile 附带 mockCode；真实环境不含验证码字段）
      */
     @PostMapping("/send-code")
-    @RateLimit(capacity = 1, refillTokens = 1.0 / 60, key = "#payload.phone")
+    // 键里绝不能出现裸手机号：Redis 以 AOF 持久化（docker-compose.yml --appendonly yes），
+    // 桶名会落盘并随备份长期留存，value 的 TTL 管不到 key 名。改走定长摘要。
+    @RateLimit(capacity = 1, refillTokens = 1.0 / 60, key = "#pii.ref(#payload.phone)")
     public ApiResponse<Map<String, Object>> sendCode(
             @Valid @RequestBody SendCodeRequest payload) {
         // 缺陷 4：注解只封住"同一个手机号"，同一 IP 换号码仍然无限。

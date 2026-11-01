@@ -512,21 +512,21 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
       <!-- 标题组：插图左上留白区 -->
       <view class="hero__txt">
         <text class="hero__eyebrow">XUNMI · CAMPUS</text>
-        <text class="hero__title">创建账号</text>
-        <text class="hero__sub">用手机号注册，开始遇见同频的人</text>
+        <text class="hero__title">{{ t("register.title") }}</text>
+        <text class="hero__sub">{{ t("register.subtitle") }}</text>
       </view>
     </view>
 
     <!-- 表单卡：骑压插图 64rpx（32px），卡片阴影 -->
     <view class="card">
       <view class="card__cap">
-        <text>账号信息</text>
+        <text>{{ t("register.sectionAccount") }}</text>
         <view class="card__cap-line" />
       </view>
 
       <!-- 手机号 -->
       <!-- R11-L01-D05：字段名不能只靠 placeholder 承载（聚焦/填值后即消失），每行补可见 label -->
-      <text class="field__label">手机号</text>
+      <text class="field__label">{{ t("register.phoneLabel") }}</text>
       <view
         class="field"
         :class="{
@@ -540,7 +540,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
           class="field__input"
           type="number"
           :value="phone"
-          placeholder="请输入手机号"
+          :placeholder="t('register.phonePlaceholder')"
           placeholder-class="field__ph"
           maxlength="13"
           :disabled="submitting"
@@ -560,7 +560,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
       </view>
 
       <!-- 短信验证码 -->
-      <text class="field__label">短信验证码</text>
+      <text class="field__label">{{ t("register.smsLabel") }}</text>
       <view
         class="field"
         :class="{
@@ -574,7 +574,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
           class="field__input"
           type="number"
           :value="smsCode"
-          placeholder="短信验证码"
+          :placeholder="t('register.smsPlaceholder')"
           placeholder-class="field__ph"
           maxlength="6"
           :disabled="submitting"
@@ -595,7 +595,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
         >
           <view v-if="smsSending" class="sms-btn__spinner" />
           <text v-else class="sms-btn__text">
-            {{ smsCountdown > 0 ? `重新发送 ${smsCountdown}s` : "获取验证码" }}
+            {{ smsCountdown > 0 ? t("register.smsResendCountdown", { n: smsCountdown }) : t("register.smsSendLabel") }}
           </text>
         </view>
       </view>
@@ -605,7 +605,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
       </view>
 
       <!-- 设置密码 -->
-      <text class="field__label">设置密码</text>
+      <text class="field__label">{{ t("register.passwordLabel") }}</text>
       <view
         class="field"
         :class="{
@@ -619,7 +619,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
           class="field__input"
           :password="!showPassword"
           :value="password"
-          placeholder="设置密码（8–20 位）"
+          :placeholder="t('register.passwordPlaceholder')"
           placeholder-class="field__ph"
           maxlength="20"
           :disabled="submitting"
@@ -659,7 +659,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
       </view>
 
       <!-- 确认密码 -->
-      <text class="field__label">确认密码</text>
+      <text class="field__label">{{ t("register.confirmLabel") }}</text>
       <view
         class="field"
         :class="{
@@ -673,7 +673,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
           class="field__input field__input--confirm"
           :password="!showConfirmPassword"
           :value="confirmPassword"
-          placeholder="再次输入密码"
+          :placeholder="t('register.confirmPlaceholder')"
           placeholder-class="field__ph"
           maxlength="20"
           :disabled="submitting"
@@ -699,11 +699,11 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
 
       <!-- 基础身份（契约对齐变体 07：昵称 + 出生日期） -->
       <view class="card__cap card__cap--second">
-        <text>基础身份</text>
+        <text>{{ t("register.sectionIdentity") }}</text>
         <view class="card__cap-line" />
       </view>
 
-      <text class="field__label">昵称</text>
+      <text class="field__label">{{ t("register.nicknameLabel") }}</text>
       <view
         class="field"
         :class="{
@@ -717,7 +717,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
           class="field__input"
           type="text"
           :value="nickname"
-          placeholder="昵称（1–20 字）"
+          :placeholder="t('register.nicknamePlaceholder')"
           placeholder-class="field__ph"
           maxlength="20"
           :disabled="submitting"
@@ -732,7 +732,7 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
         <text class="field-error__text">{{ errors.nickname }}</text>
       </view>
 
-      <text class="field__label">出生日期</text>
+      <text class="field__label">{{ t("register.birthLabel") }}</text>
       <view
         class="field"
         :class="{
@@ -753,11 +753,11 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
           <view class="field__picker-inner">
             <image class="field__icon" :src="ICONS.CAKE" mode="aspectFit" alt="" />
             <text class="field__pick-text" :class="{ 'field__pick-text--filled': birthDate }">
-              {{ birthDate || "出生日期" }}
+              {{ birthDate || t("register.birthFallback") }}
             </text>
           </view>
         </picker>
-        <text class="field__hint">需满 18 周岁</text>
+        <text class="field__hint">{{ t("register.birthHint") }}</text>
       </view>
       <view v-if="errors.birth" class="field-error">
         <image class="field-error__icon" :src="ICONS.ALERT" mode="aspectFit" alt="" />
@@ -773,12 +773,12 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
         @tap="onSubmitGuarded"
       >
         <view v-if="submitting" class="submit-btn__spinner" />
-        <text class="submit-btn__text">{{ submitting ? "注 册 中" : "注 册" }}</text>
+        <text class="submit-btn__text">{{ submitting ? t("register.submittingLabel") : t("register.submitLabel") }}</text>
       </view>
 
       <!-- 手机号已注册：次级出口（设计稿 06） -->
       <view v-if="phoneRegistered" class="ghost-btn" @tap="goLogin">
-        <text class="ghost-btn__text">用这个手机号登录</text>
+        <text class="ghost-btn__text">{{ t("register.registeredGoLogin") }}</text>
       </view>
     </view>
 
@@ -794,21 +794,21 @@ const onSubmitGuarded = createButtonGuard(handleSubmit, 2000);
       </view>
       <view class="agree__text-wrap">
         <text class="agree__text" :class="{ 'agree__text--error': agreeShake }">
-          我已阅读并同意
-          <text class="agree__link" @tap.stop="openAgreement">《用户协议》</text>
-          和
-          <text class="agree__link" @tap.stop="openPrivacy">《隐私政策》</text>
+          {{ t("register.agreePrefix") }}
+          <text class="agree__link" @tap.stop="openAgreement">{{ t("register.agreeTerms") }}</text>
+          {{ t("register.agreeAnd") }}
+          <text class="agree__link" @tap.stop="openPrivacy">{{ t("register.agreePrivacy") }}</text>
         </text>
       </view>
     </view>
 
     <!-- 底部安全说明：降低填表焦虑 -->
-    <text class="safety-note">注册即代表你已满 18 周岁；信息仅用于校园身份核验，严格保密</text>
+    <text class="safety-note">{{ t("register.safetyNote") }}</text>
 
     <!-- 去登录出口 -->
     <view class="to-login">
-      <text class="to-login__text">已有账号？</text>
-      <text class="to-login__link" @tap="goLogin">去登录</text>
+      <text class="to-login__text">{{ t("register.haveAccount") }}</text>
+      <text class="to-login__link" @tap="goLogin">{{ t("register.goLoginLabel") }}</text>
     </view>
   </view>
 </template>

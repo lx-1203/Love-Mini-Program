@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, readdirSync } from "node:fs";
+import { relative, resolve } from "node:path";
 import { UNLOCK_COST_YUAN, unlockCostCents, unlockCostYuan } from "../../stores/coins";
 import { VIP_PLANS } from "../../config/vip-plans";
 
@@ -218,5 +218,64 @@ describe("VIP 套餐价格镜像（config/vip-plans.ts）必须等于 VipPlanCat
     expect(code).toMatch(/function readCentsFromView/u);
     expect(code).toMatch(/return cents === null \? ""/u);
     expect(code).toMatch(/v-if="codeAvailable && payableYuan"/u);
+  });
+});
+
+/**
+ * 定价镜像表的消费面（第五轮 B 道 FINDING 7 的门）。
+ *
+ * `UNLOCK_COST_YUAN` 是手抄的服务端镜像，`stores/coins.ts` 明令消费方改用
+ * `unlockCostYuan()` / store 的 `costYuanFor()`（服务端回传实测价优先）。那四条
+ * 展示价当时没照做：一旦运营调价或后端覆盖 `APP_UNLOCK_PRICE_*`，这几个页面会继续
+ * 报旧价，而同一功能的另一页报新价 ⇒ 同一次购买两个价。本门把「镜像表只许 store 吃」
+ * 钉成静态判点，否则修完的四处随时能被第五处照抄回来。
+ */
+describe("UNLOCK_COST_YUAN 只允许 store 与 spec 引用（.vue 一律不得直读镜像表）", () => {
+  const CLIENT_SRC = resolve(REPO, "apps/client/src");
+
+  /** 递归收 .vue：node16 的 readdirSync 没有 recursive 选项，手写遍历。 */
+  function collectVue(dir: string, out: string[] = []): string[] {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = resolve(dir, entry.name);
+      if (entry.isDirectory()) collectVue(full, out);
+      else if (entry.isFile() && full.endsWith(".vue")) out.push(full);
+    }
+    return out;
+  }
+
+  /**
+   * 判可执行代码、不判注释：三处已迁移的页面在修复说明里逐字留着
+   * `UNLOCK_COST_YUAN.MESSAGE` 这类改前原文，连注释一起扫会恒红。
+   * 剥离口径与本文件 promo-code 那一份一致。
+   */
+  function codeOnly(src: string): string {
+    return src
+      .replace(/\/\*[\s\S]*?\*\//gu, "")
+      .replace(/(^|[^:])\/\/.*$/gmu, "$1");
+  }
+
+  const vueFiles = collectVue(CLIENT_SRC);
+  const offenders = vueFiles
+    .filter((file) => codeOnly(readFileSync(file, "utf8")).includes("UNLOCK_COST_YUAN"))
+    .map((file) => relative(CLIENT_SRC, file));
+
+  it("扫描面非空（防空转：本仓 .vue 数量远低于下界即说明遍历坏了）", () => {
+    expect(vueFiles.length).toBeGreaterThanOrEqual(150);
+  });
+
+  it("没有任何 .vue 的可执行代码直读定价镜像表", () => {
+    expect(offenders, `直读镜像表的页面：\n${offenders.join("\n")}`).toEqual([]);
+  });
+
+  it("阳性对照：替代出口真的在被消费（否则上一条只是符号消失了）", () => {
+    const consumers = vueFiles.filter((file) =>
+      /(?:costYuanFor|unlockCostYuan)\s*\(/u.test(codeOnly(readFileSync(file, "utf8"))),
+    );
+    expect(
+      consumers.length,
+      "没有任何页面走 costYuanFor/unlockCostYuan ⇒ 本门只是在守一个空符号",
+    ).toBeGreaterThanOrEqual(4);
+    // 镜像表本身仍须在 store 里（判据的对象存在性）：删掉它这条门会静默失去判据
+    expect(UNLOCK_COST_YUAN.MESSAGE).toBeGreaterThan(0);
   });
 });

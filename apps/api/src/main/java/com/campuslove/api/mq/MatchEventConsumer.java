@@ -4,6 +4,7 @@ import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.entity.Notification;
 import com.campuslove.api.entity.Notification.NotificationType;
 import com.campuslove.api.entity.Notification.ReferenceType;
+import com.campuslove.api.privacy.ErasureSubjectGuard;
 import com.campuslove.api.repository.NotificationRepository;
 import com.campuslove.api.repository.UserRepository;
 import java.time.LocalDateTime;
@@ -313,6 +314,13 @@ public class MatchEventConsumer {
                                      String content, LocalDateTime createdAt) {
         if (notificationRepository == null) {
             log.debug("NotificationRepository 不可用，跳过持久化：receiverId={}", receiverId);
+            return;
+        }
+        // F-08（第五轮审查）：注销是终态。墓碑 receiver 不得再被追加 notifications 行
+        //（事件本身可能产生于注销之前，outbox 补偿重投会在注销之后再次送达）。
+        if (ErasureSubjectGuard.isErasedSubject(userRepository, receiverId)) {
+            log.info("接收者已注销，丢弃匹配事件通知：receiverId={}, type={}, title={}",
+                    receiverId, type, title);
             return;
         }
 

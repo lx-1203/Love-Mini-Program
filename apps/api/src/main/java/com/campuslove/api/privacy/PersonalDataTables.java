@@ -282,6 +282,29 @@ public final class PersonalDataTables {
                         + "预览文本可能是我发出的内容，必须清空。conversation_uid / user_a_id / user_b_id "
                         + "留存不构成识别——它们只指向已无身份列的墓碑行。"));
 
+        // ---- 悄悄话（付费留言，whisper_message）：口径与私信一致 ----
+        list.add(PersonalDataTable.of(
+                "whisper_outgoing", "whisper_message", "我发出的悄悄话",
+                ErasureAction.DELETE_ROWS, List.of("whispers"),
+                List.of("content", "sender_id"),
+                List.of("DELETE FROM whisper_message WHERE sender_id = {uid}"),
+                List.of(),
+                "悄悄话是本仓正在收费的付费留言，正文（≤60 字）由主体亲手撰写、属主体数据，删除整行"
+                        + "（口径与 private_messages_outgoing 一致：我发出的删掉）。扣费金额 price_cents 与"
+                        + "幂等键 client_request_id 随行走——退款/对账凭据在 wallet_transaction_log "
+                        + "（财务留存项）另有逐笔记账，删本表不伤对账链。第五轮 A 车道 F-01。"));
+        list.add(PersonalDataTable.of(
+                "whisper_inbound", "whisper_message", "发给我的悄悄话正文",
+                ErasureAction.ANONYMISE_IN_PLACE, List.of(),
+                List.of("content"),
+                List.of("UPDATE whisper_message SET content = " + quote(ErasedValues.TEXT_CONTENT)
+                        + " WHERE receiver_id = {uid}"),
+                List.of(),
+                "别人发给我的悄悄话正文属发送方，不替他销毁整行（行支撑退款/对账）；但主体注销后若原样"
+                        + "保留这条『谁给我发过悄悄话』的正文，等于持续暴露主体收到的私密留言，"
+                        + "与 private_conversations.last_message_preview 同口径——就地把正文匿名，行与 "
+                        + "sender_id/receiver_id/status/price_cents 保留（双方 ID 解析到无身份墓碑，不构成识别）。"));
+
         // ============================================================
         // 5) 关系边：我发起的删掉，指向我的留着（是别人的数据，且只指向墓碑）
         // ============================================================
@@ -302,6 +325,16 @@ public final class PersonalDataTables {
                 ErasureAction.RETAIN_STATUTORY, List.of("follows_received"),
                 List.of("following_id"), List.of(), List.of(),
                 "同 likes_inbound：边属他人，行保留；following_id 解析到无身份墓碑行，不构成识别。"));
+        list.add(PersonalDataTable.of(
+                "content_mentions", "content_mentions", "他人内容里 @ 我的提及行",
+                ErasureAction.RETAIN_STATUTORY, List.of(),
+                List.of("mentioned_user_id"), List.of(), List.of(),
+                "本行是<b>别人</b>在 post/topic/reply 里 @ 我这一动作的记录（边属发起方），行保留——它不含我的"
+                        + "自由文本正文（正文在 posts/comments/circle_topics 等项里已匿名），只有 target_type/"
+                        + "target_id/mentioned_user_id 三根 ID；mentioned_user_id 解析到无身份墓碑，"
+                        + "只剩『某个已注销用户曾被 @ 过』，不构成识别——与 likes_inbound 同口径。"
+                        + "第五轮 A 车道 F-04（与 private_messages_inbound_quote 的区别：那里存的是我的原文快照故抹掉，"
+                        + "这里只是指向我的引用边故保留）。"));
         list.add(PersonalDataTable.of(
                 "heart_signals", "heart_signals", "心动信号/匹配",
                 ErasureAction.DELETE_ROWS, List.of("heart_signals"),
@@ -345,6 +378,59 @@ public final class PersonalDataTables {
                 "楼中楼用 parent_id 串接且 comment_likes 引用评论行，删行会破坏第三方线程与点赞对象，"
                         + "因此只清内容列。"));
 
+        // ---- 圈层/校区话题 UGC（作者写的正文）：与 posts/comments 同口径就地匿名 ----
+        // 列名以迁移链 DDL 为准（第五轮 A 车道 F-02 核实）：
+        //   circle_topics / circle_replies（V2026.05.23.0005）：author_id + content（circle_topics 另有 title/images）
+        //   campus_topics / campus_topic_replies（V2026.05.28.0004）：author_id + content（campus_topics 另有 title/images）
+        //   circle_announcements（V2026.10.28.0009）：author_id + content（title 可空；author_id 存发布人=管理员/圈主用户 ID，可空）
+        list.add(PersonalDataTable.of(
+                "circle_topics", "circle_topics", "我在圈子里发的话题",
+                ErasureAction.ANONYMISE_IN_PLACE, List.of(),
+                List.of("title", "content", "images"),
+                List.of("UPDATE circle_topics SET title = " + quote(ErasedValues.TEXT_CONTENT)
+                        + ", content = " + quote(ErasedValues.TEXT_CONTENT) + ", images = NULL "
+                        + "WHERE author_id = {uid}"),
+                List.of(),
+                "圈子话题的标题/正文/图片属主体，就地匿名。行保留：circle_replies 有 FK "
+                        + "ON DELETE CASCADE 指向本表（V2026.05.23.0005:51），删话题会连带销毁<b>别人</b>的回复；"
+                        + "title/content 均 NOT NULL 无法置空，写常量占位；author_id 指向无身份墓碑行。"));
+        list.add(PersonalDataTable.of(
+                "circle_replies", "circle_replies", "我在圈子里发的回复",
+                ErasureAction.ANONYMISE_IN_PLACE, List.of(),
+                List.of("content"),
+                List.of("UPDATE circle_replies SET content = " + quote(ErasedValues.TEXT_CONTENT)
+                        + " WHERE author_id = {uid}"),
+                List.of(),
+                "回复正文属主体，就地匿名；行保留以维持话题下的楼层结构（同 comments 口径）。"));
+        list.add(PersonalDataTable.of(
+                "campus_topics", "campus_topics", "我在校区发的话题",
+                ErasureAction.ANONYMISE_IN_PLACE, List.of(),
+                List.of("title", "content", "images"),
+                List.of("UPDATE campus_topics SET title = " + quote(ErasedValues.TEXT_CONTENT)
+                        + ", content = " + quote(ErasedValues.TEXT_CONTENT) + ", images = NULL "
+                        + "WHERE author_id = {uid}"),
+                List.of(),
+                "校区话题的标题/正文/图片属主体，就地匿名；行保留（campus_topic_replies FK 指向它，"
+                        + "删行会销毁他人的回复）。title NOT NULL 写常量，content 列可空但同样写占位值以覆盖历史明文。"));
+        list.add(PersonalDataTable.of(
+                "campus_topic_replies", "campus_topic_replies", "我在校区话题下的回复",
+                ErasureAction.ANONYMISE_IN_PLACE, List.of(),
+                List.of("content"),
+                List.of("UPDATE campus_topic_replies SET content = " + quote(ErasedValues.TEXT_CONTENT)
+                        + " WHERE author_id = {uid}"),
+                List.of(),
+                "回复正文属主体，就地匿名；行保留维持楼层。"));
+        list.add(PersonalDataTable.of(
+                "circle_announcements", "circle_announcements", "我发布的圈公告",
+                ErasureAction.ANONYMISE_IN_PLACE, List.of(),
+                List.of("title", "content"),
+                List.of("UPDATE circle_announcements SET title = NULL, content = "
+                        + quote(ErasedValues.TEXT_CONTENT) + " WHERE author_id = {uid}"),
+                List.of(),
+                "公告正文/标题由发布人所写（author_id 存后台管理员/圈主用户 ID），属该主体的自由文本，就地匿名；"
+                        + "行保留（status/is_pinned 等运营属性不识别个人）。title 列可空 → 置 NULL，content NOT NULL → 写占位值。"
+                        + "注：V2026.10.28.0009 回填的旧公告 author_id 为 NULL，WHERE author_id = {uid} 天然不触及无主行。"));
+
         // ============================================================
         // 7) 通知/访客/草稿/偏好/行为轨迹：主体的数据，整行删除
         // ============================================================
@@ -363,6 +449,15 @@ public final class PersonalDataTables {
                 List.of(),
                 "「我看过谁的主页」是可推断社交意图的行踪数据（导出清单未声明）。"
                         + "host_id 方向的行属被访者，保留：它只指向墓碑。"));
+        list.add(deleteRows("visitors_outgoing", "visitors", "我的浏览足迹（匹配链路）",
+                "visitor_id", List.of(),
+                "两张访客表并存、职责不同（第五轮 A 车道 F-03 纠正『清错空表』）：上一条 profile_visitors 由"
+                        + "主页访客功能读写（entity ProfileVisitor，host_id/visitor_id 语义）；"
+                        + "本条 visitors 才是匹配/推荐链路真正在写的那张（entity Visitor，"
+                        + "MatchRecorder 逐次 visitorRepository.save，读侧 RelationshipScoreService/"
+                        + "RealPushSummaryService）。生产写入的是 visitors，注销必须点名它，否则旧清单只清了 profile_visitors。"
+                        + "两表不合并（两套写读路径，合并属另一件事）；本表 visited_user_id 方向的行属被访者、保留，"
+                        + "只按 visitor_id 删主体发起的浏览。"));
         list.add(deleteRows("post_draft", "post_draft", "未发布草稿", "user_id", List.of(),
                 "草稿含正文/位置描述，未发布因而无任何第三方引用，直接删除（导出清单未声明）。"));
         list.add(deleteRows("user_match_ticket", "user_match_ticket", "匹配排队票", "user_id", List.of(),
@@ -382,6 +477,36 @@ public final class PersonalDataTables {
                 List.of(), "浏览历史是最强的再识别信号之一（谁看了什么、什么时候），删除。"));
         list.add(deleteRows("comment_likes", "comment_likes", "我点的评论赞", "user_id", List.of(),
                 "删除。"));
+        list.add(deleteRows("circle_topic_likes", "circle_topic_likes", "我点赞过的圈子话题", "user_id",
+                List.of(),
+                "话题点赞是主体的兴趣表态（同 post_likes 口径），删除；circle_topics.like_count 计数偏差不再修正"
+                        + "（已知代价）。第五轮 F-11 穷尽门补出——报告曾疑其为死表，实测 RealCircleService 有 "
+                        + "circleTopicLikeRepository.save 写点，是活跃主体表。"));
+        list.add(deleteRows("circle_topic_like_notices", "circle_topic_like_notices", "话题点赞通知去重记录",
+                "user_id", List.of(),
+                "『我给这个话题点过赞、已通知过作者』的去重账（V2026.10.28.0010，随点赞在 RealCircleService 写入），"
+                        + "属主体行为流水，删除；通知本体走 notifications 清单项。第五轮 F-11 穷尽门补出，报告未点名。"));
+        list.add(PersonalDataTable.of(
+                "video_call_records", "video_call_records", "我的视频通话记录",
+                ErasureAction.DELETE_ROWS, List.of(),
+                List.of("caller_id", "receiver_id"),
+                List.of("DELETE FROM video_call_records WHERE caller_id = {uid} OR receiver_id = {uid}"),
+                List.of(),
+                "通话历史行由双方共享、内容是通话事实本身（时长/状态/时间），无法只抹一半——同 heart_signals 口径整行删除；"
+                        + "room_id 是平台内部房间键不含身份。双方各少一条通话历史是注销的必然结果。第五轮 A 车道 F-04。"));
+        list.add(PersonalDataTable.of(
+                "video_calls", "video_calls", "我的视频通话会话（实时状态）",
+                ErasureAction.DELETE_ROWS, List.of(),
+                List.of("caller_id", "callee_id"),
+                List.of("DELETE FROM video_calls WHERE caller_id = {uid} OR callee_id = {uid}"),
+                List.of(),
+                "实时通话状态表（RINGING/ONGOING/ENDED），行同样双方共享、无第三方内容列；历史展示走 "
+                        + "video_call_records，删本表行不损他人可读数据。第五轮 F-11 穷尽门补出——报告只点了 records，"
+                        + "漏了同族实时表。"));
+        list.add(deleteRows("wallet_unlocks", "wallet_unlocks", "我的付费解锁记录", "user_id", List.of(),
+                "解锁记录记录了『主体花钱解锁了谁/哪个列表』（target_type/target_id 可推断社交关注），属主体行为数据，"
+                        + "删除；其资金额已另在 wallet_transaction_log（财务留存项）逐笔记账，删本表不伤对账链。"
+                        + "第五轮 A 车道 F-04。"));
         list.add(deleteRows("search_queries", "search_queries", "我的搜索词", "user_id", List.of(),
                 "搜索词是自由文本，可能含真实姓名/校区，删除。"));
         list.add(deleteRows("daily_answers", "daily_answers", "每日话题作答", "user_id", List.of(),
@@ -543,10 +668,17 @@ public final class PersonalDataTables {
                 "奖励发放属权益账务，保留；两个列都只指向（已销毁身份的）user_id。"));
         list.add(PersonalDataTable.of(
                 "reports", "reports", "我发起的举报",
-                ErasureAction.RETAIN_STATUTORY, List.of(),
-                List.of("reporter_id"), List.of(), List.of(),
-                "举报与处置记录是平台履行内容安全义务的证据（reporter_id NOT NULL、"
-                        + "handler_id 可空），保留以支撑事后复核；被举报内容与主体身份无关。"));
+                ErasureAction.ANONYMISE_IN_PLACE, List.of(),
+                List.of("description", "reason"),
+                List.of("UPDATE reports SET description = " + quote(ErasedValues.TEXT_CONTENT)
+                        + ", reason = " + quote(ErasedValues.SHORT_TEXT) + " WHERE reporter_id = {uid}"),
+                List.of(),
+                "处置留痕（status/handler_id/handle_remark/handled_at/target_type/target_id）保留以支撑内容安全"
+                        + "义务与事后复核；但 description（举报人<b>本人</b>手写的自由文本，V2026.06.26.0001:29，"
+                        + "常含姓名/手机号/被举报人关系）与 reason（举报原因）是主体所写内容，按清单自己在 "
+                        + "ErasureAction 定的规则『有自由文本列即不得 RETAIN』必须就地匿名；reporter_id 指向无身份墓碑。"
+                        + "旧实现把它整表标 RETAIN_STATUTORY 且理由写『被举报内容与主体身份无关』，混淆了『被举报内容』"
+                        + "与『举报人自己写的举报正文』。第五轮 A 车道 F-06。"));
 
         // ============================================================
         // 11) 凭据/设备/会话：全部删除（token 与设备指纹同样属个人信息）

@@ -18,11 +18,13 @@ import java.time.LocalDateTime;
 import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * 真实账号安全服务实现（3-B 修改密码 / 3-C 更换手机号 / 3-E 注销账号）。
@@ -54,14 +56,22 @@ public class RealAccountSecurityService implements AccountSecurityService {
     /**
      * 注销数据清除服务（P0 2026-10-31：注销必须真的删）。
      *
-     * <p>字段注入（required=false）兼容既有单测构造器：为 null 时仅退化为「users 墓碑」，
-     * 生产装配 real profile 时必定存在。原先这里注入的是
-     * {@code RealNameMediaPurgeService}（只删实名照片文件），其职责已被
-     * {@link com.campuslove.api.privacy.AccountErasureService} 完全覆盖并扩展
-     * （实名记录整行删除 + 实名/学生证/相册/背景等文件在事务提交后物理删除）。</p>
+     * <p><b>F-07（第五轮审查）：这里从 {@code @Autowired(required=false)} 字段注入
+     * 改成构造器注入 {@link ObjectProvider} + 启动期 fail-fast + 运行期显式失败。</b></p>
+     *
+     * <p>旧写法为 null 时只 {@code log.error} 一条，随后仍然写 users 墓碑并返回 HTTP 200 ——
+     * 「只把一行墓碑当注销完成」正是本轮被判 P0 的状态，而且它对外宣称已注销。
+     * 用 {@link ObjectProvider} 而不是直接注入具体 bean，是为了让「缺席」成为一个
+     * <b>可判定的运行时事实</b>（能抛 503），同时保留单测构造窄上下文的能力。</p>
+     *
+     * <p>为什么仍然不写成「必须存在的单例参数」：{@code AccountErasureService} 依赖
+     * {@code JdbcTemplate}，把它设为强依赖参数会让「装配顺序/可选基础设施」的问题
+     * 变成 {@code RealAccountSecurityService} 自己起不来；改成 provider 后，
+     * 缺席由 {@link #requireErasureService()} 在<b>启动后第一次调用</b>时给出确定错误，
+     * 而 {@link #failFastIfErasureServiceMissing()} 在启动阶段就把它暴露成启动失败
+     * （real 档下这是唯一可接受的结果：起不来 &gt; 半注销）。</p>
      */
-    @Autowired(required = false)
-    private com.campuslove.api.privacy.AccountErasureService accountErasureService;
+    private final ObjectProvider<com.campuslove.api.privacy.AccountErasureService> accountErasureServiceProvider;
 
     public RealAccountSecurityService(
             UserRepository userRepository,
@@ -69,13 +79,34 @@ public class RealAccountSecurityService implements AccountSecurityService {
             DeviceSessionService deviceSessionService,
             TokenBlacklistService tokenBlacklistService,
             JwtTokenProvider jwtTokenProvider,
-            AesEncryptor aesEncryptor) {
+            AesEncryptor aesEncryptor,
+            ObjectProvider<com.campuslove.api.privacy.AccountErasureService> accountErasureServiceProvider) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.deviceSessionService = deviceSessionService;
         this.tokenBlacklistService = tokenBlacklistService;
         this.jwtTokenProvider = jwtTokenProvider;
         this.aesEncryptor = aesEncryptor;
+        this.accountErasureServiceProvider = accountErasureServiceProvider;
+    }
+
+    /**
+     * real 档装配自检（F-07 第①步）：本类只在 {@code @Profile("real")} 下装配，
+     * 同档必须存在 {@code AccountErasureService}。取不到就直接让应用启动失败。
+     *
+     * <p>为什么值得为它失败：注销漏跑清单的后果是「实名/校园认证/聊天/行为数据全留在库里，
+     * 但用户与运营都看到『已注销』」——这是不可逆的隐私事故，而启动失败是可逆的运维事件。
+     * 旧写法（{@code required=false} + 只打 ERROR）把两者反过来了。</p>
+     */
+    @jakarta.annotation.PostConstruct
+    void failFastIfErasureServiceMissing() {
+        if (accountErasureServiceProvider == null
+                || accountErasureServiceProvider.getIfAvailable() == null) {
+            throw new IllegalStateException("real profile 下缺少 AccountErasureService 装配："
+                    + "注销只能写 users 墓碑，实名/校园认证/聊天/行为数据不会被清除。"
+                    + "启动失败优于静默半注销，请检查 com.campuslove.api.privacy 包扫描与"
+                    + " JdbcTemplate/DataSource 装配（第五轮审查 F-07）。");
+        }
     }
 
     /**
@@ -206,53 +237,37 @@ public class RealAccountSecurityService implements AccountSecurityService {
         }
 
         // 1) 关联数据清除（原生 SQL 逐表 DELETE/匿名化，与 PIPL 导出清单同源；含证件照/相册文件 URL 收集）
-        if (accountErasureService != null) {
-            accountErasureService.erase(userId);
-        } else {
-            // 生产装配不会走到这里（real profile 下必然存在）；退化为仅墓碑，并把缺口显式打出来
-            log.error("注销缺少 AccountErasureService 装配，仅写了 users 墓碑——"
-                    + "实名/校园认证/聊天/行为数据未清除, userId={}", userId);
-        }
+        //    清除服务缺席 ⇒ 抛 503，绝不写墓碑冒充「已注销」（F-07 第②步）
+        com.campuslove.api.privacy.AccountErasureService erasure = requireErasureService(userId);
+        erasure.erase(userId);
 
         // 2) users 行墓碑（身份列全部销毁；openid 非空且唯一，phone 置 NULL）
-        String erasedOpenid = accountErasureService != null
-                ? accountErasureService.tombstone(user)
-                : manualTombstone(user);
+        String erasedOpenid = erasure.tombstone(user);
         userRepository.save(user);
-        log.info("账号已注销，users 行已墓碑化（openid 已换为一次性随机墓碑值）, userId={}", userId);
+        log.info("账号已注销，users 行已墓碑化, userId={}, tombstoneOpenid={}", userId, erasedOpenid);
 
         // 3) 吊销该用户全部 token（含当前请求 token）
         revokeAllTokens(userId, currentToken);
     }
 
     /**
-     * 装配缺失时的兜底墓碑（列集与 {@code AccountErasureService#tombstone} 保持一致）。
-     * 仅本地/测试窄场景使用；生产路径由清除服务写墓碑。
+     * 取注销清除服务；缺席即显式失败（HTTP 503），不再走「手搓墓碑 + 返回成功」。
+     *
+     * <p>为什么必须是失败而不是兜底：兜底只写 {@code users} 一行，实名/校园认证/聊天/
+     * 行为轨迹/财务身份列全部不动，但调用方拿到 200、用户看到「已注销」——
+     * 半注销态既不可重跑（token 已吊销，主体再也调不到任何接口）也不可发现。
+     * 抛 503 让运营在错误率上看得见，且事务整体回滚、不留墓碑。</p>
      */
-    private String manualTombstone(User user) {
-        String erasedOpenid = com.campuslove.api.privacy.ErasedValues.erasedOpenid();
-        user.setOpenid(erasedOpenid);
-        user.setNickname(com.campuslove.api.privacy.ErasedValues.NICKNAME);
-        user.setAvatarUrl(null);
-        user.setBio(null);
-        user.setGradeLabel(null);
-        user.setPronouns(null);
-        user.setPhone(com.campuslove.api.privacy.PhoneColumnCodec.ERASED_VALUE);
-        user.setBirthDate(null);
-        user.setCampusName(null);
-        user.setCirclePath(null);
-        user.setPassword(null);
-        user.setLatitude(null);
-        user.setLongitude(null);
-        user.setGeoUpdatedAt(null);
-        user.setRole("USER");
-        user.setStatus("deactivated");
-        user.setAutoRenewEnabled(false);
-        user.setProfileCompletion(0);
-        user.setFollowingCount(0);
-        user.setFollowersCount(0);
-        user.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
-        return erasedOpenid;
+    private com.campuslove.api.privacy.AccountErasureService requireErasureService(Long userId) {
+        com.campuslove.api.privacy.AccountErasureService erasure = accountErasureServiceProvider == null
+                ? null : accountErasureServiceProvider.getIfAvailable();
+        if (erasure == null) {
+            log.error("注销被拒绝：AccountErasureService 未装配，实名/校园认证/聊天/行为数据无法清除，"
+                    + "不写墓碑冒充已注销, userId={}", userId);
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    ErrorMessages.ACCOUNT_ERASURE_SERVICE_UNAVAILABLE);
+        }
+        return erasure;
     }
 
     // ---- 私有辅助方法 ----

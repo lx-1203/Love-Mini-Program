@@ -96,6 +96,27 @@ export const useHomeStore = defineStore("home", () => {
     return next;
   }
 
+  /**
+   * 登出清理（第五轮 FINDING 15）。
+   *
+   * 首页 dashboard 的每一个分片都是「按当前这个人算出来的」：课表摘要、推荐的人、
+   * AI 计划、匹配中心、今日推荐 feed。留在内存里 ⇒ B 冷进入首页时，
+   * `fetchDashboard` 落地之前渲染的是 A 的课表与推荐列表。
+   * 组合式 store 没有 `$reset`，逐字段回到 setup 里的初始值。
+   */
+  function resetForLogout(): void {
+    dashboard.value = null;
+    loading.value = false;
+    errorMessage.value = null;
+    scheduleSummary.value = null;
+    recommendedPeople.value = [];
+    aiPlan.value = null;
+    activityPreview.value = [];
+    discussionHeat.value = [];
+    matchCenter.value = null;
+    homeFeed.value = null;
+  }
+
   return {
     // State
     dashboard,
@@ -113,5 +134,6 @@ export const useHomeStore = defineStore("home", () => {
     rotateTodayRecommendation,
     // Actions
     fetchDashboard,
+    resetForLogout,
   };
 });

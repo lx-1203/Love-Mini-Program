@@ -380,8 +380,10 @@ cosign generate-key-pair
 
 ### 质量门禁
 
-- `.github/workflows/ci.yml`：CI/CD 实际流程（13 个 job：gitleaks、lint、契约、双端 typecheck/build、单测、`mvn verify`、Trivy、e2e、release gate）
-- 根 `package.json` 的 `test:contracts`：18 项契约与门禁自检，新增门禁需同时登记进 `test:gate-wiring`
+- `.github/workflows/ci.yml`：CI/CD 实际流程（gitleaks、依赖审计、lint、契约、双端 typecheck/build、单测、`mvn verify`、真库迁移与 DB 集成测试、Trivy、e2e、release gate）
+- 根 `package.json` 的 `test:contracts`：全部契约与门禁自检串成一条链。**这里刻意不写"几项"**——
+  数目一直在长，写死就成了第二份真相；链条的完整性由 `npm run test:gate-wiring` 负责：
+  每个 `test:*` 脚本必须在链里、被 CI 点名，或登记在带理由且只减不增的例外表中。
 
 ## 贡献指南
 

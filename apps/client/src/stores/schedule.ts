@@ -118,6 +118,12 @@ export const useScheduleStore = defineStore("schedule", () => {
   /**
    * 时间段配置（5 个时段：上午 2 段 + 下午 2 段 + 晚上 1 段）
    */
+  /**
+   * 课程表的冷启动形态快照（在任何 mutation 之前取一份）。
+   * 登出复位用它，而不是在别处再抄一份种子数据 ⇒ 初始化器改了，复位自动跟着改。
+   */
+  const scheduleItemsSeed: ScheduleItem[] = JSON.parse(JSON.stringify(scheduleItems.value));
+
   const timeSlots = ref([
     { start: "08:00", end: "09:35" },
     { start: "10:00", end: "11:35" },
@@ -197,6 +203,15 @@ export const useScheduleStore = defineStore("schedule", () => {
     }
   }
 
+  /**
+   * 登出清理（第五轮 FINDING 15）：课程条目是账号自己排出来的数据，
+   * B 账号不该看见 A 账号的课表。`timeSlots` 是通用时段模板（与账号无关），复位它
+   * 没有依据，故留在原处；本 store 没有设备级偏好需要保。
+   */
+  function resetForLogout(): void {
+    scheduleItems.value = JSON.parse(JSON.stringify(scheduleItemsSeed)) as ScheduleItem[];
+  }
+
   return {
     scheduleItems,
     timeSlots,
@@ -208,5 +223,6 @@ export const useScheduleStore = defineStore("schedule", () => {
     freeTimeSlots,
     addItem,
     removeItem,
+    resetForLogout,
   };
 });

@@ -88,6 +88,15 @@ import {
 import { MOCK_LOGIN_HERO } from "../../features/login/hero";
 
 import { useSessionStore } from "../../stores/session";
+import { useCheckInStore } from "../../stores/checkin";
+import { useCoinsStore } from "../../stores/coins";
+import { useDailyQuestionStore, type DailyAnswer } from "../../stores/daily-question";
+import { useVillageStore, type PostItem } from "../../stores/village";
+import { useVipStore } from "../../stores/vip";
+import {
+  ACCOUNT_SCOPED_STORES,
+  type ResettableStore,
+} from "../../stores/logout-registry";
 import { clientApi } from "../../services/api";
 import { loginAsGuest } from "../../services/auth";
 import type { components } from "../../services/generated/api-types";
@@ -395,6 +404,76 @@ describe("session store - logout 本地存储清理（P1 修复 1）", () => {
 
     expect(removeStorageSync).toHaveBeenCalledWith(STORAGE_KEYS.SEARCH_HISTORY);
     expect(store.userSession).toBeNull();
+  });
+});
+
+// ------------------------------------------------------------------
+// 第五轮 FINDING 15：登出必须清 Pinia **内存态**（存储侧清得再干净也不覆盖这一半）
+// mp-weixin / H5 的 reLaunch 不重置 JS 运行时 ⇒ 同一次 app 生命周期内换账号，
+// B 会直接继承 A 的内存态。下列判点逐条盯可推导出的用户可见后果。
+// ------------------------------------------------------------------
+describe("session store - logout 复位其余 store 的内存态（第五轮 FINDING 15）", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+  });
+
+  it("登记表里每个 store 都真的提供 resetForLogout()（走生产同一入口）", () => {
+    const missing = ACCOUNT_SCOPED_STORES.filter(
+      (entry) => typeof (entry.load() as ResettableStore).resetForLogout !== "function"
+    ).map((e) => e.id);
+    expect(missing, `缺 resetForLogout()：${missing.join(", ")}`).toEqual([]);
+  });
+
+  it("logout 清掉签到标记：B 账号不得继承 A 的 checkedIn（每日一问的门槛）", async () => {
+    const checkIn = useCheckInStore();
+    checkIn.checkedIn = true;
+
+    await useSessionStore().logout();
+
+    expect(checkIn.checkedIn).toBe(false);
+  });
+
+  it("logout 清掉每日一问的回答列表与已答标记（否则 B 屏上仍是 A 拉到的卡片）", async () => {
+    const dq = useDailyQuestionStore();
+    dq.hasAnswered = true;
+    dq.answers = [{ id: 999 } as DailyAnswer];
+    dq.answerHasMore = true;
+    dq.answerPage = 3;
+
+    await useSessionStore().logout();
+
+    expect(dq.hasAnswered).toBe(false);
+    expect(dq.answers).toHaveLength(0);
+    // 这两个位不是「没复位」，而是**冷启动形态就该是这样**：`fetchAnswers` 在拿到第一页
+    // 之前不知道有没有下一页，初值为 true；`$reset()` 回到初始化器 ⇒ true。
+    // 写这条是为了钉住「resetForLogout 用 $reset 而不是逐字段赋默认值」这一选择：
+    // 谁改成逐字段清理，就必须在这里显式认领自己认为的正确初值，而不是悄悄换个数。
+    expect(dq.answerHasMore).toBe(true);
+    expect(dq.answerPage).toBe(1);
+  });
+
+  it("logout 清掉钱包余额（real 档异步重取之前不得先闪出 A 的余额）", async () => {
+    const coins = useCoinsStore();
+    coins.balanceCents = 2000;
+    coins.loaded = true;
+
+    await useSessionStore().logout();
+
+    expect(coins.balanceCents).toBe(0);
+    expect(coins.loaded).toBe(false);
+  });
+
+  it("logout 清掉村口列表与会员身份（A 的待审帖与「已是会员」不得留在 B 的首屏）", async () => {
+    const village = useVillageStore();
+    const vip = useVipStore();
+    village.posts = [{ id: "p-1" } as PostItem];
+    vip.expireDate = "2099-01-01";
+
+    await useSessionStore().logout();
+
+    expect(village.posts).toHaveLength(0);
+    expect(vip.expireDate).toBeNull();
   });
 });
 

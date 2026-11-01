@@ -1462,5 +1462,21 @@ export const useVillageStore = defineStore("village", {
       // 没有这一步它们的结果会被当成某个村口频道的桶内容、在 30s TTL 内冒充该频道列表。
       this.activeFeedKey = null;
     },
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * `dispose()` 不删列表（它只回收 AbortController、防抖定时器、in-flight 集合，
+     * 并把活跃频道归档）——那是「离开村口页」的语义，同账号还会读回来。
+     * 登出要的是另一件事：A 的动态列表、待审帖、收藏态、浏览记录不能出现在 B 的村口首屏。
+     *
+     * 逐字段口径：state 里没有设备级数据（`categories` 是服务端下发的分类表，
+     * 重进村口会重新拉；`activeFeedKey` 的持久化偏好走 storage-keys 的设备级键，
+     * 不在本 store 内存里，登出清扫不会碰它），故整块回到冷启动形态。
+     */
+    resetForLogout() {
+      this.dispose();
+      this.$reset();
+    },
   },
 });

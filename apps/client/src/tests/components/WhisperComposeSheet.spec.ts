@@ -72,7 +72,13 @@ async function typeContent(
 }
 
 function setBalance(cents: number): void {
-  useCoinsStore().balanceCents = cents;
+  const coins = useCoinsStore();
+  coins.balanceCents = cents;
+  // 弹层以 visible=true 挂载时，组件的 immediate watcher 会调 `fetchBalance(false)`。
+  // mock 档那条路的语义是「没加载过才发初始额度」（第五轮 FINDING 10 修掉的正是
+  // 拿 `=== 0` 当「没加载过」哨兵 ⇒ 真花光了会白送 800 元），所以夹具必须自己声明
+  // 「这一笔是已加载的账号态」，否则刚写进去的 2000 会被初始化为 80000 覆盖。
+  coins.loaded = true;
 }
 
 function lastRequestId(): string {

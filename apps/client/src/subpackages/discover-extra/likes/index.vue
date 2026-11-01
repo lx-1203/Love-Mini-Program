@@ -44,7 +44,7 @@ import { showErrorToast } from "../../../utils/error-toast";
 import { resolveMediaUrl } from "../../../utils/media";
 // 2026-08-08 走查 P1：喜欢页「前 2 条免费 + 其余打码 + 解锁全部」（与喜欢与访客独立页规则统一）
 import { useVipStore } from "../../../stores/vip";
-import { useCoinsStore, UNLOCK_COST_YUAN } from "../../../stores/coins";
+import { useCoinsStore } from "../../../stores/coins";
 // 批次 A / ADR-2：解锁属商业化能力（commerce.coin 子闸），封存态禁用解锁入口
 import { useAppConfigStore } from "../../../stores/app-config";
 import { featureFlags } from "../../../config/feature-flags";
@@ -181,9 +181,15 @@ const hasLockedItems = computed(() => {
   return false;
 });
 
-/** 当前 Tab 解锁单价（元，仅用于文案展示；实际扣费由服务端 /wallet/unlock 定价） */
+/** 当前 Tab 解锁单价（元，仅用于文案展示；实际扣费由服务端 /wallet/unlock 定价）
+ *
+ * 第五轮 FINDING 7：不再直读定价镜像表 `UNLOCK_COST_YUAN`，改走 store 的
+ * `costYuanFor()` —— 服务端一旦回传过实测扣减额（`/wallet/deduct` 的 amountCents），
+ * 展示价就跟着服务端价走；否则回落到镜像表。与 `WhisperUnlockSheet` 同一个出口，
+ * 避免「同一次购买两个页面报两个价」。
+ */
 const unlockCost = computed(() =>
-  UNLOCK_COST_YUAN[activeTab.value === "likedBy" ? "LIKES" : "VISITORS"],
+  coinsStore.costYuanFor(activeTab.value === "likedBy" ? "LIKES" : "VISITORS"),
 );
 
 /**

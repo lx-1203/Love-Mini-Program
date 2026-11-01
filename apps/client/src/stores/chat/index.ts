@@ -127,5 +127,18 @@ export const useChatStore = defineStore("chat", {
     loadIcebreakers,
     sendIcebreaker,
     fetchIcebreakers,
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * 聊天内容整体是账号数据：概览、活跃会话、消息流、破冰话题。
+     * `messageDeliveryStatus` 尤其要紧——它是「A 的哪几条消息还在 sending/failed」。
+     * 该字段在 state 初始化时从本地存储读回（`loadMessageStatus`），而登出流程的顺序是
+     * **先清用户级存储、后清内存**，所以 `$reset()` 读到的是已清空的存储 ⇒ 归零；
+     * 若把顺序反过来，这里会把 A 的投递状态原样读回来，白清一趟。
+     */
+    resetForLogout() {
+      this.$reset();
+    },
   },
 });

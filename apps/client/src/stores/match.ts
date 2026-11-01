@@ -94,6 +94,18 @@ export const useMatchStore = defineStore("match", () => {
     lastError.value = null;
   }
 
+  /**
+   * 登出清理（第五轮 FINDING 15）。
+   *
+   * 匹配状态机里 `matchedUser` 是「A 刚匹配上的那个人」，`pendingAction`/`pendingCardId`
+   * 是 A 未走完的那次滑动。登出后 B 进入匹配成功页会直接看到 A 的对象与文案。
+   * 与页面级的 `reset()`（同一次会话内退出动画后复位）语义相同，但单独命名，
+   * 让登出登记表能按统一约定调 `resetForLogout()`。
+   */
+  function resetForLogout(): void {
+    reset();
+  }
+
   return {
     status,
     matchedUser,
@@ -108,5 +120,6 @@ export const useMatchStore = defineStore("match", () => {
     setMatchedUser,
     markChatReady,
     reset,
+    resetForLogout,
   };
 });

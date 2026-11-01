@@ -206,6 +206,16 @@ export const useMenuStore = defineStore("menu", () => {
   const menus = ref<AdminMenuNode[]>([]);
   /** 是否已成功加载过菜单（守卫据此避免重复拉取） */
   const loaded = ref(false);
+  /**
+   * 本次 loaded=true 对应的登录主体（当前管理员用户 id 字符串）。
+   *
+   * 第五轮 B-FINDING 15：仅靠 loaded 判定「要不要重拉菜单」在 SPA 软跳转下不安全——
+   * 换了一个权限不同的账号（不刷新页面）时 loaded 仍为 true，菜单树不重拉，
+   * 上一角色的动态路由与导航继续可见。守卫的加载条件因此改为
+   * `!loaded || loadedFor !== 当前用户 id`，loadMenus 成功时把主体记进本字段。
+   * 登出走 reset() 归零。
+   */
+  const loadedFor = ref<string | null>(null);
 
   /** 含 children 的菜单树（直接供侧边栏渲染与动态路由注册） */
   const menuTree = computed<AdminMenuNode[]>(() => menus.value);
@@ -337,9 +347,11 @@ export const useMenuStore = defineStore("menu", () => {
    * 避免后端菜单数据异常/误删时全量菜单入口（含 SUPER_ADMIN 专属）被展示，
    * 导致权限展示绕过与 staticFallbackMenus 双份维护漂移。
    *
+   * @param forUserId 本次加载归属的登录主体（当前管理员用户 id 字符串）；
+   *                  传入时写入 loadedFor，守卫据此判定「换账号即重拉」。
    * @throws ApiError 后端不可达/401/403/404（生产）时抛出，由调用方（守卫/登录页）决定兜底行为
    */
-  async function loadMenus(): Promise<void> {
+  async function loadMenus(forUserId?: string | null): Promise<void> {
     try {
       const body = await get<unknown>("/v1/admin/menus/current");
       // 兼容 ApiResponse 包装与直出数组两种形态
@@ -348,6 +360,7 @@ export const useMenuStore = defineStore("menu", () => {
       // 后端字段 menuType → 前端 type 归一化后再组树，保证侧边栏/动态路由正常
       menus.value = buildMenuTree(normalizeMenuType(list));
       loaded.value = true;
+      loadedFor.value = forUserId ?? null;
       logger.info("[AdminV2 Menu] 菜单加载完成", { count: list.length });
     } catch (error) {
       // mock profile 未实现菜单端点时，仅开发环境使用本地静态菜单兜底，支撑页面走查
@@ -358,6 +371,7 @@ export const useMenuStore = defineStore("menu", () => {
         logger.warn("[AdminV2 Menu] 后端菜单端点 404（dev），使用本地静态菜单兜底");
         menus.value = staticFallbackMenus;
         loaded.value = true;
+        loadedFor.value = forUserId ?? null;
         return;
       }
       throw error;
@@ -368,12 +382,14 @@ export const useMenuStore = defineStore("menu", () => {
   function reset(): void {
     menus.value = [];
     loaded.value = false;
+    loadedFor.value = null;
   }
 
   return {
     menus,
     menuTree,
     loaded,
+    loadedFor,
     loadMenus,
     reset,
   };

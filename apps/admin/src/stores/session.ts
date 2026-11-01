@@ -2,7 +2,8 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { env } from "../config/env";
 import { logger } from "../utils/logger";
-import { roleCanAdminOnlyWrite, roleCanSuperAdminWrite, roleCanWrite } from "../utils/write-policy";
+import { roleCanSuperAdminWrite, roleCanWrite } from "../utils/write-policy";
+import { useMenuStore } from "./menu";
 import { t } from "../i18n";
 
 /**
@@ -61,7 +62,7 @@ export const useSessionStore = defineStore("session", () => {
    * 档位 1：当前账号能否执行写操作（后台「新增/编辑/删除/审核」等控件的总开关）。
    *
    * 单一来源约定：判定口径在 utils/write-policy.ts，视图一律
-   * `v-if="sessionStore.canWrite"`（或下面两个更窄的位），不要各自比较 role 字符串。
+   * `v-if="sessionStore.canWrite"`（或下面这个更窄的位），不要各自比较 role 字符串。
    * 后端同样按 HTTP 方法分级拦截（/api/v1/admin/** 的 POST/PUT/PATCH/DELETE 仅
    * ADMIN / SUPER_ADMIN，见 SecurityConfig），前端隐藏控件只是体验优化；
    * api/http.ts 还会在写请求发出前按同一口径本地拦截，未接 v-if 的写控件
@@ -72,19 +73,12 @@ export const useSessionStore = defineStore("session", () => {
   /**
    * 档位 2：能否执行「超管专属」写操作。
    *
-   * 后端有 42 处方法级 `@PreAuthorize("hasRole('SUPER_ADMIN')")`（高校/字典/菜单/角色/
-   * 通知配置/在线用户踢人/VIP 退款/法务文本/咨询课程/系统配置…），只挂 canWrite 的控件
+   * 后端有一批方法级 `@PreAuthorize("hasRole('SUPER_ADMIN')")` 端点（高校/字典/菜单/角色/
+   * 通知配置/在线用户踢人/VIP 退款/法务文本/咨询课程/系统配置…，准确处数见 utils/write-policy.ts
+   * 文件头：以 tests/admin-write-gate.spec.mjs 实跑为准），只挂 canWrite 的控件
    * 会让校区 ADMIN 每点一次吃一次 403。这类控件必须改挂本位。
    */
   const canSuperAdminWrite = computed(() => roleCanSuperAdminWrite(currentRole.value));
-
-  /**
-   * 档位 3：能否执行后端 `@PreAuthorize("hasRole('ADMIN')")` 的写操作。
-   *
-   * 与档位 1 today 同集合（SUPER_ADMIN 也被注入 ROLE_ADMIN，见 utils/write-policy.ts 头注释），
-   * 单独设位是为了让「后端若把这些端点收紧为纯 ADMIN」立刻变成门能判出来的契约违背。
-   */
-  const canAdminOnlyWrite = computed(() => roleCanAdminOnlyWrite(currentRole.value));
 
   /**
    * 从 localStorage 恢复管理员会话。
@@ -213,6 +207,11 @@ export const useSessionStore = defineStore("session", () => {
    * 生产环境先调用后端 /v1/auth/admin/logout 使服务端 token 失效，
    * 随后无论后端调用是否成功都清理前端本地状态（token / user / localStorage），
    * 避免后端不可达时用户被困在已登录状态。
+   *
+   * 第五轮 B-FINDING 15（admin 侧）：登出必须一并清空菜单 store 的 loaded/menuTree/loadedFor。
+   * 否则 router/guards.ts 的「按需加载」条件（现按当前登录主体 loadedFor 判定）在 SPA 软跳转下
+   * 会命中上一账号残留的 loaded=true，换了权限不同的账号也【不会重拉菜单树】，
+   * 上一角色的动态路由与导航仍可见（点进去仍被后端 403 兜住，属错误导航暴露）。
    */
   async function logout() {
     const { isDev, apiBaseUrl } = env;
@@ -234,6 +233,8 @@ export const useSessionStore = defineStore("session", () => {
     token.value = "";
     localStorage.removeItem("admin_v2_token");
     localStorage.removeItem("admin_v2_user");
+    // 清空动态菜单（含 loadedFor），确保下一账号登录时守卫一定重拉菜单树。
+    useMenuStore().reset();
   }
 
   return {
@@ -245,7 +246,6 @@ export const useSessionStore = defineStore("session", () => {
     isAuditor,
     canWrite,
     canSuperAdminWrite,
-    canAdminOnlyWrite,
     bootstrap,
     login,
     logout,

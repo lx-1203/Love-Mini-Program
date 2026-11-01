@@ -533,6 +533,18 @@ public class AutoRenewService {
                 throw e;
             }
 
+            // F-08（第五轮审查）：注销是终态 —— 已注销主体不再记账，也不再扣款。
+            // 墓碑写已把 auto_renew_enabled 置 false（AccountErasureService#tombstone），
+            // 但本轮扫描的用户集合可能在注销【之前】就取好了（findByAutoRenewEnabledTrue 的快照），
+            // 于是下面「未开启续费」分支会给一个 status=deactivated 的 user_id 新写一行
+            // vip_billing_log 的 FAILED 流水 ——「注销后被后台链路追加行」的财务侧形态。
+            // 判定刻意放在 autoRenewEnabled 之前：覆盖此后所有失败分支，而不是只补那一条。
+            if (user.isErasedSubject()) {
+                log.info("自动续费跳过：主体已注销（deactivated），不写任何流水：userId={}", userId);
+                return new RenewResultView(orderNo, NO_CHARGE_AMOUNT_CENTS, STATUS_SKIPPED,
+                        "主体已注销，续费任务不再记账");
+            }
+
             if (!Boolean.TRUE.equals(user.getAutoRenewEnabled())) {
                 log.info("自动续费跳过，用户未开启自动续费：userId={}", userId);
                 writeBillingLog(userId, orderNo, NO_CHARGE_AMOUNT_CENTS, "FAILED");

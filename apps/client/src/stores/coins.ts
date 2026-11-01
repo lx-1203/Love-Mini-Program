@@ -16,10 +16,19 @@ import { useMock } from "./helpers/use-mock";
  * mock 兼容：mock 模式返回内存模拟数据；real 模式走 /api/v1/wallet/*。
  * 后端 wallet 双 profile 可用（mock 内存 / real 数据库），展示版可完整演示。
  */
+/**
+ * 钱包流水行（字段与后端 `WalletController.WalletTransactionItemView` 逐条对齐）。
+ *
+ * 第五轮 FINDING 9：后端这一列是 `Long amount`（record 字段无任何非空注解），
+ * 也就是**允许下发 null**。此前这里写死 `amount: number`，类型系统在骗人 ——
+ * 消费方（钱包页）按非空去做算术，`null/undefined` 一路算成 `NaN` 直接印到账单上。
+ * 改成与后端一致的可空类型后，所有算术站点必须显式处理未知值。
+ */
 export interface CoinTransactionItem {
   id: number;
   type: "CREDIT" | "DEBIT";
-  amount: number;
+  /** 金额（分）；后端 `Long` 可空 ⇒ 这里允许 null/undefined（未知） */
+  amount: number | null | undefined;
   balanceAfter: number;
   relatedType: string;
   relatedId?: string | null;
@@ -172,6 +181,15 @@ export function buildUnlockOrderId(scene: UnlockScene, targetId: string | number
 export const useCoinsStore = defineStore("coins", () => {
   /** 余额（分） */
   const balanceCents = ref<number>(0);
+  /**
+   * mock 档的初始余额（分 = 800 元）。
+   *
+   * 第五轮 FINDING 10：此前 mock 分支用 `balanceCents === 0` / `balanceCents || 80000`
+   * 当「还没初始化」的哨兵 —— 而 0 分同时也是**真花光了**的值，两个语义撞在同一个数上：
+   * 演示走查里把钱扣到 0，下一次读余额/扣费就会白送 800 元，「余额不足 → 去充值」
+   * 这条路径根本无法演示（扣空了自己弹回满血）。现在初始化判定只看 `loaded` 标志。
+   */
+  const MOCK_INITIAL_BALANCE_CENTS = 80000;
   /** 是否已加载 */
   const loaded = ref(false);
   /** 加载标志 */
@@ -212,9 +230,11 @@ export const useCoinsStore = defineStore("coins", () => {
    */
   async function fetchBalance(forceRefresh = true): Promise<number> {
     if (useMock()) {
-      // mock：初始余额 800 元（80000 分），扣费后递减
-      balanceCents.value = Math.max(0, balanceCents.value);
-      if (balanceCents.value === 0) balanceCents.value = 80000;
+      // mock：首次加载给 800 元（80000 分）演示额度，之后只递减不再回填
+      //（第五轮 FINDING 10：判定「加载过没有」用 loaded 标志，不再用 `=== 0` 当哨兵）
+      if (!loaded.value) {
+        balanceCents.value = MOCK_INITIAL_BALANCE_CENTS;
+      }
       loaded.value = true;
       return balanceCents.value;
     }
@@ -260,12 +280,19 @@ export const useCoinsStore = defineStore("coins", () => {
     const orderId = buildUnlockOrderId(scene, targetId);
 
     if (useMock()) {
-      const current = balanceCents.value || 80000;
+      // 第五轮 FINDING 10：`|| 80000` 是同一个哨兵缺陷的另一半 —— 扣到 0 之后
+      // 下一次扣费又会从 800 元起步（等于「花光了再白送一笔」）。
+      // 未初始化才回填初始额度；已初始化（含 0）就用当前值。
+      if (!loaded.value) {
+        balanceCents.value = MOCK_INITIAL_BALANCE_CENTS;
+        loaded.value = true;
+      }
+      const current = balanceCents.value;
       if (current < amountCents) {
+        // 文案保持原样（本仓 locales 由另一条车道管辖，此处不新增键）
         throw new Error("交友币余额不足，请先充值");
       }
       balanceCents.value = current - amountCents;
-      loaded.value = true;
       return balanceCents.value;
     }
 
@@ -373,6 +400,25 @@ export const useCoinsStore = defineStore("coins", () => {
     return result;
   }
 
+  /**
+   * 登出清理（第五轮 FINDING 15）：钱包整块属账号数据。
+   *
+   * 不清的后果是可见的：账号 B 登录后先闪出账号 A 的余额，`WhisperUnlockSheet`
+   * 的「够不够扣」门槛也按 A 的余额算，直到异步重取才纠正。
+   * `loaded` 一并回 false —— 否则 mock 档会以为「已经初始化过」而把 A 的余额留着。
+   * `serverPrices` 是「这个账号在这个场景实际被扣了多少」的观测值，同样跟账号走。
+   */
+  function resetForLogout(): void {
+    balanceCents.value = 0;
+    loaded.value = false;
+    loading.value = false;
+    serverPrices.value = {};
+    transactions.value = [];
+    transactionsTotal.value = 0;
+    transactionsPage.value = 0;
+    transactionsTotalPages.value = 1;
+  }
+
   return {
     balanceCents,
     balanceYuan,
@@ -389,5 +435,6 @@ export const useCoinsStore = defineStore("coins", () => {
     fetchBalance,
     spend,
     listTransactions,
+    resetForLogout,
   };
 });

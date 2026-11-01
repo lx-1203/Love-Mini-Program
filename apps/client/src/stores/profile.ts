@@ -1096,6 +1096,18 @@ export const useProfileStore = defineStore("profile", {
         photoGalleryItems: items,
       } as unknown as typeof this.basicProfile;
     },
+
+    /**
+     * 登出清理（第五轮 FINDING 15）。
+     *
+     * profile 整块就是「这个人是谁」：昵称/学校/照片墙/语音条/我的帖子/我的日报/统计。
+     * `allowSameSchoolRecommend`、`receiveSameSchoolInfo` 两项看着像偏好，实为账号隐私设置
+     * （落盘键 `PRIVACY_SETTINGS` 属用户级，登出时随存储一起清），
+     * 所以 `$reset()` 之后下一次登录会由后端重新下发，不会出现「B 沿用 A 的可见性设置」。
+     */
+    resetForLogout() {
+      this.$reset();
+    },
   },
 
   getters: {

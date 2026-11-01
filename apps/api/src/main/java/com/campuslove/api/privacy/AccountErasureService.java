@@ -56,10 +56,13 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *       注销里做，不能等运营补。</li>
  *   <li>{@code MessageProducer} 的 outbox 补偿投递（fixedDelay 30s）+
  *       {@code NotificationConsumer#handleNotification}：outbox_event 没有 user_id 列，
- *       注销无法定向清除；消费者按消息里的 userId 直接 INSERT notifications，
- *       <b>确实可能在注销之后再补出一条通知行</b>。本类的应对是「可重跑」：
- *       再调用一次 erase 即清干净；根治需要消费者按 status=deactivated 短路，
- *       属另一条改动（见交付说明的 NOT VERIFIED / 后续建议）。</li>
+ *       注销无法定向清除；消费者按消息里的 userId 直接 INSERT notifications。
+ *       <b>F-08（第五轮审查）已根治</b>：三个消费者（{@code NotificationConsumer} /
+ *       {@code MatchEventConsumer} / {@code CheckInEventConsumer}）在落库段前按
+ *       {@code status=deactivated} 短路并 ack（判定口径见 {@link ErasureSubjectGuard}），
+ *       {@code AutoRenewService} 也不再给已注销主体写 {@code vip_billing_log} 流水。
+ *       因此补偿重投最多变成「重投一条被丢弃的消息」，不再产生新行；
+ *       「可重跑 erase」仍然保留，但已不是这条残留的唯一应对。</li>
  *   <li>{@code VipOrderService} 超时关单、{@code HotScoreScheduler} 热度重算：
  *       只对保留的财务行/帖子做 UPDATE，不写主体身份列，与注销顺序无关。</li>
  * </ol>

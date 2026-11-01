@@ -88,6 +88,8 @@ export interface DiscoverStoreThis extends DiscoverState {
   setSearchKeyword: (keyword: string) => void;
   /** 清理 store 持有的所有定时器与请求资源 */
   dispose: () => void;
+  /** 登出清理（第五轮 FINDING 15）：丢弃在途写入 + 清账号级状态，保留设备级筛选偏好 */
+  resetForLogout: () => void;
 }
 
 /**

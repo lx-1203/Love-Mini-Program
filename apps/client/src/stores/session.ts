@@ -19,6 +19,7 @@ import { MOCK_LOGIN_HERO } from "../features/login/hero";
 import { useMock } from "./helpers/use-mock";
 // B6：后台配置即时生效——启动期非阻塞拉取功能开关/维护模式（见 bootstrap）
 import { useAppConfigStore } from "./app-config";
+import { resetAccountScopedStores } from "./logout-registry";
 import type { components } from "../services/generated/api-types";
 // R4-00167: bindSchool 城市兜底（按学校名查城市表）
 import { SCHOOLS } from "../config/schools";
@@ -594,6 +595,14 @@ export const useSessionStore = defineStore("session", {
         this.isOffline = false;
         this.errorMessage = null;
         this.profileBackgroundUrl = "";
+
+        // 2.5 其余 store 的**内存态**（第五轮 FINDING 15）。
+        // 上面的存储清扫只管得到落盘的那一半；Pinia 里的 state 在 mp-weixin / H5 的
+        // `reLaunch` 之后仍然活着，同一次会话里换账号就会让 B 直接继承 A 的签到标记、
+        // 回答列表、余额与动态列表。登记表见 stores/logout-registry.ts：
+        // 新 store 不登记（也不写进「不跟账号走」）会被 logout-registry.spec.ts 判红。
+        // 放在 session 字段清空之后：个别 store 的复位逻辑会读会话状态，先落到「已登出」。
+        resetAccountScopedStores();
 
         // 3. 清除 Sentry 用户上下文：避免登出后的上报仍关联已登出用户
         try {

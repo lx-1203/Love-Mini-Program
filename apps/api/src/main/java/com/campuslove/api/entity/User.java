@@ -71,6 +71,7 @@ public class User {
     @Column(name = "nickname", length = 64)
     private String nickname;
 
+
     /** 头像 URL */
     @Column(name = "avatar_url", length = 512)
     private String avatarUrl;
@@ -433,6 +434,19 @@ public class User {
      */
     public boolean isDisabled() {
         return "disabled".equalsIgnoreCase(status) || "deactivated".equalsIgnoreCase(status);
+    }
+
+    /**
+     * 账号是否已注销（status=deactivated，3-E）。
+     *
+     * <p><b>与 {@link #isDisabled()} 的区别是有意为之</b>：{@code disabled} 是管理员临时禁用，
+     * 解除后本人仍应看到历史与新增通知；{@code deactivated} 是<b>注销终态</b>——身份列已墓碑化、
+     * token 已吊销、主体再也调不到任何接口。因此后台链路（MQ 消费者、续费扫描）只把
+     * {@code deactivated} 当作「不得再为该主体追加任何行」的短路条件（第五轮审查 F-08），
+     * 用 {@code isDisabled()} 会顺手改掉禁用用户的通知行为，超出隐私整改射程。</p>
+     */
+    public boolean isErasedSubject() {
+        return "deactivated".equalsIgnoreCase(status);
     }
 
     public String getStatus() {
