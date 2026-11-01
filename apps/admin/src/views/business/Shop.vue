@@ -7,7 +7,7 @@
  *   上架状态 / 校区 / 排序
  * - 筛选：标题关键字 + 分类（ticket/food/goods/creative）下拉 + 上架状态下拉 + 分页
  * - 操作：
- *   - 「新增 / 编辑」弹窗：title / category / priceCents / originalPrice / imageUrl /
+ *   - 「新增 / 编辑」弹窗：title / category / priceCents / originalPriceCents / imageUrl /
  *     description / stock / sortOrder / campusName → createShopItem / updateShopItem
  *   - 「上架 / 下架」：publishShopItem / unpublishShopItem
  *   - 「删除」：ConfirmDialog 二次确认后 deleteShopItem
@@ -17,7 +17,8 @@
  *   - PUT/DELETE /api/v1/admin/business/shop/{id}
  *   - POST /api/v1/admin/business/shop/{id}/publish|unpublish
  *
- * 金额单位：priceCents/originalPrice 以「分」存储，前端展示/录入统一转元。
+ * 金额单位：priceCents/originalPriceCents 以「分」存储，前端展示/录入统一转元
+ * （R7-A：字段名单位显式，勿与 products 目录接口的 originalPrice（元）混淆）。
  */
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { useRequestRace } from "../../composables/useRequestRace";
@@ -216,7 +217,7 @@ function openEdit(item: ShopItemView) {
   formTitle.value = item.title;
   formCategory.value = item.category || "goods";
   formPriceYuan.value = item.priceCents != null ? (item.priceCents / 100).toFixed(2) : "";
-  formOriginalPriceYuan.value = item.originalPrice != null ? (item.originalPrice / 100).toFixed(2) : "";
+  formOriginalPriceYuan.value = item.originalPriceCents != null ? (item.originalPriceCents / 100).toFixed(2) : "";
   formImageUrl.value = item.imageUrl || "";
   formDescription.value = item.description || "";
   formStock.value = item.stock ?? -1;
@@ -266,7 +267,7 @@ async function handleSave() {
     title,
     category: formCategory.value,
     priceCents: Math.round(priceYuan * 100),
-    originalPrice: originalPriceYuan !== null ? Math.round(originalPriceYuan * 100) : undefined,
+    originalPriceCents: originalPriceYuan !== null ? Math.round(originalPriceYuan * 100) : undefined,
     imageUrl: formImageUrl.value.trim() || undefined,
     description: formDescription.value.trim() || undefined,
     stock: formStock.value,
@@ -427,7 +428,7 @@ onBeforeUnmount(() => {
               <span class="category-tag">{{ categoryLabel(item.category) }}</span>
             </td>
             <td class="price-cell">{{ formatYuan(item.priceCents) }}</td>
-            <td class="origin-price">{{ item.originalPrice != null ? formatYuan(item.originalPrice) : "-" }}</td>
+            <td class="origin-price">{{ item.originalPriceCents != null ? formatYuan(item.originalPriceCents) : "-" }}</td>
             <td>{{ stockLabel(item.stock) }}</td>
             <td>{{ item.salesCount }}</td>
             <td>

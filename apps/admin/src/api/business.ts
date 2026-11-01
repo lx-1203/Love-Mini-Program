@@ -412,8 +412,8 @@ export interface ShopItemView {
   category: string;
   /** 积分价格（分） */
   priceCents: number;
-  /** 划线价（分，可空） */
-  originalPrice: number | null;
+  /** 划线价（分，可空；单位显式命名 R7-A，勿与 products 目录的 originalPrice（元）混淆） */
+  originalPriceCents: number | null;
   /** 商品图片 URL */
   imageUrl: string;
   /** 商品描述 */
@@ -454,8 +454,8 @@ export interface ShopItemRequest {
   category?: string;
   /** 积分价格（分） */
   priceCents?: number;
-  /** 划线价（分，可空） */
-  originalPrice?: number;
+  /** 划线价（分，可空；单位显式命名 R7-A） */
+  originalPriceCents?: number;
   /** 商品图片 URL */
   imageUrl?: string;
   /** 商品描述 */

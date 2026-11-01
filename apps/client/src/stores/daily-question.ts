@@ -322,7 +322,12 @@ export const useDailyQuestionStore = defineStore("daily-question", {
     loading: false,
     errorMessage: null,
     answerPage: 1,
-    answerHasMore: true,
+    /* 冷启动 false（2026-11-01 第七轮裁定，第六轮 §5.8 挂账）：`answerHasMore` 直接驱动
+     * 页面上「加载更多」入口的 v-if。未拉过第一页之前「还有更多」是一个未验证的假设——
+     * 不许拿未验证的假设渲染一个可点入口。首页拉取成功后由「页满 ANSWER_PAGE_SIZE」
+     * 决定真假（fetchAnswers 两个分支都写顶层值）。改回 true 必须同时改
+     * tests/stores/session.spec.ts 里钉这条的用例并留下新理由。 */
+    answerHasMore: false,
     answerLoading: false,
   }),
 

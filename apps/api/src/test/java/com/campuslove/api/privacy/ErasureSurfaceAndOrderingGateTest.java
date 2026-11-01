@@ -73,7 +73,7 @@ class ErasureSurfaceAndOrderingGateTest {
             "activity_proposal", "保留清单项",
             "user_sessions", "保留清单项");
 
-    /** 归因账的防空转地板（实测 45/28/5，地板留 5 项余量，防止清单被整体摘掉后判点空绿）。 */
+    /** 归因账的防空转地板（实测 45/29/5——R7-B 补 temp_chat_media_holds 后；地板留 5 项余量，防止清单被整体摘掉后判点空绿）。 */
     private static final Map<ErasureStatementSurface, Integer> SURFACE_FLOORS = Map.of(
             ErasureStatementSurface.LIVE_WRITTEN, 40,
             ErasureStatementSurface.EMPTY_WRITTEN, 22,
@@ -158,6 +158,107 @@ class ErasureSurfaceAndOrderingGateTest {
     }
 
     @Test
+    @DisplayName("借归属删除必须先于被借表自身的删除：JOIN 捞的是被借表的行，行先删了借方就静默变 0 行")
+    void joinBorrowingDeletesRunBeforeTheJoinedTableIsDeleted() {
+        JoinAudit audit = joinBorrowingProblems(PersonalDataTables.INVENTORY);
+        assertFalse(audit.owners().isEmpty(), "清单里没有任何删行语句，本判点在空转");
+        assertTrue(audit.borrowers() >= 1,
+                "本判点没有任何可判对象（清单里没有 JOIN 被删表的语句）——第三轴的删除形状变了要重钉，不许空转");
+        assertTrue(audit.problems().isEmpty(),
+                "借归属的删除排在了被借表自身删除之后（静默 0 行缺陷）：\n  " + String.join("\n  ", audit.problems()));
+    }
+
+    /** 借归属顺序判点的审计结果（借方数用于防空转地板，problems 是红句）。 */
+    private record JoinAudit(Map<String, Integer> owners, int borrowers, List<String> problems) {
+    }
+
+    /**
+     * 判点本体：被清单删行的表（owners，值为删它那条的清单序号，同表多项删取最小）；
+     * 语句里 JOIN 了某张被删行的表（且不是自己的目标表）的借方必须排在被借表删除**之前**。
+     * 排在之后＝被借表的行已没了，JOIN 捞空、删除静默 0 行——temp_chat_media_holds 的删除
+     * 靠 JOIN media_asset 借 user_id 归属，media_asset 行先删它就永远删不到东西。
+     */
+    private static JoinAudit joinBorrowingProblems(List<PersonalDataTable> inventory) {
+        Map<String, Integer> ownerOrdinal = new LinkedHashMap<>();
+        for (int i = 0; i < inventory.size(); i++) {
+            for (String sql : inventory.get(i).statements()) {
+                String target = deleteTarget(sql);
+                if (target != null) {
+                    ownerOrdinal.merge(target.toLowerCase(Locale.ROOT), i, Math::min);
+                }
+            }
+        }
+        List<String> problems = new ArrayList<>();
+        int borrowers = 0;
+        for (int j = 0; j < inventory.size(); j++) {
+            for (String sql : inventory.get(j).statements()) {
+                String own = deleteTarget(sql);
+                for (String joined : joinTargetsOf(sql)) {
+                    Integer ownerAt = ownerOrdinal.get(joined);
+                    if (ownerAt == null || (own != null && own.equalsIgnoreCase(joined))) {
+                        continue;
+                    }
+                    borrowers++;
+                    if (j > ownerAt) {
+                        problems.add(inventory.get(j).key() + "（序 " + j + "）JOIN 了 " + joined
+                                + " 借归属，但 " + joined + " 自身的删除排在序 " + ownerAt
+                                + " ⇒ JOIN 捞空、这条删除静默变 0 行");
+                    }
+                }
+            }
+        }
+        return new JoinAudit(ownerOrdinal, borrowers, problems);
+    }
+
+    @Test
+    @DisplayName("阳性对照：借方排在被借表删除之后必须红，正确顺序必须绿（同一条判点喂夹具）")
+    void joinBorrowingDetectorBitesOnBorrowerAfterOwner() {
+        List<PersonalDataTable> wrong = List.of(
+                deleteItem("ma_first", "media_asset"),
+                PersonalDataTable.of("hold_late", "temp_chat_media_holds", "夹具", ErasureAction.DELETE_ROWS,
+                        List.of(), List.of(),
+                        List.of("DELETE h FROM temp_chat_media_holds h JOIN media_asset ma "
+                                + "ON h.media_asset_id = ma.id WHERE ma.user_id = {uid}"),
+                        List.of(), "夹具"));
+        List<String> problems = joinBorrowingProblems(wrong).problems();
+        assertTrue(problems.stream().anyMatch(p -> p.contains("hold_late") && p.contains("media_asset")),
+                "「借方排在被借表删除之后」没被判红：" + problems);
+
+        List<PersonalDataTable> right = List.of(
+                PersonalDataTable.of("hold_early", "temp_chat_media_holds", "夹具", ErasureAction.DELETE_ROWS,
+                        List.of(), List.of(),
+                        List.of("DELETE h FROM temp_chat_media_holds h JOIN media_asset ma "
+                                + "ON h.media_asset_id = ma.id WHERE ma.user_id = {uid}"),
+                        List.of(), "夹具"),
+                deleteItem("ma_second", "media_asset"));
+        assertTrue(joinBorrowingProblems(right).problems().isEmpty(),
+                "正确顺序（借方在前）被误判为红");
+    }
+
+    /** 取语句里全部 `JOIN <table>` 的目标表名（小写、去别名；LEFT/STRAIGHT 不在清单删除形态里，不认）。 */
+    private static List<String> joinTargetsOf(String sql) {
+        List<String> out = new ArrayList<>();
+        String lower = sql.toLowerCase(Locale.ROOT);
+        int idx = 0;
+        while (true) {
+            int at = lower.indexOf(" join ", idx);
+            if (at < 0) {
+                return out;
+            }
+            int start = at + " join ".length();
+            int end = start;
+            while (end < lower.length()
+                    && (Character.isLetterOrDigit(lower.charAt(end)) || lower.charAt(end) == '_')) {
+                end++;
+            }
+            if (end > start) {
+                out.add(lower.substring(start, end));
+            }
+            idx = end;
+        }
+    }
+
+    @Test
     @DisplayName("解析器自证：外键的 5 种声明形态（含两种 CALL 参数形状、策略改写、建后即删）都要认对")
     void migrationGraphParserHandlesAllFiveForeignKeyForms() {
         ErasureMigrationGraph g = new ErasureMigrationGraph();
@@ -231,8 +332,9 @@ class ErasureSurfaceAndOrderingGateTest {
                 "作用面归因账与清单已分叉（缺登记＝新语句免检，多登记＝账上有清单里没有的项）");
         assertEquals(PersonalDataTables.statementCount(), PersonalDataTables.surfaceLedger().size(),
                 "归因账条数与语句总数不等——账不再等于「每条语句都有归因」");
-        assertTrue(PersonalDataTables.statementCount() >= 76,
-                "语句总数只有 " + PersonalDataTables.statementCount() + "（W1c 后应 >=76），判点分母异常");
+        assertTrue(PersonalDataTables.statementCount() >= 79,
+                "语句总数只有 " + PersonalDataTables.statementCount()
+                        + "（出处：W1c 前 76 → W1c 后 78 → R7-B 补 temp_chat_media_holds 后 79），判点分母异常");
     }
 
     @Test

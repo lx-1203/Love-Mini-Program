@@ -190,6 +190,75 @@ if (SCAN_HARDCODED) {
   }
 }
 
+/* ── 第四维（第七轮 §5.7）：同层重复键，文本级 ─────────────────────────────────
+   为什么门要补这根轴：客户端 i18n-duplicate-keys.spec.ts 证过「运行时对象叶子路径唯一」
+   恒真（Object.keys 永不重复，后写覆盖前写 ⇒ t() 退回裸键名，151 个 spec 全绿照不出）。
+   那条 spec 只看 client locales；本门是 node 载具、按 --zh 参数可指到任意 locale 文件，
+   在这里装同一条轴后 admin 的 zh-CN（无任何判点覆盖）也进同一把尺子。
+   判据：TS 文本里**同一花括号层**出现两次同名键。字符串内容不参与层数统计
+   （值里常见 "{n}" 与 "a: b"，naive 计数会漂层把重复藏掉）。
+   基线 = 0（2026-11-01 实测 client zh-CN 与 admin zh-CN 均 0 对），出现即红，无棘轮——
+   重复键没有「存量合理」的形态。 */
+function duplicateSameLayerKeys(text) {
+  const seen = new Map(); // 完整点号路径 -> 首见行
+  const dups = [];
+  const path = []; // 进入每层 `{` 时压入「打开这层的那个键」——光靠深度分不清嵌套兄弟层（自证抓过）
+  let i = 0, line = 1, inStr = null, tokStart = -1, tokEnd = -1, tokQuote = "", lastKey = null;
+  const completeKey = () => {
+    if (tokStart < 0) return;
+    const key = text.slice(tokStart, tokEnd).trim();
+    if (key) {
+      const full = path.filter(Boolean).length ? path.filter(Boolean).join(".") + "." + key : key;
+      if (seen.has(full)) dups.push(`${full}（首见行 ${seen.get(full)}，重现行 ${line}）`);
+      else seen.set(full, line);
+      lastKey = key;
+    }
+    tokStart = -1; tokQuote = "";
+  };
+  while (i < text.length) {
+    const c = text[i], n = text[i + 1];
+    if (c === "\n") { line++; i++; continue; }
+    if (inStr) {
+      if (c === "\\") { i += 2; continue; }
+      if (c === inStr) { if (tokQuote === inStr && tokStart >= 0) tokEnd = i; inStr = null; }
+      i++; continue;
+    }
+    if (c === '"' || c === "'" || c === "`") {
+      if (tokStart < 0) { tokStart = i + 1; tokEnd = -1; tokQuote = c; }
+      inStr = c; i++; continue;
+    }
+    if (c === "/" && n === "/") { while (i < text.length && text[i] !== "\n") i++; continue; }
+    if (c === "/" && n === "*") { i += 2; while (i < text.length && !(text[i] === "*" && text[i + 1] === "/")) { if (text[i] === "\n") line++; i++; } i += 2; continue; }
+    if (/[A-Za-z0-9_$]/.test(c)) {
+      if (tokStart < 0) { tokStart = i; tokEnd = -1; tokQuote = ""; }
+      else if (!tokQuote) tokEnd = i + 1;
+      i++; continue;
+    }
+    if (c === ":" && tokStart >= 0) { if (!tokQuote) tokEnd = i; completeKey(); i++; continue; }
+    if (c === "{") { path.push(lastKey ?? ""); lastKey = null; tokStart = -1; i++; continue; }
+    if (c === "}") { path.pop(); tokStart = -1; i++; continue; }
+    if (c === "," || c === "(" || c === ")" || c === "=" || c === "." || c === "[" || c === "]") tokStart = -1;
+    i++;
+  }
+  return dups;
+}
+/* 判点自证（阳性对照内嵌，坏尺子拒判不许空过）：同层重复要抓到、异层同名要放过、
+   值里的 "{n}" / "a: b" / 换行不得漂层。 */
+{
+  const t1 = duplicateSameLayerKeys('{"a":{"k":1,"k":2}}');
+  const t2 = duplicateSameLayerKeys('{"a":{"k":1},"b":{"k":2}}');
+  const t3 = duplicateSameLayerKeys('{"s":"中文 {n} 值","t":"a: b","t":2}');
+  const t4 = duplicateSameLayerKeys('{"m":"跨\n行 {x}","m":1}');
+  const bad = (t1.length !== 1 ? "同层重复没抓到" : "") + (t2.length !== 0 ? "异层同名误报" : "")
+    + (t3.length !== 1 ? "值内冒号/花括号干扰（期得 1 对 t，实得 " + t3.length + "）" : "")
+    + (t4.length !== 1 ? "值内换行漂层（期得 1 对 m，实得 " + t4.length + "）" : "");
+  if (bad) { console.log("I18N_RESULT=FAIL reason=同层重复键判点自证不过（" + bad + "）⇒ 尺子坏了拒判"); process.exit(2); }
+}
+const ADMIN_ZH = resolve(REPO, "apps/admin/src/i18n/locales/zh-CN.ts");
+const dupClient = duplicateSameLayerKeys(readFileSync(ZH, "utf8"));
+const dupAdmin = existsSync(ADMIN_ZH) ? duplicateSameLayerKeys(readFileSync(ADMIN_ZH, "utf8")) : null;
+const dupFail = dupClient.length > 0 || (dupAdmin !== null && dupAdmin.length > 0);
+
 /* 关键教训（22:31 实测）：**只扫 `t("字面量")` 会大批误判孤儿**。
    本仓很多文案是"键当数据传"：`{ key: "more", labelKey: "common.more" }` 之后 `t(item.labelKey)`，
    字面量在数据里、`t()` 里是变量 —— 静态 t()-扫描看不见，`common.more` 就被我错判成孤儿（1644 分之一）。
@@ -219,11 +288,15 @@ if (prefixes.size) console.log("I18N_DYNAMIC_PREFIXES_SEEN=" + [...prefixes].sli
 if (SCAN_HARDCODED) {
   console.log(
     `I18N_HARDCODED=${hardcoded.total} I18N_HARDCODED_FILES=${hardcoded.files} I18N_HARDCODED_ALLOWED=${ALLOW_HARDCODED}`
-    + `（模板文本=${hardcoded.templateText} 属性=${hardcoded.attrText} toast/modal=${hardcoded.toastModal} ||兜底=${hardcoded.orFallback} throw=${hardcoded.errorThrow}）`,
+      + `（模板文本=${hardcoded.templateText} 属性=${hardcoded.attrText} toast/modal=${hardcoded.toastModal} ||兜底=${hardcoded.orFallback} throw=${hardcoded.errorThrow}）`,
   );
 } else {
   console.log("I18N_HARDCODED=SKIPPED reason=--no-hardcoded");
 }
+console.log(`I18N_DUP_KEYS client=${dupClient.length} admin=${dupAdmin === null ? "(无该文件)" : dupAdmin.length}（同层重复键：文本级，运行时后写覆盖前写 ⇒ t() 退回裸键名；基线 0，无棘轮）`);
+for (const d of dupClient.slice(0, 10)) console.log(`  DUP client zh-CN ${d}`);
+if (dupAdmin !== null) for (const d of dupAdmin.slice(0, 10)) console.log(`  DUP admin zh-CN ${d}`);
+if (dupFail) console.log("I18N_FAIL_DUP 同层重复键 >0：后写键静默覆盖前写，被覆盖文案从此不可达——删一个或改名，没有「存量合理」的豁免形态");
 
 const pairFail = enExists && (zhOnly.length > 0 || enOnly.length > 0);
 const orphanFail = orphans.length > ALLOW;
@@ -246,6 +319,7 @@ if (orphanShrink) failDims.push(`孤儿可收缩 ${orphans.length}<基线 ${ALLO
 if (hardcodedFail) failDims.push(`裸中文 ${hardcoded.total}>允许 ${ALLOW_HARDCODED}`);
 if (hardcodedShrink) failDims.push(`裸中文可收缩 ${hardcoded.total}<基线 ${ALLOW_HARDCODED}`);
 if (pairFail) failDims.push(`pair 差异 ${zhOnly.length + enOnly.length}`);
+if (dupFail) failDims.push(`同层重复键 client=${dupClient.length} admin=${dupAdmin === null ? "n/a" : dupAdmin.length}`);
 if (failDims.length) {
   console.log(`I18N_RESULT=FAIL（${failDims.join("；")}）`);
 } else {

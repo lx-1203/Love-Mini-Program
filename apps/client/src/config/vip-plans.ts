@@ -13,8 +13,8 @@
  *   报价一律取服务端响应字段（`discountAmount` / `finalAmount`）。
  * - 本表与目录的一致性由
  *   `apps/client/src/tests/stores/server-price-mirror.spec.ts` 解析服务端源码钉死，
- *   漂移即红；`originalPrice` 是划线原价（营销位），服务端目录里没有对应字段，
- *   不参与一致性判定。
+ *   漂移即红；`originalPriceYuan` 是划线原价（营销位，单位=元——R7-A 单位显式命名），
+ *   服务端目录里没有对应字段，不参与一致性判定。
  *
  * 价格说明（infra R2-00134）：
  * - 当前价格 18/48/158 为前端静态配置，必须与后端支付/订单价格保持一致，
@@ -43,7 +43,8 @@ export interface VipPlan {
    * 报价一律取服务端响应字段（见 subpackages/vip/promo-code.vue 的 payableFromServer）。
    */
   price: number;
-  originalPrice?: number;
+  /** 划线原价（元，营销位展示；单位显式命名 R7-A，服务端无对应字段） */
+  originalPriceYuan?: number;
   /** 周期文案（中文兜底，展示层优先用 periodKey） */
   period: string;
   /** 周期的 i18n key（config.vipPlans.{id}.period） */
@@ -68,14 +69,14 @@ export interface VipBenefit {
 
 /** 套餐列表（价格、原价、周期等集中维护） */
 // 展示文案 i18n 化（i18n-data-review #11）：name/period/perDay/badge 已抽为 i18n key（config.vipPlans.*，zh/en 同步）。
-// 说明（#50）：套餐折扣（6.4/5.7/4.7 折）由 price/originalPrice 计算，属数据层面问题，此处不改动数值。
+// 说明（#50）：套餐折扣（6.4/5.7/4.7 折）由 price/originalPriceYuan 计算，属数据层面问题，此处不改动数值。
 export const VIP_PLANS: VipPlan[] = [
   {
     id: "monthly",
     name: "月卡",
     nameKey: "config.vipPlans.monthly.name",
     price: 18,
-    originalPrice: 28,
+    originalPriceYuan: 28,
     period: "30 天",
     periodKey: "config.vipPlans.monthly.period",
     perDay: "0.6 元/天",
@@ -86,7 +87,7 @@ export const VIP_PLANS: VipPlan[] = [
     name: "季卡",
     nameKey: "config.vipPlans.quarterly.name",
     price: 48,
-    originalPrice: 84,
+    originalPriceYuan: 84,
     period: "90 天",
     periodKey: "config.vipPlans.quarterly.period",
     perDay: "0.53 元/天",
@@ -100,7 +101,7 @@ export const VIP_PLANS: VipPlan[] = [
     name: "年卡",
     nameKey: "config.vipPlans.yearly.name",
     price: 158,
-    originalPrice: 336,
+    originalPriceYuan: 336,
     period: "365 天",
     periodKey: "config.vipPlans.yearly.period",
     perDay: "0.43 元/天",

@@ -34,7 +34,8 @@ export interface VipPlan {
   /** R4-batch2: 套餐名的 i18n key（config.vipPlans.{id}.name，zh/en 同步） */
   nameKey?: string;
   price: number;
-  originalPrice: number;
+  /** 划线原价（元，营销位展示；单位显式命名 R7-A） */
+  originalPriceYuan: number;
   duration: string;
   features: string[];
   isPopular?: boolean;
@@ -161,7 +162,7 @@ export const useVipStore = defineStore("vip", () => {
       name: "月度会员",
       nameKey: "config.vipPlans.monthly.name",
       price: 18,
-      originalPrice: 28,
+      originalPriceYuan: 28,
       duration: "1个月",
       features: ["专属标识", "解锁空档查看", "优先推荐"],
     },
@@ -170,7 +171,7 @@ export const useVipStore = defineStore("vip", () => {
       name: "季度会员",
       nameKey: "config.vipPlans.quarterly.name",
       price: 48,
-      originalPrice: 84,
+      originalPriceYuan: 84,
       duration: "3个月",
       features: ["专属标识", "解锁空档查看", "优先推荐", "隐身浏览", "消息加速"],
       isPopular: true,
@@ -180,7 +181,7 @@ export const useVipStore = defineStore("vip", () => {
       name: "年度会员",
       nameKey: "config.vipPlans.yearly.name",
       price: 128,
-      originalPrice: 336,
+      originalPriceYuan: 336,
       duration: "12个月",
       features: ["专属标识", "解锁空档查看", "优先推荐", "隐身浏览", "消息加速", "专属客服"],
     },

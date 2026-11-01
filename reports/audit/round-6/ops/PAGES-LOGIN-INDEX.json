@@ -14,7 +14,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG02",
@@ -55,7 +55,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG05",
@@ -74,7 +74,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG06",
@@ -93,7 +93,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG07",
@@ -112,7 +112,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG08",
@@ -131,7 +131,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG09",
@@ -150,7 +150,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG10",
@@ -169,7 +169,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG11",
@@ -193,7 +193,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG12",
@@ -217,7 +217,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG13",
@@ -241,7 +241,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG14",
@@ -260,7 +260,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG15",
@@ -284,7 +284,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG16",
@@ -303,7 +303,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG17",
@@ -325,7 +325,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG18",
@@ -349,7 +349,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG19",
@@ -368,7 +368,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG20",
@@ -387,7 +387,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG21",
@@ -403,7 +403,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG22",
@@ -419,7 +419,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG23",
@@ -438,7 +438,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG24",
@@ -462,7 +462,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG25",
@@ -481,7 +481,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG26",
@@ -505,7 +505,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG27",
@@ -524,7 +524,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG28",
@@ -540,7 +540,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG29",
@@ -560,7 +560,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG30",
@@ -585,7 +585,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG31",
@@ -606,7 +606,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG32",
@@ -622,7 +622,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG33",
@@ -641,7 +641,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG34",
@@ -660,7 +660,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG35",
@@ -676,7 +676,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG36",
@@ -692,7 +692,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG37",
@@ -713,7 +713,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     },
     {
       "id": "LG38",
@@ -733,7 +733,7 @@
         "guest"
       ],
       "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue:98-101 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
+      "identitiesWhy": "页在 policy 的 loggedOutOnly 名单里（pages/login/index）：已登录会话不能停在登录页：apps/client/src/pages/login/index.vue 的 onShow 与 watch(!loading && isLoggedIn) 会自动前进到寻觅 Tab ⇒ 这一页表单类判据（点按钮、勾协议、展开手机号表单）的前置是「未登录」，在 A 档跑必然得到「本页没落在声明页」。"
     }
   ]
 }

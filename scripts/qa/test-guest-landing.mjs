@@ -358,9 +358,9 @@ let realOut = ""; // 块 1 存一份真数据 stdout，块 3 的守恒可见性�
   const entLine = lineWith(ra.out, "GUEST_LAND_OPS_ENTIRE_GUEST=");
   t("9a 整页未声明 + 跑测证人缺席 ⇒ 绿（这一组有证人，腿拍得出来）",
     ra.code === 0, "exit=" + ra.code + "\n" + ra.out.slice(0, 400));
-  /* 计数不钉死：真语料里 subpackages/setup/recommend-pref/index 本来就整页没声明（那是裁定 (a) 的对象），
-     夹具里 tools/search 又被剥成整页没声明 ⇒ 命中面是"这些页的和"。钉的是：读数得是个正数、
-     并且**点名到夹具这一页**（说不出页名的读数等于没说）。 */
+  /* 计数不钉死：夹具把 tools/search 剥成整页没声明（2026-11-01 第七轮打标后，真语料里
+     recommend-pref 已不再是"整页没声明"，这一夹具是裁定 (a) 路线现在唯一的活体）。
+     钉的是：读数得是个正数、并且**点名到夹具这一页**（说不出页名的读数等于没说）。 */
   const mEnt = /GUEST_LAND_OPS_ENTIRE_GUEST=(\d+) 组 \/ (\d+) 行/.exec(entLine);
   t("9a 具名读数说得出这一组靠哪条路线进的账（组数/行数为正且点名到夹具页）",
     !!mEnt && Number(mEnt[1]) >= 1 && Number(mEnt[2]) >= a.pageRows && entLine.includes(PAGE), entLine);
@@ -408,9 +408,14 @@ let realOut = ""; // 块 1 存一份真数据 stdout，块 3 的守恒可见性�
       iProb > 0 && iAcq > iProb, "problems 检查@" + iProb + " acquireUi@" + iAcq);
   }
 }
-/* 10) 真数据的成员账：每组都必须有 ops 派生的证人，且新路线的命中面必须恒为"整页未声明"那一类
-   （这一条钉的是"改动面"：现在实测 policy 28 页里恰好 1 页走新路线、27 页走 #67 老路线。
-     别的页一旦开始整页掉 identities 声明，这里会先变红，而不是悄悄多发几条 GG-* 腿。） */
+/* 10) 真数据的成员账：每组都必须有 ops 派生的证人，且「整页未声明」路线的命中面必须为 0
+   （这一条钉的是"改动面"。2026-09-30 裁定 (a) 上线时 policy 28 页里恰好 1 页〔recommend-pref〕
+     走这条引导期路线；2026-11-01 第七轮把 wallet MW01–11 与 recommend-pref RP01–04/06/08–11
+     按 tag-ops-identity-scope.mjs 的规矩打进登录腿后，30 个裁定页全部走 #67 收窄路线。
+     裁定页 = 游客必被弹走的页 ⇒ 它上面的内容行游客腿永远作不了证，「整页未声明」
+     只可能是"新裁定页还没人打标"的过渡态。所以这道断言收紧为恒 0：再有任何页
+     整页掉 identities 声明（或新裁定页入册没打标），这里先红。合成负例 3b/9a/9b
+     仍钉该路线自身的窄条件，两者不重复。） */
 {
   const triageArg = existsSync(TRIAGE2) ? TRIAGE + "," + TRIAGE2 : TRIAGE;
   const r = run("real-memb", ["--policy", POLICY, "--triage", triageArg]);
@@ -421,9 +426,10 @@ let realOut = ""; // 块 1 存一份真数据 stdout，块 3 的守恒可见性�
     r.code === 0 && bk.rows.length === polObj.rows.length && bk.rows.every((x) => x.memberSource.fromOps > 0),
     "exit=" + r.code + " 组=" + bk.rows.length + " policy=" + polObj.rows.length +
       " 没有 ops 证人的组=" + bk.rows.filter((x) => !x.memberSource.fromOps).map((x) => x.page).join(","));
-  t("10 真数据：新路线命中面 == 整页未声明的那一类页（分布可核，不是一句「都好了」）",
-    (kinds["ops-entirely-undeclared-guest-assertions"] || 0) === 1 &&
-      (kinds["ops-narrowed-out-of-guest-leg"] || 0) === polObj.rows.length - 1,
+  t("10 真数据：裁定页全部走收窄路线（整页未声明=0：那是没打标的过渡态，不许常住）",
+    (kinds["ops-entirely-undeclared-guest-assertions"] || 0) === 0 &&
+    (kinds["ops-narrowed-out-of-guest-leg"] || 0) === polObj.rows.length &&
+    Object.keys(kinds).every((k) => k === "ops-narrowed-out-of-guest-leg"),
     JSON.stringify(kinds));
   t("10 真数据：booked 的落地对集合 == measured 的落地对集合（在册账本与实测腿同一批组）",
     existsSync(resolve(REPO, "reports/audit/round-7/guest-landing-measured.json")) &&

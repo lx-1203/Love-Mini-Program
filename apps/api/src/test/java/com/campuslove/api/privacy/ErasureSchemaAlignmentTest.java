@@ -417,6 +417,147 @@ class ErasureSchemaAlignmentTest {
         return borrowed;
     }
 
+    /* ================= F-11 第三轴（第七轮 R7-B）：「列名点名引用清单表、外键图上却无边」的表 ================= */
+
+    /**
+     * 「列名 = {@code <清单表名>_id}（如 {@code media_asset_id}→{@code media_asset}）但 FK 图上没有
+     * 该表→该清单表 的边」的<b>显式豁免表</b>（第七轮 R7-B）。
+     *
+     * <p>这条形状是前两轴共同的<b>结构性盲区</b>：一张表既没有用户归属列（第一轴派生不到）、
+     * 又没有任何外键（第二轴的闭包走不到），但它的列名<b>明确点名</b>了一张清单表——
+     * {@code temp_chat_media_holds.media_asset_id} 就是第一张（管理员举报保留表，
+     * {@code created_by} 存管理员不是主体、{@code media_asset_id} 无 FK 指向 {@code media_asset}，
+     * 主体关联只有 {@code media_asset_id → media_asset.user_id}）。本轴按列名约定把这类「约定式引用」
+     * 找回来：全库枚举所有命中表，逐张点名进清单或在此写理由（≥20 字）。</p>
+     *
+     * <p>纪律与 {@link #OWNER_TABLE_EXEMPTIONS} / {@link #BORROWED_OWNER_TABLE_EXEMPTIONS} 同族：
+     * 只减不增、理由须 ≥20 字、且该表当下仍必须是本轴命中（列还在、清单表还叫这名、边仍然没有）
+     * 且不在清单里，否则判点红。<b>当前为空表</b>：R7-B 装轴时全库枚举只命中
+     * {@code temp_chat_media_holds} 一张（见 {@link #everyNamedManifestIdReferenceWithoutFkIsNamedOrExempt}），
+     * 它进了清单（借 {@code media_asset.user_id} 删行），无需豁免。</p>
+     */
+    private static final Map<String, String> NAMED_REFERENCE_TABLE_EXEMPTIONS = Map.of();
+
+    /**
+     * F-11 第三轴穷尽门（R7-B）：列名按 {@code <清单表名>_id} 约定指向清单表、而外键图上没有
+     * 该表→该清单表 边的表，必须被清单点名或在豁免表里写理由。
+     *
+     * <p>派生复用 {@link ErasureMigrationGraph}（不写第二台解析器）：列集口径与第一轴一致
+     * （只认 CREATE 体里的列），外键边口径与第二轴一致（5 种声明形态全认、按文本位置施加）。
+     * 有 FK 边的同类列不在此轴点名——它们已由「借归属闭包」轴覆盖，这里再点名只会让一张表
+     * 有两个答案。</p>
+     */
+    @Test
+    @DisplayName("F-11 第三轴：列名=清单表名_id 且外键图无边的表，必须点名或带理由豁免")
+    void everyNamedManifestIdReferenceWithoutFkIsNamedOrExempt() {
+        ErasureMigrationGraph graph = ErasureMigrationGraph.load(ErasureMigrationGraph.locateMigrationDir());
+        Set<String> manifestTables = PersonalDataTables.INVENTORY.stream()
+                .map(t -> t.table().toLowerCase(Locale.ROOT))
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+        List<String> hits = namedReferenceHits(graph, manifestTables);
+
+        // 防空转地板：这一形状必须真的存在（temp_chat_media_holds 是这条门的存在理由）
+        assertTrue(hits.contains("temp_chat_media_holds.media_asset_id→media_asset"),
+                "第三轴没命中 temp_chat_media_holds.media_asset_id→media_asset——列集/外键图解析或轴本身坏了："
+                        + hits);
+        assertTrue(hits.size() >= 1,
+                "第三轴在全库上 0 命中（R7-B 装轴时实测 1：temp_chat_media_holds.media_asset_id），"
+                        + "轴在空集合上假装绿，拒判");
+
+        Set<String> hitTables = new LinkedHashSet<>();
+        for (String hit : hits) {
+            hitTables.add(hit.substring(0, hit.indexOf('.')));
+        }
+        List<String> uncovered = new ArrayList<>();
+        for (String table : hitTables) {
+            if (manifestTables.contains(table) || NAMED_REFERENCE_TABLE_EXEMPTIONS.containsKey(table)
+                    || OWNER_TABLE_EXEMPTIONS.containsKey(table)
+                    || BORROWED_OWNER_TABLE_EXEMPTIONS.containsKey(table)) {
+                continue;
+            }
+            uncovered.add(table + "（列 " + hitsOf(hits, table) + " 按名字指向清单表、外键图上却无边）"
+                    + "既没进清单、也没写豁免理由");
+        }
+        assertTrue(uncovered.isEmpty(),
+                "注销清单对「按列名引用清单表但无外键」的表不穷尽（temp_chat_media_holds 的同一形状）：\n  "
+                        + String.join("\n  ", uncovered)
+                        + "\n全库本轴命中清单（对照用）：" + hits);
+
+        // 反漂移（与前两轴同族纪律）：豁免只在该表当下仍是本轴命中、且未被点名时成立
+        for (Map.Entry<String, String> exemption : NAMED_REFERENCE_TABLE_EXEMPTIONS.entrySet()) {
+            String table = exemption.getKey();
+            assertTrue(exemption.getValue().length() >= 20,
+                    "第三轴豁免表 " + table + " 的理由没写够（<20 字）");
+            assertTrue(hitTables.contains(table),
+                    "第三轴豁免表 " + table + " 已经不是本轴命中（列被删/改名、清单表更名、或外键边补上了）："
+                            + "这条豁免必须划掉");
+            assertFalse(manifestTables.contains(table),
+                    "第三轴豁免表 " + table + " 已经进了注销清单：豁免与清单并存会假绿，必须划掉豁免");
+        }
+    }
+
+    /** 取命中清单里属于某张表的全部条目（拼进失败信息用）。 */
+    private static List<String> hitsOf(List<String> hits, String table) {
+        return hits.stream().filter(h -> h.startsWith(table + ".")).toList();
+    }
+
+    /**
+     * 第三轴判点的解析器自证（阴性/阳性对照，注入假 DDL）：
+     * 有 {@code media_asset_id} 无 FK ⇒ 必须命中；同列但有 FK（CREATE 体内或 ALTER 补建都算）⇒ 不命中；
+     * 指向非清单表 / 自指 ⇒ 不命中。
+     */
+    @Test
+    @DisplayName("第三轴自证：无 FK 的点名列必须命中，同列有 FK（两种声明形态）不命中，非清单目标不命中")
+    void namedReferenceDetectorBitesOnSyntheticDdl() {
+        ErasureMigrationGraph g = new ErasureMigrationGraph().applyDdl(
+                "CREATE TABLE media_asset (id bigint, user_id bigint, PRIMARY KEY (id));"
+                        + "CREATE TABLE hold_no_fk (id bigint, media_asset_id bigint);"
+                        + "CREATE TABLE hold_with_fk (id bigint, media_asset_id bigint,"
+                        + "  FOREIGN KEY (media_asset_id) REFERENCES media_asset(id) ON DELETE CASCADE);"
+                        + "CREATE TABLE stray (id bigint, widget_id bigint);");
+        g.applyDdl("CREATE TABLE hold_alter_fk (id bigint, media_asset_id bigint);"
+                + "ALTER TABLE hold_alter_fk ADD CONSTRAINT fk_haf"
+                + " FOREIGN KEY (media_asset_id) REFERENCES media_asset (id);");
+        Set<String> miniManifest = Set.of("media_asset");
+
+        List<String> hits = namedReferenceHits(g, miniManifest);
+        assertTrue(hits.contains("hold_no_fk.media_asset_id→media_asset"),
+                "有 media_asset_id 而无 FK 的表必须被第三轴命中：" + hits);
+        assertFalse(hits.contains("hold_with_fk.media_asset_id→media_asset"),
+                "同列但有 CREATE 体内 FK（借归属闭包轴已覆盖）不该被第三轴点名：" + hits);
+        assertFalse(hits.contains("hold_alter_fk.media_asset_id→media_asset"),
+                "同列但 FK 是 ALTER 补建的（解析器必须认全 5 种形态，否则这里会重复点名）不该被第三轴点名：" + hits);
+        assertFalse(hits.stream().anyMatch(h -> h.startsWith("stray.")),
+                "列名指向非清单表（widget_id→widget 不在清单里）不该被命中：" + hits);
+    }
+
+    /**
+     * 第三轴派生（真实清单与夹具共用同一条路）：在场表 T 的 CREATE 体列 c 满足
+     * {@code c = <清单表>_id}、目标≠T、且外键图上没有 T→目标 的边（任意列）⇒ 命中。
+     * 输出形如 {@code temp_chat_media_holds.media_asset_id→media_asset}，按表/列排序稳定。
+     */
+    private static List<String> namedReferenceHits(ErasureMigrationGraph graph, Set<String> manifestTables) {
+        List<String> hits = new ArrayList<>();
+        for (String table : graph.existingTables().stream().sorted().toList()) {
+            for (String column : graph.columnsByTable()
+                    .getOrDefault(table, Set.of()).stream().sorted().toList()) {
+                if (!column.endsWith("_id") || column.equals("id")) {
+                    continue;
+                }
+                String target = column.substring(0, column.length() - 3);
+                if (target.equals(table) || !manifestTables.contains(target)) {
+                    continue;
+                }
+                boolean edgeExists = graph.edges().stream()
+                        .anyMatch(fk -> fk.child().equals(table) && fk.parent().equals(target));
+                if (!edgeExists) {
+                    hits.add(table + "." + column + "→" + target);
+                }
+            }
+        }
+        return hits;
+    }
+
     private static Set<String> diff(Set<String> a, Set<String> b) {
         Set<String> out = new LinkedHashSet<>(a);
         out.removeAll(b);

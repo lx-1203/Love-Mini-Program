@@ -622,7 +622,7 @@ onMounted(() => {
           </view>
 
           <!-- 原价（划线） -->
-          <text v-if="plan.originalPrice" class="plan-card__original-price">¥{{ plan.originalPrice }}</text>
+          <text v-if="plan.originalPriceYuan" class="plan-card__original-price">¥{{ plan.originalPriceYuan }}</text>
 
           <!-- 周期 -->
           <text class="plan-card__period">{{ planText(plan, plan.periodKey, plan.period) }}</text>
@@ -698,7 +698,7 @@ onMounted(() => {
         <text class="footer__label">{{ t('vip.payableLabel') }}</text>
         <text class="footer__currency">¥</text>
         <text class="footer__price">{{ selectedPlan?.price }}</text>
-        <text v-if="selectedPlan?.originalPrice" class="footer__original-price">¥{{ selectedPlan?.originalPrice }}</text>
+        <text v-if="selectedPlan?.originalPriceYuan" class="footer__original-price">¥{{ selectedPlan?.originalPriceYuan }}</text>
       </view>
       <view
         class="footer__btn press-feedback"

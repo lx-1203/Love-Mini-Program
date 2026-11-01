@@ -46,9 +46,13 @@ public class ShopItem {
     @Column(name = "price_cents", nullable = false)
     private Integer priceCents = 0;
 
-    /** 划线价（分，可空） */
+    /**
+     * 划线价（分，可空）。
+     * <p>字段名带 Cents 以显式单位（R7-A）：DB 列仍为 original_price；
+     * 勿与 products.original_price（BigDecimal 元，见 {@link Product}）混淆。</p>
+     */
     @Column(name = "original_price")
-    private Integer originalPrice;
+    private Integer originalPriceCents;
 
     /** 商品图片 URL */
     @Column(name = "image_url", nullable = false, length = 512)
@@ -121,12 +125,12 @@ public class ShopItem {
         this.priceCents = priceCents;
     }
 
-    public Integer getOriginalPrice() {
-        return originalPrice;
+    public Integer getOriginalPriceCents() {
+        return originalPriceCents;
     }
 
-    public void setOriginalPrice(Integer originalPrice) {
-        this.originalPrice = originalPrice;
+    public void setOriginalPriceCents(Integer originalPriceCents) {
+        this.originalPriceCents = originalPriceCents;
     }
 
     public String getImageUrl() {

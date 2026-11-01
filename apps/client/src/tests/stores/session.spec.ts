@@ -445,11 +445,12 @@ describe("session store - logout 复位其余 store 的内存态（第五轮 FIN
 
     expect(dq.hasAnswered).toBe(false);
     expect(dq.answers).toHaveLength(0);
-    // 这两个位不是「没复位」，而是**冷启动形态就该是这样**：`fetchAnswers` 在拿到第一页
-    // 之前不知道有没有下一页，初值为 true；`$reset()` 回到初始化器 ⇒ true。
+    // 这两个位不是「没复位」，而是**冷启动形态就该是这样**：`answerHasMore` 初值 false
+    // （2026-11-01 第七轮裁定：未拉过第一页之前「还有更多」是未验证的假设，不许驱动
+    // 可见的「加载更多」入口；首页拉取后由真实页满决定）。`$reset()` 回到初始化器 ⇒ false。
     // 写这条是为了钉住「resetForLogout 用 $reset 而不是逐字段赋默认值」这一选择：
     // 谁改成逐字段清理，就必须在这里显式认领自己认为的正确初值，而不是悄悄换个数。
-    expect(dq.answerHasMore).toBe(true);
+    expect(dq.answerHasMore).toBe(false);
     expect(dq.answerPage).toBe(1);
   });
 

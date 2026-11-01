@@ -55,7 +55,12 @@ public class Product {
     @Column(name = "price", nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
-    /** 原价（元），划线价展示 */
+    /**
+     * 原价（元），划线价展示。
+     * <p>单位=元（BigDecimal），勿与 shop_items.originalPriceCents（Integer 分，DB 列
+     * 同名 original_price 但是另一张表）混淆——R7-A 同名异单位修复，本字段面向客户端
+     * 产品目录（GET /products），保持原名不改。</p>
+     */
     @Column(name = "original_price", precision = 10, scale = 2)
     private BigDecimal originalPrice;
 

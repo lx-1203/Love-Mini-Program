@@ -167,7 +167,12 @@ for (const f of readdirSync(OPS).filter((x) => x.endsWith(".json")).sort()) {
     writeFileSync(p, JSON.stringify(j, null, 2) + "\n");
   }
 }
-const EXPECT_TOTAL = 1107;
+/* 判据台总数基线（带出处；「把量钉成无来历字面」这一形状 7947e356 已在同族工具里拆过两次）：
+   1107：#69 盖章时 round-6 目录的读数；
+   1123 = 1107 + 16：2026-11-01 W5 新建 SUBPACKAGES-TOOLS-SECURITY-INDEX.json（16 条，
+   guest-landing 两条自检件判出 policy 第 30 条裁定页在判据台 0 行）——那次只加了格没同步本基线，
+   工具从那之后一直拒绝写盘（守恒红是它在正常咬）。增删判据格必须同时在这里留出处。 */
+const EXPECT_TOTAL = 1123;
 const problems = [];
 /* 独立数一遍"页在裁定表里"的用例 ⇒ 上面那两个分支必须正好把它分完，不多不少。 */
 if (dirTotal !== total) problems.push("遍历到的用例数 " + total + " ≠ 目录 cases 之和 " + dirTotal + "（有文件被跳过）");
@@ -175,16 +180,27 @@ if (total !== EXPECT_TOTAL) problems.push("判据台总数=" + total + " ≠ " +
 if (tagged + keptGuest !== inTable) problems.push("裁定表页上的用例 " + inTable + " ≠ 收窄 " + tagged + " + 保留游客 " + keptGuest + " ⇒ 有两个分支都没走到的 case");
 let recheck = "";
 if (APPLY) {
-  /* 落盘后立刻复读：报的是"盘上现在有多少条"，不是"我以为我写了多少条"。 */
-  let on = 0, cnt = 0;
+  /* 落盘后立刻复读：报的是"盘上现在有多少条"，不是"我以为我写了多少条"。
+     对账对象是「按本轮规则该标的行」（重跑同一对判定纯函数），不是「盘上所有 A,B 行」：
+     历史标过、之后判据正文被改写命中游客词的行会**保留** A,B（本工具只撤销 ["A"] 误标形状，
+     不追删 A,B），拿全量 A,B 数对账必然恒差（2026-11-01 实测存量 14 行）——那是尺子错不是盘错。
+     全量 A,B 数仍照实印出，但只作读数不作判据。 */
+  let onRule = 0, onGuest = 0, mismatched = 0, allAB = 0, cnt = 0;
   for (const f of readdirSync(OPS).filter((x) => x.endsWith(".json")).sort()) {
     const jj = JSON.parse(readFileSync(join(OPS, f), "utf8"));
     cnt += (jj.cases || []).length;
-    for (const c of jj.cases || []) if (Array.isArray(c.identities) && c.identities.join(",") === "A,B") on++;
+    for (const c of jj.cases || []) {
+      const ab = Array.isArray(c.identities) && c.identities.join(",") === "A,B";
+      if (ab) allAB++;
+      if (shouldScopeToGuestOnly(c, c.page, LOGGED_OUT)) { onGuest++; if (JSON.stringify(c.identities || []) !== '["guest"]') mismatched++; }
+      else if (shouldScopeToLogin(c, c.page, LANDINGS)) { onRule++; if (!ab) mismatched++; }
+    }
   }
-  recheck = "｜复读 已标 A,B 的用例=" + on + "（计划=" + tagged + "）目录用例=" + cnt;
+  recheck = "｜复读 规则命中 A,B=" + onRule + "（计划=" + tagged + "）游客=" + onGuest + "（计划=" + guestOnly
+    + "）不符=" + mismatched + " 盘上全部 A,B=" + allAB + " 目录用例=" + cnt;
   if (cnt !== EXPECT_TOTAL) problems.push("复读后目录用例数=" + cnt + " ≠ " + EXPECT_TOTAL + " ⇒ 落盘动到了条目数");
-  if (on !== tagged) problems.push("复读已标数 " + on + " ≠ 本轮应标 " + tagged + "（差 " + (on - tagged) + "）⇒ 有文件的写没落上");
+  if (mismatched > 0) problems.push("复读有 " + mismatched + " 行与本轮规则判定不符 ⇒ 有文件的写没落上（或另有写者）");
+  if (onRule !== tagged) problems.push("复读规则命中 A,B " + onRule + " ≠ 本轮应标 " + tagged + "（差 " + (onRule - tagged) + "）");
 }
 console.log("IDSCOPE_PAGES_WITH_RULING=" + LANDINGS.size);
 for (const [page, rr] of LOGGED_OUT) {

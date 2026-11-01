@@ -129,7 +129,7 @@ public class AdminShopController {
         item.setTitle(req.title().trim());
         item.setCategory(req.category() != null ? req.category().trim() : "goods");
         item.setPriceCents(req.priceCents() != null ? req.priceCents() : 0);
-        item.setOriginalPrice(req.originalPrice());
+        item.setOriginalPriceCents(req.originalPriceCents());
         item.setImageUrl(req.imageUrl() != null ? req.imageUrl().trim() : "");
         item.setDescription(req.description() != null ? req.description().trim() : "");
         item.setStock(req.stock() != null ? req.stock() : -1);
@@ -182,8 +182,8 @@ public class AdminShopController {
         if (req.priceCents() != null) {
             item.setPriceCents(req.priceCents());
         }
-        if (req.originalPrice() != null) {
-            item.setOriginalPrice(req.originalPrice());
+        if (req.originalPriceCents() != null) {
+            item.setOriginalPriceCents(req.originalPriceCents());
         }
         if (req.imageUrl() != null) {
             item.setImageUrl(req.imageUrl().trim());
@@ -280,7 +280,7 @@ public class AdminShopController {
                 item.getTitle(),
                 item.getCategory(),
                 item.getPriceCents(),
-                item.getOriginalPrice(),
+                item.getOriginalPriceCents(),
                 item.getImageUrl(),
                 item.getDescription(),
                 item.getStock(),
@@ -308,7 +308,7 @@ public class AdminShopController {
  * @param title         商品标题（必填，1-128 字）
  * @param category      分类：ticket/food/goods/creative
  * @param priceCents    积分价格（分）
- * @param originalPrice 划线价（分，可空）
+ * @param originalPriceCents 划线价（分，可空；单位显式命名，勿与 products 侧的 originalPrice 元混淆）
  * @param imageUrl      商品图片 URL
  * @param description   商品描述
  * @param stock         库存（-1=不限）
@@ -321,7 +321,7 @@ record AdminShopItemRequest(
         @Size(min = 1, max = 128, message = ErrorMessages.PRODUCT_TITLE_LENGTH_INVALID) String title,
         String category,
         @Min(0) Integer priceCents,
-        @Min(0) Integer originalPrice,
+        @Min(0) Integer originalPriceCents,
         String imageUrl,
         String description,
         Integer stock,
@@ -338,7 +338,7 @@ record AdminShopItemView(
         String title,
         String category,
         Integer priceCents,
-        Integer originalPrice,
+        Integer originalPriceCents,
         String imageUrl,
         String description,
         Integer stock,

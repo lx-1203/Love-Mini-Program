@@ -112,8 +112,9 @@ const EMPTY_ROSTER = () => ({ ids: new Set(), narrowed: new Set(), entireGuest: 
  *     `identities:["guest"]` 是判据台**明写**"这些行归游客执行腿自己判"—— 那批行由 exec 游客腿直接作证，
  *     不需要 GG-* 落点腿替它们记账；此时跑测证人再缺席，这一组就仍然是"没有任何证人"，必须照旧 exit 2。
  *     （负例：test-guest-landing.mjs 第 3b 条 = 整页声明 guest、第 9 条 = 部分声明的页，两条都必须红。）
- *   实测口径命中面：policy 28 个裁定页里恰好 1 页（subpackages/setup/recommend-pref/index，11 行 RP01–RP11），
- *     其余 27 页仍走 ① ⇒ 改动面 = 1 组 / 11 行，别的组的成员一个字节都没动。
+ *   实测口径命中面：2026-09-30 裁定 (a) 上线时 policy 28 页里恰好 1 页（recommend-pref，11 行）走 ②；
+ *     2026-11-01 第七轮把 wallet（MW01–11）与 recommend-pref（RP01–04/06/08–11）打标进 ① 后，
+ *     30 个裁定页全部走 ①，② 的真数据命中面归零——它保留给「新裁定页入册尚无人打标」的过渡态。
  */
 function opsRosterByPage() {
   const out = new Map();

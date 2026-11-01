@@ -261,10 +261,73 @@ describe("钱包页演示充值：幂等键 = 一次操作，不是一次点击"
     expect(call?.method).toBe("POST");
     expect(call?.data).toEqual({ amountCents: 10000 });
     // 在途（未终态）时这笔操作必须已经落盘，且金额与键同条记录
-    expect(pendingRecord()).toEqual({ key: String(call?.headers?.["Idempotency-Key"]), amountCents: 10000 });
+    expect(pendingRecord()).toEqual({
+      key: String(call?.headers?.["Idempotency-Key"]),
+      amountCents: 10000,
+      createdAt: expect.any(Number),
+    });
 
     release({ balanceAfterCents: 10000 });
     await flushPromises();
     expect(pendingRecord()).toBeUndefined();
+  });
+
+  /**
+   * 保留窗与服务端 @Idempotent TTL 的终态对齐（第六轮挂账 §5.4，2026-11-01 裁定落地）：
+   * 服务端 `common/Idempotent.java` DEFAULT_TTL_SECONDS = 4h（Redis SET NX EX），
+   * 4h 后同键进来是全新 SETNX、全新入账——窗外的「复用」是服务端已不认的防重承诺。
+   * 窗内 ⇒ 复用；窗外 ⇒ 换新键当新操作；旧形状记录（无 createdAt）按无未完成操作处理。
+   */
+  it("保留窗内（<4h）的未完成充值重试仍复用同一个键", async () => {
+    httpBehavior.impl = () => Promise.reject(new Error("响应丢失"));
+    const wrapper = mountWallet();
+    await runLifecycle();
+    await tapRecharge(wrapper);
+    await flushPromises();
+    const firstKey = rechargeKeys()[0];
+    const seeded = pendingRecord();
+    expect(seeded?.key).toBe(firstKey);
+
+    // 推进到第 1 小时：仍在窗内 ⇒ 同键
+    clock += 60 * 60 * 1000;
+    await tapRecharge(wrapper);
+    await flushPromises();
+    expect(rechargeKeys()[1]).toBe(firstKey);
+  });
+
+  it("保留窗外（>4h）换新键：不许把服务端已忘记的键再当防重承诺复用", async () => {
+    httpBehavior.impl = () => Promise.reject(new Error("响应丢失"));
+    const wrapper = mountWallet();
+    await runLifecycle();
+    await tapRecharge(wrapper);
+    await flushPromises();
+    const firstKey = rechargeKeys()[0];
+    expect(firstKey).toBeTruthy();
+
+    // 推进 4 小时 + 10 分钟（越过 RECHARGE_KEY_RETENTION_MS = 4h − 1min）
+    clock += (4 * 60 + 10) * 60 * 1000;
+    await tapRecharge(wrapper);
+    await flushPromises();
+    const secondKey = rechargeKeys()[1];
+    expect(secondKey).toBeTruthy();
+    expect(secondKey).not.toBe(firstKey);
+    // 换键的同时保留记录也要被新操作覆盖（否则窗外又变回旧键）
+    expect(pendingRecord()?.key).toBe(secondKey);
+  });
+
+  it("旧形状落盘记录（无 createdAt，2026-11-01 之前写入）按无未完成操作处理：换新键", async () => {
+    httpBehavior.impl = () => Promise.resolve({ balanceAfterCents: 10000 });
+    const wrapper = mountWallet();
+    await runLifecycle();
+    storage.set(STORAGE_KEYS.WALLET_PENDING_RECHARGE, JSON.stringify({
+      key: "RECHARGE-DEMO-LEGACY-NO-CREATED-AT",
+      amountCents: 10000,
+    }));
+
+    await tapRecharge(wrapper);
+    await flushPromises();
+    const key = rechargeKeys()[0];
+    expect(key).toBeTruthy();
+    expect(key).not.toBe("RECHARGE-DEMO-LEGACY-NO-CREATED-AT");
   });
 });

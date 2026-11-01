@@ -124,7 +124,24 @@ interface PendingRecharge {
   key: string;
   /** 本次操作的入账金额（分）——金额不同即不同操作，不复用键 */
   amountCents: number;
+  /** 落盘时刻（Date.now()，毫秒）。保留窗判定用：见 RECHARGE_KEY_RETENTION_MS */
+  createdAt: number;
 }
+
+/**
+ * 未完成充值的**保留窗**：与 `POST /wallet/recharge` 的 `@Idempotent` 服务端 TTL 对齐
+ * （apps/api `common/Idempotent.java` 的 `DEFAULT_TTL_SECONDS = 4L * 3600`，infra R2-00249
+ * 把 24h 缩成 4h；`IdempotentInterceptor` 用 Redis `SET NX EX` 落这枚 TTL）。
+ *
+ * 为什么客户端必须自己掐窗（第六轮挂账 §5.4 的终态裁定）：保留键的承诺是
+ * 「同一笔未走完的充值撞同一个键 ⇒ 服务端判重兜住」。但服务端 4h 后**忘掉这个键**
+ * ——再拿旧键进来是全新 SETNX、全新入账。窗外的「复用」是一句服务端已不认的防重承诺：
+ * 用户看到的是一次新入账，客户端却按「我在重试同一笔」收尾。所以：
+ * 窗内 ⇒ 复用键（防重承诺成立）；窗外 ⇒ 这笔未走完的操作视为过期，换新键、当新操作。
+ * 客户端窗**不许长于**服务端窗（长了就是上面那句空承诺）；短一点也不行（窗内重试
+ * 会绕开服务端判重）。取等值并留 1 分钟余量给时钟漂移。
+ */
+const RECHARGE_KEY_RETENTION_MS = 4 * 60 * 60 * 1000 - 60 * 1000;
 
 /** 读取未完成的充值操作（存储不可用/脏数据一律按「无」处理，不阻塞充值） */
 function readPendingRecharge(): PendingRecharge | null {
@@ -137,13 +154,18 @@ function readPendingRecharge(): PendingRecharge | null {
       typeof parsed === "object" &&
       typeof (parsed as PendingRecharge).key === "string" &&
       (parsed as PendingRecharge).key &&
-      typeof (parsed as PendingRecharge).amountCents === "number"
+      typeof (parsed as PendingRecharge).amountCents === "number" &&
+      typeof (parsed as PendingRecharge).createdAt === "number"
     ) {
       return {
         key: (parsed as PendingRecharge).key,
         amountCents: (parsed as PendingRecharge).amountCents,
+        createdAt: (parsed as PendingRecharge).createdAt,
       };
     }
+    /* 旧形状（无 createdAt，2026-11-01 之前落盘的记录）：年龄无从判 ⇒ 按无未完成操作处理，
+       下一次点击换新键。服务端侧同一笔若真已入账，余额已可见；换新键最坏结果是
+       把下一次点击当新操作（本来就是新意图），不会造成重复入账。 */
     return null;
   } catch (_e) {
     return null;
@@ -183,10 +205,17 @@ function clearPendingRecharge(): void {
  */
 function acquireRechargeIdempotencyKey(amountCents: number): string {
   const pending = readPendingRecharge();
-  if (pending && pending.amountCents === amountCents) return pending.key;
+  if (
+    pending &&
+    pending.amountCents === amountCents &&
+    Date.now() - pending.createdAt <= RECHARGE_KEY_RETENTION_MS
+  ) {
+    return pending.key;
+  }
   const created: PendingRecharge = {
     key: `RECHARGE-DEMO-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
     amountCents,
+    createdAt: Date.now(),
   };
   writePendingRecharge(created);
   return created.key;

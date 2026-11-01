@@ -206,7 +206,9 @@ public final class PersonalDataTables {
      *       （无实体，或实体对应的 Repository 从未被注入）；逐张裁定见各项 {@code rationale}。</li>
      * </ul>
      * 44 + 27 + 5 = 76 = {@code statementCount()}（W1c 前）；W1c 补进 {@code post_tags}（活表有数据）
-     * 与 {@code temp_chat_contact_exchange}（0 行有写点）后为 45 / 28 / 5 = 78。
+     * 与 {@code temp_chat_contact_exchange}（0 行有写点）后为 45 / 28 / 5 = 78；
+     * R7-B 补进 {@code temp_chat_media_holds}（E2 快照 0 行、写点在
+     * {@code MediaAssetService#holdTempAsset}）后为 <b>45 / 29 / 5 = 79</b>。
      */
     private static Map<String, ErasureStatementSurface> buildSurfaceLedger() {
         Map<String, ErasureStatementSurface> m = new LinkedHashMap<>();
@@ -227,7 +229,8 @@ public final class PersonalDataTables {
         }
         for (String key : new String[] {
                 "user_interest_tag", "love_verification_application", "temp_chat_message",
-                "temp_chat_contact_exchange", "campus_topic_replies", "circle_announcements",
+                "temp_chat_contact_exchange", "temp_chat_media_holds",
+                "campus_topic_replies", "circle_announcements",
                 "profile_visitors", "user_block", "post_shares", "circle_topic_likes",
                 "circle_topic_like_notices", "video_call_records", "video_calls", "wallet_unlocks",
                 "task_claim", "daily_benefits", "make_up_quota", "push_preferences", "push_summaries",
@@ -251,6 +254,32 @@ public final class PersonalDataTables {
         // ============================================================
         // 1) 上传物与照片：先取回 URL（删除后无法再定位文件），行随后删
         // ============================================================
+        // 1a) 举报保留行必须先于素材本体删：它没有外键、归属全靠 JOIN media_asset 借
+        //     （顺序不变量：ErasureSurfaceAndOrderingGateTest#joinBorrowingDeletesRunBeforeTheJoinedTableIsDeleted）。
+        list.add(PersonalDataTable.of(
+                "temp_chat_media_holds", "temp_chat_media_holds", "临时会话媒体举报保留行",
+                ErasureAction.DELETE_ROWS, List.of(),
+                List.of("session_uid", "reason"),
+                List.of("DELETE h FROM temp_chat_media_holds h JOIN media_asset ma "
+                        + "ON h.media_asset_id = ma.id WHERE ma.user_id = {uid}"),
+                List.of(),
+                "管理员举报保留表（V2026.10.28.0012，MediaAssetService#holdTempAsset 由"
+                        + " AdminMediaAssetController 调用）。<b>第七轮 R7-B 第三轴补出</b>：本表列集 "
+                        + "{@code id/media_asset_id/session_uid/reason/hold_until/created_by/created_at} "
+                        + "<b>没有任何用户归属列</b>（{@code created_by} 存的是执行保留操作的<b>管理员</b>用户 ID，"
+                        + "不是数据主体），又<b>没有任何外键</b>（{@code media_asset_id} 无 FK 指向 media_asset）⇒ "
+                        + "既逃出「有归属列」轴（F-11），也逃出「FK 借归属闭包」轴（W1c 事项二）——"
+                        + "第三轴（列名 = 清单表名_id 且 FK 图上无边）就是为了抓住这个形状装的。"
+                        + "删轴是<b>借 media_asset 的归属</b>：JOIN 按 {@code ma.user_id} 删。"
+                        + "删除裁定：media_asset 项的既定裁定是「主体原始上传物无任何法定保留义务」⇒ "
+                        + "素材行本身都删，悬在已删素材上的举报保留行（session_uid 含会话与 userId 痕迹、"
+                        + "reason 是举报上下文自由文本）一并清，取证价值随素材消灭。"
+                        + "<b>必须排在 media_asset 项之前</b>：素材行删掉后 JOIN 就捞不到了。"
+                        + "导出类别不新增：导出侧（PersonalDataService 的 28 类）没有 temp 媒体类别——"
+                        + "media_asset 自身也不在导出清单里（上传物以 URL 形态存在、不经导出），"
+                        + "其附属的举报保留行没有单列类别的必要（与 whispers 27→28 那次的判据相反："
+                        + "那次是导出侧已有 whisper 类别而清除侧漏配）。"
+                        + "E2 快照 0 行，写点在 MediaAssetService#holdTempAsset ⇒ 归因 EMPTY_WRITTEN。"));
         list.add(PersonalDataTable.of(
                 "media_asset", "media_asset", "上传素材（图片/语音/视频）",
                 ErasureAction.DELETE_ROWS, List.of(),
