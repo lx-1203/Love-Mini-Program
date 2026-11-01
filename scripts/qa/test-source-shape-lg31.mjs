@@ -15,7 +15,19 @@
  *   3. 红要传到门的名义上 ⇒ 自测件里自己算出来的"红"不算，spawn 真 CLI 的退出码才算；
  *      同时另跑一次干净的门，必须 exit 0（绿的是活树，不是变异副本）。
  * 用法：node scripts/qa/test-source-shape-lg31.mjs [--keep]
- * 标签规矩：说明文字里不要出现 `LG31_RESULT=FAIL` 原形，聚合器抓的是输出里第一个 *_TEST|RESULT=(PASS|FAIL)。
+ * 标签规矩：说明文字里不要出现判决行的原形，聚合器抓的是输出里第一个 *_TEST|RESULT=(PASS|FAIL)。
+ * ⚑ 2026-11-01 W4 判决词根改名（LG31_TEST → NONFRAME_TEST，NOTRUN 两处同批跟上）：
+ *   聚合器 run-qa-selftests.mjs:69 的判据行正则是 /\b([A-Z]{2,8})_(?:TEST|RESULT)=(PASS|FAIL)\b/，
+ *   词根**只允许 2-8 个大写字母**；`LG31` 带数字，于是这条判决行从本文件诞生（992f0fe8）起
+ *   就没被聚合器读到过 —— 它印的一直是「无 *_TEST= 判据行」。这不是改名，是生产者从未合上
+ *   消费者的词法约定（该约定写在同门 test-corpus-denominator.cjs:59-61、test-source-shape-absence.mjs:20-21，
+ *   且聚合器 :64-66 明写"只放宽取数那把尺子，*_TEST=/*_RESULT= 匹配保持原样，判据极性不随取数改动漂移"
+ *   ⇒ 该合的是生产者，放宽消费者会同时改 55 个文件的判据极性口径）。
+ *   新词根 NONFRAME（8 字母）取自本测试自己的临时目录名 lg31-nonframe-r10b 与
+ *   reports/audit/round-7/lg31-nonframe-r10b.md；仓内除本文件的三个打出点外无其他消费者（实测 grep）。
+ *   LG31_READ / LG31_SUMMARY 两个**取数**行原样保留（聚合器的 \w{2,24}_SUMMARY 本来就读得到，动它们只会
+ *   打断已在读的轴）。今天这条并没有造成假绿（exit 码 + 断言计数两道独立闸已判红），
+ *   但第三把闸（判据行极性）对本文件长期等于不存在，这次把它接上。
  */
 import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -34,7 +46,7 @@ const { SPEC, CRIT_ROWS, stripComments, templateOf, inject, runRow, BANDS, bandO
 
 /* 变异副本放仓外：os.tmpdir()，绝不落在 REPO 里（本项目在册教训是"临时件混进仓库就被当成产物"）。 */
 const TMP = join(tmpdir(), "lg31-nonframe-r10b");
-if (TMP.startsWith(REPO)) { console.log("LG31_TEST=NOTRUN reason=临时目录落在仓库内（" + TMP + "）⇒ 本测试的前提破了"); process.exit(2); }
+if (TMP.startsWith(REPO)) { console.log("NONFRAME_TEST=NOTRUN reason=临时目录落在仓库内（" + TMP + "）⇒ 本测试的前提破了"); process.exit(2); }
 rmSync(TMP, { recursive: true, force: true });
 mkdirSync(TMP, { recursive: true });
 
@@ -53,7 +65,7 @@ const before = new Map(carrierFiles.map((p) => [p, sha(p)]));
 
 /* ── A. 接线：判据台里那条 LG31 还在、载体指的就是它、正文一字未改 ── */
 ok(!!row, "A1 载体里有 LG31 条目（没有＝这条行仍未去向）");
-if (!row) { console.log("LG31_TEST=NOTRUN"); process.exit(2); }
+if (!row) { console.log("NONFRAME_TEST=NOTRUN"); process.exit(2); }
 ok(row.criteria === true, "A2 LG31 标了 criteria:true ⇒ 不进台账补丁（混进 patches 会把整份 cellplan 打死）", row.criteria);
 ok(!!CRIT_ROWS.find((r) => r.caseId === "LG31"), "A3 CRIT_ROWS 认得这条（判据台侧盖章取的就是这份名单）");
 ok(!!existsSync(resolve(REPO, OPS)), "A4 判据台文件在盘上", OPS);
@@ -217,5 +229,5 @@ console.log("LG31_READ 判据行=" + CRIT_ROWS.length + " 在册判点=" + SPEC.
   " 谓词=" + kinds.length + " 注入点=" + negs.length + " 变异副本=" + mutants.length + " 临时目录=" + TMP);
 console.log(`LG31_SUMMARY cases=${cases} fail=${fail}`);
 console.log("SUMMARY: assertion failures = " + fail);
-console.log(`LG31_TEST=${fail ? "FAIL" : "PASS"}`);
+console.log(`NONFRAME_TEST=${fail ? "FAIL" : "PASS"}`);
 process.exit(fail ? 1 : 0);

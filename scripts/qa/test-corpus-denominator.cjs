@@ -181,11 +181,12 @@ function independentSets(repoRoot, rootRel) {
        restoredUnnamed = 回了索引但没有任何清单点名的历史删除路径 → 它仍在门的 BLINDSPOT 里，
                          但它不是当前缺席，必须单独扣出来；
        stillGone      = 历史删除账里今天已不在索引中的 → 历史残留（门的 BLINDSPOT 减掉 restoredUnnamed）。 */
-  let namedInAbsent = 0, restoredNamed = 0, restoredCount = 0;
+  let namedInAbsent = 0, restoredNamed = 0, restoredCount = 0, namedStillGone = 0;
   for (const k of named) {
     if (!absent.has(k)) continue;
     namedInAbsent++;
     if (trackedSet.has(k)) restoredNamed++;
+    else namedStillGone++;
   }
   let stillGone = 0;
   for (const k of absent) {
@@ -197,7 +198,7 @@ function independentSets(repoRoot, rootRel) {
      所以它的 3965 必须拆成 stillGone(3964)+restoredUnnamed(1)，不能整块读成当前盲区。 */
   const restoredUnnamed = restoredCount - restoredNamed;
   return { trackedCount: trackedList.length, absentCount: absent.size, transientCount: transientList.length, committedCount: committedList.length,
-    named: named.size, items, absentNamed, namedAbsent, namedInAbsent, restoredNamed, restoredUnnamed, stillGone };
+    named: named.size, items, absentNamed, namedAbsent, namedInAbsent, restoredNamed, restoredUnnamed, stillGone, namedStillGone };
 }
 
 /* ================= A. 真仓全域：读数存在且等于独立复算 =================
@@ -222,35 +223,71 @@ ok(setEq(GA.trackedAbsent, "absentCount"), `A 历史删除账==独立复算的�
   `门=${GA.trackedAbsent} 复算=${SETS0.absentCount}/${SETS1.absentCount}`);
 ok(setEq(GA.namedAbsent, "namedAbsent"), `A 门点名的**当前**缺席（帧不存在）==独立复算（${SETS0.namedAbsent}~${SETS1.namedAbsent}，全部 round-1；这批从未入库）`,
   `门=${GA.namedAbsent} 复算=${SETS0.namedAbsent}/${SETS1.namedAbsent}`);
-ok(setEq(GA.namedByGate, "namedInAbsent"), "A 门 BLINDSPOT 的『具名历史删除』==独立复算（5 条已由 04a0a221 放回盘上，不是当前缺席）",
+ok(setEq(GA.namedByGate, "namedInAbsent"), "A 门 BLINDSPOT 的『具名历史删除』==独立复算（这一格是历史账里被清单点名的条数，不是当前缺席；条数只许由读数给，标签里不抄死）",
   `门=${GA.namedByGate} 复算=${SETS0.namedInAbsent}/${SETS1.namedInAbsent}`);
 ok(setEq(GA.gateItems, "items") && setEq(GA.namedPaths, "named"), "A 门的遍历集==独立复算（条目数与去重路径数）",
   `items 门=${GA.gateItems}/复算=${SETS0.items}~${SETS1.items}，paths 门=${GA.namedPaths}/复算=${SETS0.named}~${SETS1.named}`);
 ok(GA.neverOpened === GA.trackedAbsent - GA.namedByGate,
   "A BLINDSPOT 余数==历史删除账减去门点名的历史具名路径（对账闭合，不是另算一套）",
   `历史=${GA.trackedAbsent} 具名=${GA.namedByGate} 余=${GA.neverOpened}`);
-ok(GA.neverOpened === SETS0.stillGone + SETS0.restoredUnnamed
-  || GA.neverOpened === SETS1.stillGone + SETS1.restoredUnnamed,
-  "A BLINDSPOT 余数==已出册 + 回盘但未被点名的（今天 3964+1=3965；后者=61315a93 加回的 exec-v37-nearby 台账，两者都不是当前缺席）",
-  `neverOpened=${GA.neverOpened} 已出册=${SETS0.stillGone}/${SETS1.stillGone} 回盘未具名=${SETS0.restoredUnnamed}/${SETS1.restoredUnnamed}`);
+/* 2026-11-01 W4 定性＝(b) 尺子过期，不是证据又丢了一次（两种红的动作相反，故留痕写死在这里）：
+   旧式 `neverOpened === stillGone + restoredUnnamed` 少减了一项「被清单点名、但今天仍不在索引里」的历史删除
+   （namedStillGone）。它 2026-10-28 重钉时恰好为 0 才成立 —— 那时 absent 账里被点名的只有 04a0a221 放回的
+   5 张 round-7 帧（namedInAbsent==restoredNamed==5）。之后两件事把前提掀了，且都不是退化：
+     · 268e1c08「untrack 7,980 ignored artifacts」把那 5 张帧连同在册产物一起撤出索引
+       —— 这是执行用户 2026-09-30「截图不入库」裁定的收口动作（reports/**.png 现为全局忽略件）；
+       帧**仍在盘上**（reports/screenshots/round-7-A-mock-final 实测 650 个文件），只是不再被跟踪；
+     · 清单语料长大，namedInAbsent 由 5 涨到 3188，其中 3188 条都属「已出册但仍被具名引用」。
+   ⇒ 若把它误判成 (c)，动作会是把这 3188 条重新 add 回索引，正违反「不入库」与「禁全仓还原」。
+   新式是**收紧**不是放宽：多出的那一项必须为 0 时旧式才等价成立，现在把它显式量出来并对账。 */
+ok(GA.neverOpened === SETS0.stillGone - SETS0.namedStillGone + SETS0.restoredUnnamed
+  || GA.neverOpened === SETS1.stillGone - SETS1.namedStillGone + SETS1.restoredUnnamed,
+  "A BLINDSPOT 余数==已出册 − 被清单点名但仍出册的 + 回盘未被点名的（三项对账闭合；中间那项 2026-10-28 时为 0，"
+  + `今天=${SETS0.namedStillGone}/${SETS1.namedStillGone}，全是 268e1c08 按「不入库」裁定撤出索引的具名产物，不是当前缺席）`,
+  `neverOpened=${GA.neverOpened} 已出册=${SETS0.stillGone}/${SETS1.stillGone} 具名仍出册=${SETS0.namedStillGone}/${SETS1.namedStillGone} 回盘未具名=${SETS0.restoredUnnamed}/${SETS1.restoredUnnamed}`);
 ok(GA.vouched + GA.notVouched === GA.namedAbsent, "A 两轴相加==当前点名缺席总数（不许有一格悄悄蒸发）",
   `${GA.vouched}+${GA.notVouched} vs ${GA.namedAbsent}`);
 ok(GA.advisoryFrames === GA.vouched && GA.blockingFrames === GA.notVouched,
   "A AXIS 的 advisory/blocking 与 SCANNED 的两格同源（同一件事不许有两个数）",
   `advisory=${GA.advisoryFrames} blocking=${GA.blockingFrames}`);
-ok(setEq(GA.vouched, "absentNamed"), "A 当前缺席里能在历史删除账找到凭据的==独立复算（今天=0：5 条历史具名路径已全部回盘）",
+ok(setEq(GA.vouched, "absentNamed"), "A 当前缺席里能在历史删除账找到凭据的==独立复算（非 0 即『已出册却被读成当前缺席』的具名残余；0 是今天量出来的，不是写死的）",
   `门=${GA.vouched} 复算=${SETS0.absentNamed}/${SETS1.absentNamed}`);
 const EXEC_MANIFEST = "reports/audit/round-7/exec-a-mock-final/manifest-detail.json";
 const ROUND1_MANIFEST = "reports/screenshots/round-1/manifest.json";
 ok(!GA.advisoryFiles.includes(EXEC_MANIFEST) && GA.advisoryFrames === 0,
-  "A exec-a-mock-final 的 650 帧全在盘上（含 04a0a221 放回的 5 帧）⇒ 不再走 CORPUS_ADVISORY_FILE；advisory 轴由 C1 夹具继续承担",
+  "A exec-a-mock-final 清单点名的帧全在盘上 ⇒ 不再走 CORPUS_ADVISORY_FILE；advisory 轴由 C1 夹具继续承担（帧数只由读数给，标签里不抄死）",
   `advisoryFiles=${GA.advisoryFiles.length} advisoryFrames=${GA.advisoryFrames}`);
 ok(!GA.problemFiles.includes(EXEC_MANIFEST) && GA.problemFiles.includes(ROUND1_MANIFEST) && GA.problemFiles.length === 1,
   "A 唯一的 problem 是 round-1（144 帧从未入库 ⇒ 无凭据 blocking）；exec-a-mock-final 不判红",
   "problemFiles=" + GA.problemFiles.join("|"));
-ok(SETS0.namedInAbsent === SETS0.restoredNamed && SETS0.namedInAbsent > 0,
-  "A 历史删除账里被清单点名的路径全部已回盘（5/5，均在盘且被跟踪）⇒ 没有『已回盘却仍被算作缺席』的具名残余",
-  `具名历史=${SETS0.namedInAbsent} 已回盘=${SETS0.restoredNamed}`);
+/* 2026-11-01 W4 定性＝(b) 尺子过期（同上，动作与 (c) 相反，留痕）：
+   旧断言写成「凡被清单点名且在历史删除账里的路径都必须已回索引（5/5）」——它把一次性的
+   04a0a221 恢复动作当成永续不变量。268e1c08 依用户「截图不入库」裁定把这 5 张帧重新撤出索引
+   （实测 git ls-files -- reports/screenshots/round-7-A-mock-final 为空，而目录里仍有 650 个文件）
+   ⇒「被跟踪」那一半按裁定本就不该再成立，钉它＝钉住上一版索引状态；误判成 (c) 的动作会是 git add 回去，
+   正撞「禁全仓还原／不入库」两条纪律。
+   这条断言真正要防的是「证据被读成又丢了」，那就直接钉证据本身：这 5 张由 04a0a221 逐张还原的
+   round-7 执行帧 **在盘上且非空**，并且**仍被 round-7 执行清单按名引用**（引用断了就要求重新登记，
+   不许悄悄把棘轮摘掉）。至于「已回盘却仍被算作缺席」的具名残余，上面两条（门点名的当前缺席==复算、
+   当前缺席里有历史账凭据的那格==复算=0）已经在管，不靠这条群体断言兜。 */
+const RESTORED5_DIR = "reports/screenshots/round-7-A-mock-final";
+const RESTORED5 = [1, 2, 3, 4, 5].map((i) => RESTORED5_DIR + "/PAGES-DISCOVER-INDEX-DC" + String(i).padStart(2, "0") + "-after.png");
+const EXEC5_MANIFEST = "reports/audit/round-7/exec-A-mock-final/manifest-detail.json";
+{
+  const mp = resolve(REPO, EXEC5_MANIFEST);
+  let shots = null;
+  try { const j = JSON.parse(readFileSync(mp, "utf8")); shots = j.shots ?? j.frames ?? null; } catch { shots = null; }
+  const namedOf = (rel) => Array.isArray(shots) && shots.some((s) => norm(String(s.path || s.file || "")).endsWith(norm(rel)));
+  const onDisk = RESTORED5.filter((rel) => { const f = resolve(REPO, rel); try { return existsSync(f) && fs.statSync(f).size > 0; } catch { return false; } });
+  const named = RESTORED5.filter(namedOf);
+  ok(Array.isArray(shots), "A 具名棘轮的引用源在盘且可读（" + EXEC5_MANIFEST + "）", "读不动 ⇒ 下面两条会假红，先修引用源");
+  ok(named.length === RESTORED5.length, "A 04a0a221 逐张还原的那 5 张 round-7 执行帧仍被该清单按名引用（引用断＝要重新登记棘轮，不许摘）",
+    "按名命中=" + named.length + "/" + RESTORED5.length);
+  ok(onDisk.length === RESTORED5.length, "A 那 5 张具名帧在盘且非空 ⇒ 读得到证据本体，不再要求『被跟踪』"
+    + "（268e1c08 依「不入库」裁定撤出索引，帧未销毁；本测试改钉证据而不是钉索引状态）",
+    "在盘非空=" + onDisk.length + "/" + RESTORED5.length + " 缺=" + RESTORED5.filter((r) => !onDisk.includes(r)).join(","));
+  console.log(`A_RESTORE_SPLIT 具名历史=${SETS0.namedInAbsent} 在索引=${SETS0.restoredNamed} 已出册仍在盘=${SETS0.namedStillGone} 回盘未具名=${SETS0.restoredUnnamed} 具名棘轮(04a0a221)=${RESTORED5.length} 在盘=${onDisk.length}`);
+}
 ok(GA.problemsTokenHits === 1,
   "A 门体里 `CORPUS_PROBLEMS=<数字>` 只出现一次（解释句不得复用这个键的字面形式：面板与下游都按首匹配取数，散文里再出现一个 0 就会被读成门的判决）",
   "hits=" + GA.problemsTokenHits);
