@@ -1357,7 +1357,25 @@ const SPEC = [
     ],
   },
   {
-    /* ══ CS26 形状重钉（2026-10-24）═══════════════════════════════════════════════════
+    /* ══ CS26 形状重钉（第二次，2026-11-01 W4）════════════════════════════════════════
+       起因：聚合载具首跑报本条红 «apps/client/src/subpackages/chat/chat-session/index.vue ::
+       <template> 内计数应为 1，实测 0»。逐条单跑（QA_SHAPE_LIB=1 借门自己的 templateOf，不另起解析器）
+       定位到只有源码侧第 4 条不过：旧判点 /class="chat-list"[\s\S]{0,8500}class="wechat-input-bar__input"/
+       实距 8691、窗口 8500 ⇒ 越窗 191 字符。
+       ⚠ 定性是「尺子旧」不是「页面退化」，两种红的动作相反，故把判据留痕写死在这里：
+         · 盘上结构是 chat-list（消息流区，:2156-…）与 chat-input-area（输入区，:2265）**互为兄弟节点**，
+           输入栏从来不落在 chat-list 子树里 ⇒ 那条字节窗口**从未证明过 claim 写的不变量**，
+           它只是把「上一版版面的字面距离」（2026-10-24 量到 8996 配窗 8500）钉成了判据；
+           消息流区每多写一行 markup，它就与产品好坏无关地漂一次窗 —— 本仓反复批评的"钉住上一版题语的字"形状。
+         · claim 的真不变量今天在盘上**成立**：:2269 <view v-if="pageErrorMessage" class="chat-input-error">
+           （错误分支只出「返回 / 消息」两枚按钮）↔ :2291 <template v-else> → :2356 class="wechat-input-bar__input"，
+           同链互斥；全页输入栏恰 1 枚（countEq n=1 绿）；错误分支里没有输入栏（absent 那条绿）。
+         ⇒ 所以撤掉那个永不成立的 proximity 代理，改判 claim 真正声称的结构命题（不是把窗口调大蒙过去：
+           调窗只会保留同一个永不成立的谓词）。窗口按当场实测距离加余量：errBranch→v-else 实距 727 取 1200，
+           v-else→输入栏 实距 3109 取 4200；两窗只覆盖**输入区子树**（不随消息流增长而漂）。
+         · 负例配在**新谓词**上（见下面 neg 里 2026-11-01 那条）：摘掉 `v-if="pageErrorMessage" class="chat-input-error"`
+           这枚唯一守卫 ⇒ 新判点计数 1→0 立刻红，实测过；恒 0 的判点按本仓纪律不许留。
+       ══ CS26 形状重钉（2026-10-24）═══════════════════════════════════════════════════
        不变量一个字没改：pageErrorMessage 为真时，整枚输入栏必须结构性不可达。
        改的只是判点引用的形状——原判点钉的是老写法「错误文案节点紧接 <template v-else>」，
        而 R11-L11-D15 之后盘上长这样（chat-session/index.vue 实测）：
@@ -1375,7 +1393,7 @@ const SPEC = [
                 重建后 mock 与 real 的偏移逐值相同（listAt/inputAt/距离全等），两档才真的可比。 */
     id: "MP-R7CRIT-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-CS26",
     criteria: true, manifest: "SUBPACKAGES-CHAT-CHAT-SESSION-INDEX.json", caseId: "CS26", page: "subpackages/chat/chat-session/index",
-    claim: "判据 expected「不得渲染『破冰引导＋空会话＋可用输入栏』」判的是互斥渲染：错误分支 v-if=\"pageErrorMessage\" 与承载输入栏的 v-else 分支同链互斥 ⇒ pageErrorMessage 为真时输入栏结构性不可达。把输入栏搬出该 v-else、或在错误分支里塞一枚输入栏，即反红（2026-10-24 按盘上现形体重钉形状，不变量未动）；产物档另判编译后的 wx:if / wx:else 同形",
+    claim: "判据 expected「不得渲染『破冰引导＋空会话＋可用输入栏』」判的是互斥渲染：错误分支 v-if=\"pageErrorMessage\" 与承载输入栏的 v-else 分支同链互斥 ⇒ pageErrorMessage 为真时输入栏结构性不可达。把输入栏搬出该 v-else、或在错误分支里塞一枚输入栏，即反红（2026-10-24 按盘上现形体重钉形状，不变量未动）；2026-11-01 W4 第二次重钉：源码侧那条「chat-list→输入栏」的距离代理换成这条互斥链本身——输入区（chat-input-area）与 chat-list 互为兄弟、输入栏从来不在 chat-list 子树里，那个字节窗口证的只是上一版版面的距离而不是本句不变量（详见上面注释块）；产物档另判编译后的 wx:if / wx:else 同形",
     bands: ["mock", "real"],
     files: [
       {
@@ -1384,7 +1402,7 @@ const SPEC = [
           { kind: "countTemplateEq", re: /<view v-if="pageErrorMessage" class="chat-error-state">/g, n: 1 },
           { kind: "countTemplateEq", re: /:title="pageErrorMessage"/g, n: 1 },
           { kind: "countTemplateEq", re: /class="chat-error-state"[\s\S]{0,760}<view\s+v-else\s+class="chat-list"/g, n: 1 },
-          { kind: "countTemplateEq", re: /class="chat-list"[\s\S]{0,8500}class="wechat-input-bar__input"/g, n: 1 },
+          { kind: "countTemplateEq", re: /v-if="pageErrorMessage" class="chat-input-error"[\s\S]{0,1200}<template v-else>[\s\S]{0,4200}class="wechat-input-bar__input"/g, n: 1 },
           { kind: "countEq", re: /class="wechat-input-bar__input"/g, n: 1 },
           { kind: "absent", re: /class="wechat-input-bar__input"[\s\S]{0,4000}v-if="pageErrorMessage"/g },
         ],
@@ -1416,6 +1434,10 @@ const SPEC = [
       { file: "apps/client/src/subpackages/chat/chat-session/index.vue", removeRe: /v-if="pageErrorMessage" class="chat-error-state"/ },
       { file: "apps/client/src/subpackages/chat/chat-session/index.vue", removeRe: /:title="pageErrorMessage"/ },
       { file: "apps/client/src/subpackages/chat/chat-session/index.vue", marker: 'class="chat-error-state"', insertAfter: '><input class="wechat-input-bar__input" />' },
+      /* 2026-11-01 W4：新谓词（输入栏在错误分支的互斥 v-else 链内）自己的阳性对照。
+         摘掉 `v-if="pageErrorMessage" class="chat-input-error"` 这枚守卫（该串在模板里恰 1 次，已实测）
+         ⇒ 谓词失去起点锚，计数 1→0 立刻红；不摘则这条判点无人证明会咬。 */
+      { file: "apps/client/src/subpackages/chat/chat-session/index.vue", removeRe: /v-if="pageErrorMessage" class="chat-input-error"/ },
       { file: "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml", removeRe: /wx:else class="\{\{\['chat-list'/ },
       { file: "apps/client/dist/build/mp-weixin/subpackages/chat/chat-session/index.wxml", marker: 'class="chat-error-state', insertAfter: '"><input class="leak" />' },
       { file: "apps/client/dist/build/mp-weixin-real/subpackages/chat/chat-session/index.wxml", removeRe: /wx:else class="\{\{\['chat-list'/ },
