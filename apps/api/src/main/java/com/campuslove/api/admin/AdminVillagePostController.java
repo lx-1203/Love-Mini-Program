@@ -269,9 +269,13 @@ public class AdminVillagePostController {
         // 数据隔离：校区管理员仅能审核本校区作者的帖子
         assertPostAccess(post);
 
-        AuditStatus newStatus = "approved".equals(req.decision())
-                ? AuditStatus.approved
-                : AuditStatus.rejected;
+        // R4-00428（第九轮铺平）：显式 switch 校验决策值——仅接受 approved / rejected，
+        // 与 AdminPostController 同口径；二元等值折叠会把非法决策值静默记成拒绝。
+        AuditStatus newStatus = switch (req.decision()) {
+            case "approved" -> AuditStatus.approved;
+            case "rejected" -> AuditStatus.rejected;
+            default -> throw new IllegalArgumentException("不支持的审核决策: " + req.decision());
+        };
         post.setAuditStatus(newStatus);
         post.setAuditRemark(req.remark());
         post.setAuditorId(auditorId);

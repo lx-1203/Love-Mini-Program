@@ -422,9 +422,13 @@ public class AdminCircleController {
         // 话题属于圈子，圈子为全局资源（无校区维度），按 null 校区断言放行
         adminDataScope.assertCampusAccess(null);
 
-        AuditStatus newStatus = "approved".equals(req.decision())
-                ? AuditStatus.approved
-                : AuditStatus.rejected;
+        // R4-00428（第九轮铺平）：显式 switch 校验决策值——仅接受 approved / rejected，
+        // 与 AdminPostController 同口径；二元等值折叠会把非法决策值静默记成拒绝。
+        AuditStatus newStatus = switch (req.decision()) {
+            case "approved" -> AuditStatus.approved;
+            case "rejected" -> AuditStatus.rejected;
+            default -> throw new IllegalArgumentException("不支持的审核决策: " + req.decision());
+        };
         topic.setAuditStatus(newStatus);
         topic.setAuditRemark(req.remark());
         topic.setAuditorId(auditorId);

@@ -289,7 +289,14 @@ public class MediaAssetService {
     @Transactional
     public Optional<MediaAsset> updateAudit(Long id, String decision, String remark, Long auditorId) {
         return mediaAssetRepository.findById(id).map(asset -> {
-            String newStatus = AUDIT_APPROVED.equals(decision) ? AUDIT_APPROVED : AUDIT_REJECTED;
+            /* R4-00428（第九轮铺平）：显式 switch 校验决定值。上游 controller 的
+             * @Pattern(approved|rejected) 已把非法值挡在边界，这里的双闸保证未来新调用方
+             * 不经边界直调本服务时，非法决定值炸在写入前而不是静默记成拒绝。 */
+            String newStatus = switch (decision) {
+                case AUDIT_APPROVED -> AUDIT_APPROVED;
+                case AUDIT_REJECTED -> AUDIT_REJECTED;
+                default -> throw new IllegalArgumentException("不支持的审核决定: " + decision);
+            };
             asset.setAuditStatus(newStatus);
             asset.setAuditRemark(remark);
             asset.setAuditorId(auditorId);

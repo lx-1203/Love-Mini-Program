@@ -171,9 +171,14 @@ public class AdminCampusTopicController {
         // 数据隔离：校区管理员仅能审核本校话题
         assertTopicCampusAccess(topic);
 
-        AuditStatus newStatus = "approved".equals(req.decision())
-                ? AuditStatus.approved
-                : AuditStatus.rejected;
+        // R4-00428（第九轮铺平）：显式 switch 校验决策值——仅接受 approved / rejected，
+        // 与 AdminPostController 同口径；此前「非 approved 一律静默记 rejected」的二元等值
+        // 折叠会把拼错的决策值（如 "aproved"）静默记成拒绝，审核记录从此失真。
+        AuditStatus newStatus = switch (req.decision()) {
+            case "approved" -> AuditStatus.approved;
+            case "rejected" -> AuditStatus.rejected;
+            default -> throw new IllegalArgumentException("不支持的审核决策: " + req.decision());
+        };
         topic.setAuditStatus(newStatus);
         topic.setAuditRemark(req.remark());
         topic.setAuditorId(auditorId);
