@@ -53,7 +53,8 @@
      `prepare-static --dev` 从 `static-local-backup/full-static` 还原后自检 9/9 转绿——
      **真机腿收尾必须还原开发态**，这条写进下轮交接。
 - 升链条件（第六轮 §2.6 预约）：`measured=30` 已达成，`test:qa-selftests` 升进 `test:contracts`
-  链（见 §6 提交）。
+  链（见 §6 提交）。**升链后 36 条全链首跑 `CHAIN36_EXIT=0`**（qa-selftests 以链内身份首次全绿，
+  门侧对账 gate-wiring / gate-list-sync 均认新键，链时长 +7 分钟为已知代价）。
 
 ## 5. 环境与残留
 
