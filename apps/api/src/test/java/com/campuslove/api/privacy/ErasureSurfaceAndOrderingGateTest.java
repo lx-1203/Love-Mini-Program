@@ -233,9 +233,40 @@ class ErasureSurfaceAndOrderingGateTest {
                 deleteItem("ma_second", "media_asset"));
         assertTrue(joinBorrowingProblems(right).problems().isEmpty(),
                 "正确顺序（借方在前）被误判为红");
+
+        /* 子查询借形态（车道 E F-5）：IN (SELECT … FROM 被删表) 的借方同样必须排在被借表删除之前 */
+        List<PersonalDataTable> subWrong = List.of(
+                deleteItem("ma_first_sub", "media_asset"),
+                PersonalDataTable.of("borrow_sub_late", "some_child", "夹具", ErasureAction.DELETE_ROWS,
+                        List.of(), List.of(),
+                        List.of("DELETE FROM some_child WHERE media_asset_id IN "
+                                + "(SELECT id FROM media_asset WHERE user_id = {uid})"),
+                        List.of(), "夹具"));
+        List<String> subProblems = joinBorrowingProblems(subWrong).problems();
+        assertTrue(subProblems.stream().anyMatch(p -> p.contains("borrow_sub_late") && p.contains("media_asset")),
+                "子查询借方排在被借表删除之后没被判红（joinTargetsOf 对 IN(SELECT…FROM) 全盲，车道 E F-5）：" + subProblems);
+
+        List<PersonalDataTable> subRight = List.of(
+                PersonalDataTable.of("borrow_sub_early", "some_child", "夹具", ErasureAction.DELETE_ROWS,
+                        List.of(), List.of(),
+                        List.of("DELETE FROM some_child WHERE media_asset_id IN "
+                                + "(SELECT id FROM media_asset WHERE user_id = {uid})"),
+                        List.of(), "夹具"),
+                deleteItem("ma_second_sub", "media_asset"));
+        assertTrue(joinBorrowingProblems(subRight).problems().isEmpty(),
+                "子查询借方在前被误判为红");
     }
 
-    /** 取语句里全部 `JOIN <table>` 的目标表名（小写、去别名；LEFT/STRAIGHT 不在清单删除形态里，不认）。 */
+    /**
+     * 取语句里全部借归属目标表名（小写、去别名）。两种借形态都认（车道 E F-5 的修复：
+     * 只认 JOIN 会让 `IN (SELECT … FROM 被删表 …)` 形态的借方绕过排序判点）：
+     * ① `JOIN <table>`；② `IN (SELECT … FROM <table> …` 子查询。
+     * LEFT/STRAIGHT JOIN 不在清单删除形态里，不认。
+     */
+    private static final java.util.regex.Pattern SUBQUERY_BORROW =
+            java.util.regex.Pattern.compile("\\bin\\s*\\(\\s*select\\b[\\s\\S]{0,400}?\\bfrom\\s+([a-z_][a-z0-9_]*)",
+                    java.util.regex.Pattern.CASE_INSENSITIVE);
+
     private static List<String> joinTargetsOf(String sql) {
         List<String> out = new ArrayList<>();
         String lower = sql.toLowerCase(Locale.ROOT);
@@ -243,7 +274,7 @@ class ErasureSurfaceAndOrderingGateTest {
         while (true) {
             int at = lower.indexOf(" join ", idx);
             if (at < 0) {
-                return out;
+                break;
             }
             int start = at + " join ".length();
             int end = start;
@@ -256,6 +287,11 @@ class ErasureSurfaceAndOrderingGateTest {
             }
             idx = end;
         }
+        java.util.regex.Matcher m = SUBQUERY_BORROW.matcher(sql);
+        while (m.find()) {
+            out.add(m.group(1).toLowerCase(Locale.ROOT));
+        }
+        return out;
     }
 
     @Test

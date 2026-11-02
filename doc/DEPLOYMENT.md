@@ -473,7 +473,8 @@ BACKUP_ENCRYPT=true BACKUP_ENCRYPTION_KEY='<从密钥管理注入>' \
 | `MYSQL_DATABASE` | - | `campus_love` | MySQL 初始化数据库名 | mysql、api、backup |
 | `MYSQL_USER` | - | `campus` | MySQL 业务用户名 | mysql、api |
 | `MYSQL_PASSWORD` | ✅ | - | MySQL 业务用户密码（api 中作为 DB_PASSWORD） | mysql、api |
-| `MYSQL_PORT` | - | `3306` | MySQL 宿主机端口 | mysql |
+| `MYSQL_PORT` | - | `3306` | MySQL 宿主机端口；宿主跑 `scripts/restore-mysql.sh` 时也是恢复目标端口（脚本 :63/:201 读） | mysql、宿主执行 restore-mysql.sh |
+| `MYSQL_HOST` | - | `127.0.0.1` | 仅宿主跑 `scripts/restore-mysql.sh` 时读取的恢复目标主机（脚本 :62/:200；compose 网络内不需要） | 宿主执行 restore-mysql.sh |
 | `REDIS_PASSWORD` | ✅ | - | Redis 认证密码 | redis、api |
 | `REDIS_PORT` | - | `6379` | Redis 宿主机端口 | redis |
 | `JWT_SECRET` | ✅ | - | JWT 签名密钥（≥ 48 字符） | api |

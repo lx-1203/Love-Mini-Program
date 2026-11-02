@@ -279,7 +279,13 @@ public final class PersonalDataTables {
                         + "media_asset 自身也不在导出清单里（上传物以 URL 形态存在、不经导出），"
                         + "其附属的举报保留行没有单列类别的必要（与 whispers 27→28 那次的判据相反："
                         + "那次是导出侧已有 whisper 类别而清除侧漏配）。"
-                        + "E2 快照 0 行，写点在 MediaAssetService#holdTempAsset ⇒ 归因 EMPTY_WRITTEN。"));
+                        + "E2 快照 0 行，写点在 MediaAssetService#holdTempAsset ⇒ 归因 EMPTY_WRITTEN。"
+                        + "<b>边界（第七轮车道 E F-6 裁定）</b>：本项删轴只借 media_asset 归属；"
+                        + "当被注销主体是**管理员**时，他创建的 holds（载荷关于他人素材）按操作记录保留，"
+                        + "created_by 解析到墓碑不识别自然人；但 reason 是操作者手写自由文本，与 "
+                        + "audit_log.request_body / reports.description 的「操作者手写即抹」先例不同向——"
+                        + "E2 快照 0 行 + 管理员自注销是边缘路径，按 P3 挂账；若取证需求或先例对称性升级，"
+                        + "应重开裁定（理想态：管理员主体注销时 reason 就地置空）。"));
         list.add(PersonalDataTable.of(
                 "media_asset", "media_asset", "上传素材（图片/语音/视频）",
                 ErasureAction.DELETE_ROWS, List.of(),

@@ -355,6 +355,13 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      # CI 三假设之一（第六轮 G 点名、第七轮 G2 复检仍未修）：GitHub 托管 runner
+      # 【不】自带 mysql 客户端；没有这一步，下面第一条 mysql 命令就是 command not found，
+      # 本 job 的真判点一个都跑不到。apt 钉 mysql-client（而非 default-mysql-client），
+      # 与 mysql:8.0.39 服务端的认证/协议面一致。
+      - name: Install MySQL client (hosted runners do not ship one)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq mysql-client
+
       - name: Create an EMPTY schema and hand it to the app user
         run: |
           mysql --protocol=TCP -h 127.0.0.1 -P 3306 -uroot -pci-root-pass -e \

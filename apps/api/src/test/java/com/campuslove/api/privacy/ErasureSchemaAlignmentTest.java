@@ -501,6 +501,96 @@ class ErasureSchemaAlignmentTest {
         return hits.stream().filter(h -> h.startsWith(table + ".")).toList();
     }
 
+    /* ============ 第四轴（第七轮车道 E F-1/F-2）：语义用户引用、无 FK、表不在清单 ============ */
+
+    /**
+     * 「管理员指针 / 平台运营配置」形状的**已裁定不进注销射程**登记表（键 = {@code 表.列}）。
+     *
+     * <p>车道 E（round-7-audit-lane-E）对全库 234 个 SQL 的 {@code *_id} 列做了三轴射程枚举：
+     * APP 主体个人数据表 P1 逃逸 0 张；三轴全盲的只剩**管理员指针/运营配置**两组——
+     * {@code admin_layer.admin_id}（RBAC 授权映射，DDL 自现网原样落盘、本就无 FK）与
+     * 8 张平台配置表的 {@code updated_by}（ALTER 补列、无 FK）。它们不是漏删 APP 用户数据，
+     * 但按本门族「约定式引用必须点名或豁免」的纪律，必须登记在这里受看管：
+     * 哪天某列补了 FK、或所在表进了清单、或列被删，登记条目必须同步处置（反漂移判点会红）。</p>
+     */
+    private static final String CONFIG_UPDATED_BY_REASON =
+            "平台运营配置的最后修改人指针（ALTER 补列、无 FK）：运营配置非主体个人数据，"
+                    + "指针解析到墓碑不识别自然人（车道 E F-2 批量裁定，与 promo_codes 豁免同口径）。";
+
+    private static final Map<String, String> NON_SUBJECT_USER_REFERENCE_EXEMPTIONS = Map.ofEntries(
+            Map.entry("admin_layer.admin_id",
+                    "后台管理员↔圈层 RBAC 授权映射（V2026.10.13.0001）。授权行随管理员注销残留、"
+                            + "admin_id 解析到墓碑不识别自然人；删行不等权限回收语义，不进清单（车道 E F-1 裁定）。"),
+            Map.entry("app_config.updated_by", CONFIG_UPDATED_BY_REASON),
+            Map.entry("app_login_hero_config.updated_by", CONFIG_UPDATED_BY_REASON),
+            Map.entry("app_rule.updated_by", CONFIG_UPDATED_BY_REASON),
+            Map.entry("app_switch.updated_by", CONFIG_UPDATED_BY_REASON),
+            Map.entry("chat_ai_feature_flag.updated_by", CONFIG_UPDATED_BY_REASON),
+            Map.entry("legal_document.updated_by", CONFIG_UPDATED_BY_REASON),
+            Map.entry("match_config.updated_by", CONFIG_UPDATED_BY_REASON),
+            Map.entry("recommend_strategy.updated_by", CONFIG_UPDATED_BY_REASON));
+
+    /** 「语义上指向某个用户」的列名词形：操作者/审核者/管理员的 _id 或 _by 后缀。 */
+    private static final Pattern USER_REFERENCE_COLUMN = Pattern.compile(
+            "^(?:created_by|updated_by)$"
+                    + "|^(?:user|admin|operator|auditor|handler|reviewer|inviter|owner|author|creator|caller|receiver)[a-z0-9_]*_id$");
+
+    /**
+     * 第四轴穷尽门：语义用户引用列（词形命中）若【无 FK、且所在表不在清单】⇒ 三轴全盲 ⇒
+     * 必须在 {@link #NON_SUBJECT_USER_REFERENCE_EXEMPTIONS} 里有 ≥20 字理由。
+     * 列集用 {@link #buildSchema()}（ALTER 感知——{@code updated_by} 全是 ALTER 补列，
+     * 只认 CREATE 体会把它们全漏掉，车道 E F-3 点过这个坑）。
+     */
+    @Test
+    @DisplayName("第四轴：语义用户引用、无外键、表不在清单的列，必须登记豁免（车道 E F-1/F-2）")
+    void everySemanticUserReferenceOutsideAllAxesIsARegisteredDisposition() {
+        Map<String, Set<String>> schema = buildSchema();
+        ErasureMigrationGraph graph = ErasureMigrationGraph.load(ErasureMigrationGraph.locateMigrationDir());
+        Set<String> manifestTables = PersonalDataTables.INVENTORY.stream()
+                .map(t -> t.table().toLowerCase(Locale.ROOT))
+                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+
+        List<String> hits = new ArrayList<>();
+        for (Map.Entry<String, Set<String>> e : schema.entrySet()) {
+            String table = e.getKey();
+            if (manifestTables.contains(table)
+                    || OWNER_TABLE_EXEMPTIONS.containsKey(table)
+                    || BORROWED_OWNER_TABLE_EXEMPTIONS.containsKey(table)) {
+                // 清单表由三轴 + 清单项自己看管；前两轴的豁免表也已受看管（如
+                // sensitive_word_import_task.operator_id 是第一轴的登记豁免，不是盲区）
+                continue;
+            }
+            for (String column : e.getValue()) {
+                if (!USER_REFERENCE_COLUMN.matcher(column).matches()) {
+                    continue;
+                }
+                boolean hasFk = graph.edges().stream()
+                        .anyMatch(fk -> fk.child().equals(table) && fk.column().equals(column));
+                if (hasFk) {
+                    continue; // 有 FK 边：第二轴（借归属闭包）射程内
+                }
+                hits.add(table + "." + column);
+            }
+        }
+        assertTrue(hits.size() >= 9,
+                "第四轴命中只有 " + hits.size() + "（车道 E 装轴时实测 9：admin_layer.admin_id + 8 张 config.updated_by）"
+                        + "——词形或 schema 解析塌了，拒判");
+        List<String> unregistered = hits.stream()
+                .filter(h -> !NON_SUBJECT_USER_REFERENCE_EXEMPTIONS.containsKey(h))
+                .toList();
+        assertTrue(unregistered.isEmpty(),
+                "语义上指向用户、三轴全盲、又没登记豁免的列（车道 E F-1/F-2 的形状）：\n  "
+                        + String.join("\n  ", unregistered)
+                        + "\n逐列裁定：管理员指针/运营配置 ⇒ 登记豁免；APP 主体数据 ⇒ 进清单");
+
+        for (Map.Entry<String, String> entry : NON_SUBJECT_USER_REFERENCE_EXEMPTIONS.entrySet()) {
+            assertTrue(entry.getValue().length() >= 20,
+                    entry.getKey() + " 的豁免理由没写够（<20 字）");
+            assertTrue(hits.contains(entry.getKey()),
+                    entry.getKey() + " 已不是第四轴命中（列被删/补了 FK/表进了清单）：登记必须划掉或改口径");
+        }
+    }
+
     /**
      * 第三轴判点的解析器自证（阴性/阳性对照，注入假 DDL）：
      * 有 {@code media_asset_id} 无 FK ⇒ 必须命中；同列但有 FK（CREATE 体内或 ALTER 补建都算）⇒ 不命中；

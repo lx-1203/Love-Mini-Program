@@ -749,17 +749,13 @@ services:
       redis:
         condition: service_healthy
     environment:
-      # 任务 24.4 要求的 DB_* 变量
-      DB_HOST: mysql
-      DB_USER: ${DB_USER:-root}
-      # Task 22：移除默认密码，回退到 MYSQL_ROOT_PASSWORD（已由 mysql 服务强制校验）
-      DB_PASSWORD: ${DB_PASSWORD:-${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}}
-      DB_NAME: ${DB_NAME:-${MYSQL_DATABASE:-campus_love}}
-      # 兼容 backup-mysql.sh 脚本的 MYSQL_* 变量（脚本内部读取）
+      # backup-mysql.sh 只读 MYSQL_* 变量（脚本头注 :44-50）。历史上的 DB_HOST/DB_USER/
+      # DB_PASSWORD/DB_NAME 四键（"任务 24.4 要求"）全库零读取者——第七轮 G2 N1 判为
+      # 镜像方向的死变量（文档设了脚本不读），已删；新增变量必须先在脚本里接线再进 compose。
       MYSQL_HOST: mysql
       MYSQL_PORT: 3306
       MYSQL_USER: root
-      # Task 22：移除默认密码，引用上方已校验的 MYSQL_ROOT_PASSWORD
+      # Task 22：移除默认密码，引用 mysql 服务已强制校验的 MYSQL_ROOT_PASSWORD
       MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD is required}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-campus_love}
       # infra #16：备份目录与脚本 BACKUP_DIR 对齐（宿主 ./backups ↔ 容器 /backups）

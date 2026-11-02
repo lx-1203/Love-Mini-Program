@@ -1259,7 +1259,13 @@
       "requiresReal": false,
       "actionPreTapfix": "tap 主按钮保存 1 次 → 记录请求体、Toast、路由链；随后进入 discover 页核对偏好是否生效（REAL_ONLY 回读）",
       "tapTarget": ".bar__primary",
-      "tapTargetEvidence": "apps/client/src/components/common/BottomActionBar.vue:39"
+      "tapTargetEvidence": "apps/client/src/components/common/BottomActionBar.vue:39",
+      "identities": [
+        "A",
+        "B"
+      ],
+      "identitiesFrom": "tag-ops-identity-scope.mjs",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/setup/recommend-pref/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
     },
     {
       "id": "RP06",

@@ -246,6 +246,20 @@
              （校验和算法、历史表结构、MySQL 支持模块都有行为差异）。
              ${flyway.version} 由 spring-boot-dependencies 定义，与 flyway-core 同源。 -->
         <version>${flyway.version}</version>
+        <dependencies>
+          <!-- flyway-maven-plugin 的类加载器【不读】项目依赖：flyway-mysql 只声明在
+               项目 classpath（上方 dependencies 块）对 `mvn flyway:migrate` 不可见 ⇒
+               插件拿着 jdbc:mysql URL 找不到 MySQL 支持模块（"No database found to
+               handle jdbc:mysql://…"）必炸。必须作为【插件】依赖重申一次，版本与
+               plugin 同钉 ${flyway.version}（flyway-mysql 与 flyway-core 同版本发行）。
+               第六轮 G 车道按「CI 首跑假设」挂账、第七轮 G2 复检判「静态可修未修」——
+               本块就是那笔账的闭合；真跑首验仍待一次 CI runner。 -->
+          <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+            <version>${flyway.version}</version>
+          </dependency>
+        </dependencies>
         <configuration>
           <url>${env.DB_URL}</url>
           <user>${env.DB_USERNAME}</user>

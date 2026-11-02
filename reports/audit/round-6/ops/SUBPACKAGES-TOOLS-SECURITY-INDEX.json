@@ -68,8 +68,8 @@
         "A",
         "B"
       ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+      "identitiesFrom": "tag-ops-identity-scope.mjs（W5 车道 2026-11-01 按规矩 1/2 手工打标，未跑 --apply）",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），判据文本不涉游客/闸门（前置是登录态）⇒ 收窄出游客腿，由 GG-tools-security-index 复测腿记账"
     },
     {
       "id": "SEC04",
@@ -85,8 +85,8 @@
         "A",
         "B"
       ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+      "identitiesFrom": "tag-ops-identity-scope.mjs（W5 车道 2026-11-01 按规矩 1/2 手工打标，未跑 --apply）",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），判据文本不涉游客/闸门（前置是登录态）⇒ 收窄出游客腿，由 GG-tools-security-index 复测腿记账"
     },
     {
       "id": "SEC05",
@@ -102,8 +102,8 @@
         "A",
         "B"
       ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+      "identitiesFrom": "tag-ops-identity-scope.mjs（W5 车道 2026-11-01 按规矩 1/2 手工打标，未跑 --apply）",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），判据文本不涉游客/闸门（前置是登录态）⇒ 收窄出游客腿，由 GG-tools-security-index 复测腿记账"
     },
     {
       "id": "SEC06",
@@ -122,8 +122,8 @@
         "A",
         "B"
       ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+      "identitiesFrom": "tag-ops-identity-scope.mjs（W5 车道 2026-11-01 按规矩 1/2 手工打标，未跑 --apply）",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），判据文本不涉游客/闸门（前置是登录态）⇒ 收窄出游客腿，由 GG-tools-security-index 复测腿记账"
     },
     {
       "id": "SEC07",
@@ -142,8 +142,8 @@
         "A",
         "B"
       ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+      "identitiesFrom": "tag-ops-identity-scope.mjs（W5 车道 2026-11-01 按规矩 1/2 手工打标，未跑 --apply）",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），判据文本不涉游客/闸门（前置是登录态）⇒ 收窄出游客腿，由 GG-tools-security-index 复测腿记账"
     },
     {
       "id": "SEC08",
@@ -159,8 +159,8 @@
         "A",
         "B"
       ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+      "identitiesFrom": "tag-ops-identity-scope.mjs（W5 车道 2026-11-01 按规矩 1/2 手工打标，未跑 --apply）",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），判据文本不涉游客/闸门（前置是登录态）⇒ 收窄出游客腿，由 GG-tools-security-index 复测腿记账"
     },
     {
       "id": "SEC09",
@@ -179,8 +179,8 @@
         "A",
         "B"
       ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+      "identitiesFrom": "tag-ops-identity-scope.mjs（W5 车道 2026-11-01 按规矩 1/2 手工打标，未跑 --apply）",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），判据文本不涉游客/闸门（前置是登录态）⇒ 收窄出游客腿，由 GG-tools-security-index 复测腿记账"
     },
     {
       "id": "SEC10",
@@ -196,8 +196,8 @@
         "A",
         "B"
       ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+      "identitiesFrom": "tag-ops-identity-scope.mjs（W5 车道 2026-11-01 按规矩 1/2 手工打标，未跑 --apply）",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），判据文本不涉游客/闸门（前置是登录态）⇒ 收窄出游客腿，由 GG-tools-security-index 复测腿记账"
     },
     {
       "id": "SEC11",
@@ -216,8 +216,8 @@
         "A",
         "B"
       ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+      "identitiesFrom": "tag-ops-identity-scope.mjs（W5 车道 2026-11-01 按规矩 1/2 手工打标，未跑 --apply）",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），判据文本不涉游客/闸门（前置是登录态）⇒ 收窄出游客腿，由 GG-tools-security-index 复测腿记账"
     },
     {
       "id": "SEC12",
@@ -236,8 +236,8 @@
         "A",
         "B"
       ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+      "identitiesFrom": "tag-ops-identity-scope.mjs（W5 车道 2026-11-01 按规矩 1/2 手工打标，未跑 --apply）",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），判据文本不涉游客/闸门（前置是登录态）⇒ 收窄出游客腿，由 GG-tools-security-index 复测腿记账"
     },
     {
       "id": "SEC13",
@@ -276,8 +276,8 @@
         "A",
         "B"
       ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+      "identitiesFrom": "tag-ops-identity-scope.mjs（W5 车道 2026-11-01 按规矩 1/2 手工打标，未跑 --apply）",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），判据文本不涉游客/闸门（前置是登录态）⇒ 收窄出游客腿，由 GG-tools-security-index 复测腿记账"
     },
     {
       "id": "SEC15",
@@ -310,8 +310,8 @@
         "A",
         "B"
       ],
-      "identitiesFrom": "tag-ops-identity-scope.mjs",
-      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），且判据文本不涉游客/闸门 ⇒ 前置是登录态"
+      "identitiesFrom": "tag-ops-identity-scope.mjs（W5 车道 2026-11-01 按规矩 1/2 手工打标，未跑 --apply）",
+      "identitiesWhy": "页在 guest-landing-policy.json 的落点裁定表里（subpackages/tools/security/index → pages/login/index），判据文本不涉游客/闸门（前置是登录态）⇒ 收窄出游客腿，由 GG-tools-security-index 复测腿记账"
     }
   ]
 }

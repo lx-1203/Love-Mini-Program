@@ -34,8 +34,14 @@ const APPLY = process.argv.includes("--apply");
 const GUEST_RELEVANT = /游客|未登录|not-logged|弹回|引导|登录墙|LockScreen|lock-screen/i;
 
 /** 这条 case 是否应当只在登录身份下跑？纯函数，便于自测。 */
-export function shouldScopeToLogin(caseObj, page, landings) {
+export function shouldScopeToLogin(caseObj, page, landings, loginDespite) {
   if (!landings.has(page)) return false;
+  /* 点名收窄优先于词表（与 #51 反向页 keepOnLoginLegIds 同一纪律：点名比关键词可靠）：
+     第七轮车道 O F-3——RP05「完成引导」是 onboarding 语境被 GUEST_RELEVANT 字面误伤，
+     留在游客腿只产出「落在登录页」噪声（本页 policy 裁定弹回）。
+     名单在 guest-landing-policy.json 的 loginDespiteGuestWords（每条带 why），不靠猜。 */
+  const named = loginDespite && loginDespite.get ? loginDespite.get(page) : null;
+  if (named && named.includes(String(caseObj.id))) return true;
   const text = [caseObj.title, caseObj.action, caseObj.expected, caseObj.pre, caseObj.evidence]
     .map((x) => String(x || "")).join(" ");
   if (GUEST_RELEVANT.test(text)) return false;
@@ -66,10 +72,12 @@ export function shouldScopeToGuestOnly(caseObj, page, loggedOut) {
 }
 
 if (process.argv.includes("--selftest")) {
-  const L = new Map([["subpackages/village/village/index", "pages/login/index"]]);
+  const L = new Map([["subpackages/village/village/index", "pages/login/index"], ["subpackages/setup/recommend-pref/index", "pages/login/index"]]);
   const LOG = new Map([["pages/login/index", { page: "pages/login/index", reason: "自测用反向页", keepOnLoginLegIds: ["LG03"] }]]);
   const cases = [
     { n: "表内页 + 判据讲内容 ⇒ 标 A", got: shouldScopeToLogin({ action: "观察帖子流", expected: "出现帖子卡" }, "subpackages/village/village/index", L), want: true },
+    { n: "表内页 + 命中游客词但在点名名单 ⇒ 仍标 A（点名优先于词表，F-3）", got: shouldScopeToLogin({ id: "RP05", action: "保存", expected: "完成引导后进寻觅" }, "subpackages/setup/recommend-pref/index", L, new Map([["subpackages/setup/recommend-pref/index", ["RP05"]]])), want: true },
+    { n: "同页同词但没被点名 ⇒ 仍留游客腿（名单是白名单不是整页开关）", got: shouldScopeToLogin({ id: "RP99", action: "保存", expected: "完成引导后进寻觅" }, "subpackages/setup/recommend-pref/index", L, new Map([["subpackages/setup/recommend-pref/index", ["RP05"]]])), want: false },
     { n: "表内页 + 判据讲游客闸门 ⇒ 不标", got: shouldScopeToLogin({ action: "游客进入", expected: "应弹回登录页" }, "subpackages/village/village/index", L), want: false },
     { n: "表内页 + 判据讲 LockScreen ⇒ 不标（那是未登录态自己的东西）", got: shouldScopeToLogin({ action: "观察", expected: "渲染 LockScreen" }, "subpackages/village/village/index", L), want: false },
     { n: "表外页 ⇒ 一条都不标", got: shouldScopeToLogin({ action: "观察", expected: "出现卡片" }, "pages/home/index", L), want: false },
@@ -96,6 +104,11 @@ if (!LANDINGS.size) { console.log("IDSCOPE_RESULT=FAIL reason=裁定表为空，
 /* 反向页（已登录不能停留）与它必须留在 A 档的余量：名单为空也照常跑（只是这一半规则不生效）。 */
 const LOGGED_OUT = new Map();
 for (const r of POL.loggedOutOnly || []) if (r && r.page) LOGGED_OUT.set(r.page, r);
+/* 点名收窄名单（页 → id 集合）：命中游客词但语义是登录腿的行，policy 点名后收进登录腿（F-3）。 */
+const LOGIN_DESPITE = new Map();
+for (const r of POL.loginDespiteGuestWords || []) {
+  if (r && r.page && Array.isArray(r.ids)) LOGIN_DESPITE.set(r.page, r.ids.map(String));
+}
 const keptForLoginLeg = new Map();
 /* 裁定里点名的"必须留在登录腿"的行：点名比关键词可靠，但点名的 id 必须真的存在，
    否则它就是上一条幽灵指针（上一轮判据台改号后，名单会静默失效）。 */
@@ -126,12 +139,19 @@ for (const f of readdirSync(OPS).filter((x) => x.endsWith(".json")).sort()) {
       c.identitiesWhy = "页在 policy 的 loggedOutOnly 名单里（" + c.page + "）：" + String((LOGGED_OUT.get(c.page) || {}).reason || "").slice(0, 200);
       guestOnly++;
       if (samples.length < 12) samples.push(f + "|" + c.id + " " + String(c.page) + " :: 收窄为游客腿 :: " + String(c.expected || c.action || "").slice(0, 40));
-    } else if (shouldScopeToLogin(c, c.page, LANDINGS)) {
+    } else if (shouldScopeToLogin(c, c.page, LANDINGS, LOGIN_DESPITE)) {
       /* 判据的前置是"有登录态"，A 与 B 两个账号都满足；只写 ["A"] 会把 B 腿也一起摘掉，
-         而裁定讲的是游客，不是第二个账号。 */
+         而裁定讲的是游客，不是第二个账号。
+         溯源保留（第七轮车道 O F-1 的修复）：行已被判 A,B 且 from/why **已在盘上**时，
+         两者原样保留——不管是外来出处（W5 手工打标、行号出处、gap-carriers）还是本工具
+         早年的模板文本，幂等复跑一律不许把已有溯源抹成当前模板。只有值变了或溯源缺失
+         才写全三元组。 */
+      const alreadyAB = Array.isArray(c.identities) && c.identities.join(",") === "A,B";
       c.identities = ["A", "B"];
-      c.identitiesFrom = "tag-ops-identity-scope.mjs";
-      c.identitiesWhy = "页在 guest-landing-policy.json 的落点裁定表里（" + c.page + " → " + LANDINGS.get(c.page) + "），且判据文本不涉游客/闸门 ⇒ 前置是登录态";
+      if (!alreadyAB || !c.identitiesFrom || !c.identitiesWhy) {
+        c.identitiesFrom = "tag-ops-identity-scope.mjs";
+        c.identitiesWhy = "页在 guest-landing-policy.json 的落点裁定表里（" + c.page + " → " + LANDINGS.get(c.page) + "），且判据文本不涉游客/闸门 ⇒ 前置是登录态";
+      }
       tagged++;
       if (samples.length < 12) samples.push(f + "|" + c.id + " " + String(c.page) + " :: " + String(c.expected || c.action || "").slice(0, 46));
     } else if (c.page && LANDINGS.has(c.page)) {
@@ -182,9 +202,11 @@ let recheck = "";
 if (APPLY) {
   /* 落盘后立刻复读：报的是"盘上现在有多少条"，不是"我以为我写了多少条"。
      对账对象是「按本轮规则该标的行」（重跑同一对判定纯函数），不是「盘上所有 A,B 行」：
-     历史标过、之后判据正文被改写命中游客词的行会**保留** A,B（本工具只撤销 ["A"] 误标形状，
-     不追删 A,B），拿全量 A,B 数对账必然恒差（2026-11-01 实测存量 14 行）——那是尺子错不是盘错。
-     全量 A,B 数仍照实印出，但只作读数不作判据。 */
+     历史存量 A,B 行（本工具只撤销 ["A"] 误标形状，不追删 A,B）会保留。实测存量 14 行的真实构成
+     （第七轮车道 O F-2 复量）：桶A 4 行=表内页正文命中游客词（SEC13/SEC15/VRN07/VB10，均为误伤语境）；
+     桶B 10 行=from 标 gap-carriers/identities-tagging.json 的历史标（页不在 policy 裁定表，本工具
+     三分支皆不触达的静默存量，语义抽检全部登录态写操作、无覆盖损失）。
+     拿全量 A,B 数对账必然恒差——那是尺子错不是盘错；全量数仍照实印出，只作读数不作判据。 */
   let onRule = 0, onGuest = 0, mismatched = 0, allAB = 0, cnt = 0;
   for (const f of readdirSync(OPS).filter((x) => x.endsWith(".json")).sort()) {
     const jj = JSON.parse(readFileSync(join(OPS, f), "utf8"));
@@ -193,7 +215,7 @@ if (APPLY) {
       const ab = Array.isArray(c.identities) && c.identities.join(",") === "A,B";
       if (ab) allAB++;
       if (shouldScopeToGuestOnly(c, c.page, LOGGED_OUT)) { onGuest++; if (JSON.stringify(c.identities || []) !== '["guest"]') mismatched++; }
-      else if (shouldScopeToLogin(c, c.page, LANDINGS)) { onRule++; if (!ab) mismatched++; }
+      else if (shouldScopeToLogin(c, c.page, LANDINGS, LOGIN_DESPITE)) { onRule++; if (!ab) mismatched++; }
     }
   }
   recheck = "｜复读 规则命中 A,B=" + onRule + "（计划=" + tagged + "）游客=" + onGuest + "（计划=" + guestOnly
