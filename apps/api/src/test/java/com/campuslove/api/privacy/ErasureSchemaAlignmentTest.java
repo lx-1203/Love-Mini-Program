@@ -442,27 +442,29 @@ class ErasureSchemaAlignmentTest {
      * F-11 第三轴穷尽门（R7-B）：列名按 {@code <清单表名>_id} 约定指向清单表、而外键图上没有
      * 该表→该清单表 边的表，必须被清单点名或在豁免表里写理由。
      *
-     * <p>派生复用 {@link ErasureMigrationGraph}（不写第二台解析器）：列集口径与第一轴一致
-     * （只认 CREATE 体里的列），外键边口径与第二轴一致（5 种声明形态全认、按文本位置施加）。
+     * <p>派生复用既有解析器（不写第二台）：列集来自 {@link #buildSchema()}（ALTER 感知，
+     * 第七轮 E F-3 修复——原口径只认 CREATE 体，ALTER 补的 {@code <清单表>_id} 形列全盲），
+     * 外键边来自 {@link ErasureMigrationGraph}（5 种声明形态全认、按文本位置施加），
+     * 列名到清单表的匹配带单复数归一（第七轮 E F-4 有界扩展：+s/+es/y→ies）。
      * 有 FK 边的同类列不在此轴点名——它们已由「借归属闭包」轴覆盖，这里再点名只会让一张表
      * 有两个答案。</p>
      */
     @Test
-    @DisplayName("F-11 第三轴：列名=清单表名_id 且外键图无边的表，必须点名或带理由豁免")
+    @DisplayName("F-11 第三轴：列名=清单表名(单复数归一)_id 且外键图无边的表，必须点名或带理由豁免")
     void everyNamedManifestIdReferenceWithoutFkIsNamedOrExempt() {
         ErasureMigrationGraph graph = ErasureMigrationGraph.load(ErasureMigrationGraph.locateMigrationDir());
         Set<String> manifestTables = PersonalDataTables.INVENTORY.stream()
                 .map(t -> t.table().toLowerCase(Locale.ROOT))
                 .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
-        List<String> hits = namedReferenceHits(graph, manifestTables);
+        List<String> hits = namedReferenceHits(buildSchema(), graph.edges(), manifestTables);
 
         // 防空转地板：这一形状必须真的存在（temp_chat_media_holds 是这条门的存在理由）
         assertTrue(hits.contains("temp_chat_media_holds.media_asset_id→media_asset"),
                 "第三轴没命中 temp_chat_media_holds.media_asset_id→media_asset——列集/外键图解析或轴本身坏了："
                         + hits);
         assertTrue(hits.size() >= 1,
-                "第三轴在全库上 0 命中（R7-B 装轴时实测 1：temp_chat_media_holds.media_asset_id），"
-                        + "轴在空集合上假装绿，拒判");
+                "第三轴在全库上 0 命中（R7-B 装轴实测 1：temp_chat_media_holds；E F-4 单复数归一后命中面只许涨）"
+                        + "——轴在空集合上假装绿，拒判。当前命中=" + hits.size() + "：" + hits);
 
         Set<String> hitTables = new LinkedHashSet<>();
         for (String hit : hits) {
@@ -594,23 +596,39 @@ class ErasureSchemaAlignmentTest {
     /**
      * 第三轴判点的解析器自证（阴性/阳性对照，注入假 DDL）：
      * 有 {@code media_asset_id} 无 FK ⇒ 必须命中；同列但有 FK（CREATE 体内或 ALTER 补建都算）⇒ 不命中；
-     * 指向非清单表 / 自指 ⇒ 不命中。
+     * 指向非清单表 / 自指 ⇒ 不命中；单复数归一（post_id→posts）两种方向都验。
+     * 列集用与真实路径同源的 {@link #buildSchema()} 形态（第七轮 E F-3：CREATE 体盲区已补）。
      */
     @Test
-    @DisplayName("第三轴自证：无 FK 的点名列必须命中，同列有 FK（两种声明形态）不命中，非清单目标不命中")
+    @DisplayName("第三轴自证：无 FK 的点名列必须命中，同列有 FK（两种声明形态）不命中，单复数归一双向验")
     void namedReferenceDetectorBitesOnSyntheticDdl() {
         ErasureMigrationGraph g = new ErasureMigrationGraph().applyDdl(
                 "CREATE TABLE media_asset (id bigint, user_id bigint, PRIMARY KEY (id));"
                         + "CREATE TABLE hold_no_fk (id bigint, media_asset_id bigint);"
                         + "CREATE TABLE hold_with_fk (id bigint, media_asset_id bigint,"
                         + "  FOREIGN KEY (media_asset_id) REFERENCES media_asset(id) ON DELETE CASCADE);"
-                        + "CREATE TABLE stray (id bigint, widget_id bigint);");
+                        + "CREATE TABLE stray (id bigint, widget_id bigint);"
+                        + "CREATE TABLE posts (id bigint, user_id bigint);"
+                        + "CREATE TABLE post_ref_no_fk (id bigint, post_id bigint);"
+                        + "CREATE TABLE activity_ref_no_fk (id bigint, activity_id bigint);");
         g.applyDdl("CREATE TABLE hold_alter_fk (id bigint, media_asset_id bigint);"
                 + "ALTER TABLE hold_alter_fk ADD CONSTRAINT fk_haf"
-                + " FOREIGN KEY (media_asset_id) REFERENCES media_asset (id);");
-        Set<String> miniManifest = Set.of("media_asset");
+                + " FOREIGN KEY (media_asset_id) REFERENCES media_asset (id);"
+                + "CREATE TABLE activities (id bigint, user_id bigint);");
+        Set<String> miniManifest = Set.of("media_asset", "posts", "activities");
+        Map<String, Set<String>> schema = new LinkedHashMap<>();
+        for (String t : new String[]{"media_asset", "hold_no_fk", "hold_with_fk", "stray",
+                "post_ref_no_fk", "activity_ref_no_fk", "hold_alter_fk", "posts", "activities"}) {
+            schema.put(t, new LinkedHashSet<>());
+        }
+        schema.get("hold_no_fk").add("media_asset_id");
+        schema.get("hold_with_fk").add("media_asset_id");
+        schema.get("hold_alter_fk").add("media_asset_id");
+        schema.get("stray").add("widget_id");
+        schema.get("post_ref_no_fk").add("post_id");
+        schema.get("activity_ref_no_fk").add("activity_id");
 
-        List<String> hits = namedReferenceHits(g, miniManifest);
+        List<String> hits = namedReferenceHits(schema, g.edges(), miniManifest);
         assertTrue(hits.contains("hold_no_fk.media_asset_id→media_asset"),
                 "有 media_asset_id 而无 FK 的表必须被第三轴命中：" + hits);
         assertFalse(hits.contains("hold_with_fk.media_asset_id→media_asset"),
@@ -619,33 +637,62 @@ class ErasureSchemaAlignmentTest {
                 "同列但 FK 是 ALTER 补建的（解析器必须认全 5 种形态，否则这里会重复点名）不该被第三轴点名：" + hits);
         assertFalse(hits.stream().anyMatch(h -> h.startsWith("stray.")),
                 "列名指向非清单表（widget_id→widget 不在清单里）不该被命中：" + hits);
+        assertTrue(hits.contains("post_ref_no_fk.post_id→posts"),
+                "单复数归一（+s 方向）必须命中——车道 E F-4 点过「复数表名 vs 单数列名」全不匹配的泛化缺口：" + hits);
+        assertTrue(hits.contains("activity_ref_no_fk.activity_id→activities"),
+                "单复数归一（y→ies 方向）必须命中：" + hits);
     }
 
     /**
-     * 第三轴派生（真实清单与夹具共用同一条路）：在场表 T 的 CREATE 体列 c 满足
-     * {@code c = <清单表>_id}、目标≠T、且外键图上没有 T→目标 的边（任意列）⇒ 命中。
+     * 第三轴派生（真实清单与夹具共用同一条路）：在场表 T 的列 c 满足
+     * {@code c = <清单表名单数形>_id}（含 +s / +es / y→ies 的单复数归一——车道 E F-4）、
+     * 目标≠T、且外键图上没有 T→目标 的边（任意列）⇒ 命中。
+     * 列集来自 {@link #buildSchema()}（ALTER 感知——车道 E F-3：只认 CREATE 体会让
+     * {@code ALTER TABLE x ADD COLUMN media_asset_id …} 静默滑过本轴）。
      * 输出形如 {@code temp_chat_media_holds.media_asset_id→media_asset}，按表/列排序稳定。
      */
-    private static List<String> namedReferenceHits(ErasureMigrationGraph graph, Set<String> manifestTables) {
+    private static List<String> namedReferenceHits(Map<String, Set<String>> schema,
+                                                   List<ErasureMigrationGraph.ForeignKey> edges,
+                                                   Set<String> manifestTables) {
         List<String> hits = new ArrayList<>();
-        for (String table : graph.existingTables().stream().sorted().toList()) {
-            for (String column : graph.columnsByTable()
-                    .getOrDefault(table, Set.of()).stream().sorted().toList()) {
+        for (String table : schema.keySet().stream().sorted().toList()) {
+            for (String column : schema.getOrDefault(table, Set.of()).stream().sorted().toList()) {
                 if (!column.endsWith("_id") || column.equals("id")) {
                     continue;
                 }
                 String target = column.substring(0, column.length() - 3);
-                if (target.equals(table) || !manifestTables.contains(target)) {
+                if (target.equals(table)) {
                     continue;
                 }
-                boolean edgeExists = graph.edges().stream()
-                        .anyMatch(fk -> fk.child().equals(table) && fk.parent().equals(target));
+                String matched = matchManifestTable(target, manifestTables);
+                if (matched == null) {
+                    continue;
+                }
+                boolean edgeExists = edges.stream()
+                        .anyMatch(fk -> fk.child().equals(table) && fk.parent().equals(matched));
                 if (!edgeExists) {
-                    hits.add(table + "." + column + "→" + target);
+                    hits.add(table + "." + column + "→" + matched);
                 }
             }
         }
         return hits;
+    }
+
+    /** 单复数归一：列名里的单数形（post/activity）匹配清单里的复数表名（posts/activities）。 */
+    private static String matchManifestTable(String target, Set<String> manifestTables) {
+        if (manifestTables.contains(target)) {
+            return target;
+        }
+        if (manifestTables.contains(target + "s")) {
+            return target + "s";
+        }
+        if (manifestTables.contains(target + "es")) {
+            return target + "es";
+        }
+        if (target.endsWith("y") && manifestTables.contains(target.substring(0, target.length() - 1) + "ies")) {
+            return target.substring(0, target.length() - 1) + "ies";
+        }
+        return null;
     }
 
     private static Set<String> diff(Set<String> a, Set<String> b) {
