@@ -1,39 +1,39 @@
 {
  "mode": "measure",
- "generatedAt": "2026-10-06T10:46:08.778Z",
+ "generatedAt": "2026-11-02T15:11:10.525Z",
  "project": "apps/client/dist/build/mp-weixin-real",
- "band": "real@f0677920",
+ "band": "real@c1c6346e",
  "guestCapable": true,
  "repeat": 2,
  "rows": [
   {
    "groupKey": "pages/nearby/index → pages/login/index",
    "guardCaseId": "GG-pages-nearby-index",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "pages/nearby/index",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "pages/nearby/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "pages/nearby/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -43,37 +43,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:46:54.080Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:12:16.734Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/campus/campus/certification → pages/login/index",
    "guardCaseId": "GG-campus-campus-certification",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/campus/campus/certification",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/campus/campus/certification",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/campus/campus/certification",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -83,37 +83,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:47:38.524Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:13:07.447Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/campus/campus/hub → pages/login/index",
    "guardCaseId": "GG-campus-campus-hub",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/campus/campus/hub",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/campus/campus/hub",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/campus/campus/hub",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -123,8 +123,8 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:48:24.289Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:13:57.893Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/campus/campus/index → pages/login/index",
@@ -163,37 +163,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:49:11.696Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:14:44.924Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/circles/circles/circle-home → pages/login/index",
    "guardCaseId": "GG-circles-circles-circle-home",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/circles/circles/circle-home",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/circles/circles/circle-home",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/circles/circles/circle-home",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -203,37 +203,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:49:56.243Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:15:38.630Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/discover-extra/discover/match-success → pages/login/index",
    "guardCaseId": "GG-discover-extra-discover-match-success",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/discover-extra/discover/match-success",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/discover-extra/discover/match-success",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/discover-extra/discover/match-success",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -243,8 +243,8 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:50:44.200Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:16:32.626Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/discover-extra/discover/matching → pages/login/index",
@@ -283,197 +283,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:51:30.909Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:17:19.767Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/discover/activities/index → pages/login/index",
    "guardCaseId": "GG-discover-activities-index",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/discover/activities/index",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
-   },
-   "waitedMs": 2500,
-   "samples": [
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
-    }
-   ],
-   "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:52:16.503Z",
-   "band": "real@f0677920"
-  },
-  {
-   "groupKey": "subpackages/profile-extra/feedback/history → pages/login/index",
-   "guardCaseId": "GG-profile-extra-feedback-history",
-   "measuredLanding": "pages/login/index",
-   "identity": "not-logged-in",
-   "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
-   },
-   "waitedMs": 2500,
-   "samples": [
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
-    }
-   ],
-   "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:53:02.807Z",
-   "band": "real@f0677920"
-  },
-  {
-   "groupKey": "subpackages/profile-extra/profile/album → pages/login/index",
-   "guardCaseId": "GG-profile-extra-profile-album",
-   "measuredLanding": "pages/login/index",
-   "identity": "not-logged-in",
-   "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
-   },
-   "waitedMs": 2500,
-   "samples": [
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
-    }
-   ],
-   "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:53:49.169Z",
-   "band": "real@f0677920"
-  },
-  {
-   "groupKey": "subpackages/profile-extra/profile/favorites → pages/login/index",
-   "guardCaseId": "GG-profile-extra-profile-favorites",
-   "measuredLanding": "pages/login/index",
-   "identity": "not-logged-in",
-   "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
-   },
-   "waitedMs": 2500,
-   "samples": [
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
-    },
-    {
-     "landing": "pages/login/index",
-     "identity": "not-logged-in",
-     "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
-     },
-     "waitedMs": 2500
-    }
-   ],
-   "stable": true,
-   "stableBasis": "n=2/repeat=2",
-   "stableWhy": null,
-   "stableDefect": null,
-   "stableSamples": 2,
-   "stableRequiredSamples": 2,
-   "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:54:37.352Z",
-   "band": "real@f0677920"
-  },
-  {
-   "groupKey": "subpackages/profile-extra/profile/tasks → pages/login/index",
-   "guardCaseId": "GG-profile-extra-profile-tasks",
-   "measuredLanding": "pages/login/index",
-   "identity": "not-logged-in",
-   "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
    "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/discover/activities/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
      "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/discover/activities/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -483,37 +323,197 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:55:30.856Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:18:10.248Z",
+   "band": "real@c1c6346e"
+  },
+  {
+   "groupKey": "subpackages/profile-extra/feedback/history → pages/login/index",
+   "guardCaseId": "GG-profile-extra-feedback-history",
+   "measuredLanding": "subpackages/profile-extra/feedback/history",
+   "identity": "not-logged-in",
+   "markers": {
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
+   },
+   "waitedMs": 4500,
+   "samples": [
+    {
+     "landing": "subpackages/profile-extra/feedback/history",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
+     },
+     "waitedMs": 4500
+    },
+    {
+     "landing": "subpackages/profile-extra/feedback/history",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
+     },
+     "waitedMs": 4500
+    }
+   ],
+   "stable": true,
+   "stableBasis": "n=2/repeat=2",
+   "stableWhy": null,
+   "stableDefect": null,
+   "stableSamples": 2,
+   "stableRequiredSamples": 2,
+   "repeatDeclared": 2,
+   "measuredAt": "2026-11-02T15:19:50.571Z",
+   "band": "real@c1c6346e"
+  },
+  {
+   "groupKey": "subpackages/profile-extra/profile/album → pages/login/index",
+   "guardCaseId": "GG-profile-extra-profile-album",
+   "measuredLanding": "subpackages/profile-extra/profile/album",
+   "identity": "not-logged-in",
+   "markers": {
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
+   },
+   "waitedMs": 4500,
+   "samples": [
+    {
+     "landing": "subpackages/profile-extra/profile/album",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
+     },
+     "waitedMs": 4500
+    },
+    {
+     "landing": "subpackages/profile-extra/profile/album",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
+     },
+     "waitedMs": 4500
+    }
+   ],
+   "stable": true,
+   "stableBasis": "n=2/repeat=2",
+   "stableWhy": null,
+   "stableDefect": null,
+   "stableSamples": 2,
+   "stableRequiredSamples": 2,
+   "repeatDeclared": 2,
+   "measuredAt": "2026-11-02T15:20:45.784Z",
+   "band": "real@c1c6346e"
+  },
+  {
+   "groupKey": "subpackages/profile-extra/profile/favorites → pages/login/index",
+   "guardCaseId": "GG-profile-extra-profile-favorites",
+   "measuredLanding": "subpackages/profile-extra/profile/favorites",
+   "identity": "not-logged-in",
+   "markers": {
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
+   },
+   "waitedMs": 4500,
+   "samples": [
+    {
+     "landing": "subpackages/profile-extra/profile/favorites",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
+     },
+     "waitedMs": 4500
+    },
+    {
+     "landing": "subpackages/profile-extra/profile/favorites",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
+     },
+     "waitedMs": 4500
+    }
+   ],
+   "stable": true,
+   "stableBasis": "n=2/repeat=2",
+   "stableWhy": null,
+   "stableDefect": null,
+   "stableSamples": 2,
+   "stableRequiredSamples": 2,
+   "repeatDeclared": 2,
+   "measuredAt": "2026-11-02T15:21:39.823Z",
+   "band": "real@c1c6346e"
+  },
+  {
+   "groupKey": "subpackages/profile-extra/profile/tasks → pages/login/index",
+   "guardCaseId": "GG-profile-extra-profile-tasks",
+   "measuredLanding": "subpackages/profile-extra/profile/tasks",
+   "identity": "not-logged-in",
+   "markers": {
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
+   },
+   "waitedMs": 4500,
+   "samples": [
+    {
+     "landing": "subpackages/profile-extra/profile/tasks",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
+     },
+     "waitedMs": 4500
+    },
+    {
+     "landing": "subpackages/profile-extra/profile/tasks",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
+     },
+     "waitedMs": 4500
+    }
+   ],
+   "stable": true,
+   "stableBasis": "n=2/repeat=2",
+   "stableWhy": null,
+   "stableDefect": null,
+   "stableSamples": 2,
+   "stableRequiredSamples": 2,
+   "repeatDeclared": 2,
+   "measuredAt": "2026-11-02T15:22:30.160Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/profile-extra/settings/dnd → pages/login/index",
    "guardCaseId": "GG-profile-extra-settings-dnd",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/profile-extra/settings/dnd",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/profile-extra/settings/dnd",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/profile-extra/settings/dnd",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -523,37 +523,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:56:17.920Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:23:20.691Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/profile-extra/verification/index → pages/login/index",
    "guardCaseId": "GG-profile-extra-verification-index",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/profile-extra/verification/index",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/profile-extra/verification/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/profile-extra/verification/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -563,37 +563,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:57:03.724Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:24:11.331Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/profile-extra/verification/real-name → pages/login/index",
    "guardCaseId": "GG-profile-extra-verification-real-name",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/profile-extra/verification/real-name",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/profile-extra/verification/real-name",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/profile-extra/verification/real-name",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -603,8 +603,8 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:57:50.653Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:25:01.308Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/setup/campus/index → pages/login/index",
@@ -615,7 +615,7 @@
     ".login-page__brand": "1",
     ".login-register-entry": "1"
    },
-   "waitedMs": 4500,
+   "waitedMs": 2500,
    "samples": [
     {
      "landing": "pages/login/index",
@@ -624,7 +624,7 @@
       ".login-page__brand": "1",
       ".login-register-entry": "1"
      },
-     "waitedMs": 4500
+     "waitedMs": 2500
     },
     {
      "landing": "pages/login/index",
@@ -643,37 +643,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:58:45.935Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:25:44.951Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/setup/interest/index → pages/login/index",
    "guardCaseId": "GG-setup-interest-index",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/setup/interest/index",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/setup/interest/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/setup/interest/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -683,37 +683,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T10:59:32.180Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:26:36.362Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/setup/schedule/index → pages/login/index",
    "guardCaseId": "GG-setup-schedule-index",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/setup/schedule/index",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/setup/schedule/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/setup/schedule/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -723,37 +723,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:01:02.146Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:28:08.888Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/support/feedback/index → pages/login/index",
    "guardCaseId": "GG-support-feedback-index",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/support/feedback/index",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/support/feedback/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/support/feedback/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -763,37 +763,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:01:47.423Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:28:59.626Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/tools/search/index → pages/login/index",
    "guardCaseId": "GG-tools-search-index",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/tools/search/index",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/tools/search/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/tools/search/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -803,37 +803,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:02:32.449Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:29:51.265Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/village/village/history → pages/login/index",
    "guardCaseId": "GG-village-village-history",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/village/village/history",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/village/village/history",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/village/village/history",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -843,37 +843,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:03:17.063Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:31:25.078Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/village/village/index → pages/login/index",
    "guardCaseId": "GG-village-village-index",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/village/village/index",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/village/village/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/village/village/index",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -883,37 +883,37 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:04:01.152Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:32:15.455Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/village/village/publish → pages/login/index",
    "guardCaseId": "GG-village-village-publish",
-   "measuredLanding": "pages/login/index",
+   "measuredLanding": "subpackages/village/village/publish",
    "identity": "not-logged-in",
    "markers": {
-    ".login-page__brand": "1",
-    ".login-register-entry": "1"
+    ".login-page__brand": "0",
+    ".login-register-entry": "0"
    },
-   "waitedMs": 2500,
+   "waitedMs": 4500,
    "samples": [
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/village/village/publish",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     },
     {
-     "landing": "pages/login/index",
+     "landing": "subpackages/village/village/publish",
      "identity": "not-logged-in",
      "markers": {
-      ".login-page__brand": "1",
-      ".login-register-entry": "1"
+      ".login-page__brand": "0",
+      ".login-register-entry": "0"
      },
-     "waitedMs": 2500
+     "waitedMs": 4500
     }
    ],
    "stable": true,
@@ -923,8 +923,8 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:04:46.968Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:33:05.983Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/village/village/tag-posts → pages/login/index",
@@ -963,8 +963,8 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:05:30.292Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:33:49.493Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/vip/bills → pages/profile/index",
@@ -1000,8 +1000,8 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:06:14.461Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:34:31.637Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/vip/index → pages/profile/index",
@@ -1037,8 +1037,8 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:06:57.335Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:35:13.027Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/vip/promo-code → pages/profile/index",
@@ -1074,8 +1074,8 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:07:42.514Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:35:54.492Z",
+   "band": "real@c1c6346e"
   },
   {
    "groupKey": "subpackages/setup/recommend-pref/index → pages/login/index",
@@ -1114,19 +1114,99 @@
    "stableSamples": 2,
    "stableRequiredSamples": 2,
    "repeatDeclared": 2,
-   "measuredAt": "2026-10-06T11:00:17.295Z",
-   "band": "real@f0677920"
+   "measuredAt": "2026-11-02T15:27:19.545Z",
+   "band": "real@c1c6346e"
+  },
+  {
+   "groupKey": "subpackages/market/wallet/index → pages/login/index",
+   "guardCaseId": "GG-market-wallet-index",
+   "measuredLanding": "pages/login/index",
+   "identity": "not-logged-in",
+   "markers": {
+    ".login-page__brand": "1",
+    ".login-register-entry": "1"
+   },
+   "waitedMs": 2500,
+   "samples": [
+    {
+     "landing": "pages/login/index",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "1",
+      ".login-register-entry": "1"
+     },
+     "waitedMs": 2500
+    },
+    {
+     "landing": "pages/login/index",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "1",
+      ".login-register-entry": "1"
+     },
+     "waitedMs": 2500
+    }
+   ],
+   "stable": true,
+   "stableBasis": "n=2/repeat=2",
+   "stableWhy": null,
+   "stableDefect": null,
+   "stableSamples": 2,
+   "stableRequiredSamples": 2,
+   "repeatDeclared": 2,
+   "measuredAt": "2026-11-02T15:18:54.875Z",
+   "band": "real@c1c6346e"
+  },
+  {
+   "groupKey": "subpackages/tools/security/index → pages/login/index",
+   "guardCaseId": "GG-tools-security-index",
+   "measuredLanding": "pages/login/index",
+   "identity": "not-logged-in",
+   "markers": {
+    ".login-page__brand": "1",
+    ".login-register-entry": "1"
+   },
+   "waitedMs": 2500,
+   "samples": [
+    {
+     "landing": "pages/login/index",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "1",
+      ".login-register-entry": "1"
+     },
+     "waitedMs": 2500
+    },
+    {
+     "landing": "pages/login/index",
+     "identity": "not-logged-in",
+     "markers": {
+      ".login-page__brand": "1",
+      ".login-register-entry": "1"
+     },
+     "waitedMs": 2500
+    }
+   ],
+   "stable": true,
+   "stableBasis": "n=2/repeat=2",
+   "stableWhy": null,
+   "stableDefect": null,
+   "stableSamples": 2,
+   "stableRequiredSamples": 2,
+   "repeatDeclared": 2,
+   "measuredAt": "2026-11-02T15:30:34.981Z",
+   "band": "real@c1c6346e"
   }
  ],
  "rowPolicy": "merge-never-shrink",
  "lastRun": {
-  "at": "2026-10-06T10:46:08.778Z",
+  "at": "2026-11-02T15:11:10.525Z",
   "project": "apps/client/dist/build/mp-weixin-real",
-  "band": "real@f0677920",
+  "band": "real@c1c6346e",
   "repeat": 2,
-  "rowsWritten": 28,
+  "rowsWritten": 30,
   "groupsUpdated": 28,
-  "groupsAdded": 0,
+  "groupsAdded": 2,
   "rowsKeptFromPrevious": 0,
   "rowsDropped": 0,
   "shrinkToken": null,

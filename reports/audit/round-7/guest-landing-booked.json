@@ -1,10 +1,10 @@
 {
- "generatedAt": "2026-10-18T04:43:48.493Z",
+ "generatedAt": "2026-11-02T15:11:10.283Z",
  "source": "scripts/qa/guest-landing-policy.json + .zcode/tmp/triage-r7-guest.json",
- "ruling": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。",
+ "ruling": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。",
  "groups": 26,
- "debtRows": 445,
- "anchorsOk": 11,
+ "debtRows": 469,
+ "anchorsOk": 18,
  "anchorsBad": 0,
  "carrier": "scripts/qa/verify-guest-landing.mjs --mode measure --project apps/client/dist/build/mp-weixin-real",
  "measuredFile": "reports/audit/round-7/guest-landing-measured.json",
@@ -65,7 +65,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-pages-nearby-index",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/pages/nearby/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/campus/campus/certification → pages/login/index",
@@ -105,7 +105,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-campus-campus-certification",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/campus/campus/certification') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/campus/campus/hub → pages/login/index",
@@ -157,7 +157,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-campus-campus-hub",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/campus/campus/hub') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/campus/campus/index → pages/login/index",
@@ -214,7 +214,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-campus-campus-index",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/campus/campus/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/circles/circles/circle-home → pages/login/index",
@@ -255,7 +255,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-circles-circles-circle-home",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/circles/circles/circle-home') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/discover-extra/discover/match-success → pages/login/index",
@@ -305,7 +305,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-discover-extra-discover-match-success",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/discover-extra/discover/match-success') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/discover-extra/discover/matching → pages/login/index",
@@ -359,7 +359,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-discover-extra-discover-matching",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/discover-extra/discover/matching') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/discover/activities/index → pages/login/index",
@@ -401,7 +401,48 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-discover-activities-index",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/discover/activities/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+  },
+  {
+   "groupKey": "subpackages/market/wallet/index → pages/login/index",
+   "page": "subpackages/market/wallet/index",
+   "landing": "pages/login/index",
+   "family": "guard-bounce",
+   "entry": "个人数据（余额/流水）",
+   "identity": "guest",
+   "caseIds": [
+    "MW01",
+    "MW02",
+    "MW03",
+    "MW04",
+    "MW05",
+    "MW06",
+    "MW07",
+    "MW08",
+    "MW09",
+    "MW10",
+    "MW11"
+   ],
+   "debtRows": 11,
+   "memberSource": {
+    "fromOps": 11,
+    "fromRun": 0,
+    "fromOpsNarrowed": 11,
+    "fromOpsEntireGuest": 0
+   },
+   "memberBasis": "ops-narrowed-out-of-guest-leg",
+   "memberBasisEvidence": {
+    "opsRowsOnPage": 11,
+    "rowsWithoutIdentityDeclaration": 0,
+    "rowsScopedOutOfGuestLeg": 11,
+    "rowsScopedToGuestLegByDeclaration": 0,
+    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+   },
+   "landingMarker": ".login-page__brand",
+   "registerEntry": ".login-register-entry",
+   "guardCaseId": "GG-market-wallet-index",
+   "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/market/wallet/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/profile-extra/feedback/history → pages/login/index",
@@ -445,7 +486,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-profile-extra-feedback-history",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/profile-extra/feedback/history') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/profile-extra/profile/album → pages/login/index",
@@ -489,7 +530,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-profile-extra-profile-album",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/profile-extra/profile/album') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/profile-extra/profile/favorites → pages/login/index",
@@ -531,7 +572,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-profile-extra-profile-favorites",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/profile-extra/profile/favorites') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/profile-extra/profile/tasks → pages/login/index",
@@ -575,7 +616,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-profile-extra-profile-tasks",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/profile-extra/profile/tasks') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/profile-extra/settings/dnd → pages/login/index",
@@ -618,7 +659,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-profile-extra-settings-dnd",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/profile-extra/settings/dnd') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/profile-extra/verification/index → pages/login/index",
@@ -662,7 +703,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-profile-extra-verification-index",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/profile-extra/verification/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/profile-extra/verification/real-name → pages/login/index",
@@ -706,7 +747,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-profile-extra-verification-real-name",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/profile-extra/verification/real-name') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/setup/campus/index → pages/login/index",
@@ -749,7 +790,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-setup-campus-index",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/setup/campus/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/setup/interest/index → pages/login/index",
@@ -790,7 +831,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-setup-interest-index",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/setup/interest/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/setup/recommend-pref/index → pages/login/index",
@@ -806,32 +847,31 @@
     "RP04",
     "RP05",
     "RP06",
-    "RP07",
     "RP08",
     "RP09",
     "RP10",
     "RP11"
    ],
-   "debtRows": 11,
+   "debtRows": 10,
    "memberSource": {
-    "fromOps": 11,
+    "fromOps": 10,
     "fromRun": 0,
-    "fromOpsNarrowed": 0,
-    "fromOpsEntireGuest": 11
+    "fromOpsNarrowed": 10,
+    "fromOpsEntireGuest": 0
    },
-   "memberBasis": "ops-entirely-undeclared-guest-assertions",
+   "memberBasis": "ops-narrowed-out-of-guest-leg",
    "memberBasisEvidence": {
     "opsRowsOnPage": 11,
-    "rowsWithoutIdentityDeclaration": 11,
-    "rowsScopedOutOfGuestLeg": 0,
+    "rowsWithoutIdentityDeclaration": 1,
+    "rowsScopedOutOfGuestLeg": 10,
     "rowsScopedToGuestLegByDeclaration": 0,
-    "rule": "verify-guest-landing.mjs#ops-entirely-undeclared-guest-assertions（2026-09-30 裁定 (a)：该页 ops 行整页没有 identities 声明 ⇒ 按 r-exec-cli.mjs:161 游客腿仍在认领每一行 ⇒ 这些行自己就是这一落地对的证人）"
+    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
    },
    "landingMarker": ".login-page__brand",
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-setup-recommend-pref-index",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/setup/recommend-pref/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/setup/schedule/index → pages/login/index",
@@ -872,7 +912,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-setup-schedule-index",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/setup/schedule/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/support/feedback/index → pages/login/index",
@@ -916,7 +956,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-support-feedback-index",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/support/feedback/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/tools/search/index → pages/login/index",
@@ -957,7 +997,51 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-tools-search-index",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/tools/search/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+  },
+  {
+   "groupKey": "subpackages/tools/security/index → pages/login/index",
+   "page": "subpackages/tools/security/index",
+   "landing": "pages/login/index",
+   "family": "guard-bounce",
+   "entry": "账号内动作（改绑手机号/设备下线/注销账号）",
+   "identity": "guest",
+   "caseIds": [
+    "SEC03",
+    "SEC04",
+    "SEC05",
+    "SEC06",
+    "SEC07",
+    "SEC08",
+    "SEC09",
+    "SEC10",
+    "SEC11",
+    "SEC12",
+    "SEC13",
+    "SEC14",
+    "SEC15",
+    "SEC16"
+   ],
+   "debtRows": 14,
+   "memberSource": {
+    "fromOps": 14,
+    "fromRun": 0,
+    "fromOpsNarrowed": 14,
+    "fromOpsEntireGuest": 0
+   },
+   "memberBasis": "ops-narrowed-out-of-guest-leg",
+   "memberBasisEvidence": {
+    "opsRowsOnPage": 16,
+    "rowsWithoutIdentityDeclaration": 2,
+    "rowsScopedOutOfGuestLeg": 14,
+    "rowsScopedToGuestLegByDeclaration": 0,
+    "rule": "verify-guest-landing.mjs#guestNoLongerClaims（#67：被收窄出游客腿的行才需要 GG-* 腿记账）"
+   },
+   "landingMarker": ".login-page__brand",
+   "registerEntry": ".login-register-entry",
+   "guardCaseId": "GG-tools-security-index",
+   "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/tools/security/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/village/village/history → pages/login/index",
@@ -995,7 +1079,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-village-village-history",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/village/village/history') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/village/village/index → pages/login/index",
@@ -1064,7 +1148,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-village-village-index",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/village/village/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/village/village/publish → pages/login/index",
@@ -1128,7 +1212,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-village-village-publish",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/village/village/publish') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/village/village/tag-posts → pages/login/index",
@@ -1168,7 +1252,7 @@
    "registerEntry": ".login-register-entry",
    "guardCaseId": "GG-village-village-tag-posts",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/village/village/tag-posts') 后 2500ms 内（复采 4500ms）栈顶 route === pages/login/index.login-page__brand:present（证明落的是真页而不是空壳）.login-register-entry:present（裁定要「未登录须引导到注册」⇒ 默认态就得露出注册入口）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/vip/bills → pages/profile/index",
@@ -1208,7 +1292,7 @@
    "registerEntry": null,
    "guardCaseId": "GG-vip-bills",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/vip/bills') 后 2500ms 内（复采 4500ms）栈顶 route === pages/profile/index.profile-page:present（证明落的是真页而不是空壳）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/vip/index → pages/profile/index",
@@ -1250,7 +1334,7 @@
    "registerEntry": null,
    "guardCaseId": "GG-vip-index",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/vip/index') 后 2500ms 内（复采 4500ms）栈顶 route === pages/profile/index.profile-page:present（证明落的是真页而不是空壳）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   },
   {
    "groupKey": "subpackages/vip/promo-code → pages/profile/index",
@@ -1292,7 +1376,7 @@
    "registerEntry": null,
    "guardCaseId": "GG-vip-promo-code",
    "criterion": "游客（verifyLogin=not-logged-in）reLaunch('/subpackages/vip/promo-code') 后 2500ms 内（复采 4500ms）栈顶 route === pages/profile/index.profile-page:present（证明落的是真页而不是空壳）；采样时身份不是游客的落点不作证",
-   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支里（apps/client/src/pages/login/index.vue:688/737-753），游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
+   "why": "游客裁定（已定）：游客不得浏览广场/内容流，未登录必须被引导到注册。据此：内容页与个人数据页在游客档被弹到登录页属于**方向正确**，错的是判据（原来断言的是页内内容）；但「被引导到注册」要求登录页在**默认态**就露出注册入口 —— 当前注册入口只在展开后的手机号表单分支（apps/client/src/pages/login/index.vue 的 .login-form 分支）里，游客被弹过来时看不见 ⇒ 这一条是产品缺口，不是判据问题。"
   }
  ]
 }

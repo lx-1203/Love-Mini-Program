@@ -290,12 +290,22 @@ const ok = (res) => res.code === 0;
 
 /* S2 量到一半崩 ⇒ 已量到的那行进账，旧行一条不少 */
 {
+  /* 「本轮改写」的判定：本轮 plant() 时刻之后才有新 measuredAt 的行。
+     原判据钉的是上一轮真机腿的档位字面 real@f0677920——2026-11-02 真机腿重跑后
+     权威台账换成 real@c1c6346e，30 行旧账全部被算成"本轮改写"，判据假红
+     （同族病：把"量"钉成常量，第六轮 7947e356 拆过、本轮 R8-C 复扫同类）。
+     merge 语义（measured-ledger.mjs）：被重写的行整行换新对象（measuredAt 刷新），
+     旧行原样保留 ⇒ 时间窗是档位无关的判据。ISO 串字典序比较等价于时间比较。 */
+  const plantIso = new Date().toISOString();
   const file = plant(join(TMP, "s2-measured.json"));
   const res = runCarrier(LIVE, file, [], { WG_STUB_FAIL_AFTER: "1" });
   const after = readJson(file);
-  const touched = after.rows.filter((r) => r.band !== "real@f0677920").map((r) => r.groupKey);
+  const touched = after.rows
+    .filter((r) => String(r.measuredAt || "") >= plantIso)
+    .map((r) => r.groupKey);
   t("S2 半途崩退（exit 非 0），但已经量到的那一行仍然是证据",
-    res.code !== 0 && touched.length === 1, "exit=" + res.code + " 本轮改写组=" + touched.join(","));
+    res.code !== 0 && touched.length === 1, "exit=" + res.code + " 本轮改写组=" + touched.join(",")
+      + " 判定窗=" + plantIso);
   t("S2 行数不减（部分成功的腿不被守卫挡住，也不许顺手清账）",
     after.rows.length === seeded.rows.length, "rows=" + after.rows.length + " 期望=" + seeded.rows.length);
   t("S2 本轮没量到的旧 groupKey 一个都没消失",
