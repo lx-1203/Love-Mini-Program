@@ -358,20 +358,22 @@ class P2SecurityPenetrationTest {
                 "2026-07-26T10:00:00");
         // 2026-08-08 存量修复：接口新增 durationSeconds（语音时长）参数，文本消息传 null
         // 2026-09-25 契约修复：接口再新增 quoteRef（引用消息 ID），本用例无引用传 null
+        // P2-3（2026-11-03）：controller 直传 clientMsgId 到 7 参主实现，XSS 探针场景传 null
         when(privateMessageService.sendMessage(
-                eq(1L), eq(USER_A_ID), eq(xssContent), eq("text"), isNull(), isNull()))
+                eq(1L), eq(USER_A_ID), eq(xssContent), eq("text"), isNull(), isNull(), isNull()))
                 .thenReturn(mockView);
 
         PrivateMessageController controller = new PrivateMessageController(privateMessageService);
 
         // Act：通过反射构造 SendMessageRequest（package-private）并调用 sendMessage
         // 2026-08-08 存量修复：record 新增 durationSeconds 参数（语音时长，文本消息传 null）
+        // P2-3（2026-11-03）：record 再新增第 5 参 clientMsgId（客户端幂等键，XSS 探针场景传 null）
         Class<?> requestClass = Class.forName("com.campuslove.api.chat.SendMessageRequest");
         java.lang.reflect.Constructor<?> constructor =
                 requestClass.getDeclaredConstructor(String.class, String.class, Integer.class,
-                        String.class);
+                        String.class, String.class);
         constructor.setAccessible(true);
-        Object requestObj = constructor.newInstance(xssContent, "text", null, null);
+        Object requestObj = constructor.newInstance(xssContent, "text", null, null, null);
 
         java.lang.reflect.Method sendMethod = PrivateMessageController.class.getMethod(
                 "sendMessage", Long.class, requestClass);
@@ -386,7 +388,7 @@ class P2SecurityPenetrationTest {
         assertEquals(xssContent, result.data().content(),
                 "Controller 不应转义 content，由 Service 层 / 前端防御 XSS");
         verify(privateMessageService).sendMessage(eq(1L), eq(USER_A_ID), eq(xssContent), eq("text"),
-                isNull(), isNull());
+                isNull(), isNull(), isNull());
     }
 
     // ========================================================================

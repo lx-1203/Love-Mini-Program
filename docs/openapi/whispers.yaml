@@ -38,9 +38,25 @@ paths:
       operationId: getWhisperInbox
       security:
         - bearerAuth: []
+      parameters:
+        # R8（2026-11-04）可选分页：size 缺省全量（向后兼容）；size 有值 clamp 到 [1,100]
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - in: query
+          name: size
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
       responses:
         '200':
-          description: Received whispers
+          description: Received whispers (sender profile fields filled, nullable when missing)
           content:
             application/json:
               schema:
@@ -53,6 +69,21 @@ paths:
       operationId: getWhisperSent
       security:
         - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - in: query
+          name: size
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
       responses:
         '200':
           description: Sent whispers
@@ -128,5 +159,12 @@ components:
         createdAt:
           type: string
         readAt:
+          type: string
+          nullable: true
+        # R8（2026-11-04）：发送者资料（inbox/sent 批量填充；注销/缺失为 null，客户端兜底「神秘访客」）
+        senderNickname:
+          type: string
+          nullable: true
+        senderAvatar:
           type: string
           nullable: true

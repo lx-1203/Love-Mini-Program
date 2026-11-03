@@ -20,4 +20,18 @@ public interface WhisperService {
 
     /** 标记已读 */
     WhisperMessageView markRead(Long receiverId, Long whisperId);
+
+    /**
+     * 收件箱（R8 2026-11-04 分页重载）：size 为 null 时全量（与 {@link #inbox(Long)} 同语义，
+     * 契约向后兼容）；size 有值时按页返回（page 从 0 起，服务端 clamp 到 [1,100]）。
+     * 默认委托全量（Mock/旧实现自动兼容），Real 覆写实现真分页。
+     */
+    default List<WhisperMessageView> inbox(Long receiverId, Integer page, Integer size) {
+        return inbox(receiverId);
+    }
+
+    /** 已发送（R8 2026-11-04 分页重载，口径同上） */
+    default List<WhisperMessageView> sent(Long senderId, Integer page, Integer size) {
+        return sent(senderId);
+    }
 }

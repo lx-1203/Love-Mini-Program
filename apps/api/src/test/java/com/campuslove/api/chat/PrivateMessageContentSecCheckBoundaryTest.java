@@ -387,7 +387,9 @@ class PrivateMessageContentSecCheckBoundaryTest {
                     "sendMessage 重载不允许声明 @Transactional："
                             + java.util.Arrays.toString(method.getParameterTypes()));
         }
-        assertEquals(1, declared, "应且仅应有一个 sendMessage（用例不能空转）");
+        assertEquals(2, declared,
+                "应为两个 sendMessage（6 参存量委托 + 7 参 clientMsgId 主实现，P2-3 2026-11-03）；"
+                        + "数量突变说明重载结构变化，需同步本守护用例");
         assertFalse(RealPrivateMessageService.class.isAnnotationPresent(Transactional.class),
                 "类级 @Transactional 会让私信整条链路回到事务内");
     }

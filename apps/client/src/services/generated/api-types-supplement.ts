@@ -58,6 +58,9 @@ export interface WhisperMessageView {
   priceCents: number;
   createdAt: string;
   readAt?: string | null;
+  /** R8（2026-11-04）：发送者资料（inbox/sent 填充；注销/缺失为 null，UI 兜底「神秘访客」） */
+  senderNickname?: string | null;
+  senderAvatar?: string | null;
 }
 
 /** 悄悄话发送请求（幂等 clientRequestId） */

@@ -1,6 +1,7 @@
 package com.campuslove.api.whisper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -174,5 +175,73 @@ class WhisperServiceTest {
         assertEquals(1, list.size());
         assertTrue(list.get(0).status().equals("DELIVERED"));
         verify(repository, times(1)).save(any(WhisperMessage.class));
+    }
+
+    @Test
+    void inbox_fillsSenderProfileInBulk() {
+        // R8（2026-11-04）：收件箱视图带发送者昵称/头像；资料缺失保持 null（客户端兜底「神秘访客」）
+        com.campuslove.api.repository.UserRepository userRepository =
+                mock(com.campuslove.api.repository.UserRepository.class);
+        com.campuslove.api.entity.User sender = new com.campuslove.api.entity.User();
+        sender.setId(2L);
+        sender.setNickname("胶片摄影师小林");
+        sender.setAvatarUrl("https://cdn.example/avatar-2.png");
+        when(userRepository.findAllById(any())).thenReturn(List.of(sender));
+        ReflectionTestUtils.setField(service, "userRepository", userRepository);
+
+        WhisperMessage m = new WhisperMessage();
+        m.setId(1L);
+        m.setSenderId(2L);
+        m.setReceiverId(1L);
+        m.setContent("晚安，想听听你最喜欢的一道菜。");
+        m.setStatus("DELIVERED");
+        m.setClientRequestId("req-profile");
+        m.setPriceCents(200L);
+        when(repository.findByReceiverIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(m));
+
+        List<WhisperMessageView> list = service.inbox(1L);
+        assertEquals("胶片摄影师小林", list.get(0).senderNickname(), "收件箱应填充发送者昵称");
+        assertEquals("https://cdn.example/avatar-2.png", list.get(0).senderAvatar(), "收件箱应填充发送者头像");
+    }
+
+    @Test
+    void inbox_senderMissing_keepsNullProfile() {
+        // 发送者注销/资料缺失：字段保持 null，不阻断收件箱
+        com.campuslove.api.repository.UserRepository userRepository =
+                mock(com.campuslove.api.repository.UserRepository.class);
+        when(userRepository.findAllById(any())).thenReturn(List.of());
+        ReflectionTestUtils.setField(service, "userRepository", userRepository);
+
+        WhisperMessage m = new WhisperMessage();
+        m.setId(1L);
+        m.setSenderId(2L);
+        m.setReceiverId(1L);
+        m.setContent("你好呀");
+        m.setStatus("DELIVERED");
+        m.setClientRequestId("req-missing");
+        m.setPriceCents(200L);
+        when(repository.findByReceiverIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(m));
+
+        List<WhisperMessageView> list = service.inbox(1L);
+        assertNull(list.get(0).senderNickname());
+        assertNull(list.get(0).senderAvatar());
+    }
+
+    @Test
+    void inbox_paged_over100ClampedAndSorted() {
+        // R8 分页：size clamp 到 [1,100]，page 从 0 起；分页路径同样填充发送者资料
+        WhisperMessage m = new WhisperMessage();
+        m.setId(1L);
+        m.setSenderId(2L);
+        m.setReceiverId(1L);
+        m.setContent("分页探针");
+        m.setStatus("DELIVERED");
+        m.setClientRequestId("req-page");
+        m.setPriceCents(200L);
+        when(repository.queryByReceiverIdOrderByCreatedAtDesc(eq(1L), any())).thenReturn(List.of(m));
+
+        List<WhisperMessageView> list = service.inbox(1L, 1, 500);
+        assertEquals(1, list.size());
+        verify(repository, times(1)).queryByReceiverIdOrderByCreatedAtDesc(eq(1L), any());
     }
 }

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -144,7 +145,9 @@ class AdminPostCircleScopeTest extends ControllerTestBase {
                     "列表必须恰好是当前管理员绑定节点的子树");
         });
         // 旧校区轴查询不得再被使用（否则绑了大区也只看到本校，正交模型形同虚设）
-        verify(postRepository, never()).searchForAdmin(any(), any(), any(), any(), any(), any(), any(), any());
+        // 注：unassigned 为 primitive boolean，any() 返回 null 拆箱即 NPE——必须 anyBoolean()
+        verify(postRepository, never()).searchForAdmin(any(), any(), any(), any(), any(), any(),
+                anyBoolean(), any());
     }
 
     @Test

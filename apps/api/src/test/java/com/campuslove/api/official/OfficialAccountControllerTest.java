@@ -3,6 +3,8 @@ package com.campuslove.api.official;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -67,7 +69,9 @@ class OfficialAccountControllerTest extends ControllerTestBase {
                 204L, "card", "在星空下认识心动的人",
                 "七夕特别企划：星空告白夜", "描述", "七夕限定",
                 "/pages/activities/detail?id=qixi-2026", LocalDateTime.now());
-        when(officialAccountService.getMessages("official-promoter"))
+        // P1-2（2026-11-03）消息流接入受众过滤后 getMessages 升为 (code, userId) 两参——
+        // 本测试无认证上下文，SecurityUtils.getCurrentUserIdOrNull() 返回 null（匿名视角全量语义）
+        when(officialAccountService.getMessages(eq("official-promoter"), isNull()))
                 .thenReturn(List.of(text, card));
 
         // Act
@@ -82,13 +86,14 @@ class OfficialAccountControllerTest extends ControllerTestBase {
         assertEquals("七夕限定", cardView.cardTag(), "卡片角标应为 七夕限定");
         assertEquals("/pages/activities/detail?id=qixi-2026", cardView.cardTargetUrl(),
                 "卡片 CTA 应指向活动详情页");
-        verify(officialAccountService).getMessages("official-promoter");
+        verify(officialAccountService).getMessages(eq("official-promoter"), isNull());
     }
 
     @Test
     void getMessages_withUnknownCode_shouldReturnEmptyList() {
         // Arrange
-        when(officialAccountService.getMessages("unknown-account")).thenReturn(List.of());
+        when(officialAccountService.getMessages(eq("unknown-account"), isNull()))
+                .thenReturn(List.of());
 
         // Act
         ResponseEntity<List<OfficialMessageView>> response =
@@ -97,6 +102,6 @@ class OfficialAccountControllerTest extends ControllerTestBase {
         // Assert
         assertNotNull(response.getBody());
         assertTrue(response.getBody().isEmpty(), "未知账号应返回空列表");
-        verify(officialAccountService).getMessages("unknown-account");
+        verify(officialAccountService).getMessages(eq("unknown-account"), isNull());
     }
 }

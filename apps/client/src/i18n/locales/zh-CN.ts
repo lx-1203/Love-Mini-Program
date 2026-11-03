@@ -2795,6 +2795,8 @@ export default {
     "title": "悄悄话",
     "tabReceived": "收到的",
     "tabSent": "发出的",
+    "anonymousSender": "神秘访客",
+    "toPeer": "我发出的",
     "loadFailed": "加载失败，点击重试",
     "loadFailedSub": "网络开小差了，稍后再试试",
     "readFailed": "标记已读失败，请稍后重试",

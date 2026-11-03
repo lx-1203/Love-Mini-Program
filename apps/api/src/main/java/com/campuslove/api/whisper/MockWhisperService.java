@@ -39,6 +39,8 @@ public class MockWhisperService implements WhisperService {
             "SENT",
             200L,
             LocalDateTime.now().toString(),
+            null,
+            null,
             null
         );
         store.put(id, view);
@@ -83,7 +85,8 @@ public class MockWhisperService implements WhisperService {
         }
         WhisperMessageView updated = new WhisperMessageView(
             v.id(), v.senderId(), v.receiverId(), v.content(), "READ",
-            v.priceCents(), v.createdAt(), LocalDateTime.now().toString()
+            v.priceCents(), v.createdAt(), LocalDateTime.now().toString(),
+            v.senderNickname(), v.senderAvatar()
         );
         store.put(whisperId, updated);
         return updated;

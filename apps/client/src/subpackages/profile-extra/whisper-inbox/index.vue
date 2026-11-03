@@ -55,8 +55,14 @@ function timeText(createdAt: string | null): string {
   return Number.isNaN(value) ? "" : formatChatListTime(value, getCurrentLocale());
 }
 
-function avatarOf(): string {
-  return resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR);
+/** R8（2026-11-04）：发送者头像（可空——缺失/注销兜底默认头像） */
+function avatarOf(item: WhisperMessageView): string {
+  return resolveMediaUrl(item.senderAvatar || IMAGE_PATHS.DEFAULT_AVATAR);
+}
+
+/** R8（2026-11-04）：发送者昵称（可空——兜底「神秘访客」文案） */
+function senderNameOf(item: WhisperMessageView): string {
+  return item.senderNickname || t("whisperInbox.anonymousSender");
 }
 
 /** 状态文案映射（静态键，i18n-orphan 门禁友好；未知状态兜底直显原始值） */
@@ -179,21 +185,31 @@ onPullDownRefresh(async () => {
     />
 
     <view v-else class="whisper-list">
+      <!--
+        received tab：tap=标已读（role=button 语义成立）；
+        sent tab：卡片无 tap 动作，role/按压反馈一并移除（a11y：不可点的卡片不冒充按钮）
+      -->
       <view
         v-for="item in list"
         :key="item.id"
         class="whisper-card"
-        :class="{ 'whisper-card--unread': activeTab === 'received' && item.status !== 'READ' }"
-        hover-class="whisper-card--hover"
-        role="button"
-        :aria-label="item.content"
+        :class="{
+          'whisper-card--unread': activeTab === 'received' && item.status !== 'READ',
+          'whisper-card--static': activeTab === 'sent',
+        }"
+        :hover-class="activeTab === 'received' ? 'whisper-card--hover' : 'none'"
+        :role="activeTab === 'received' ? 'button' : undefined"
+        :aria-label="activeTab === 'received'
+          ? `${senderNameOf(item)}：${item.content}`
+          : item.content"
         @tap="onTap(item)"
       >
         <view class="whisper-avatar-wrap">
-          <image class="whisper-avatar" :src="avatarOf()" mode="aspectFill" :aria-label="t('whisperInbox.senderAria')" />
+          <image class="whisper-avatar" :src="avatarOf(item)" mode="aspectFill" :aria-label="t('whisperInbox.senderAria')" />
           <view v-if="activeTab === 'received' && item.status !== 'READ'" class="whisper-unread-dot" />
         </view>
         <view class="whisper-body">
+          <text class="whisper-sender">{{ activeTab === 'received' ? senderNameOf(item) : t('whisperInbox.toPeer') }}</text>
           <text class="whisper-content">{{ item.content }}</text>
           <view class="whisper-meta-row">
             <text class="whisper-time">{{ timeText(item.createdAt) }}</text>
@@ -322,6 +338,18 @@ onPullDownRefresh(async () => {
 
 .whisper-card--unread {
   background: var(--c-brand-50);
+}
+
+.whisper-card--static {
+  background: var(--c-bg-container);
+}
+
+.whisper-sender {
+  display: block;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-text-secondary);
+  margin-bottom: 4rpx;
 }
 
 .whisper-avatar-wrap {

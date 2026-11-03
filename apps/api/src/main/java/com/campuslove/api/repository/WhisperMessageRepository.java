@@ -16,6 +16,11 @@ public interface WhisperMessageRepository extends JpaRepository<WhisperMessage, 
 
     List<WhisperMessage> findBySenderIdOrderByCreatedAtDesc(Long senderId);
 
+    /** R8（2026-11-04）分页重载：收件箱/已发送规模化分页（queryBy 前缀避开与 findBy 同名派生冲突） */
+    List<WhisperMessage> queryByReceiverIdOrderByCreatedAtDesc(Long receiverId, org.springframework.data.domain.Pageable pageable);
+
+    List<WhisperMessage> queryBySenderIdOrderByCreatedAtDesc(Long senderId, org.springframework.data.domain.Pageable pageable);
+
     long countBySenderIdAndCreatedAtBetween(Long senderId, LocalDateTime start, LocalDateTime end);
 
     /** 同一对用户 A↔B 之间有效（未终结）悄悄话数量 */

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -35,18 +36,27 @@ public class WhisperController {
         return ApiResponse.ok(whisperService.send(senderId, request));
     }
 
+    /**
+     * 收件箱（R8 2026-11-04）：可选 page/size 分页——size 缺省时全量返回（契约向后兼容），
+     * size 有值时服务端 clamp 到 [1,100]；视图含发送者昵称/头像（资料缺失为 null，客户端兜底）。
+     */
     @GetMapping("/inbox")
     @PreAuthorize("hasRole('USER')")
-    public ApiResponse<List<WhisperMessageView>> inbox() {
+    public ApiResponse<List<WhisperMessageView>> inbox(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         Long userId = SecurityUtils.getCurrentUserId();
-        return ApiResponse.ok(whisperService.inbox(userId));
+        return ApiResponse.ok(whisperService.inbox(userId, page, size));
     }
 
+    /** 已发送（R8 2026-11-04 分页口径同 inbox） */
     @GetMapping("/sent")
     @PreAuthorize("hasRole('USER')")
-    public ApiResponse<List<WhisperMessageView>> sent() {
+    public ApiResponse<List<WhisperMessageView>> sent(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         Long userId = SecurityUtils.getCurrentUserId();
-        return ApiResponse.ok(whisperService.sent(userId));
+        return ApiResponse.ok(whisperService.sent(userId, page, size));
     }
 
     @PostMapping("/{id}/read")

@@ -1998,6 +1998,9 @@ export const mockFixtures = {
       priceCents: 200,
       createdAt: new Date().toISOString(),
       readAt: null,
+      // R8（2026-11-04）：mock 演示链路填充发送者昵称（头像走默认头像兜底）
+      senderNickname: '我',
+      senderAvatar: null,
     };
     whisperInbox.unshift(view);
     return view;

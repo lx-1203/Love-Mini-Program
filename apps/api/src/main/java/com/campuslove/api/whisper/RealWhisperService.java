@@ -12,6 +12,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.springframework.data.domain.PageRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +74,14 @@ public class RealWhisperService implements WhisperService {
      */
     @Autowired(required = false)
     private com.campuslove.api.chat.NotificationService notificationService;
+
+    /**
+     * 用户资料仓库（R8 2026-11-04：收件箱发送者昵称/头像）。
+     * required=false 兼容既有单测构造器；为 null 时视图相应字段为 null，
+     * 客户端兜底「神秘访客」文案与默认头像。
+     */
+    @Autowired(required = false)
+    private com.campuslove.api.repository.UserRepository userRepository;
 
     /** 实名认证（v3 冻结：发送悄悄话需先完成实名认证；未注入时跳过校验） */
     @Autowired(required = false)
@@ -219,12 +231,74 @@ public class RealWhisperService implements WhisperService {
                 repository.save(m);
             }
         }
-        return list.stream().map(this::toView).toList();
+        return withSenderProfiles(list.stream().map(this::toView).toList());
     }
 
     @Override
     public List<WhisperMessageView> sent(Long senderId) {
-        return repository.findBySenderIdOrderByCreatedAtDesc(senderId).stream().map(this::toView).toList();
+        return withSenderProfiles(repository.findBySenderIdOrderByCreatedAtDesc(senderId).stream()
+            .map(this::toView).toList());
+    }
+
+    /** R8 分页收件箱：size 有值时真分页（SENT→DELIVERED 仍按当前页转换），其余同全量口径 */
+    @Override
+    @Transactional
+    public List<WhisperMessageView> inbox(Long receiverId, Integer page, Integer size) {
+        if (size == null) {
+            return inbox(receiverId);
+        }
+        List<WhisperMessage> list = repository.queryByReceiverIdOrderByCreatedAtDesc(
+                receiverId, PageRequest.of(normalizePage(page), normalizeSize(size)));
+        for (WhisperMessage m : list) {
+            if (STATUS_SENT.equals(m.getStatus())) {
+                m.setStatus(STATUS_DELIVERED);
+                repository.save(m);
+            }
+        }
+        return withSenderProfiles(list.stream().map(this::toView).toList());
+    }
+
+    /** R8 分页已发送：size 有值时真分页，其余同全量口径 */
+    @Override
+    public List<WhisperMessageView> sent(Long senderId, Integer page, Integer size) {
+        if (size == null) {
+            return sent(senderId);
+        }
+        return withSenderProfiles(repository.queryBySenderIdOrderByCreatedAtDesc(
+                senderId, PageRequest.of(normalizePage(page), normalizeSize(size))).stream()
+            .map(this::toView).toList());
+    }
+
+    private int normalizePage(Integer page) {
+        return page == null || page < 0 ? 0 : page;
+    }
+
+    private int normalizeSize(Integer size) {
+        return Math.max(1, Math.min(100, size));
+    }
+
+    /**
+     * R8（2026-11-04）：按视图内 senderId 一次 findAllById 批量补发送者昵称/头像（无 N+1）。
+     * userRepository 未注入（单测）或资料缺失时保持 null，客户端按「神秘访客」兜底渲染。
+     */
+    private List<WhisperMessageView> withSenderProfiles(List<WhisperMessageView> views) {
+        if (userRepository == null || views.isEmpty()) {
+            return views;
+        }
+        Set<Long> senderIds = views.stream().map(WhisperMessageView::senderId)
+                .collect(Collectors.toSet());
+        Map<Long, com.campuslove.api.entity.User> senders = userRepository
+                .findAllById(senderIds).stream()
+                .collect(Collectors.toMap(com.campuslove.api.entity.User::getId, u -> u));
+        return views.stream().map(view -> {
+            com.campuslove.api.entity.User sender = senders.get(view.senderId());
+            if (sender == null) {
+                return view;
+            }
+            return new WhisperMessageView(view.id(), view.senderId(), view.receiverId(), view.content(),
+                    view.status(), view.priceCents(), view.createdAt(), view.readAt(),
+                    sender.getNickname(), sender.getAvatarUrl());
+        }).toList();
     }
 
     @Override
@@ -314,7 +388,9 @@ public class RealWhisperService implements WhisperService {
             m.getStatus(),
             m.getPriceCents(),
             m.getCreatedAt() != null ? m.getCreatedAt().toString() : null,
-            m.getReadAt() != null ? m.getReadAt().toString() : null
+            m.getReadAt() != null ? m.getReadAt().toString() : null,
+            null,
+            null
         );
     }
 }

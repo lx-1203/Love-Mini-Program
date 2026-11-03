@@ -118,9 +118,21 @@ export interface UniUploadFileLike {
  * @param filter - 推荐筛选条件
  * @returns 拼接好的 query string（不含前导 ?），空 filter 返回空字符串
  */
-function buildRecommendationsQuery(filter: RecommendationFilter): string {
+/** R8（2026-11-04）：悄悄话 inbox/sent 可选分页 query 拼接（不传=空串=服务端全量语义） */
+function buildWhisperPageQuery(params?: { page?: number; size?: number }): string {
+  if (!params) return "";
   const parts: string[] = [];
-  if (filter.heightMin !== undefined) {
+  if (params.page !== undefined) {
+    parts.push(`page=${encodeURIComponent(String(params.page))}`);
+  }
+  if (params.size !== undefined) {
+    parts.push(`size=${encodeURIComponent(String(params.size))}`);
+  }
+  return parts.length > 0 ? `?${parts.join("&")}` : "";
+}
+
+function buildRecommendationsQuery(filter: RecommendationFilter): string {
+  const parts: string[] = [];  if (filter.heightMin !== undefined) {
     parts.push(`heightMin=${encodeURIComponent(String(filter.heightMin))}`);
   }
   if (filter.heightMax !== undefined) {
@@ -1151,20 +1163,30 @@ export const clientApi = {
     return request<WhisperMessageView>({ url: "/whispers/send", method: "POST", data: payload });
   },
 
-  /** 悄悄话收件箱：GET /api/v1/whispers/inbox */
-  async getWhisperInbox(): Promise<WhisperMessageView[]> {
+  /**
+   * 悄悄话收件箱：GET /api/v1/whispers/inbox。
+   * R8（2026-11-04）：可选分页（size 缺省全量，服务端 clamp [1,100]）；
+   * 视图含发送者昵称/头像（可空，UI 兜底「神秘访客」）。
+   */
+  async getWhisperInbox(params?: { page?: number; size?: number }): Promise<WhisperMessageView[]> {
     if (useMock()) {
       return mockFixtures.getWhisperInbox();
     }
-    return request<WhisperMessageView[]>({ url: "/whispers/inbox", method: "GET" });
+    return request<WhisperMessageView[]>({
+      url: `/whispers/inbox${buildWhisperPageQuery(params)}`,
+      method: "GET",
+    });
   },
 
-  /** 已发送悄悄话：GET /api/v1/whispers/sent */
-  async getWhisperSent(): Promise<WhisperMessageView[]> {
+  /** 已发送悄悄话：GET /api/v1/whispers/sent（R8 分页口径同 inbox） */
+  async getWhisperSent(params?: { page?: number; size?: number }): Promise<WhisperMessageView[]> {
     if (useMock()) {
       return mockFixtures.getWhisperSent();
     }
-    return request<WhisperMessageView[]>({ url: "/whispers/sent", method: "GET" });
+    return request<WhisperMessageView[]>({
+      url: `/whispers/sent${buildWhisperPageQuery(params)}`,
+      method: "GET",
+    });
   },
 
   /** 标记已读：POST /api/v1/whispers/{id}/read */

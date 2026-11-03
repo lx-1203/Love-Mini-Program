@@ -117,4 +117,17 @@ describe("mock fixtures", () => {
       queueStatus: "queued",
     });
   });
+
+  it("R8: sendWhisper 填充发送者昵称，收件箱视图携带可渲染的发送者资料", () => {
+    const view = mockFixtures.sendWhisper({
+      receiverId: 2,
+      content: "晚安，想听听你最喜欢的一道菜。",
+      clientRequestId: "spec-r8-1",
+    });
+    expect(view.senderNickname).toBe("我");
+    expect(view.senderAvatar).toBeNull();
+
+    const inbox = mockFixtures.getWhisperInbox();
+    expect(inbox.find((w) => w.id === view.id)?.senderNickname).toBe("我");
+  });
 });
