@@ -90,6 +90,15 @@ public class AdminReportController {
     /** 管理端数据隔离（多管理员多校区） */
     private final AdminDataScope adminDataScope;
 
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(AdminReportController.class);
+    /**
+     * 举报处理结果通知（2026-11-03 功能闭环修复）：结案后给举报人发 system 通知。
+     * nullable 注入口径同仓内其它增量接线：旧测试构造器不注入时跳过通知（尽力而为）。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.chat.NotificationService notificationService;
+
     public AdminReportController(
             ReportRepository reportRepository,
             UserRepository userRepository,
@@ -196,6 +205,21 @@ public class AdminReportController {
         report.setHandledAt(LocalDateTime.now(TimeZones.BUSINESS));
 
         reportRepository.save(report);
+
+        // 2026-11-03 举报闭环补齐：处理结果必须触达举报人——此前结案完全静默，
+        // 用户提交举报后永远不知道结果，下次就不会再举报了（信任流失）。
+        // system 通知 + 处理管理员为来源；referenceType 缺省（客户端通知中心对
+        // system 类型已有渲染、未知落点只标记已读不强制跳转，见 notification-target）。
+        // 尽力而为：通知失败不回滚处理主流程（与发帖@提及同一口径）。
+        if (notificationService != null && report.getReporterId() != null) {
+            try {
+                notificationService.createNotification(
+                        report.getReporterId(), "system", handlerId, report.getId(), null);
+            } catch (RuntimeException ex) {
+                log.warn("举报处理结果通知失败（不影响处理主流程）: reportId={}, reporterId={}, cause={}",
+                        report.getId(), report.getReporterId(), ex.getMessage());
+            }
+        }
 
         Map<String, Object> body = new HashMap<>();
         body.put("id", report.getId());

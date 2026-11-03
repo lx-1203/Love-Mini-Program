@@ -157,7 +157,8 @@
             "path": "discover/match-success"
           },
       {
-            "path": "home/segment"
+            "path": "home/segment",
+            "style": { "enablePullDownRefresh": true }
           },
       {
             "path": "nearby/people",
