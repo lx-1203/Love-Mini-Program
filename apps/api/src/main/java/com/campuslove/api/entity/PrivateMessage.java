@@ -91,6 +91,15 @@ public class PrivateMessage {
     @Column(name = "quote_context", columnDefinition = "TEXT")
     private String quoteContext;
 
+    /**
+     * 客户端幂等键（P2-3，2026-11-03；列由 V2026.11.03.0003 迁移新增）。
+     * <p>同一会话内唯一（uk_private_messages_conv_client_msg）——客户端为每次
+     * 「逻辑发送」生成一个稳定 ID（网络重试复用同一 ID），服务端据此去重，
+     * 兜底 HTTP 幂等键覆盖不到的 WebSocket 链路与换键重试。null=不带键（存量行为）。</p>
+     */
+    @Column(name = "client_msg_id", length = 64)
+    private String clientMsgId;
+
     /** 是否已读 */
     @Column(name = "is_read", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
     private Boolean isRead = false;
@@ -190,6 +199,15 @@ public class PrivateMessage {
 
     public void setQuoteContext(String quoteContext) {
         this.quoteContext = quoteContext;
+    }
+
+    /** P2-3 客户端幂等键（同一会话内去重；null=不带键）。 */
+    public String getClientMsgId() {
+        return clientMsgId;
+    }
+
+    public void setClientMsgId(String clientMsgId) {
+        this.clientMsgId = clientMsgId;
     }
 
     public Boolean getIsRead() {

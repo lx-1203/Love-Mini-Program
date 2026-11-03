@@ -239,7 +239,10 @@ public class MessageWebSocketHandler {
                     privateMessageService.sendMessage(
                             privateConv.getId(), senderLong, content,
                             kind != null && !kind.isBlank() ? kind : "text", null,
-                            extractString(payload, "quoteRef"));
+                            extractString(payload, "quoteRef"),
+                            // P2-3（2026-11-03）：WS 链路无 HTTP 幂等拦截器，
+                            // clientMsgId 是本链路唯一的防重手段（客户端每次逻辑发送生成稳定 ID）
+                            extractString(payload, "clientMsgId"));
                     log.debug("WebSocket SEND 私信已落库并推送: conversationId={}, senderId={}",
                             conversationId, senderId);
                     return;

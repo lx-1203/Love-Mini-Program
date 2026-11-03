@@ -101,7 +101,7 @@ public class PrivateMessageController {
         Long senderId = SecurityUtils.getCurrentUserId();
         return ApiResponse.ok(privateMessageService.sendMessage(
                 conversationId, senderId, request.content(), request.kind(),
-                request.durationSeconds(), request.quoteRef()));
+                request.durationSeconds(), request.quoteRef(), request.clientMsgId()));
     }
 
     /**
@@ -228,5 +228,7 @@ record SendMessageRequest(
         message = ErrorMessages.PRIVATE_MSG_KIND_INVALID)
     @Size(max = 32) String kind,
     @Min(0) @Max(60) Integer durationSeconds,
-    @Size(max = 64) String quoteRef
+    @Size(max = 64) String quoteRef,
+    /** P2-3（2026-11-03）客户端幂等键：同一会话内重复提交去重（≤64 字符，可空） */
+    @Size(max = 64) String clientMsgId
 ) {}

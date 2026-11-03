@@ -266,14 +266,38 @@ public class RealPrivateMessageService implements PrivateMessageService {
      * 出了事务就是游离对象，直接改预览再 save 会带着过期 {@code @Version} 走 merge，
      * 造成乐观锁误报 409 / 更新丢失。重新加载同时保留「会话不存在」的原有报错语义。</p>
      */
+    /** 6 参入口（存量调用方）：不带客户端幂等键，行为与改造前一致。 */
     @Override
     public MessageView sendMessage(Long conversationId, Long senderId, String content, String kind,
                                    Integer durationSeconds, String quoteRef) {
+        return sendMessage(conversationId, senderId, content, kind, durationSeconds, quoteRef, null);
+    }
+
+    /**
+     * 7 参主实现（P2-3，2026-11-03）：clientMsgId 非空时按（会话, clientMsgId）去重。
+     * 先查后插 + 唯一约束兜底：并发重复提交撞唯一键时捕获冲突、回读已有行幂等返回，
+     * 不向调用方抛错（重试是网络层的正常行为，不该变成用户可见的失败）。
+     */
+    @Override
+    public MessageView sendMessage(Long conversationId, Long senderId, String content, String kind,
+                                   Integer durationSeconds, String quoteRef, String clientMsgId) {
         if (conversationId == null || senderId == null) {
             throw new IllegalArgumentException("conversationId and senderId are required");
         }
         if (content == null || content.isBlank()) {
             throw new IllegalArgumentException("content is required");
+        }
+        // P2-3 幂等前置：同一（会话, clientMsgId）已有消息 → 直接返回已有视图，
+        // 跳过内容安检与落库（重复推送会造成接收端同一条消息弹两次）
+        final String normalizedClientMsgId =
+                clientMsgId == null || clientMsgId.isBlank() ? null : clientMsgId.trim();
+        if (normalizedClientMsgId != null) {
+            PrivateMessage existing = messageRepository
+                    .findByConversationIdAndClientMsgId(conversationId, normalizedClientMsgId)
+                    .orElse(null);
+            if (existing != null) {
+                return transactionTemplate.execute(status -> toMessageView(existing));
+            }
         }
 
         // 授权校验（会话存在 + 参与者 + 拉黑）必须在任何写入之前完成，且刻意留在事务之外：
@@ -321,7 +345,9 @@ public class RealPrivateMessageService implements PrivateMessageService {
         // 少一边就是「消息在、会话列表预览不更新」）。视图也在事务内构建：
         // toMessageView 读 message.getConversation().getId()，而 conversation 是
         // @ManyToOne(LAZY)，出事务后再取会抛 LazyInitializationException。
-        MessageView messageView = transactionTemplate.execute(status -> {
+        MessageView messageView;
+        try {
+        messageView = transactionTemplate.execute(status -> {
             // 事务内重新加载会话（口径同上方校验：不存在时保持原有报错语义）
             PrivateConversation managedConversation = conversationRepository.findById(conversationId)
                     .orElseThrow(() -> new IllegalArgumentException("Conversation not found: " + conversationId));
@@ -336,6 +362,7 @@ public class RealPrivateMessageService implements PrivateMessageService {
             message.setDurationSeconds(durationSeconds);
             message.setIsRead(false);
             message.setCreatedAt(now);
+            message.setClientMsgId(normalizedClientMsgId);
 
             // 缺陷修复：saveAndFlush 立即回填 IDENTITY 主键，保证消息视图 id 非空
             // （实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id）
@@ -360,6 +387,19 @@ public class RealPrivateMessageService implements PrivateMessageService {
 
             return toMessageView(message);
         });
+        } catch (org.springframework.dao.DataIntegrityViolationException race) {
+            // P2-3 竞态兜底：并发同 clientMsgId 提交撞唯一键——回读已有行幂等返回。
+            // 事务已回滚，这里的新查询跑在自己的短事务里。
+            if (normalizedClientMsgId == null) {
+                throw race;
+            }
+            PrivateMessage winner = messageRepository
+                    .findByConversationIdAndClientMsgId(conversationId, normalizedClientMsgId)
+                    .orElseThrow(() -> race);
+            log.info("私信 clientMsgId 竞态去重: conversationId={}, clientMsgId={}",
+                    conversationId, normalizedClientMsgId);
+            messageView = transactionTemplate.execute(status -> toMessageView(winner));
+        }
 
         // 通过 WebSocket 推送消息给接收者（recipientId 已在拉黑拦截处计算）
         // S2-1：推送改到落库事务提交之后——原先在提交前推送，接收端可能先收到推送、

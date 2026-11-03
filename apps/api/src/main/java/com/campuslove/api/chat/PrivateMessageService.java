@@ -43,6 +43,18 @@ public interface PrivateMessageService {
                             Integer durationSeconds, String quoteRef);
 
     /**
+     * 发送消息（P2-3 带 client_msg_id 的重载，2026-11-03）。
+     *
+     * <p>clientMsgId 非空时按（会话, clientMsgId）去重：已存在则直接返回已有消息视图
+     * （幂等），不重复落库/推送——兜底 HTTP 幂等键覆盖不到的 WebSocket 链路
+     * 与换键重试。默认实现忽略 clientMsgId 委托 6 参版本（mock 档兼容）。</p>
+     */
+    default MessageView sendMessage(Long conversationId, Long senderId, String content, String kind,
+                                   Integer durationSeconds, String quoteRef, String clientMsgId) {
+        return sendMessage(conversationId, senderId, content, kind, durationSeconds, quoteRef);
+    }
+
+    /**
      * 获取指定会话的消息列表（分页），同时标记消息为已读。
      *
      * @param conversationId 会话 ID

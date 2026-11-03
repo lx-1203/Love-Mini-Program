@@ -1111,10 +1111,17 @@ export const useMessagesStore = defineStore("messages", {
           const trimmedQuoteRef = quoteRef?.trim() ?? "";
           const quoteRefPayload =
             trimmedQuoteRef.length > 0 && trimmedQuoteRef.length <= 64 ? trimmedQuoteRef : undefined;
-          const result = await request<BackendMessageView, { content: string; kind: string; quoteRef?: string }>({
+          // P2-3（2026-11-03）客户端幂等键：一次逻辑发送生成一次、网络层重试复用同一值
+          // （data 对象在 request 调用期固定不变）。上方幂等键是「每次随机防误拦」，
+          // DB 层 (conversation_id, client_msg_id) 唯一约束兜的是「换键重试/重装重发」——
+          // 后端撞键时回读已有消息幂等返回，用户不会看到重复气泡。
+          const clientMsgId = `c-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+          const result = await request<BackendMessageView, { content: string; kind: string; quoteRef?: string; clientMsgId: string }>({
             url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages`,
             method: "POST",
-            data: quoteRefPayload ? { content, kind, quoteRef: quoteRefPayload } : { content, kind },
+            data: quoteRefPayload
+              ? { content, kind, quoteRef: quoteRefPayload, clientMsgId }
+              : { content, kind, clientMsgId },
             // [PRODUCT-FIX] 键名修正 `header`→`headers`（RequestOptions 实际字段），
             // 此前随机幂等键未随请求发出，同文案重发仍会被稳定键幂等去重拦截。
             headers: { "Idempotency-Key": `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` },
@@ -1163,10 +1170,12 @@ export const useMessagesStore = defineStore("messages", {
           const voiceUrl = tempFilePath && tempFilePath.trim().length > 0
             ? await uploadVoiceFile(tempFilePath, durationSeconds)
             : t("chat.voicePlaceholder");
-          const result = await request<BackendMessageView, { content: string; kind: string; durationSeconds: number }>({
+          // P2-3（2026-11-03）：同 sendMessage——语音消息也带客户端幂等键（防换键重试重复落库）
+          const clientMsgId = `c-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+          const result = await request<BackendMessageView, { content: string; kind: string; durationSeconds: number; clientMsgId: string }>({
             url: `/messages/conversations/${encodeURIComponent(sessionId)}/messages`,
             method: "POST",
-            data: { content: voiceUrl, kind: "voice", durationSeconds },
+            data: { content: voiceUrl, kind: "voice", durationSeconds, clientMsgId },
           });
           const mr = mapToMessageItem(result);
           // R16：POST 回包与 WS 回推可能同达，按 id 去重（此前重复 push 出现右侧双气泡）

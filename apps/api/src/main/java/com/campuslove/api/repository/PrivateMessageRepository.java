@@ -23,6 +23,18 @@ import org.springframework.transaction.annotation.Transactional;
 public interface PrivateMessageRepository extends JpaRepository<PrivateMessage, Long> {
 
     /**
+     * 按客户端幂等键查消息（P2-3，2026-11-03）：同一会话内 client_msg_id 唯一
+     * （uk_private_messages_conv_client_msg），用于发送去重——重复提交/竞态冲突后
+     * 回读已有行幂等返回。
+     *
+     * @param conversationId 会话 ID
+     * @param clientMsgId    客户端幂等键（非空）
+     * @return 已存在的消息；不存在返回 empty
+     */
+    java.util.Optional<PrivateMessage> findByConversationIdAndClientMsgId(
+            Long conversationId, String clientMsgId);
+
+    /**
      * 根据会话 ID 查询消息列表，按创建时间倒序分页。
      *
      * <p>3-G 删除消息：排除「当前用户已软删」的消息——发送者本人删除的消息
