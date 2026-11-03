@@ -11,6 +11,7 @@
  * - POST /api/posts/{postId}/like          - 点赞/取消点赞
  * - POST /api/posts/{postId}/share         - 转发帖子
  * - DELETE /api/v1/posts/{postId}           - 作者删除自己的帖子（软删除，2026-10-31）
+ * - PUT  /api/v1/posts/{postId}             - 作者编辑自己的帖子（P1-1，2026-11-03）
  * - GET  /api/posts/{postId}/comments      - 获取帖子评论
  * - POST /api/posts/{postId}/comments      - 创建评论
  * - POST /api/posts/comments/{commentId}/like - 点赞评论
@@ -325,6 +326,54 @@ export async function deletePostApi(postId: string): Promise<void> {
   await request<void>({
     url: `/posts/${postId}`,
     method: "DELETE",
+  });
+}
+
+/**
+ * 作者编辑自己的帖子（P1-1 用户内容生命周期，2026-11-03）。
+ *
+ * PUT /api/v1/posts/{postId}（VillageController#updatePost）
+ *
+ * <p><b>全量替换语义</b>：请求体只认 title/content/tags/images 四个字段，
+ * 传 null 即清空该字段——「只想改标题」也必须把原文 content/images 原样带回，
+ * 否则未携带字段会被置空。发布目标（targetType/targetId）与 category 不可改，
+ * 编辑接口没有这些参数。</p>
+ *
+ * <p><b>重审行为</b>：编辑成功后帖子 auditStatus 回 pending（编辑后待重新审核），
+ * 响应为最新 PostDetailView（含 editCount/editedAt）。非作者 403、帖子不存在 404、
+ * 校验失败 400、并发编辑冲突 409，均由 http.ts 抛 EnhancedApiError，
+ * 调用方（store/UI）必须显式提示，不得 catch 后静默。
+ * http.ts 对 PUT 自动注入 Idempotency-Key，网络重试不会造成重复写入。</p>
+ *
+ * @param postId - 帖子 ID
+ * @param data - 编辑后的完整内容（title 5-30 字必填；tags ≤20 个、每个 ≤20 字；images ≤9 张）
+ * @returns 编辑后的最新 PostDetailView（auditStatus 已回 pending）
+ */
+export async function updatePostApi(
+  postId: string,
+  data: {
+    title: string;
+    content: string;
+    tags?: string[];
+    images?: string[];
+  }
+): Promise<PostDetailView> {
+  return request<PostDetailView, {
+    title: string;
+    content: string;
+    tags: string[] | null;
+    images: string[] | null;
+  }>({
+    url: `/posts/${postId}`,
+    method: "PUT",
+    data: {
+      title: data.title,
+      content: data.content,
+      // 全量替换语义：未携带的字段按 null 上报（后端 null=清空），
+      // 调用方必须传全量四字段，见函数头注释
+      tags: data.tags ?? null,
+      images: data.images ?? null,
+    },
   });
 }
 

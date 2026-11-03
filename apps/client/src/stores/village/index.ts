@@ -77,6 +77,7 @@ import {
   likeCommentApi,
   likePostApi,
   sharePostApi,
+  updatePostApi,
 } from "./api";
 import type {
   ChannelFeedBucket,
@@ -848,6 +849,91 @@ export const useVillageStore = defineStore("village", {
       if (this.currentPost?.id === postId) {
         this.currentPost = null;
       }
+    },
+
+    /**
+     * 作者编辑自己的帖子（P1-1 用户内容生命周期，2026-11-03）。
+     *
+     * <p>口径与 {@link deletePost} 对齐：<b>不做乐观更新</b>。PUT /api/v1/posts/{postId}
+     * 是全量替换（title/content/tags/images 四字段，后端把缺省可选字段按清空处理），
+     * 失败（403 非作者 / 404 不存在 / 400 校验 / 409 并发编辑）时本地各处缓存一字不动、
+     * 错误冒泡给 UI 提示——编辑页表单仍留着用户改了一半的内容，直接重试即可。</p>
+     *
+     * <p>成功后帖子 auditStatus 回 pending 重新过审（后端契约，响应视图不含 auditStatus
+     * 字段，本地显式置 "pending"——与 createPost 的 R17 口径一致，feed 顶部带「审核中」
+     * 徽标）。用返回的最新视图就地替换 currentPost 与各列表缓存里的同 id 项：
+     * posts / nearbyPosts / selfPendingPosts 三处承载同一帖，漏替换任何一处都会出现
+     * 「列表旧内容、详情新内容」的裂缝（channelFeeds 桶持有的是同一数组引用，
+     * splice 就地替换即可同步）。</p>
+     *
+     * @param postId - 帖子 ID
+     * @param payload - 编辑后的完整四字段（全量替换：调用方必须带全量提交）
+     * @returns 编辑后的最新 PostItem（auditStatus=pending）
+     */
+    async updatePost(
+      postId: string,
+      payload: { title: string; content: string; tags?: string[]; images?: string[] }
+    ) {
+      this.errorMessage = null;
+
+      if (!postId || postId.trim().length === 0) {
+        this.errorMessage = t("storeErrors.village.postIdInvalid");
+        throw new Error(t("storeErrors.village.postIdInvalid"));
+      }
+
+      if (useMock()) {
+        // mock 档演示数据不落库（后端 VillageService#updatePost 默认实现显式 422），
+        // 仅就地更新本地缓存保证演示闭环；real 档必走后端。
+        const holders: PostItem[] = [
+          ...this.posts,
+          ...this.nearbyPosts,
+          ...this.selfPendingPosts,
+        ];
+        const target =
+          holders.find((p) => p.id === postId) ??
+          (this.currentPost?.id === postId ? this.currentPost : null);
+        if (!target) {
+          this.errorMessage = t("storeErrors.village.postNotFound");
+          throw new Error(t("storeErrors.village.postNotFound"));
+        }
+        // 全量替换语义：未携带的可选字段按清空处理（与后端一致）
+        target.title = payload.title;
+        target.content = payload.content;
+        target.tags = payload.tags ?? [];
+        target.images = payload.images ?? [];
+        target.auditStatus = "pending";
+        return target;
+      }
+
+      let view;
+      try {
+        view = await updatePostApi(postId, {
+          title: payload.title,
+          content: payload.content,
+          tags: payload.tags,
+          images: payload.images,
+        });
+      } catch (error) {
+        // 失败保留原状并冒泡：UI 必须提示后端文案（403/404/400/409），不得静默
+        this.errorMessage =
+          error instanceof Error ? error.message : t("storeErrors.village.updatePostFailed"); // infra R2-00038
+        throw error;
+      }
+
+      // 只有后端确认成功才用返回视图替换本地各处缓存
+      const updated = mapDetailToPostItem(view);
+      updated.auditStatus = "pending";
+      const replaceIn = (list: PostItem[]) => {
+        const idx = list.findIndex((p) => p.id === postId);
+        if (idx >= 0) list.splice(idx, 1, updated);
+      };
+      replaceIn(this.posts);
+      replaceIn(this.nearbyPosts);
+      replaceIn(this.selfPendingPosts);
+      if (this.currentPost?.id === postId) {
+        this.currentPost = updated;
+      }
+      return updated;
     },
 
     /**

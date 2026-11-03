@@ -1920,6 +1920,8 @@ export default {
       "copyContent": "复制内容",
       "reportAction": "举报",
       "copyFailed": "复制失败，请重试",
+      // P1-1（2026-11-03）：作者长按菜单「编辑」项（仅作者可见，非作者后端 403 兜底）
+      "editAction": "编辑",
       "deleteAction": "删除",
       "deleteConfirmTitle": "删除这条动态",
       "deleteConfirmContent": "删除后村口与个人主页不再展示这条动态，其评论区一并隐藏。",
@@ -1992,6 +1994,15 @@ export default {
       "uploadingImages": "图片上传中...",
       "imageUploadFailed": "图片上传失败，请重试",
       "publishing": "发布中...",
+      // P1-1（2026-11-03）：publish.vue 编辑态（?edit=<postId> 进入）——
+      // 页面标题/提交按钮/提交中/失败文案与发布态区分
+      "editHeaderTitle": "编辑动态",
+      "editSubmit": "提交编辑",
+      "editSubmitting": "提交中...",
+      "editSubmitFailed": "提交编辑失败，请重试",
+      "editLoadFailed": "原帖加载失败，请返回重试",
+      // P2-8（2026-11-03）：草稿云端同步失败可见化——提示行与首次失败 toast 同文案
+      "draftSyncFailedHint": "已保存到本机（云端同步失败，恢复时仅本机可用）",
       // ROUND-5 车道 B2：村口两个发布页（village/post.vue 与 village/village/publish.vue）
     // 模板/toast 里的裸中文逐字搬入，两页同文的串共用同一个键。
     "publishToLabel": "发布到",
@@ -4215,7 +4226,10 @@ export default {
       "clearHistoryFailed": "清空浏览记录失败",
       // stores/village/index.ts 的删帖失败兜底：此前只有 t() 引用没有这条键，
       // 删除失败时用户会看到裸键名 storeErrors.village.deletePostFailed。
-      "deletePostFailed": "删除动态失败，请稍后重试"
+      "deletePostFailed": "删除动态失败，请稍后重试",
+      // P1-1（2026-11-03）：编辑动态失败兜底（PUT /posts/{id} 的 403/404/400/409
+      // 由 http.ts 抛 EnhancedApiError 携带后端文案，此键仅兜非 Error 形态）
+      "updatePostFailed": "编辑动态失败，请稍后重试"
     },
     "activity": {
       "loadActivitiesFailed": "加载活动失败",

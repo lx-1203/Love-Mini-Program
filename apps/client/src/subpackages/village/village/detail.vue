@@ -333,22 +333,25 @@ const REPORT_REASONS = computed(() => [
 ]);
 
 /**
- * 长按帖子正文 / 顶部三点菜单：弹出操作菜单（复制内容 / 举报 /〔作者本人〕删除）。
+ * 长按帖子正文 / 顶部三点菜单：弹出操作菜单（复制内容 / 举报 /〔作者本人〕编辑/删除）。
  * P2 修复（长按复制支持）：
  * - 复制内容：调用 uni.setClipboardData 将帖子正文写入剪贴板
  * - 举报：复用 handleReportPost 触发举报弹窗
  * 2026-10-31 用户内容生命周期：作者本人的帖子追加「删除」项（非作者看不到该项，
  * 后端仍有 403 兜底——前端的可见性只是体验，不是授权）。
+ * P1-1（2026-11-03）：作者本人追加「编辑」项（置于删除前）——跳转统一发布页编辑态
+ * （?edit=<postId>），只改 title/content/tags/images，提交后帖子回待审。
  * 使用 uni.showActionSheet 弹出原生操作菜单，与系统交互一致。
  */
 async function handlePostLongpress() {
   if (!currentPost.value) return;
-  // 操作菜单：复制 + 举报 +〔仅作者〕删除（Task 28: 文案走 i18n）
+  // 操作菜单：复制 + 举报 +〔仅作者〕编辑/删除（Task 28: 文案走 i18n）
   const copyContentLabel = t("village.detail.copyContent");
   const reportLabel = t("village.detail.reportAction");
+  const editLabel = isOwnPost.value ? t("village.detail.editAction") : "";
   const deleteLabel = isOwnPost.value ? t("village.detail.deleteAction") : "";
   const actions = deleteLabel
-    ? [copyContentLabel, reportLabel, deleteLabel]
+    ? [copyContentLabel, reportLabel, editLabel, deleteLabel]
     : [copyContentLabel, reportLabel];
   try {
     const res = await uni.showActionSheet({ itemList: actions });
@@ -364,6 +367,12 @@ async function handlePostLongpress() {
     } else if (action === reportLabel) {
       // 触发举报弹窗
       handleReportPost();
+    } else if (editLabel !== "" && action === editLabel) {
+      // P1-1（2026-11-03）：作者编辑——跳统一发布页编辑态（publish.vue 解析 ?edit= 回填）。
+      // 作者判定仅控制菜单可见性，非作者直链进入时后端 PUT 403 兜底
+      uni.navigateTo({
+        url: `/subpackages/village/village/publish?edit=${encodeURIComponent(currentPost.value.id)}`,
+      });
     } else if (deleteLabel !== "" && action === deleteLabel) {
       // 作者删除自己的帖子（二次确认 + 失败可见）
       await handleDeletePost();
@@ -964,7 +973,10 @@ onShareTimeline(() => {
                  campusName 是真字段（本帖 :1001 位置行已消费）⇒ 按 §12 接真字段：
                  有 campusName 即渲染校徽，文案取该字段；不再借 isAlumni 做门。 -->
             <view v-if="currentPost.author.campusName" class="author-inline__badge">
-              <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCHOOL)" custom-class="author-inline__badge-icon" mode="aspectFit" />
+              <!-- 2026-10-26 对齐理想图（帖子.png，P10#3）：校徽为「绿色盾牌图标＋校名」
+                   （原 ICONS_COMMON.SCHOOL 位图在实拍帧上未出图，只剩文字胶囊；
+                   换绑 register/shield.svg 绿描边盾形勾，形态与理想图一致） -->
+              <SafeImage :src="resolveMediaUrl(IMAGE_PATHS.REGISTER_ICONS.SHIELD)" custom-class="author-inline__badge-icon" mode="aspectFit" />
               <text class="author-inline__badge-text">{{ currentPost.author.campusName }}</text>
             </view>
           </view>
@@ -1532,52 +1544,58 @@ onShareTimeline(() => {
         </view>
       </view>
       <view class="input-bar">
-        <view class="input-bar__field">
-          <input
-  cursor-spacing="20"
-            v-model="commentContent"
-            class="input-bar__input"
-            :placeholder="replyPlaceholder"
-            confirm-type="send"
-            :maxlength="MAX_CONTENT_LENGTH"
-            :focus="commentInputFocused || commentInputFocus"
-            @blur="commentInputFocused = false; commentInputFocus = false"
-            @confirm="submitComment"
-            :aria-label="replyPlaceholder"
-          />
+        <!-- 2026-10-26 对齐理想图（帖子.png，P10#1）：placeholder 与 @/表情/图片三枚图标
+             整体收进一个浅灰圆角胶囊、胶囊外是白底（原 input 独占胶囊、图标裸坐白底） -->
+        <view class="input-bar__capsule">
+          <view class="input-bar__field">
+            <input
+    cursor-spacing="20"
+              v-model="commentContent"
+              class="input-bar__input"
+              :placeholder="replyPlaceholder"
+              confirm-type="send"
+              :maxlength="MAX_CONTENT_LENGTH"
+              :focus="commentInputFocused || commentInputFocus"
+              @blur="commentInputFocused = false; commentInputFocus = false"
+              @confirm="submitComment"
+              :aria-label="replyPlaceholder"
+            />
+          </view>
+          <view class="input-bar__actions">
+            <!-- @ 提及（2026-09-06 落地：插入 @ 并聚焦）
+                 2026-10-26（P10#2）：三枚图标统一深灰描边（理想图同体系） -->
+            <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="提及某人" @tap="insertMention">
+              <text class="input-bar__icon-text">@</text>
+            </view>
+            <!-- 表情（2026-09-06 落地：表情面板） -->
+            <view class="input-bar__icon press-feedback" :class="{ 'input-bar__icon--active': emojiPanelVisible }" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="表情" @tap="toggleEmojiPanel">
+              <image class="input-bar__icon-img input-bar__icon-img--smile" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.SMILE)" mode="aspectFit" alt="" />
+            </view>
+            <!-- 图片（2026-09-06 落地：选择并上传图片，限 3 张）
+                 R2b-L04-D08（素材缺失 P2）：原 svg-spec/03-icons/image.svg 用 stroke="currentColor"，
+                 经 <image> 加载时 currentColor 不生效 + 内联尺寸写死 32rpx，实帧渲染成发灰残缺字形。
+                 2026-10-26（P10#2）：换固定深灰描边的自绘字形 ICONS_COMMON.IMAGE_GRAY_SVG
+                 （圆角方框+山形+日，与 @/表情同色系；原烘焙绿的 chat-image.png 与另两枚跳色）。 -->
+            <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="添加图片" @tap="chooseCommentImage">
+              <image class="input-bar__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.IMAGE_GRAY_SVG)" mode="aspectFit" alt="" />
+            </view>
+          </view>
         </view>
-        <view class="input-bar__actions">
-          <!-- @ 提及（2026-09-06 落地：插入 @ 并聚焦） -->
-          <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="提及某人" @tap="insertMention">
-            <text class="input-bar__icon-text">@</text>
-          </view>
-          <!-- 表情（2026-09-06 落地：表情面板） -->
-          <view class="input-bar__icon press-feedback" :class="{ 'input-bar__icon--active': emojiPanelVisible }" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="表情" @tap="toggleEmojiPanel">
-            <image class="input-bar__icon-text" style="width: 32rpx; height: 32rpx;" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.SMILE)" mode="aspectFit" alt="" />
-          </view>
-          <!-- 图片（2026-09-06 落地：选择并上传图片，限 3 张）
-               R2b-L04-D08（素材缺失 P2）：原 svg-spec/03-icons/image.svg 用 stroke="currentColor"，
-               经 <image> 加载时 currentColor 不生效 + 内联尺寸写死 32rpx，实帧渲染成发灰残缺字形。
-               换成固定色（烘焙绿）的图片资源 ICONS_CHAT_V1.IMAGE（chat-image.png），尺寸提到理想图口径 40rpx。 -->
-          <view class="input-bar__icon press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" aria-label="添加图片" @tap="chooseCommentImage">
-            <image class="input-bar__icon-text" style="width: 40rpx; height: 40rpx;" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_CHAT_V1.IMAGE)" mode="aspectFit" alt="" />
-          </view>
-          <!-- R16：可见发送按钮——此前唯一提交入口是键盘 confirm，键盘未弹时无法发言
-               R2b-L04-D09（文案 P3）：理想图吸底栏右端只有三枚图标、无「发送」胶囊，
-               空内容时那颗浅绿胶囊仍占位、把整行元素数与右边界全部推偏。改为仅在已输入内容
-               （回复态）时出现，既保留 R16 的可见提交入口，又恢复理想图空态三图标收尾。 -->
-          <view
-            v-if="commentContent.trim().length > 0"
-            class="input-bar__send press-feedback"
-            :class="{ 'input-bar__send--disabled': !commentContent.trim() || isSubmitting }"
-            hover-class="press-feedback--active"
-            hover-stay-time="120"
-            role="button"
-            aria-label="发送评论"
-            @tap="submitComment"
-          >
-            <text class="input-bar__send-text">发送</text>
-          </view>
+        <!-- R16：可见发送按钮——此前唯一提交入口是键盘 confirm，键盘未弹时无法发言
+             R2b-L04-D09（文案 P3）：理想图吸底栏右端只有三枚图标、无「发送」胶囊，
+             空内容时那颗浅绿胶囊仍占位、把整行元素数与右边界全部推偏。改为仅在已输入内容
+             （回复态）时出现，既保留 R16 的可见提交入口，又恢复理想图空态三图标收尾。 -->
+        <view
+          v-if="commentContent.trim().length > 0"
+          class="input-bar__send press-feedback"
+          :class="{ 'input-bar__send--disabled': !commentContent.trim() || isSubmitting }"
+          hover-class="press-feedback--active"
+          hover-stay-time="120"
+          role="button"
+          aria-label="发送评论"
+          @tap="submitComment"
+        >
+          <text class="input-bar__send-text">发送</text>
         </view>
       </view>
       <!-- 2026-09-06：表情面板（常用表情，点选追加） -->
@@ -3379,13 +3397,28 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   align-items: center;
   gap: 16rpx;
   padding: 16rpx 24rpx;
+  /* 2026-10-26（P10#1）：胶囊底收进 __capsule，本层保持白底 */
+  background: #ffffff;
+}
+
+/* 2026-10-26（P10#1）：placeholder + 三枚图标同住一个浅灰圆角胶囊（理想图口径） */
+.input-bar__capsule {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: #F4F6F5;
+  border-radius: var(--r-full, 9999rpx);
+  padding: 0 12rpx 0 24rpx;
 }
 
 .input-bar__field {
   flex: 1;
-  background: $bg-page;
+  min-width: 0;
+  background: transparent;
   border-radius: var(--r-full, 9999rpx);
-  padding: 0 24rpx;
+  padding: 0;
 }
 
 .input-bar__input {
@@ -3397,13 +3430,13 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 .input-bar__actions {
   display: flex;
   align-items: center;
-  gap: 20rpx;
+  gap: 12rpx;
   flex-shrink: 0;
 }
 
 .input-bar__icon {
-  width: 64rpx;
-  height: 64rpx;
+  width: 56rpx;
+  height: 56rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3412,7 +3445,18 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 .input-bar__icon-text {
   font-size: var(--fs-2xl, 32rpx);
-  color: $text-secondary;
+  /* 2026-10-26（P10#2）：@ 与表情/图片统一深灰描边体系 */
+  color: #4A524E;
+}
+
+/* 2026-10-26（P10#2）：表情/图片图标统一深灰（smile.svg 烘焙浅灰，filter 压深） */
+.input-bar__icon-img {
+  width: 32rpx;
+  height: 32rpx;
+}
+
+.input-bar__icon-img--smile {
+  filter: saturate(0) brightness(0.55);
 }
 
 /* R16：可见发送按钮 */

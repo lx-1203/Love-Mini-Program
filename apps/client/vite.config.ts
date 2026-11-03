@@ -190,6 +190,14 @@ export default defineConfig(({ mode }) => ({
   },
   esbuild: {
     target: buildTarget,
+    // P3-2（2026-11-03）构建期 console 清理：
+    // console.log 标记为 pure——生产构建中结果未被使用时整段移除（esbuild 压缩期删除），
+    // 开发模式不受影响。刻意只清 log 不动 warn/error/info：
+    // services/sentry.ts 等错误上报链路在 Sentry 未配置时以 console.warn/error 兜底，
+    // 全量 drop 会拆掉最后一道可见的错误出口（审查报告的修复方向即「构建期 strip」）。
+    pure: mode === "development" ? [] : ["console.log"],
+    // debugger 语句不允许进入任何产物
+    drop: ["debugger"],
   },
   build: {
     // 构建目标：H5 = es2020+，mp-weixin = es2018（基础库兼容性）

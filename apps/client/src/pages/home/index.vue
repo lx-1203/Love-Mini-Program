@@ -7,7 +7,7 @@
  * 禁止使用 CardSwiper；连续人物浏览属于「寻觅」Tab。
  */
 import { computed, ref, watch } from "vue";
-import { onShow, onPullDownRefresh, onPageScroll } from "@dcloudio/uni-app";
+import { onLoad, onShow, onHide, onUnload, onPullDownRefresh, onPageScroll } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useHomeStore } from "../../stores/home";
@@ -36,6 +36,8 @@ import { resolveMediaUrl } from "../../utils/media";
 // → redirectToLogin 强踢登录页，击穿「未登录预览」形态）
 import { useMock } from "../../stores/helpers/use-mock";
 import { getToken } from "../../services/http";
+// P2-7（2026-11-03）：首页社区动态 WS 事件驱动刷新——订阅村口帖子变更广播
+import { wsClient } from "../../services/websocket";
 
 useTabBar(0);
 
@@ -86,8 +88,54 @@ async function initLocation() {
 // 2026-09-02 R12（需求①）：论坛图片/首页数据更新不及时——
 // 此前 onShow 仅在「无数据/有错」时重拉，发新帖或换头像后回到首页永远看不到更新。
 // 增加 30s 陈旧阈值：超过即静默重拉（保留 loading 防重入），下拉刷新/登录补拉共用同一时间戳。
+// P2-7（2026-11-03）：该 30s 轮询口径降级为兜底——帖子审核/删除/置顶变化由后端
+// /topic/village/posts-changed 广播主动驱动刷新（见下方订阅），轮询只兜 WS 断连/漏推的场景。
 const HOME_FEED_STALE_MS = 30_000;
 let lastFeedFetchTs = 0;
+
+/* ========== P2-7（2026-11-03）：首页 WS 事件驱动刷新 ========== */
+/** 村口帖子变更广播主题（后端帖子审核/删除/置顶变化时推送 {action, postId, at}） */
+const VILLAGE_POSTS_CHANGED_TOPIC = "/topic/village/posts-changed";
+/** WS 事件刷新节流窗口：距上次刷新不足 5s 只标记 stale（下次 onShow 补刷），
+ *  防止后端批量过审时连发多条广播把首页打成连续刷新 */
+const WS_REFRESH_THROTTLE_MS = 5_000;
+/** 当前页的订阅 ID（null=未订阅）；onLoad/onShow 双入口防重复订阅 */
+let postsChangedSubId: string | null = null;
+/** 被节流掉的 WS 事件标记：下次 onShow 强制刷新（即便未过 30s 陈旧阈值） */
+let wsFeedStale = false;
+
+function subscribeVillagePostsChanged(): void {
+  if (postsChangedSubId) return;
+  // 未连接时 subscribe 内部会登记待重播订阅（重连后生效），对 mock/未登录档无害：
+  // mock 档 wsClient 永不连接，订阅只停留在登记表，不产生任何请求
+  postsChangedSubId = wsClient.subscribe(VILLAGE_POSTS_CHANGED_TOPIC, () => {
+    if (Date.now() - lastFeedFetchTs < WS_REFRESH_THROTTLE_MS) {
+      // 节流窗口内：不立即刷，留给下次 onShow（stale 标记会越过 30s 陈旧闸）
+      wsFeedStale = true;
+      return;
+    }
+    refreshHomeFeed();
+  });
+}
+
+function unsubscribeVillagePostsChanged(): void {
+  if (!postsChangedSubId) return;
+  wsClient.unsubscribe(postsChangedSubId);
+  postsChangedSubId = null;
+}
+
+onLoad(() => {
+  subscribeVillagePostsChanged();
+});
+
+onHide(() => {
+  // 页面不可见期间事件无消费价值（回来时 onShow 按陈旧/stale 闸补刷），退订省一条订阅
+  unsubscribeVillagePostsChanged();
+});
+
+onUnload(() => {
+  unsubscribeVillagePostsChanged();
+});
 
 function refreshHomeFeed() {
   if (loading.value) return;
@@ -98,8 +146,11 @@ function refreshHomeFeed() {
 }
 
 onShow(() => {
+  // P2-7：重新订阅（onHide 退订过），并把节流窗口内被标记 stale 的刷新补上
+  subscribeVillagePostsChanged();
   // 未登录也能加载预览数据（点击交互时再跳登录）
-  const stale = Date.now() - lastFeedFetchTs > HOME_FEED_STALE_MS;
+  const stale = wsFeedStale || Date.now() - lastFeedFetchTs > HOME_FEED_STALE_MS;
+  if (stale) wsFeedStale = false;
   if (!homeFeed.value || homeStore.errorMessage || stale) {
     refreshHomeFeed();
   }

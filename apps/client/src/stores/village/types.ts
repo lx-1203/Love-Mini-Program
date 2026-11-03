@@ -336,6 +336,13 @@ export interface PostDetailView {
   activityId?: number;
   /** 2026-08-08 频道化重构：关联活动摘要 */
   activity?: ActivitySummaryView | null;
+  /**
+   * P1-1 编辑留痕（2026-11-03）：作者编辑次数（0=从未编辑）。
+   * 编辑成功后后端返回的最新视图携带；旧帖/未编辑帖缺省。
+   */
+  editCount?: number;
+  /** P1-1 编辑留痕（2026-11-03）：最近一次编辑时间（null=从未编辑） */
+  editedAt?: string;
 }
 
 /**

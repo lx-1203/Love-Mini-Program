@@ -6,7 +6,7 @@ import { isDevUserEntryAllowed } from "../utils/dev-user-gate";
 import { loginWithWechat as authLoginWithWechat } from "../services/auth";
 // JWT token 存取：bootstrap 检测到失效 token 时清除并以体验账号重登
 import { getToken, clearTokens, clearUserScopedStorage } from "../services/http";
-// 2026-08-31 待办：IM 实时推送接线——登录态建立后连接 WebSocket，登出时断开
+// P1-3（已接线）：IM 实时推送——登录态建立后连接 WebSocket，登出时断开（见 syncRealtimeConnection）
 import { wsClient } from "../services/websocket";
 // 2026-08-10 切换提速：登出时清空 TTL 缓存（防跨账号数据泄漏）
 import { clearAllCaches } from "../utils/cache-ttl";
@@ -294,7 +294,7 @@ function syncSentryUser(session: UserSession | null): void {
 }
 
 /**
- * 2026-08-31 待办：IM 实时推送接线——登录态建立时连接 WebSocket，登出时断开。
+ * IM 实时推送（P1-3，2026-11-03 已接线）：登录态建立时连接 WebSocket，登出时断开。
  *
  * 原实现全仓无 wsClient.connect() 调用点，聊天纯 HTTP 拉取（无实时推送）。
  * 现于登录态变化处统一同步连接状态：
@@ -611,7 +611,7 @@ export const useSessionStore = defineStore("session", {
           // Sentry 调用失败不影响登出主流程
         }
 
-        // 2026-08-31 待办：IM 实时推送——登出时断开 WebSocket，避免残留推送
+        // P1-3（已接线）：IM 实时推送——登出时断开 WebSocket，避免残留推送
         syncRealtimeConnection(false);
 
         // 4. 持久化的 profileBackgroundUrl 由上方 clearUserScopedStorage() **整键删除**
@@ -701,7 +701,8 @@ export const useSessionStore = defineStore("session", {
         // 应用启动时同步 Sentry 用户身份：H5 冷启动后用户身份不丢失
         syncSentryUser(this.userSession);
 
-        // 2026-08-31 待办：IM 实时推送——登录态建立后连接 WebSocket（冷启动已登录场景）
+        // P1-3（2026-11-03）：IM 实时推送——登录态建立后连接 WebSocket（已接线，
+        // 见 syncRealtimeConnection；冷启动已登录场景。原「2026-08-31 待办」注释已过时）
         syncRealtimeConnection(Boolean(this.userSession?.loggedIn));
 
         // B6：启动期非阻塞拉取客户端配置（维护模式/功能开关），
@@ -761,7 +762,8 @@ export const useSessionStore = defineStore("session", {
         clearMediaSignCache();
         // 登录成功：同步用户身份到 Sentry，后续异常上报将自动关联该用户
         syncSentryUser(this.userSession);
-        // 2026-08-31 待办：IM 实时推送——登录成功后建立 WebSocket 连接
+        // P1-3（2026-11-03）：IM 实时推送——登录成功后建立 WebSocket 连接
+        // （已接线，见 syncRealtimeConnection；原「2026-08-31 待办」注释已过时）
         syncRealtimeConnection(true);
 
         return this.userSession;

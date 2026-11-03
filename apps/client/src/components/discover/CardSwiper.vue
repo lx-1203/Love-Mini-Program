@@ -47,7 +47,6 @@ import { lightHaptic, mediumHaptic, heavyHaptic } from "../../utils/haptic";
 import { IMAGE_PATHS } from "../../config/images";
 // R6-L10-D05：素材出口统一过解析器（见下方 emojiIcons 注释）
 import { resolveMediaUrl } from "../../utils/media";
-import { isDev } from "../../config/env";
 import { computeSwipeRotate, resolveSwipeEnd } from "../common/swipe/SwipeGesture";
 // 悄悄话付费解锁（与 CardDetailOverlay 共用同一套交友币逻辑）
 import { useCoinsStore } from "../../stores/coins";
@@ -677,14 +676,9 @@ const tiltY = computed(() => {
  */
 function handleTap() {
   if (!currentCard.value || isFlyingOut.value) return;
-  try {
-    lightHaptic();
-  } catch (err) {
-    // 振动反馈失败时静默降级
-    if (isDev) {
-      console.warn("[CardSwiper] tap haptic failed:", err);
-    }
-  }
+  // P3-2（2026-11-03）：haptic 自 2026-08-08 全站禁用后为 no-op（utils/haptic.ts
+  // 直接 return，不可能抛错）——原 try/catch + isDev console.warn 属不可达死代码，删除
+  lightHaptic();
   showDetail.value = true;
 }
 
@@ -728,14 +722,8 @@ function handleNotInterested() {
   closeMenu();
   uni.showToast({ title: t('discover.recommendReduced'), icon: "none" });
   if (!currentCard.value || isFlyingOut.value) return;
-  try {
-    lightHaptic();
-  } catch (err) {
-    // 振动反馈失败时静默降级
-    if (isDev) {
-      console.warn("[CardSwiper] not-interested haptic failed:", err);
-    }
-  }
+  // P3-2（2026-11-03）：同 handleTap——haptic 为 no-op 不可能抛错，死 catch 删除
+  lightHaptic();
   performFlyOut("left");
 }
 
@@ -763,13 +751,8 @@ function onTouchStart(e: UniTouchEvent) {
     if (!hasMovedForLongPress && !isFlyingOut.value) {
       isLongPressing.value = true;
       isDragging.value = false;
-      try {
-        heavyHaptic();
-      } catch (err) {
-        if (isDev) {
-          console.warn("[CardSwiper] long-press haptic failed:", err);
-        }
-      }
+      // P3-2（2026-11-03）：同 handleTap——haptic 为 no-op 不可能抛错，死 catch 删除
+      heavyHaptic();
       showMenu.value = true;
     }
   }, LONG_PRESS_DELAY_MS);
@@ -890,13 +873,8 @@ function performFlyOut(direction: SwipeDirection) {
   flyDirection.value = direction;
 
   // 飞出时触发重振动反馈
-  try {
-    heavyHaptic();
-  } catch (err) {
-    if (isDev) {
-      console.warn("[CardSwiper] fly-out haptic failed:", err);
-    }
-  }
+  // P3-2（2026-11-03）：同 handleTap——haptic 为 no-op 不可能抛错，死 catch 删除
+  heavyHaptic();
 
   const cardId = currentCard.value.id;
 
@@ -939,13 +917,8 @@ function resetCardPosition() {
  */
 function onReject() {
   if (isFlyingOut.value || !currentCard.value) return;
-  try {
-    lightHaptic(); // 拒绝：轻振动
-  } catch (err) {
-    if (isDev) {
-      console.warn("[CardSwiper] reject haptic failed:", err);
-    }
-  }
+  // P3-2（2026-11-03）：同 handleTap——haptic 为 no-op 不可能抛错，死 catch 删除
+  lightHaptic(); // 拒绝：轻振动
   performFlyOut("left");
 }
 
@@ -954,13 +927,8 @@ function onReject() {
  */
 function onLike() {
   if (isFlyingOut.value || !currentCard.value) return;
-  try {
-    mediumHaptic(); // 喜欢：中等振动
-  } catch (err) {
-    if (isDev) {
-      console.warn("[CardSwiper] like haptic failed:", err);
-    }
-  }
+  // P3-2（2026-11-03）：同 handleTap——haptic 为 no-op 不可能抛错，死 catch 删除
+  mediumHaptic(); // 喜欢：中等振动
   performFlyOut("right");
 }
 
@@ -971,13 +939,8 @@ function onLike() {
  */
 function onStarTap() {
   if (isFlyingOut.value || !currentCard.value) return;
-  try {
-    heavyHaptic(); // 核心关系动作：重振动
-  } catch (err) {
-    if (isDev) {
-      console.warn("[CardSwiper] star action haptic failed:", err);
-    }
-  }
+  // P3-2（2026-11-03）：同 handleTap——haptic 为 no-op 不可能抛错，死 catch 删除
+  heavyHaptic(); // 核心关系动作：重振动
   if (props.starAction === "whisper") {
     emit("whisper", currentCard.value.id);
   } else {
@@ -988,13 +951,8 @@ function onStarTap() {
 /** 长按菜单的「超级喜欢」入口（始终为 superLike 语义） */
 function onSuperLike() {
   if (isFlyingOut.value || !currentCard.value) return;
-  try {
-    heavyHaptic(); // 超级喜欢：重振动
-  } catch (err) {
-    if (isDev) {
-      console.warn("[CardSwiper] super-like haptic failed:", err);
-    }
-  }
+  // P3-2（2026-11-03）：同 handleTap——haptic 为 no-op 不可能抛错，死 catch 删除
+  heavyHaptic(); // 超级喜欢：重振动
   emit("superLike", currentCard.value.id);
 }
 

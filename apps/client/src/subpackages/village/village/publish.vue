@@ -9,6 +9,10 @@
  *
  * 草稿：本地 storage(village:publish-draft，MP-R1-PUBLISH-004 起独立键) + 后端
  *      /drafts/current 双写；退出未发布提示"是否保留草稿"；进入自动恢复；发布成功后清除。
+ *      云端写失败时页面提示「已保存到本机（云端同步失败）」（P2-8，2026-11-03）。
+ * 编辑：?edit=<postId> 进入编辑态（P1-1，2026-11-03）——回填原帖 content/tags/images，
+ *      只允许编辑 title/content/tags/images 四字段（全量替换），草稿链路整体跳过，
+ *      提交走 PUT /posts/{postId}，成功后帖子回待审。
  */
 import { ref, computed, watch, onUnmounted } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
@@ -20,7 +24,7 @@ import { useCircleStore, type CircleItem } from "../../../stores/circle";
 import { useProfileStore } from "../../../stores/profile";
 // MP-R1-PUB-016：字数上限与 store 校验同一来源。该缺陷当年是「页面 1000 / store 500」向下对齐，
 // 2026-10-26 按规范 §3.14 与理想效果图的 0/1000 反向收口——单一真源仍是本常量，数值为 1000
-import { useVillageStore, MAX_CONTENT_LENGTH } from "../../../stores/village";
+import { useVillageStore, MAX_CONTENT_LENGTH, fetchPostDetailApi } from "../../../stores/village";
 import { useMock } from "../../../stores/helpers/use-mock";
 import { useSessionStore } from "../../../stores/session";
 import { clientApi } from "../../../services/api";
@@ -83,6 +87,22 @@ const visibility = ref("public");
 const tipVisible = ref(true);
 const submitting = ref(false);
 
+/* ---------- P1-1（2026-11-03）：编辑态（?edit=<postId> 进入） ---------- */
+/** 编辑态标记：进入后跳过草稿整套逻辑、隐藏发布目标/位置/提及/可见范围（后端不可编辑字段） */
+const isEditMode = ref(false);
+/** 编辑目标帖子 ID（onLoad 解析 ?edit= 得到） */
+const editPostId = ref<string | null>(null);
+/** 原帖详情回填中（回填完成前禁提交） */
+const editLoading = ref(false);
+/** 原帖回填失败标记：留空表单提交会以「全量替换」清空原帖，必须挡住提交 */
+const editLoadFailed = ref(false);
+
+/* ---------- P2-8（2026-11-03）：云端草稿同步失败可见化 ---------- */
+/** 云端草稿同步失败标记：提示行常驻展示，成功后复位 */
+const draftSyncFailed = ref(false);
+/** 失败 toast 去重（模块级）：防抖保存每次 catch 都弹会打断输入，仅首次失败提示一次 */
+let draftSyncFailToastShown = false;
+
 /** 发布目标：general | circle | campus | friends（R16：日常，仅喜欢/关注可见） */
 const targetType = ref<"general" | "circle" | "campus" | "friends">("general");
 const targetId = ref<number | null>(null);
@@ -101,7 +121,14 @@ const currentLength = computed(() => content.value.length);
 const isNearLimit = computed(
   () => MAX_CONTENT_LENGTH - currentLength.value <= CONTENT_LENGTH_WARN_THRESHOLD
 );
-const canSubmit = computed(() => content.value.trim().length > 0 && !submitting.value);
+const canSubmit = computed(
+  () =>
+    content.value.trim().length > 0 &&
+    !submitting.value &&
+    // P1-1：编辑态回填未完成/回填失败时禁提交——全量替换语义下空表单提交会清空原帖
+    !editLoading.value &&
+    !editLoadFailed.value
+);
 const isCircleTarget = computed(() => targetType.value === "circle");
 
 /** 可发布的目标圈子（仅当前用户已加入的兴趣圈），保持上限 8 个展示 */
@@ -179,6 +206,17 @@ const visibilityText = computed(() => {
 
 /* ---------- 进入：解析目标 + 恢复草稿 ---------- */
 onLoad((query) => {
+  // P1-1（2026-11-03）：?edit=<postId> 进入编辑态——回填原帖后直接返回，
+  // 跳过发布目标解析与草稿恢复：编辑对象是已发布帖子，targetType/targetId/
+  // category/visibility 后端一律不可改（UpdatePostRequest 刻意不收这些字段），
+  // 草稿链路若不跳过会把「半编辑内容」冒充新帖草稿写进 PUBLISH_DRAFT_STORAGE_KEY
+  const editId = typeof query?.edit === "string" ? query.edit.trim() : "";
+  if (editId) {
+    isEditMode.value = true;
+    editPostId.value = editId;
+    void loadPostForEdit(editId);
+    return;
+  }
   const cid = query?.circleId ? Number(query.circleId) : null;
   const entryTarget = query?.target;
   // MP-R2-PUB-114：入口回设同步 visibility（原只设 targetType，无草稿时 restoreDraft
@@ -202,6 +240,36 @@ onLoad((query) => {
   // restoreDraft 内部恢复后会强制回设入口语义的目标与可见范围
   void restoreDraft(entryTarget, cid);
 });
+
+/**
+ * P1-1（2026-11-03）：编辑态回填——拉原帖详情，回填 content/images/tags 三字段。
+ *
+ * <p>title 无独立输入框：沿用本页「正文即标题」口径（与发布态一致，提交时取正文
+ * 前 30 字、至少 5 字），编辑后标题随正文头部更新，所见即所得。作者校验交给后端：
+ * 详情接口对非作者同样返回视图，前端无法在回填阶段判定，非作者提交 PUT 时 403。</p>
+ *
+ * <p>回填失败必须挡提交（editLoadFailed）：全量替换语义下，空/半空表单一旦提交成功
+ * 会把原帖 tags/images 清空——比加载失败严重得多，宁可让用户返回重进。</p>
+ */
+async function loadPostForEdit(postId: string) {
+  editLoading.value = true;
+  editLoadFailed.value = false;
+  try {
+    const view = await fetchPostDetailApi(postId);
+    content.value = typeof view.content === "string" ? view.content : "";
+    // 详情 images 均为已上传 URL（发布时已过 isUploadedMediaUrl 闸），直接回填
+    images.value = Array.isArray(view.images) ? [...view.images] : [];
+    // 话题沿用「#前缀」存储口径（两页 toggleTopic 均以 # 开头提交、后端原样落库）
+    topics.value = Array.isArray(view.tags)
+      ? view.tags.filter((tag): tag is string => typeof tag === "string")
+      : [];
+  } catch (_e) {
+    editLoadFailed.value = true;
+    uni.showToast({ title: t("village.post.editLoadFailed"), icon: "none" });
+  } finally {
+    editLoading.value = false;
+  }
+}
 
 async function loadTarget() {
   if (!isCircleTarget.value) return;
@@ -557,11 +625,28 @@ function hasDraftContent(snap: {
 }
 
 /**
+ * P2-8（2026-11-03）：云端草稿同步失败统一标记——置失败标记（页面提示行常驻），
+ * 首次失败额外 toast 一次（draftSyncFailToastShown 去重，防抖保存每次 catch 都弹
+ * 会在打字过程中反复打断输入）。本地 storage 兜底仍在，云端失败只缩小恢复范围
+ * （换设备/重装后不可恢复），不打断输入流程。
+ */
+function markDraftSyncFailed(): void {
+  draftSyncFailed.value = true;
+  if (!draftSyncFailToastShown) {
+    draftSyncFailToastShown = true;
+    uni.showToast({ title: t("village.post.draftSyncFailedHint"), icon: "none" });
+  }
+}
+
+/**
  * MP-R1-PUBLISH-003：同步落盘当前快照（本地 + 后端双写，不等防抖）。
  * 「保留草稿」退出路径直接 flush——原 scheduleDraftSave() 挂上 500ms 定时器后立即
  * leave()→onUnmounted clearTimeout，最终快照永不落盘（最后 ≤500ms 编辑必丢）。
  */
 function flushDraftSave() {
+  // P1-1（2026-11-03）：编辑态完全跳过草稿链路——编辑对象是已发布帖子，
+  // 半编辑内容冒充新帖草稿落盘后，下次正常发布会恢复出错误形态
+  if (isEditMode.value) return;
   cancelDraftTimers();
   const snap = snapshotDraft();
   // MP-R2-PUB-113：空快照不落盘（requestLeave 的 dirty 判定已挡掉大部分场景，
@@ -570,10 +655,21 @@ function flushDraftSave() {
   try {
     uni.setStorageSync(PUBLISH_DRAFT_STORAGE_KEY, snap);
   } catch (_e) { /* storage 失败不阻塞 */ }
-  void clientApi.saveDraft(snap).catch(() => { /* 后端失败由本地兜底 */ });
+  // P2-8（2026-11-03）：云端失败不再纯静默——置失败标记（首次 toast），
+  // 本地 storage 已落盘兜底；成功则复位标记（提示行随之消失）
+  void clientApi
+    .saveDraft(snap)
+    .then(() => {
+      draftSyncFailed.value = false;
+    })
+    .catch(() => {
+      markDraftSyncFailed();
+    });
 }
 
 function scheduleDraftSave() {
+  // P1-1（2026-11-03）：编辑态完全跳过草稿链路（同 flushDraftSave 的闸）
+  if (isEditMode.value) return;
   if (draftSaveTimer) clearTimeout(draftSaveTimer);
   draftSaveTimer = setTimeout(async () => {
     const snap = snapshotDraft();
@@ -582,13 +678,15 @@ function scheduleDraftSave() {
     try {
       uni.setStorageSync(PUBLISH_DRAFT_STORAGE_KEY, snap);
     } catch (_e) { /* storage 失败不阻塞 */ }
-    // 后端双写（失败静默，本地兜底）
+    // 后端双写（P2-8：失败可见化——置失败标记 + 首次 toast，本地兜底仍在，不打断输入）
     if (draftSyncTimer) clearTimeout(draftSyncTimer);
     draftSyncTimer = setTimeout(async () => {
       try {
         await clientApi.saveDraft(snap);
+        draftSyncFailed.value = false;
       } catch (_e) {
-        // 前后端断连等场景静默，由本地草稿兜底
+        // 前后端断连等场景：本地草稿兜底仍在，仅标记「恢复时仅本机可用」
+        markDraftSyncFailed();
       }
     }, 2000);
   }, POST_DRAFT_SAVE_DEBOUNCE_MS);
@@ -703,6 +801,12 @@ function requestLeave() {
     uni.showToast({ title: t("village.post.publishing"), icon: "none" });
     return;
   }
+  // P1-1（2026-11-03）：编辑态无草稿概念——未提交就离开只是放弃本次修改，
+  // 原帖仍在服务端完好，「保留草稿」弹窗反而会诱导半编辑内容落盘成新帖草稿
+  if (isEditMode.value) {
+    leave();
+    return;
+  }
   const dirty = content.value.trim() || images.value.length || topics.value.length;
   if (!dirty) { leave(); return; }
   uni.showModal({
@@ -755,7 +859,11 @@ async function submitPublish() {
   // 2026-09-06：正文中直接输入的 #话题 自动并入话题列表（与行入口等效）
   // R5(INDEP-001)：合并逻辑提取为 buildMergedTopics()（草稿快照共用），消除越界引用
   const mergedTopics = buildMergedTopics();
-  uni.showLoading({ title: t("village.post.publishing"), mask: true });
+  // P1-1（2026-11-03）：编辑态提交中文案区分（「提交中...」）
+  uni.showLoading({
+    title: isEditMode.value ? t("village.post.editSubmitting") : t("village.post.publishing"),
+    mask: true,
+  });
   let failureMsg = "";
   try {
     // real 模式上传本地图片
@@ -778,7 +886,17 @@ async function submitPublish() {
       }
     }
     if (!failureMsg) {
-      if (isCircleTarget.value && targetId.value != null) {
+      if (isEditMode.value && editPostId.value) {
+        // P1-1（2026-11-03）：编辑提交——全量替换 title/content/tags/images 四字段
+        // （title 沿用「正文即标题」口径派生），成功后帖子回 pending 重新过审；
+        // targetType/category/visibility 后端不可编辑，刻意不携带
+        await villageStore.updatePost(editPostId.value, {
+          title: titleFromContent,
+          content: content.value.trim(),
+          tags: mergedTopics,
+          images: finalImages,
+        });
+      } else if (isCircleTarget.value && targetId.value != null) {
         await circleStore.createTopic(String(targetId.value), {
           title: titleFromContent,
           content: content.value.trim(),
@@ -801,9 +919,13 @@ async function submitPublish() {
     }
   } catch (e) {
     // 2026-08-31：优先展示后端具体原因（如「请先加入该圈子，再在圈内发帖」）
+    // P1-1（2026-11-03）：编辑态兜底文案与发布态区分（403 非作者/409 并发等
+    // 后端文案由 EnhancedApiError.message 优先透出）
     failureMsg = e instanceof Error && e.message
       ? e.message
-      : circleStore.errorMessage || villageStore.errorMessage || t("village.post.publishFailed");
+      : isEditMode.value
+        ? villageStore.errorMessage || t("village.post.editSubmitFailed")
+        : circleStore.errorMessage || villageStore.errorMessage || t("village.post.publishFailed");
   }
   // MP-R1-PUBLISH-109（两页一致）：出口唯一且「先 hideLoading 再 toast」——
   // 原结构 showToast 在 try 内、finally 再 hideLoading，小程序端 hideLoading 会把刚弹出
@@ -812,6 +934,20 @@ async function submitPublish() {
   submitting.value = false;
   if (failureMsg) {
     uni.showToast({ title: failureMsg, icon: "none" });
+    return;
+  }
+  // P1-1（2026-11-03）：编辑成功——全程未触碰草稿链路（无 clearDraft）；
+  // store.updatePost 已就地替换 currentPost 与列表缓存，navigateBack 返回的
+  // 详情页渲染的即最新内容（含 pending 待审态）。文案强调重审后才对外展示
+  if (isEditMode.value) {
+    allowLeave.value = true;
+    // MP-R2-POST-010：页面已离页时到此为止
+    if (pageDestroyed) return;
+    uni.showToast({ title: t("village.postSuccess"), icon: "success" });
+    setTimeout(() => {
+      if (pageDestroyed) return;
+      navigateAway();
+    }, 400);
     return;
   }
   // MP-R8-DRAFT-001（2026-09-16）：清草稿。clearDraft() 已内置「取消在途定时器 + 删本地键 +
@@ -857,17 +993,27 @@ onUnmounted(() => {
       <view class="publish-header__close press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.closeAria')" @tap="requestLeave">
         <image class="publish-header__x" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.CLOSE)" mode="aspectFit" alt="" />
       </view>
-      <text class="publish-header__title">{{ t("village.post.headerTitle") }}</text>
+      <text class="publish-header__title">{{ isEditMode ? t("village.post.editHeaderTitle") : t("village.post.headerTitle") }}</text>
       <!-- MP-R2VIS-SUBPACKAGES-VILLAGE-VILLAGE-PUBLISH-005：页内唯一无按压反馈的 @tap view
            （同页其余 @tap 节点均已按 .publish-image__remove 范式补齐） -->
-      <view class="publish-header__submit press-feedback" :class="{ 'publish-header__submit--disabled': !canSubmit }" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="t('common.publish')" @tap="submitPublish">
-        <text class="publish-header__submit-text">{{ t("common.publish") }}</text>
+      <view class="publish-header__submit press-feedback" :class="{ 'publish-header__submit--disabled': !canSubmit }" hover-class="press-feedback--active" hover-stay-time="120" role="button" :aria-label="isEditMode ? t('village.post.editSubmit') : t('common.publish')" @tap="submitPublish">
+        <!-- P1-1（2026-11-03）：编辑态提交按钮文案改「提交编辑」 -->
+        <text class="publish-header__submit-text">{{ isEditMode ? t("village.post.editSubmit") : t("common.publish") }}</text>
       </view>
     </view>
 
+    <!-- P2-8（2026-11-03）：云端草稿同步失败提示行——本地 storage 已兜底落盘，
+         仅告知恢复范围收窄（换设备不可恢复），不打断输入；成功后随 draftSyncFailed 复位消失 -->
+    <view v-if="draftSyncFailed && !isEditMode" class="publish-sync-hint">
+      <text class="publish-sync-hint__text">{{ t("village.post.draftSyncFailedHint") }}</text>
+    </view>
+
     <scroll-view class="publish-body" scroll-y :show-scrollbar="false">
-      <!-- 发布到 -->
-      <view class="publish-to">
+      <!-- 发布到
+           P1-1（2026-11-03）：编辑态隐藏——后端 UpdatePostRequest 刻意不收
+           targetType/targetId/category/visibility（放开编辑等于允许把帖子事后挪进
+           自己已退出的圈子），这里不再提供可点假象 -->
+      <view v-if="!isEditMode" class="publish-to">
         <text class="publish-to__label">{{ t("village.post.publishToLabel") }}</text>
         <view class="publish-to__card press-feedback" hover-class="press-feedback--active" hover-stay-time="120" role="button" @tap="targetOpen = !targetOpen">
           <view class="publish-to__avatar">
@@ -955,8 +1101,11 @@ onUnmounted(() => {
         <!-- R10-L02-D14：本行恢复为交互行——2026-09-06「位置固定为当前城市、移除选择交互」的
              前提（本页无选点能力）已被 uni.chooseLocation 推翻，manifest :50 早已声明该隐私接口。
              行内 meta 三态：已选位置 / 缓存城市 / 可点 prompt（不再只剩「即将开放」一句）。
-             › 给真可点的那一行，与 R9-L02-D27 对立行的箭头口径一致。 -->
+             › 给真可点的那一行，与 R9-L02-D27 对立行的箭头口径一致。
+             P1-1（2026-11-03）：编辑态隐藏——位置本就只落草稿不随帖发布（帖子表无位置列），
+             编辑态草稿链路整体跳过后此行再无任何落点，摆着只会误导 -->
         <view
+          v-if="!isEditMode"
           class="publish-row press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
@@ -979,16 +1128,19 @@ onUnmounted(() => {
           <text class="publish-location-note__clear" @tap="location = ''">{{ t("village.post.clearLocationLabel") }}</text>
         </view>
         <!-- 2026-10-28：@提及已接通关注列表（最多 10 人），正文插入 @昵称并提交 mentionedUserIds；
-             圈子目标下隐藏——createTopic 请求体暂无 mentions，避免 UI 承诺了却静默丢弃。 -->
-        <view v-if="!isCircleTarget" class="publish-row" @tap="openMentionPicker">
+             圈子目标下隐藏——createTopic 请求体暂无 mentions，避免 UI 承诺了却静默丢弃。
+             P1-1（2026-11-03）：编辑态同样隐藏——UpdatePostRequest 不收 mentionedUserIds
+             （@关系发布时已落库并通知，编辑不重发），同属「UI 承诺了却不生效」。 -->
+        <view v-if="!isCircleTarget && !isEditMode" class="publish-row" @tap="openMentionPicker">
           <text class="publish-row__icon">@</text>
           <text class="publish-row__label">{{ t("village.post.mentionTitle") }}</text>
         </view>
         <!-- MP-R2-PUB-105：friends 目标锁定可见范围（原可轮换落入 interest 桶，UI 当场失真）
              MP-R1-VILLAGE-PUBLISH-103：cycleVisibility 四目标轮换列表均为单值（点击永远
              不改值），保留 press-feedback/chevron 构成「可点假象」——降级为只读信息行，
-             可见范围随「发布到」目标推导（对齐「添加位置」行的只读形态） -->
-        <view class="publish-row">
+             可见范围随「发布到」目标推导（对齐「添加位置」行的只读形态）
+             P1-1（2026-11-03）：编辑态隐藏——可见范围不可编辑，随发布目标一并收起 -->
+        <view v-if="!isEditMode" class="publish-row">
           <image class="publish-row__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.EYE)" mode="aspectFit" alt="" />
           <text class="publish-row__label">{{ t("village.post.visibilityLabel") }}</text>
           <text class="publish-row__meta">{{ visibilityText }}</text>
@@ -1074,7 +1226,10 @@ onUnmounted(() => {
         <text class="publish-tool__icon publish-tool__icon--glyph">#</text>
         <text class="publish-tool__label">{{ t("village.post.toolTopicLabel") }}</text>
       </view>
+      <!-- P1-1（2026-11-03）：编辑态只保留「图片/话题」两枚——位置只落草稿（编辑态草稿跳过）、
+           @提及与可见范围后端均不可编辑，隐藏而非摆成死按钮 -->
       <view
+        v-if="!isEditMode"
         class="publish-tool press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
@@ -1086,7 +1241,7 @@ onUnmounted(() => {
         <text class="publish-tool__label">{{ t("village.post.toolLocationLabel") }}</text>
       </view>
       <view
-        v-if="!isCircleTarget"
+        v-if="!isCircleTarget && !isEditMode"
         class="publish-tool press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
@@ -1098,6 +1253,7 @@ onUnmounted(() => {
         <text class="publish-tool__label">{{ t("village.post.toolMentionLabel") }}</text>
       </view>
       <view
+        v-if="!isEditMode"
         class="publish-tool press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
@@ -1313,6 +1469,12 @@ onUnmounted(() => {
 .publish-header__submit--disabled { background: #C7E9DC; }
 .publish-header__submit--disabled .publish-header__submit-text { color: #2A7A5E; }
 .publish-header__submit-text { font-size: 28rpx; font-weight: 700; color: #fff; }
+
+/* P2-8（2026-11-03）：云端草稿同步失败提示行（页头之下、正文之上，被动提示不打断输入）。
+   22rpx 小字取 --c-text-secondary #6B7571 压白 4.76:1（≥4.5:1）；不用 --c-warning
+   #FF9F43（压白仅约 2.2:1，22rpx 正文字不达对比下限，见仓内对比度口径） */
+.publish-sync-hint { padding: 12rpx 32rpx 0; background: var(--c-bg-container, #FFFFFF); }
+.publish-sync-hint__text { font-size: var(--fs-xs, 22rpx); color: var(--c-text-secondary, #6B7571); }
 
 .publish-body { flex: 1; min-height: 0; }
 
