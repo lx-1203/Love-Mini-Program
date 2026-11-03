@@ -553,7 +553,10 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
           <!-- MP-R1-CIRCLEHOME-004（2026-09-20）：「分享」接通原生分享
                （button open-type="share" 触发本页 onShareAppMessage），不再是无事件死按钮 -->
           <button class="hero-btn hero-btn--share" open-type="share" hover-class="hero-btn--active" aria-label="分享圈子">
-            <image class="hero-btn-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_SOCIAL.SHARE)" mode="aspectFit" />
+            <!-- 2026-10-26 对齐理想图（P8）：分享图标为「方框+外箭头」白描边图形
+                 （原 ICONS_SOCIAL.SHARE 三点连线形态不符）；upload.svg 深色描边，
+                 filter 反白成白色图形（H5 生效；mp 端若不吃 filter 则维持深色不破图） -->
+            <image class="hero-btn-icon hero-btn-icon--share" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.UPLOAD)" mode="aspectFit" />
           </button>
         </view>
       </view>
@@ -618,7 +621,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
             hover-stay-time="120"
             @tap="openFeedDetail(chip)"
           >
-            <text class="topic-chip-text"># {{ chip.title }}</text>
+            <text class="topic-chip-text">{{ chip.title }}</text>
           </view>
         </view>
       </view>
@@ -909,6 +912,11 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   height: 36rpx;
 }
 
+/* 2026-10-26（P8）：分享图形反白（upload.svg 烘焙深色描边，压深色封面需白） */
+.hero-btn-icon--share {
+  filter: brightness(0) invert(1);
+}
+
 /* MP-R1-CIRCLEHOME-004：分享为原生 button（open-type="share"），复位默认样式以对齐 hero-btn */
 .hero-btn--share {
   margin: 0;
@@ -943,8 +951,10 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   width: 112rpx;
   height: 112rpx;
   border-radius: 24rpx;
-  /* R8-L04-D07：叠在封面上，加一圈半透明白描边把缩略图从照片里分出来（理想图同位白描边） */
-  border: 3rpx solid rgba(255, 255, 255, 0.85);
+  /* R8-L04-D07：叠在封面上，加一圈描边把缩略图从照片里分出来（理想图同位白描边）
+     2026-10-26 对齐理想图（P8）：白描边为实心白环带（原 0.85 半透明在帧上读不出环带） */
+  border: 4rpx solid #ffffff;
+  box-sizing: border-box;
   flex-shrink: 0;
 }
 
@@ -971,8 +981,9 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 
 .info-hot {
   font-size: 20rpx;
-  color: #e6731c;
-  background: #fdf0e3;
+  /* 2026-10-26 对齐理想图（P8）：『热门』徽标为暗红底+浅红字（原米白底+橙字） */
+  color: #c26764;
+  background: #502c28;
   border-radius: 8rpx;
   padding: 2rpx 12rpx;
 }
@@ -1064,18 +1075,18 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 
 /* ===== 3b. 话题直达 chips（R13-L04-D07，压 hero 遮罩）===== */
 .topic-chip-row {
+  /* 2026-10-26（P8）：理想图单行 4 个（原 wrap 两行）；横向溢出隐藏 */
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 16rpx;
-  /* 紧跟圈标签 chips 行之后，留一半行距区隔两组 */
   margin-top: 16rpx;
+  overflow: hidden;
 }
 
 .topic-chip {
-  /* 与上方 .tag-chip 同族「图上玻璃片」成对令牌（R2b-L05-D01 口径）：底
-     --c-badge-on-image-bg（深色半透明）+ 白字 --c-badge-on-image-text，压遮罩仍 ≥4.5:1；
-     不自造色值。 */
-  background: var(--c-badge-on-image-bg, rgba(15, 23, 42, 0.7));
+  /* 2026-10-26 对齐理想图（P8）：话题胶囊为浅灰半透明、单行不折行
+     （R13-L04-D07 的话题直达能力保留，仅样式向理想图收拢；原深色玻璃片+两行折行） */
+  background: rgba(255, 255, 255, 0.55);
   border: 1rpx solid var(--c-overlay-border-light, rgba(255, 255, 255, 0.18));
   border-radius: 999rpx;
   padding: 10rpx 24rpx;
@@ -1084,12 +1095,16 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 }
 
 .topic-chip--active {
-  background: var(--c-overlay-stronger, rgba(15, 23, 42, 0.85));
+  background: rgba(255, 255, 255, 0.75);
 }
 
 .topic-chip-text {
   font-size: 24rpx;
-  color: var(--c-badge-on-image-text, rgba(255, 255, 255, 0.95));
+  /* 2026-10-26（P8）：浅灰半透明胶囊配深字，单行不折行（理想图单行 4 个） */
+  color: #1f2a25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ===== 4. Tab 栏 ===== */
@@ -1283,11 +1298,14 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 }
 
 /* ===== 6. 动态 feed ===== */
+/* 2026-10-26 对齐理想图（圈子详情，摄影圈参考.png，P8）：帖子区为白色整版面板、
+   帖间以细分隔线区分（撤独立白圆角卡与浅绿间隙的卡片化形态） */
 .feed-card {
-  margin: 24rpx 24rpx 0;
+  margin: 0;
   background: #ffffff;
-  border-radius: 24rpx;
-  padding: 28rpx;
+  border-radius: 0;
+  padding: 28rpx 24rpx;
+  border-bottom: 1rpx solid #f7f8f9;
 }
 
 .feed-card--hover {

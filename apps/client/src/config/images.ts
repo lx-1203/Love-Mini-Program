@@ -242,6 +242,28 @@ export const IN_PACKAGE_ASSETS = {
    */
   SCAN_VIEWFINDER_SVG: { pkg: '/static/assets/icons/common/scan-viewfinder.svg', tail: '/assets/icons/common/scan-viewfinder.svg' },
   /**
+   * 2026-10-26 个人主页车道（P5/P6 对齐理想图 已经填完资料的个人主页.png / 未登录个人主页.png）：
+   * 七枚纯几何字形自绘（24x24 stroke/fill 体系，与 common/ 图标族同源）：
+   *   qr-code（深色二维码：定位角块+点阵，理想图头部第一入口）
+   *   user-fill（灰色实心人形剪影，未登录头像占位）
+   *   heart-fill-purple / users-fill-pink / thumbs-up-fill-orange / eye-fill-blue（四宫格实心彩图标）
+   *   target-fill-orange（圆环准星，我的互动「最近访客」）
+   * 落盘 icons/common/，同款 pkg+tail 双形态登记。
+   */
+  QR_CODE_SVG: { pkg: '/static/assets/icons/common/qr-code.svg', tail: '/assets/icons/common/qr-code.svg' },
+  USER_FILL_SVG: { pkg: '/static/assets/icons/common/user-fill.svg', tail: '/assets/icons/common/user-fill.svg' },
+  HEART_FILL_PURPLE_SVG: { pkg: '/static/assets/icons/common/heart-fill-purple.svg', tail: '/assets/icons/common/heart-fill-purple.svg' },
+  USERS_FILL_PINK_SVG: { pkg: '/static/assets/icons/common/users-fill-pink.svg', tail: '/assets/icons/common/users-fill-pink.svg' },
+  THUMBS_UP_FILL_ORANGE_SVG: { pkg: '/static/assets/icons/common/thumbs-up-fill-orange.svg', tail: '/assets/icons/common/thumbs-up-fill-orange.svg' },
+  EYE_FILL_BLUE_SVG: { pkg: '/static/assets/icons/common/eye-fill-blue.svg', tail: '/assets/icons/common/eye-fill-blue.svg' },
+  TARGET_FILL_ORANGE_SVG: { pkg: '/static/assets/icons/common/target-fill-orange.svg', tail: '/assets/icons/common/target-fill-orange.svg' },
+  /** 2026-10-26 校园圈认证横幅「青绿实心学士帽」（对齐理想图 校园圈.png，P9#5：
+   *  原 GRADUATION_CAP_SVG 为灰蓝细线描边；纯几何字形自绘 24x24） */
+  GRADUATION_CAP_FILL_SVG: { pkg: '/static/assets/icons/common/graduation-cap-fill.svg', tail: '/assets/icons/common/graduation-cap-fill.svg' },
+  /** 2026-10-26 帖子详情输入栏「图片」图标（对齐理想图 帖子.png，P10#2：
+   *  深灰描边圆角方框+山形+日，与 @/表情同色系；纯几何字形自绘） */
+  IMAGE_GRAY_SVG: { pkg: '/static/assets/icons/common/image-gray.svg', tail: '/assets/icons/common/image-gray.svg' },
+  /**
    * R6/F7（2026-10-20）：`assets/icons/` **根目录**的 6 枚同判据双登记（R6-L11-D03 / R6-L02-D04
    * / R6-L02-D05 / R6-L02-D07 / R6-L01-D09）。根目录既不在 cdnPrefixes 也不在 localPrefixes
    * ⇒ real 档按契约留包内，但盘上实测它们**发不出去**：
@@ -548,6 +570,8 @@ export const IMAGE_PATHS = {
     CLOSE_SVG: ICONS_BASE + '/common/close.svg',
     X_CIRCLE_SVG: ICONS_BASE + '/common/x-circle.svg',
     GRADUATION_CAP_SVG: ICONS_BASE + '/common/graduation-cap.svg',
+    GRADUATION_CAP_FILL_SVG: IN_PACKAGE_ASSETS.GRADUATION_CAP_FILL_SVG.pkg, // 青绿实心学士帽（校园圈认证横幅）
+    IMAGE_GRAY_SVG: IN_PACKAGE_ASSETS.IMAGE_GRAY_SVG.pkg, // 深灰图片图标（帖子详情输入栏）
     CHEVRON_RIGHT_SVG: ICONS_BASE + '/common/chevron-right.svg',
     CHEVRON_LEFT_SVG: ICONS_BASE + '/common/chevron-left.svg',
     BOLT_SVG: ICONS_BASE + '/common/bolt.svg',
@@ -566,6 +590,14 @@ export const IMAGE_PATHS = {
     PAUSE_SVG: ICONS_BASE + '/common/pause.svg',         // ❚❚ 暂停
     CLOSE_WHITE_SVG: ICONS_BASE + '/common/close-white.svg', // 白色 ✕（深色背景关闭）
     SCAN_VIEWFINDER_SVG: IN_PACKAGE_ASSETS.SCAN_VIEWFINDER_SVG.pkg, // 取景框/扫描（匹配成功页 nav）
+    /* 2026-10-26 个人主页车道（P5/P6）七枚字形（详见 IN_PACKAGE_ASSETS 注释） */
+    QR_CODE_SVG: IN_PACKAGE_ASSETS.QR_CODE_SVG.pkg,
+    USER_FILL_SVG: IN_PACKAGE_ASSETS.USER_FILL_SVG.pkg,
+    HEART_FILL_PURPLE_SVG: IN_PACKAGE_ASSETS.HEART_FILL_PURPLE_SVG.pkg,
+    USERS_FILL_PINK_SVG: IN_PACKAGE_ASSETS.USERS_FILL_PINK_SVG.pkg,
+    THUMBS_UP_FILL_ORANGE_SVG: IN_PACKAGE_ASSETS.THUMBS_UP_FILL_ORANGE_SVG.pkg,
+    EYE_FILL_BLUE_SVG: IN_PACKAGE_ASSETS.EYE_FILL_BLUE_SVG.pkg,
+    TARGET_FILL_ORANGE_SVG: IN_PACKAGE_ASSETS.TARGET_FILL_ORANGE_SVG.pkg,
   },
 
   /** 社交图标（social 目录）

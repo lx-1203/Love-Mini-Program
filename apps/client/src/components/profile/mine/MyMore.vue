@@ -18,11 +18,18 @@ withDefaults(defineProps<{ items: MoreItem[] }>(), {
 const emit = defineEmits<{ (e: "tap", key: string): void }>();
 
 // MP-R2-PROFILE-010：/static 硬编码收敛到 IMAGE_PATHS（real 模式基址重写兼容）
-const ICONS: Record<string, { iconSrc?: string; image?: string; color: string }> = {
-  favorites: { image: IMAGE_PATHS.ICONS_PROFILE.FAVORITES_SVG, color: "#FFB020" },
-  visitors: { image: IMAGE_PATHS.ICONS_PROFILE.VISITORS_SVG, color: "#4D8DFF" },
-  album: { image: IMAGE_PATHS.ICONS_PROFILE.ALBUM_SVG, color: "#FF6B81" },
-  privacy: { image: IMAGE_PATHS.ICONS_PROFILE.PRIVACY_SVG, color: "#A29BFE" },
+// 2026-10-26 对齐理想图（已经填完资料的个人主页.png / 未登录个人主页.png，P5#6/P6#1）：
+// 四枚图标换为深灰细线描边裸图标（星形/放大镜/照片/花形齿轮），撤彩色浅底圆——
+// 原组合为「彩色图标+浅彩底圈」（书签/眼睛/相册/盾牌），与理想图整组不符；
+// 其中「我的收藏」书签→星形、「谁看过我」眼睛→放大镜、「隐私设置」盾牌→花形齿轮。
+// 字形源：common/star.svg / common/search.svg / svg-spec/03-icons/image.svg / common/settings-gear.svg
+// （star/search/settings-gear 烘焙 stroke #94A3B8、image.svg 深色，均经 .my-more__icon-img
+// 的 filter 压成统一深灰 #4A524E 档；mp <image> 不响应 CSS color，只能滤镜烘色）。
+const ICONS: Record<string, { iconSrc?: string; image?: string; color: string; bare?: boolean }> = {
+  favorites: { image: IMAGE_PATHS.ICONS_COMMON.STAR_SVG, color: "#4A524E", bare: true },
+  visitors: { image: IMAGE_PATHS.ICONS_COMMON.SEARCH, color: "#4A524E", bare: true },
+  album: { image: IMAGE_PATHS.ICONS_EMOJI.IMAGE, color: "#4A524E", bare: true },
+  privacy: { image: IMAGE_PATHS.ICONS_EMOJI.SETTINGS, color: "#4A524E", bare: true },
   profile: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.USER, color: "#36C99A" },
   interest: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#FF6B81" },
   posts: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.FILE_TEXT, color: "#FF9F43" },
@@ -57,8 +64,9 @@ function hasIcon(key: string): boolean {
         hover-class="my-more__cell--pressed"
         @tap="emit('tap', item.key)"
       >
-        <view class="my-more__icon" :style="{ background: `${iconTint(item.key)}22` }">
-          <image v-if="hasIcon(item.key)" class="my-more__icon-img" :src="iconUrl(item.key)" mode="aspectFit" alt="" />
+        <!-- 2026-10-26：bare 档（前四项）为无底圈裸图标；其余保留浅底圆 -->
+        <view class="my-more__icon" :class="{ 'my-more__icon--bare': ICONS[item.key]?.bare }" :style="ICONS[item.key]?.bare ? {} : { background: `${iconTint(item.key)}22` }">
+          <image v-if="hasIcon(item.key)" class="my-more__icon-img" :class="{ 'my-more__icon-img--bare': ICONS[item.key]?.bare }" :src="iconUrl(item.key)" mode="aspectFit" alt="" />
           <text v-else class="my-more__icon-text" :style="{ color: iconTint(item.key) }">•</text>
         </view>
         <text class="my-more__label">{{ item.label }}</text>
@@ -113,6 +121,11 @@ function hasIcon(key: string): boolean {
   justify-content: center;
 }
 
+/* 2026-10-26 对齐理想图：前四项为无底圈裸图标 */
+.my-more__icon--bare {
+  background: transparent;
+}
+
 .my-more__icon-text {
   font-size: 30rpx;
   font-weight: 800;
@@ -121,6 +134,14 @@ function hasIcon(key: string): boolean {
 .my-more__icon-img {
   width: 40rpx;
   height: 40rpx;
+}
+
+/* 2026-10-26：裸图标档统一烘成深灰细线（star/search/settings-gear 烘焙 #94A3B8、
+   image.svg 深色，去饱和后压暗到 ≈#4A524E 档，与理想图深灰线性一致） */
+.my-more__icon-img--bare {
+  width: 44rpx;
+  height: 44rpx;
+  filter: saturate(0) brightness(0.55);
 }
 
 .my-more__label {

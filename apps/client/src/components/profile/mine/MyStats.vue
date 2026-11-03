@@ -8,10 +8,12 @@ const emit = defineEmits<{ (e: "tap", key: string): void }>();
 const items = [
   // 理想图口径：我喜欢 / 喜欢我的 / 我赞 / 访客
   // （彩色图标+数字+文字四宫格，颜色区分互动类型）
-  { key: "iLike", label: "我喜欢", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#A29BFE" },
-  { key: "likedMe", label: "喜欢我的", iconSrc: IMAGE_PATHS.ICONS_EMOJI.GROUP, color: "#FF6B81" },
-  { key: "praised", label: "我赞", iconSrc: IMAGE_PATHS.ICONS_EMOJI.THUMBS_UP, color: "#FF9F43" },
-  { key: "visitor", label: "访客", iconSrc: IMAGE_PATHS.ICONS_EMOJI.EYE, color: "#4D8DFF" },
+  // 2026-10-26 对齐理想图（已经填完资料的个人主页.png，P5#4）：四枚换实心彩色图标
+  // （紫色实心心/粉色双人/橙色实心拇指/蓝色实心眼），原细描边线性字形不符
+  { key: "iLike", label: "我喜欢", iconSrc: IMAGE_PATHS.ICONS_COMMON.HEART_FILL_PURPLE_SVG, color: "#A29BFE" },
+  { key: "likedMe", label: "喜欢我的", iconSrc: IMAGE_PATHS.ICONS_COMMON.USERS_FILL_PINK_SVG, color: "#FF6B81" },
+  { key: "praised", label: "我赞", iconSrc: IMAGE_PATHS.ICONS_COMMON.THUMBS_UP_FILL_ORANGE_SVG, color: "#FF9F43" },
+  { key: "visitor", label: "访客", iconSrc: IMAGE_PATHS.ICONS_COMMON.EYE_FILL_BLUE_SVG, color: "#4D8DFF" },
 ];
 
 function statValue(key: string, socialProof: UserProfileSocialProof): number {

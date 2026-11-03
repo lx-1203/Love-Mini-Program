@@ -18,12 +18,15 @@ function goBack() {
    （pages/profile/index.vue:688 注释已把该口径写死给 MyStats）。
    此前是「关注/粉丝/获赞/匹配」四项全错，图标也跟着错（第 1 列人形、第 4 列实心红心，
    理想图是空心紫心 + 蓝色眼睛）。色档沿用同页已登录态用过的四枚，不新造颜色。
-   TODO(跨车道)：理想状态是与 MyStats.vue 共用同一份常量，本组件先按同口径对齐。 */
+   TODO(跨车道)：理想状态是与 MyStats.vue 共用同一份常量，本组件先按同口径对齐。
+   2026-10-26 对齐理想图（已登录个人主页.png，P5#4）：四枚字形换为实心彩色图标
+   （紫色实心心/粉色双人/橙色实心拇指/蓝色实心眼，config/images.ts 七枚字形登记），
+   原细描边线性字形与理想图「实心彩色」不符。 */
 const STATS = [
-  { label: "我喜欢", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE, color: "#A29BFE" },
-  { label: "喜欢我的", iconSrc: IMAGE_PATHS.ICONS_EMOJI.GROUP, color: "#FF6B81" },
-  { label: "我赞", iconSrc: IMAGE_PATHS.ICONS_EMOJI.THUMBS_UP, color: "#FF9F43" },
-  { label: "访客", iconSrc: IMAGE_PATHS.ICONS_EMOJI.EYE, color: "#4D8DFF" },
+  { label: "我喜欢", iconSrc: IMAGE_PATHS.ICONS_COMMON.HEART_FILL_PURPLE_SVG, color: "#A29BFE" },
+  { label: "喜欢我的", iconSrc: IMAGE_PATHS.ICONS_COMMON.USERS_FILL_PINK_SVG, color: "#FF6B81" },
+  { label: "我赞", iconSrc: IMAGE_PATHS.ICONS_COMMON.THUMBS_UP_FILL_ORANGE_SVG, color: "#FF9F43" },
+  { label: "访客", iconSrc: IMAGE_PATHS.ICONS_COMMON.EYE_FILL_BLUE_SVG, color: "#4D8DFF" },
 ];
 
 /* R2b-L03-D11（文案）：补 unit 量词，理想图四行右侧是「0人 ›」而非孤零零的「0」。
@@ -32,10 +35,12 @@ const STATS = [
    改走 --c-tint-pink-50 / --c-tint-orange-50 两枚 token。
    TODO(跨车道)：与 MyInteraction.vue 共用同一份色档。 */
 const INTERACTIONS = [
-  { label: "喜欢我的人", value: 0, unit: "人", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, tint: "var(--c-tint-pink-50, #FCE4EC)" },
+  // 2026-10-26 对齐理想图（P5#5）：「喜欢我的人」= 粉色双人剪影（原实心红心与第 3 行重复）；
+  // 「最近访客」= 橙色圆环准星（原橙色眼睛）；「我喜欢的人」保留实心心形
+  { label: "喜欢我的人", value: 0, unit: "人", iconSrc: IMAGE_PATHS.ICONS_COMMON.USERS_FILL_PINK_SVG, tint: "var(--c-tint-pink-50, #FCE4EC)" },
   { label: "我的匹配", value: 0, unit: "人", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE, tint: "var(--c-tint-pink-50, #FCE4EC)" },
   { label: "我喜欢的人", value: 0, unit: "人", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, tint: "var(--c-tint-pink-50, #FCE4EC)" },
-  { label: "最近访客", value: 0, unit: "人", iconSrc: IMAGE_PATHS.ICONS_EMOJI.EYE, tint: "var(--c-tint-orange-50, #FFF3E0)" },
+  { label: "最近访客", value: 0, unit: "人", iconSrc: IMAGE_PATHS.ICONS_COMMON.TARGET_FILL_ORANGE_SVG, tint: "var(--c-tint-orange-50, #FFF3E0)" },
 ];
 
 /* R2b-L03-D04（空态文案）：三枚占位块各自给「计数 + 量词」，理想图三档量词不同
@@ -63,7 +68,7 @@ const MORE_ITEMS: MoreItem[] = [
          R8-L02-D17（层级遮挡 P1）：本行改 position:sticky 吸顶（见样式），滚动时给内容让出胶囊带。 -->
     <view class="nlp-topbar">
       <view
-        class="nlp-topbar__btn press-feedback"
+        class="nlp-topbar__btn nlp-topbar__btn--bare press-feedback"
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
@@ -76,19 +81,22 @@ const MORE_ITEMS: MoreItem[] = [
         <!-- R8-L02-D12（素材缺失 P2）：右上第一枚原绑 ICONS_EMOJI.MOBILE（common/mobile.svg 手机轮廓），
              与理想图的四方格不同形，且「手机」在本页没有任何指向（无设备/绑定入口）。
              改复用已登录态 MyHeader.vue:6 同一枚「▦」四方格字形（文本 glyph，不引新素材、
-             不踩 real 档 icons/emoji 未打包那条 404 路径），MOBILE 素材从本页摘除。 -->
+             不踩 real 档 icons/emoji 未打包那条 404 路径），MOBILE 素材从本页摘除。
+             2026-10-26 对齐理想图（未登录个人主页.png，P6#2）：「▦」文本改为二维码图标
+             （定位角块+点阵，与已登录态 MyHeader 同一枚 ICONS_COMMON.QR_CODE_SVG）；
+             P5#1/P6：三枚导航钮撤白色圆底改裸图标（未登录理想图头部即为无底裸图标）。 -->
         <view
-          class="nlp-topbar__btn press-feedback"
+          class="nlp-topbar__btn nlp-topbar__btn--bare press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
           role="button"
           :aria-label="'应用中心'"
           @tap="emit('goLogin')"
         >
-          <text class="nlp-topbar__glyph">▦</text>
+          <image class="nlp-topbar__qr" :src="IMAGE_PATHS.ICONS_COMMON.QR_CODE_SVG" mode="aspectFit" alt="" />
         </view>
         <view
-          class="nlp-topbar__btn press-feedback"
+          class="nlp-topbar__btn nlp-topbar__btn--bare press-feedback"
           hover-class="press-feedback--active"
           hover-stay-time="120"
           role="button"
@@ -107,7 +115,9 @@ const MORE_ITEMS: MoreItem[] = [
            尺寸档对齐已登录态 MyHeader 的 168rpx 头像；字形复用 IMAGE_PATHS.ICONS_EMOJI.USER
            （static/assets/icons/common/user.svg，已确认存在，且走 ICONS_BASE 基址、real 档可解析）。 -->
       <view class="nlp-header__avatar">
-        <image class="nlp-header__avatar-img" :src="IMAGE_PATHS.ICONS_EMOJI.USER" mode="aspectFit" alt="" />
+        <!-- 2026-10-26 对齐理想图（P6#3）：占位头像为灰色实心人形剪影
+             （原 common/user.svg 细线描边人形，形态不符） -->
+        <image class="nlp-header__avatar-img" :src="IMAGE_PATHS.ICONS_COMMON.USER_FILL_SVG" mode="aspectFit" alt="" />
       </view>
       <view class="nlp-header__info">
         <text class="nlp-header__title">点击登录</text>
@@ -116,7 +126,8 @@ const MORE_ITEMS: MoreItem[] = [
       <!-- R8-L02-D14（需新建 P1）：游客态头部右侧原只有一枚 44rpx「›」，模板里根本没有「编辑资料」
            节点 ⇒ 理想图/规范要求的白底绿字入口在本页完全缺失，游客无法从「我的」进入资料填写。
            补同档入口（复用已登录态 MyHeader.vue:277-293 的 .my-header__edit 胶囊口径，热区提到
-           全站 88rpx 触控下限），游客点击走本页既有 emit('goLogin') 门禁，不新造链路、不编造字段。 -->
+           全站 88rpx 触控下限），游客点击走本页既有 emit('goLogin') 门禁，不新造链路、不编造字段。
+           2026-10-26 对齐理想图（P6#5）：白底黑字无边框胶囊，撤右侧「›」箭头（P5#2 同判）。 -->
       <view
         class="nlp-header__edit press-feedback"
         hover-class="press-feedback--active"
@@ -127,7 +138,6 @@ const MORE_ITEMS: MoreItem[] = [
       >
         <text class="nlp-header__edit-text">编辑资料</text>
       </view>
-      <text class="nlp-header__arrow">›</text>
     </view>
 
     <!-- 资料完整度 -->
@@ -232,18 +242,11 @@ const MORE_ITEMS: MoreItem[] = [
 <style scoped lang="scss">
 .not-logged-profile {
   min-height: 100vh;
-  background: linear-gradient(180deg, #E8FBF3 0%, #EEF7F2 40%);
-  /* R12-IND-PROFILE-INDEX-001/MP-R1-PAGES-PROFILE-INDEX-002：未登录态此前固定
-     32rpx 顶距，顶部三枚 64rpx 圆钮直接顶入状态栏/胶囊带（真机截图与时钟同高实证）；
-     对齐已登录态 MyHeader.vue:96-98 口径让位状态栏。--statusbar 已由页面根注入。
-     R8-L02-D17 连带：状态栏那一档让位从本页根 padding-top 挪进 .nlp-topbar 自己的 padding-top
-     （topbar 已改 sticky top:0，吸顶后它上沿贴在视口 y=0，让位必须由它自己吃，
-     否则吸顶时返回钮会印进状态栏带 —— 等于换个元素再犯同一条）。
-     MP-R2-PROFILE-024 → R2b-L03-D07：底部留白收敛为「仅 tabBar 高度」（原口径是给一颗 fixed
-     登录条让位 = 292rpx+2env 再叠 108rpx，而那颗条在长图里永久压在「我的故事」宫格下半截上）；
-     CTA 已移除 ⇒ 只需清到 tabBar 顶缘，回退值不再重复 env()（真值走 --tab-bar-total-h，
-     见 theme/design-variables.scss:462）。 */
-  padding: 32rpx 24rpx var(--tab-bar-total-h, calc(184rpx + env(safe-area-inset-bottom)));
+  /* 2026-10-26 对齐理想图（P5#7 同判）：头部渐变取样 rgb(202,242,223)，原 #E8FBF3 起点饱和度低，
+     起点加深到 #CAF2DF；底部净空收敛（P6#7：更多功能卡与 tabBar 间留白偏大，收 48rpx，
+     仍保留 --tab-bar-total-h 主让位档） */
+  background: linear-gradient(180deg, #CAF2DF 0%, #EEF7F2 40%);
+  padding: 32rpx 24rpx calc(var(--tab-bar-total-h, calc(184rpx + env(safe-area-inset-bottom))) - 48rpx);
 }
 
 /* 2026-08-26 P0：顶部 ‹ 返回 + 应用中心 + 设置（规格书 11.1 / 11.2）
@@ -281,6 +284,17 @@ const MORE_ITEMS: MoreItem[] = [
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+/* 2026-10-26 对齐理想图（P5#1/P6#2）：头部三枚导航钮为无底裸图标（撤白色圆底） */
+.nlp-topbar__btn--bare {
+  background: transparent;
+}
+
+/* 2026-10-26：二维码图标（与已登录态 MyHeader 同一枚素材） */
+.nlp-topbar__qr {
+  width: 40rpx;
+  height: 40rpx;
 }
 
 /* R8-L02-D13（颜色token P2）：返回 ‹ 原 #36C99A 品牌绿，是整排最重的墨，
@@ -378,7 +392,9 @@ const MORE_ITEMS: MoreItem[] = [
 .nlp-header__edit-text {
   font-size: 26rpx;
   font-weight: 600;
-  color: var(--c-brand-800, #156B51);
+  /* 2026-10-26 对齐理想图（P5#2/P6#5）：白底黑字胶囊（原品牌深绿字 #156B51，
+     理想图为黑字；黑色对白底对比度 15:1，仅升不降） */
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 .nlp-card {
@@ -411,12 +427,10 @@ const MORE_ITEMS: MoreItem[] = [
   flex-shrink: 0;
   font-size: 30rpx;
   font-weight: 800;
-  /* R10-L02-D08（颜色token P1）：0% 是整张完整度卡唯一的进度读数，原 --c-brand #36C99A
-     压白卡 = 2.10:1（design-variables.scss:15 $brand-500，L=0.44898 ⇒ 1.05/0.49898）。
-     取同族最深档 --c-brand-800 #156B51（L=0.11272 ⇒ 1.05/0.16272 = 6.45:1 ≥ 正文 4.5:1），
-     与本文件 :381 .nlp-header__edit-text 同值（同一页两处品牌绿文字取同一档）、
-     与 R9 的 BottomActionBar.vue:104 同档，绿色角色不变。 */
-  color: var(--c-brand-800, #156B51);
+  /* 2026-10-26 对齐理想图（未登录个人主页.png，P6#4）：「0%」为黑色
+     （原 R10 取 --c-brand-800 绿档压对比度——黑色 var(--c-text-primary) #1A1E1C 对白底 14.7:1，
+     对比度只升不降，色相随理想图归黑） */
+  color: var(--c-text-primary, #1A1E1C);
 }
 
 /* R2b-L03-D05（颜色token）：轨道底不再复用「占位块字面量」，令牌化为 --c-brand-50 */
@@ -561,11 +575,29 @@ const MORE_ITEMS: MoreItem[] = [
   background: #ffffff;
 }
 
-/* R2b-L03-D05：＋ 同步降到 --c-text-quaternary */
+/* R2b-L03-D05：＋ 同步降到 --c-text-quaternary
+   2026-10-26 对齐理想图（P6#6）：占位「＋」升级为带底纹的半透明大号图形——
+   字号加大 + 透明度压低 + 浅色圆形底纹垫底，不再是一枚细线小加号 */
 .nlp-story__plus {
-  font-size: 56rpx;
+  position: relative;
+  z-index: 1;
+  font-size: 88rpx;
+  font-weight: 300;
   line-height: 1;
   color: var(--c-text-quaternary, #9AA39F);
+  opacity: 0.55;
+}
+
+.nlp-story__img::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(154, 163, 159, 0.12);
 }
 
 /* R2b-L03-D10（位置）：名称与计数压在色块内左下角，块本身即一张「封面」。

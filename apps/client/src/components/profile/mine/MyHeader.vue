@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import type { UserProfileDTO } from "../../../types/profile";
 import { IMAGE_PATHS } from "../../../config/images";
+import { resolveMediaUrl } from "../../../utils/media";
 import { profileMetaLine } from "../../../utils/profile-meta";
 
 const props = withDefaults(defineProps<{
@@ -37,9 +38,11 @@ const genderIconSrc = computed(() => {
 <template>
   <view class="my-header">
     <view class="my-header__icons">
-      <!-- MP-R1-PROFILE-215：原生分享按钮，触发所在页 pages/profile/index.vue 的 onShareAppMessage -->
+      <!-- MP-R1-PROFILE-215：原生分享按钮，触发所在页 pages/profile/index.vue 的 onShareAppMessage
+           2026-10-26 对齐理想图（已经填完资料的个人主页.png）：导航图标为无底深色裸图标
+           （撤 rgba 白圆底），第一枚字形由「▦」文本改为二维码图标（定位角块+点阵） -->
       <button class="my-header__icon my-header__icon--share" open-type="share" hover-class="my-header__icon--pressed" aria-label="分享">
-        <text class="my-header__icon-text">▦</text>
+        <image class="my-header__qr" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.QR_CODE_SVG)" mode="aspectFit" alt="" />
       </button>
       <view class="my-header__icon" hover-class="my-header__icon--pressed" role="button" aria-label="设置" @tap="handleSettings">
         <image class="my-header__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.SETTINGS" mode="aspectFit" alt="" />
@@ -87,9 +90,11 @@ const genderIconSrc = computed(() => {
 .my-header {
   position: relative;
   /* R3：顶部加状态栏高度（--statusbar 由 useMenuButtonRect 注入）——
-     头部为页面首元素，原 48rpx 起排使「编辑资料」胶囊与微信胶囊叠压 */
+     头部为页面首元素，原 48rpx 起排使「编辑资料」胶囊与微信胶囊叠压
+     2026-10-26 对齐理想图（P5#7）：头部渐变取样 rgb(202,242,223)，原 #E8F5E9 起点饱和度低，
+     起点加深到 #CAF2DF */
   padding: calc(var(--statusbar, env(safe-area-inset-top)) + 64rpx) 32rpx 56rpx;
-  background: linear-gradient(160deg, #E8F5E9 0%, #F0FFF0 100%);
+  background: linear-gradient(160deg, #CAF2DF 0%, #F0FFF5 100%);
   border-radius: 0 0 40rpx 40rpx;
 }
 
@@ -107,7 +112,8 @@ const genderIconSrc = computed(() => {
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
+  /* 2026-10-26 对齐理想图：导航图标无白色圆底（裸图标），盒保留维持热区 */
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -115,6 +121,12 @@ const genderIconSrc = computed(() => {
 
 .my-header__icon--pressed {
   opacity: 0.75;
+}
+
+/* 2026-10-26：二维码图标（定位角块+点阵），替代原「▦」文本字形 */
+.my-header__qr {
+  width: 36rpx;
+  height: 36rpx;
 }
 
 /* 分享为原生 button（open-type="share"），复位默认样式以对齐 my-header__icon */
@@ -129,14 +141,12 @@ const genderIconSrc = computed(() => {
   border: none;
 }
 
-.my-header__icon-text {
-  font-size: 30rpx;
-  color: #333333;
-}
-
 .my-header__icon-img {
   width: 34rpx;
   height: 34rpx;
+  /* 2026-10-26：settings-gear.svg 烘焙描边为浅灰 #94A3B8，mp <image> 不响应 CSS color，
+     用 filter 压成理想图的深色裸图标（与 qr-code 同重量） */
+  filter: saturate(0) brightness(0.34);
 }
 
 .my-header__content {
@@ -281,7 +291,8 @@ const genderIconSrc = computed(() => {
   padding: 12rpx 26rpx;
   border-radius: 999rpx;
   background: #FFFFFF;
-  border: 1rpx solid rgba(0, 0, 0, 0.08);
+  /* 2026-10-26 对齐理想图（P5#2）：白底黑字无边框胶囊（撤浅色描边） */
+  border: none;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.06);
 }
 

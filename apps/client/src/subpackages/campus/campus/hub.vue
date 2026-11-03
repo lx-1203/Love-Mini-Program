@@ -45,8 +45,10 @@ onPageScroll((e) => {
 });
 const { certificationStatus, certificationInfo, isVerified } = storeToRefs(campusStore);
 
-/** 2026-08-20：校园圈搜索关键词（参考图顶部搜索框对齐） */
+/** 2026-08-20：校园圈搜索关键词（参考图顶部搜索框对齐）
+ * 2026-10-26（P9#3）：搜索入口收敛为标题行放大镜图标，框体点开再显 */
 const searchKeyword = ref("");
+const searchOpen = ref(false);
 
 /**
  * 2026-08-27 校园圈修复：校园封面图映射（复用 /static/generated/images/campus 既有素材，
@@ -280,6 +282,19 @@ function goBack() {
         <text class="campus-hub__title">{{ t('campus.hub.title') }}</text>
         <text v-show="!headerCompact" class="campus-hub__subtitle">{{ t('campus.hub.subtitle') }}</text>
       </view>
+      <!-- 2026-10-26 对齐理想图（校园圈.png，P9#3）：搜索入口为标题行右侧放大镜图标
+           （原形态为认证横幅下方常驻圆角搜索输入框，入口形态与位置均不同）。
+           点击展开/收起下方搜索框——就地过滤能力保留，不删功能。 -->
+      <view
+        class="campus-hub__search-toggle press-feedback"
+        hover-class="press-feedback--active"
+        hover-stay-time="120"
+        role="button"
+        :aria-label="t('campus.hub.searchAria')"
+        @tap="searchOpen = !searchOpen"
+      >
+        <image class="campus-hub__search-toggle-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SEARCH)" mode="aspectFit" alt="" />
+      </view>
       <!-- 页头不再放重复的认证入口（MP-R2VIS-SUBPACKAGES-CAMPUS-CAMPUS-HUB-002）：
            认证动作只保留下方引导横幅那一处；这里只在已认证时挂状态标记。 -->
       <view v-if="isVerified" class="campus-hub__cert-badge">
@@ -290,7 +305,9 @@ function goBack() {
     <!-- 加入引导 -->
     <view class="campus-guide card-base">
       <view class="campus-guide__icon">
-        <image class="campus-guide__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.GRADUATION_CAP_SVG)" mode="aspectFit" alt="" />
+        <!-- 2026-10-26 对齐理想图（校园圈.png，P9#5）：认证横幅学士帽为青绿色实心
+             （原 GRADUATION_CAP_SVG 灰蓝细线描边，形态与颜色均不符） -->
+        <image class="campus-guide__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.GRADUATION_CAP_FILL_SVG)" mode="aspectFit" alt="" />
       </view>
       <view class="campus-guide__body">
         <text class="campus-guide__title">{{ t('campus.hub.guideTitle') }}</text>
@@ -312,8 +329,9 @@ function goBack() {
       </view>
     </view>
 
-    <!-- 2026-08-20：搜索框（参考图对齐） -->
-    <view class="campus-search">
+    <!-- 2026-08-20：搜索框（参考图对齐）
+         2026-10-26（P9#3）：入口收敛为标题行放大镜图标，框体默认收起、点开再显（就地过滤保留） -->
+    <view v-if="searchOpen" class="campus-search">
       <view class="campus-search__icon">
         <image class="campus-search__icon-text" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.SEARCH)" mode="aspectFit" alt="" />
       </view>
@@ -569,12 +587,30 @@ function goBack() {
 }
 
 .campus-hub__cert-badge {
-  /* R1-L05-D12：header 改左对齐后，右侧状态标记由 margin-left:auto 吸右，
-     仍落在 padding-right 预留的胶囊避让区内 */
-  margin-left: auto;
+  /* R1-L05-D12：header 改左对齐后吸右（2026-10-26 P9#3 起 auto 让给搜索钮，本标记随行右排） */
   padding: 12rpx 24rpx;
   border-radius: 999rpx;
   background: var(--c-bg-brand, #E8FAF3);
+}
+
+/* 2026-10-26（P9#3）：标题行右侧放大镜搜索入口（无底裸图标，展开下方搜索框）。
+   margin-left:auto 由本钮承担吸右（原在 .campus-hub__cert-badge 上，插入本钮后
+   认证标记改随行右排在放大镜右侧） */
+.campus-hub__search-toggle {
+  margin-left: auto;
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.campus-hub__search-toggle-icon {
+  width: 36rpx;
+  height: 36rpx;
+  /* search.png 烘焙浅灰蓝，压成深黑线性（理想图为纯黑放大镜） */
+  filter: saturate(0) brightness(0.34);
 }
 
 .campus-hub__cert-badge-text {

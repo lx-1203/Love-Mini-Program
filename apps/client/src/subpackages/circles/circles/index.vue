@@ -457,7 +457,9 @@ defineExpose({ toggleJoin });
               </view>
             </view>
           </scroll-view>
-          <!-- R8-L03-D24：按条件筛选入口（吸顶头内、行尾常驻）。已启用非「全部」筛选时右上角绿点提示。 -->
+          <!-- R8-L03-D24：按条件筛选入口（吸顶头内、行尾常驻）。已启用非「全部」筛选时右上角绿点提示。
+               2026-10-26 对齐理想图（P7）：白色圆角方形容器 + 黑色三横汉堡图标（CSS 三线，
+               不引新素材），撤原「白正圆容器+带圆点列表图标」形态；绿点角标逻辑保留。 -->
           <view
             class="circles-filter-btn press-feedback"
             hover-class="press-feedback--active"
@@ -466,7 +468,11 @@ defineExpose({ toggleJoin });
             :aria-label="'筛选'"
             @tap="openFilter"
           >
-            <image class="circles-filter-btn__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.LIST)" mode="aspectFit" alt="" />
+            <view class="circles-filter-btn__bars" aria-hidden="true">
+              <view class="circles-filter-btn__bar" />
+              <view class="circles-filter-btn__bar" />
+              <view class="circles-filter-btn__bar" />
+            </view>
             <view v-if="filterMode !== 'all'" class="circles-filter-btn__dot" />
           </view>
         </view>
@@ -515,7 +521,8 @@ defineExpose({ toggleJoin });
                 </view>
                 <text class="circle-card__desc">{{ circle.description }}</text>
                 <view class="circle-card__meta">
-                  <image class="circle-card__meta-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.GROUP)" mode="aspectFit" alt="" />
+                  <!-- 2026-10-26 对齐理想图（兴趣圈列表.png，P7）：统计行「X人加入·Y条动态」
+                       为纯文本无图标（撤原 GROUP 绿色小人图标） -->
                   <!-- R6-L04-D15（文案 P3）：理想图逐字为「1.2w 人加入 · 362 条动态」，
                        R3 那轮为了躲省略号把动词删成「1.2w 人」，语义丢失（"人"≠"已加入的人"）。
                        词条 circle.cardStats（zh-CN.ts:3755）值里就没有「加入」二字，而 i18n/** 不在
@@ -566,6 +573,12 @@ defineExpose({ toggleJoin });
 </template>
 
 <style scoped lang="scss">
+/* 2026-10-26 对齐理想图（兴趣圈列表.png，P7）：页面背景为纯白（原 AppShell gradient
+   变体的浅绿渐变底实测 #EEF6F1）。:deep 只覆盖本页实例的壳底，AppShell 组件本体不动。 */
+:deep(.shell-bg--gradient) {
+  background: var(--c-bg-container, #FFFFFF);
+}
+
 /* MP-R2-CIRCLES-INDEX-008：原 .circles-state 族、.loading-spinner、.error-icon、
    .circles-empty 族、.discover-entry 族五段死样式已删（模板 0 命中；加载/错误/空三态
    由 PageStateContainer 自带样式渲染，「附近的人」头部卡已于 2026-08-25 P1 移除）。
@@ -771,13 +784,6 @@ defineExpose({ toggleJoin });
   min-width: 0;
 }
 
-.circle-card__meta-icon {
-  width: 24rpx;
-  height: 24rpx;
-  color: var(--c-text-tertiary);
-  flex-shrink: 0;
-}
-
 .circle-card__count {
   /* R10-L03-D15（字号 P2）：MP-R1-CIRCLE-005 当年为「375px 不被省略号截断」把字号
      fs-sm→fs-xs，实测令牌真值 --fs-xs=20rpx=10px（不是本文件里的 22rpx 兜底），
@@ -880,9 +886,9 @@ defineExpose({ toggleJoin });
 .circles-header__back {
   width: 64rpx;
   height: 64rpx;
-  border-radius: 50%;
-  background: var(--c-bg-container, #FFFFFF);
-  border: 1rpx solid var(--c-border-light, #EEF2F0);
+  /* 2026-10-26 对齐理想图（P7）：导航图标为无底纯黑线性（撤白圆底与描边，盒保留维持热区） */
+  background: transparent;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -921,8 +927,8 @@ defineExpose({ toggleJoin });
 .circles-header__search {
   width: 64rpx;
   height: 64rpx;
-  border-radius: 50%;
-  background: var(--c-bg-surface, #F3FAF6);
+  /* 2026-10-26 对齐理想图（P7）：撤浅绿圆底改裸图标（盒保留维持热区） */
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -945,6 +951,9 @@ defineExpose({ toggleJoin });
   width: 36rpx;
   height: 36rpx;
   color: var(--c-text-tertiary, #6B7571);
+  /* 2026-10-26 对齐理想图（P7）：搜索图标为纯黑线性（search.png 烘焙浅灰蓝，
+     filter 压成深黑档，与 ‹ 同重量） */
+  filter: saturate(0) brightness(0.34);
 }
 
 /* ===== 2026-08-25 P0：快捷分类 tab + 行尾筛选按钮 ===== */
@@ -972,7 +981,8 @@ defineExpose({ toggleJoin });
   position: relative;
   width: 64rpx;
   height: 64rpx;
-  border-radius: 50%;
+  /* 2026-10-26 对齐理想图（P7）：正圆容器改圆角方形容器（12rpx 档） */
+  border-radius: 12rpx;
   background: var(--c-bg-container, #FFFFFF);
   border: 1rpx solid var(--c-border-light, #EEF2F0);
   display: flex;
@@ -981,9 +991,20 @@ defineExpose({ toggleJoin });
   flex-shrink: 0;
 }
 
-.circles-filter-btn__icon {
-  width: 34rpx;
-  height: 34rpx;
+/* 2026-10-26：黑色三横汉堡图标（CSS 三线，替代带圆点列表 SVG） */
+.circles-filter-btn__bars {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 30rpx;
+  height: 22rpx;
+}
+
+.circles-filter-btn__bar {
+  width: 100%;
+  height: 3rpx;
+  border-radius: 2rpx;
+  background: var(--c-text-primary, #1A1E1C);
 }
 
 .circles-filter-btn__dot {

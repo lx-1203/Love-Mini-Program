@@ -18,10 +18,13 @@ const emit = defineEmits<{ (e: "tap", key: string): void }>();
 const DEFAULT_ICONS: Record<string, { iconSrc: string; color: string }> = {
   // 2026-09-06 图标区分（用户反馈"全是爱心"）：喜欢我的人=实心心形 /
   // 我的匹配=双人(GROUP) / 我喜欢的人=星星(SPARKLES) / 最近访客=眼睛(EYE)
-  likedMe: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, color: "#FF6B81" },
+  // 2026-10-26 对齐理想图（P5#5）：「喜欢我的人」= 粉色双人剪影（原实心红心与第 3 行
+  // 「我喜欢的人」撞形丧失区分度），保留心形给「我喜欢的人」；「最近访客」= 橙色圆环准星
+  // （原橙色眼睛）。两枚新字形见 config/images.ts IN_PACKAGE_ASSETS 登记。
+  likedMe: { iconSrc: IMAGE_PATHS.ICONS_COMMON.USERS_FILL_PINK_SVG, color: "#FF6B81" },
   match: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.GROUP, color: "#FF9F43" },
   likes: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.SPARKLES, color: "#A29BFE" },
-  visitors: { iconSrc: IMAGE_PATHS.ICONS_EMOJI.EYE, color: "#4D8DFF" },
+  visitors: { iconSrc: IMAGE_PATHS.ICONS_COMMON.TARGET_FILL_ORANGE_SVG, color: "#4D8DFF" },
 };
 </script>
 
