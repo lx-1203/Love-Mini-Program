@@ -1,2 +1,0 @@
-﻿agent-shell session: 5
-explorer session: 5

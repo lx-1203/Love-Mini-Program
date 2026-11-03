@@ -1,7 +1,0 @@
-{
- "jsLen": 6068,
- "hasLikedBy": false,
- "likedByCount": 0,
- "hasFailToast": true,
- "hoverCount": 4
-}
