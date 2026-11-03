@@ -23,7 +23,15 @@ describe("ChatSession 页面 smoke", () => {
   });
 
   it("createSelectorQuery().in() 判空防 $scope 空指针", () => {
-    expect(chatSource).toContain("instance ? uni.createSelectorQuery().in(instance) : uni.createSelectorQuery()");
+    // N-5（2026-11-03）：滚动查询随滚动管理拆入 use-chat-scroll composable，
+    // 契约不变、断言对象跟随搬家（页面文件不再直接持有该实现）
+    const scrollSource = readFileSync(
+      resolve(__dirname, "../../subpackages/chat/chat-session/use-chat-scroll.ts"),
+      "utf-8"
+    );
+    expect(scrollSource).toContain(
+      "instance ? uni.createSelectorQuery().in(instance) : uni.createSelectorQuery()"
+    );
   });
 
   /**

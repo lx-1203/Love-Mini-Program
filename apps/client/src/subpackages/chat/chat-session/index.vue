@@ -10,7 +10,7 @@
  * - ./api              纯 API 调用（recallTempChatMessageApi）
  * - ./index.vue        本文件：页面转场 / 生命周期 / UI 事件 / 状态管理
  */
-import { computed, ref, nextTick, watch, getCurrentInstance } from "vue";
+import { computed, ref, watch } from "vue";
 import { onLoad, onShow, onHide, onUnload, onShareAppMessage } from "@dcloudio/uni-app";
 import { useI18n } from "vue-i18n";
 import ChatBubble from "../../../components/chat/ChatBubble.vue";
@@ -89,6 +89,13 @@ import { COUNTDOWN_TICK_MS } from "../../../constants/chat";
 // R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 const { styleVars: menuStyleVars } = useMenuButtonRect();
+// N-5 首期拆分（2026-11-03）：滚动管理与输入中指示器从本页抽为 composables
+//（巨型页面渐进减负第一刀，逻辑与拆分前逐行等价，见各自文件头注释）
+import { useChatScroll, BOTTOM_ANCHOR_ID } from "./use-chat-scroll";
+import { useTypingIndicator } from "./use-typing-indicator";
+
+/** 消息行滚动定位 ID 前缀（R4-00074：点击引用气泡滚动到被引用消息；模板行 id 与 handleTapQuote 共用） */
+const MESSAGE_ROW_ID_PREFIX = "msg-row-";
 
 
 const messagesStore = useMessagesStore();
@@ -352,9 +359,6 @@ function openActivityCard(targetUrl: string) {
 
 /* ========== 消息流时间分隔条 + 滚动（2026-08-08 微信化重构） ========== */
 
-/** 底部锚点 id（常量，模板与脚本共用） */
-const BOTTOM_ANCHOR_ID = "chat-bottom-anchor";
-
 /** 删除消息本地存储 key（2026-08-09 微信化重构：删除为本地持久隐藏，微信语义；2026-08-10 统一至 STORAGE_KEYS） */
 const DELETED_MESSAGES_STORAGE_KEY = STORAGE_KEYS.DELETED_MESSAGE_IDS;
 
@@ -374,153 +378,28 @@ const messageRows = computed(() =>
   )
 );
 
-/** scroll-view 纵向滚动位置（上拉加载旧消息时用于保持视口） */
-const scrollTop = ref(0);
-/** scroll-into-view 目标元素 id（进入/新消息滚底） */
-const scrollIntoViewId = ref("");
-/** 消息行滚动定位 ID 前缀（R4-00074：点击引用气泡滚动到被引用消息） */
-const MESSAGE_ROW_ID_PREFIX = "msg-row-";
-/** 当前 scrollTop（onScroll 持续记录） */
-let curScrollTop = 0;
-/** 是否正在加载更早消息（防重入） */
-const loadingOlder = ref(false);
-/** 是否已滚到底部附近（决定新消息是否自动滚底 / 提示条展示） */
-let nearBottom = true;
-/** 2026-08-09 微信化重构：浏览历史时收到新消息的「有新消息」提示条 */
-const unreadHintVisible = ref(false);
-/** 滚动区视口/内容高度缓存（onScroll 每帧查询会卡顿，仅在新消息到达时查询一次） */
-let scrollViewportHeight = 0;
-let scrollContentHeight = 0;
-
-/**
- * 记录滚动位置并维护 nearBottom（微信行为：贴底自动滚底，浏览历史亮提示条）。
- * 修复（2026-08-09）：原实现 onScroll 从不更新 nearBottom（恒为 onShow 的 true），
- * 导致「浏览历史时收到新消息强制滚底」，提示条机制无从生效。
- */
-function onScroll(e: { detail?: { scrollTop?: number } }) {
-  curScrollTop = e?.detail?.scrollTop ?? 0;
-  const bottom = scrollContentHeight - scrollViewportHeight;
-  if (bottom > 0) {
-    // 距底 < 120px 视为贴底（阈值固定字面量，无对应 token 档位）
-    nearBottom = bottom - curScrollTop < 120;
-    if (nearBottom && unreadHintVisible.value) unreadHintVisible.value = false;
-  }
-}
-
-/**
- * 上拉加载更早历史消息（微信行为：加载后视口不跳）。
- * 通过「加载前 scrollHeight - 当前 scrollTop」测量距底距离，
- * 加载后设置 scrollTop = 新scrollHeight - 原距底距离 保持视口。
- */
-function onScrollToUpper() {
-  // 2026-08-09 修复：临时匿名会话跳过上拉分页——fetchOlderMessages 走私信接口
-  // （会话 ID 为 Long 数字主键），temp 会话（"session-{a}-{b}-{hex}"）调用必然 500；
-  // 且 temp-chat 的 loadSession 一次性返回全部消息，无历史分页概念。
-  if (
-    loadingOlder.value ||
-    !sessionId.value ||
-    !messagesStore.messageHasMore ||
-    isTempSession.value
-  ) {
-    return;
-  }
-  void (async () => {
-    loadingOlder.value = true;
-    try {
-      const before = await queryScrollHeight();
-      await messagesStore.fetchOlderMessages(sessionId.value!, messagesStore.messagePage + 1);
-      await nextTick();
-      const after = await queryScrollHeight();
-      // 2026-08-09：同步更新滚动区高度缓存（nearBottom 计算依赖）
-      scrollContentHeight = after;
-      // scroll-top 与 scroll-into-view 互斥：先清 into-view 再设置 scroll-top
-      scrollIntoViewId.value = "";
-      scrollTop.value = after - (before - curScrollTop);
-      } catch (err) {
-      // MP-R2-CHAT-CHAT-SESSION-INDEX-006：分页失败轻提示（原 rejection 未处理进全局 onError）
-      uni.showToast({ title: err instanceof Error ? err.message : t("chat.loadFailed"), icon: "none" });
-    } finally {
-      loadingOlder.value = false;
-    }
-  })();
-}
-
-/** 查询消息滚动区内容高度（Promise 包装 createSelectorQuery） */
-function queryScrollHeight(): Promise<number> {
-  return new Promise((resolve) => {
-    const instance = getCurrentInstance();
-    const query = instance ? uni.createSelectorQuery().in(instance) : uni.createSelectorQuery();
-    query
-      .select(".chat-scroll")
-      // MP-R1-SUBPACKAGES-CHAT-CHAT-SESSION-INDEX-003：必须 scrollOffset——
-      // fields({size:true}) 只返回 width/height，scrollHeight 恒 undefined → resolve(0)；
-      // 连锁失效：scrollContentHeight 恒 0 → nearBottom 永不更新（上翻浏览历史仍被强滚底、
-      // 「有新消息」提示条永不出现）、上拉加载视口补偿失效。scroll-view 用 scrollOffset
-      // 才携带 scrollHeight/scrollTop。
-      .fields({ scrollOffset: true }, (res) => {
-        const info = Array.isArray(res) ? res[0] : res;
-        resolve(info?.scrollHeight ?? 0);
-      })
-      .exec();
-  });
-}
-
-/** 查询消息滚动区视口高度（与 queryScrollHeight 同款，2026-08-09 新增：nearBottom 计算用） */
-function queryScrollViewportHeight(): Promise<number> {
-  return new Promise((resolve) => {
-    const instance = getCurrentInstance();
-    const query = instance ? uni.createSelectorQuery().in(instance) : uni.createSelectorQuery();
-    query
-      .select(".chat-scroll")
-      .fields({ size: true }, (res) => {
-        const info = Array.isArray(res) ? res[0] : res;
-        resolve(info?.height ?? 0);
-      })
-      .exec();
-  });
-}
-
-/** 滚动到底部（进入页面 / 新消息到达） */
-function scrollToBottom() {
-  scrollTop.value = 0;
-  scrollIntoViewId.value = "";
-  void nextTick(() => {
-    scrollIntoViewId.value = BOTTOM_ANCHOR_ID;
-  });
-}
-
-/**
- * 新消息到达时的滚动策略（2026-08-09 微信化重构）：
- * - 贴底（nearBottom）：自动滚底，最新消息始终可见；
- * - 浏览历史（未贴底）：不打断阅读，亮「有新消息」提示条，点击后跳转最新。
- * 上拉加载旧消息（loadingOlder）时长度也变化，但由 onScrollToUpper 保持视口，此处跳过。
- */
-watch(
-  () => messagesStore.currentMessages.length,
-  () => {
-    if (loadingOlder.value) return;
-    if (nearBottom) {
-      scrollToBottom();
-    } else {
-      // 仅在「未贴底 + 有新消息」时查询一次滚动区高度，缓存供 onScroll 的 nearBottom 计算
-      // （避免 onScroll 每帧查询导致滚动卡顿）
-      void Promise.all([queryScrollHeight(), queryScrollViewportHeight()]).then(
-        ([contentH, viewportH]) => {
-          scrollContentHeight = contentH;
-          scrollViewportHeight = viewportH;
-          unreadHintVisible.value = true;
-        }
-      );
-    }
-  }
-);
-
-/** 点击「有新消息」提示条：跳转最新并隐藏（微信行为：提示条在底部，点击跳底） */
-function jumpToLatest() {
-  unreadHintVisible.value = false;
-  nearBottom = true;
-  scrollToBottom();
-}
+// N-5（2026-11-03）：滚动管理接线——状态与回调来自 use-chat-scroll（含贴底判定、
+// 上拉加载视口保持、新消息滚动策略与「有新消息」提示条；逻辑见该 composable 注释）
+const {
+  scrollTop,
+  scrollIntoViewId,
+  unreadHintVisible,
+  onScroll,
+  onScrollToUpper,
+  jumpToLatest,
+  enterSession,
+  markAway,
+} = useChatScroll({
+  sessionId: () => sessionId.value,
+  isTempSession: () => isTempSession.value,
+  hasMore: () => messagesStore.messageHasMore,
+  loadOlder: () =>
+    sessionId.value
+      ? messagesStore.fetchOlderMessages(sessionId.value, messagesStore.messagePage + 1)
+      : Promise.resolve(),
+  messageCount: () => messagesStore.currentMessages.length,
+  loadFailedText: () => t("chat.loadFailed"),
+});
 
 /** R11-L11-D17：错误态的第二个出口——消息列表 tab。
  *  复用 openAppPath（内部识别 tab 页走 switchTab），不再是「整页只有一个返回」。 */
@@ -848,18 +727,8 @@ onShow(() => {
   messagesStore.setActiveSession(sessionId.value);
   // 2026-08-10 功能补齐：进入会话时拉取对方真实在线状态
   void loadPeerOnlineStatus();
-  nearBottom = true;
-  void nextTick(() => {
-    // 2026-08-09 微信化重构：初始化滚动区高度缓存
-    // （onScroll 的 nearBottom 计算依赖该缓存，不初始化则浏览历史时 nearBottom 恒为 true）
-    void Promise.all([queryScrollHeight(), queryScrollViewportHeight()]).then(
-      ([contentH, viewportH]) => {
-        scrollContentHeight = contentH;
-        scrollViewportHeight = viewportH;
-      }
-    );
-    scrollToBottom();
-  });
+  // N-5：进入会话滚动初始化（置贴底 + 高度缓存 + 滚底）收口进 composable.enterSession
+  enterSession();
 
   // Task 1.1.6：等待消息加载完成后再启动倒计时与破冰话题加载，
   // 避免页面渲染空消息列表导致破冰话题过早出现。
@@ -874,10 +743,10 @@ onShow(() => {
 onHide(() => {
   // 红点修复：退出会话页（压栈/切后台）后恢复未读累加
   messagesStore.setActiveSession(null);
-  nearBottom = false;
+  markAway();
   // 2026-08-09：切后台时复位「正在输入」态与计时器；2026-08-10 B1④：通知对方停止输入
   clearTypingTimer();
-  peerTypingLocal.value = false;
+  resetLocalTyping();
   clearTypingStopTimer();
 });
 
@@ -1492,94 +1361,23 @@ async function handleGreetingSend(text: string) {
 
 /* ========== 正在输入提示（2026-08-09 微信化重构，2026-08-10 B1④ 接通 WS） ========== */
 
-/** mock 模式演示输入态（仅 mock 使用；real 由 messagesStore.typingMap 驱动） */
-const peerTypingLocal = ref(false);
-/** typing 演示计时器 ID */
-let typingTimer: ReturnType<typeof setTimeout> | null = null;
-
-/**
- * 对方是否正在输入：
- * - real 模式：由 WS /user/queue/typing 事件 → messagesStore.typingMap[sessionId] 驱动
- *   （后端 MessageWebSocketHandler.handleTyping 推送，3s 自动复位兜底）；
- * - mock 模式：发送成功后随机 1.5~3s 模拟对方开始输入，2~4s 后停止（增强实时感）。
- */
-const peerTyping = computed(() => {
-  if (useMock()) return peerTypingLocal.value;
-  return !!messagesStore.typingMap[sessionId.value ?? ""];
+// N-5（2026-11-03）：双向 typing（对方输入态 + 我方输入推送）接线——
+// 状态与回调来自 use-typing-indicator（mock 本地模拟 / real WS 推送 + 停顿 2.5s 补 false）
+const {
+  peerTyping,
+  scheduleTypingSimulation,
+  notifyTyping,
+  clearTypingTimer,
+  resetLocalTyping,
+  clearTypingStopTimer,
+} = useTypingIndicator({
+  sessionId: () => sessionId.value,
+  isTempSession: () => isTempSession.value,
+  isMock: () => useMock(),
+  peerTypingFromStore: (sid) => !!messagesStore.typingMap[sid],
+  resolvePeerUserId: () => resolvePeerUserId(),
+  send: (destination, body) => wsClient.send(destination, body),
 });
-
-/**
- * mock 模式演示：发送成功后随机 1.5~3s 模拟对方开始输入，2~4s 后停止（增强实时感）。
- * 仅私信会话演示（临时会话不模拟，避免误导）。
- */
-function scheduleTypingSimulation() {
-  if (!useMock() || isTempSession.value) return;
-  clearTypingTimer();
-  typingTimer = setTimeout(() => {
-    peerTypingLocal.value = true;
-    typingTimer = setTimeout(() => {
-      peerTypingLocal.value = false;
-      typingTimer = null;
-    }, 2000 + Math.floor(Math.random() * 2000));
-  }, 1500 + Math.floor(Math.random() * 1500));
-}
-
-/** 清理 typing 计时器（onHide/onUnload 调用，避免切后台后误触） */
-function clearTypingTimer() {
-  if (typingTimer) {
-    clearTimeout(typingTimer);
-    typingTimer = null;
-  }
-}
-
-/* ---- 2026-08-10 B1④：我方输入态推送（real 模式，STOMP /app/chat/typing） ---- */
-
-/** 输入停止通知定时器（输入停顿 2.5s 后发 typing=false） */
-let typingStopTimer: ReturnType<typeof setTimeout> | null = null;
-
-/**
- * 通知对方「我正在输入」（real 模式）。
- * 载荷与后端契约对齐：{conversationId, recipientId, typing}（会话页使用 sessionId 作为会话 ID）。
- * mock 模式不发（本地演示由 scheduleTypingSimulation 模拟）。
- */
-function notifyTyping() {
-  if (useMock() || !sessionId.value) return;
-  const peerId = resolvePeerUserId();
-  if (peerId === null) return;
-  wsClient.send("/app/chat/typing", {
-    conversationId: sessionId.value,
-    recipientId: String(peerId),
-    typing: true,
-  });
-  if (typingStopTimer) clearTimeout(typingStopTimer);
-  typingStopTimer = setTimeout(() => {
-    wsClient.send("/app/chat/typing", {
-      conversationId: sessionId.value!,
-      recipientId: String(peerId),
-      typing: false,
-    });
-    typingStopTimer = null;
-  }, 2500);
-}
-
-/** 离开页面时发送 typing=false 并清理定时器（onHide/onUnload 调用） */
-function clearTypingStopTimer() {
-  if (typingStopTimer) {
-    clearTimeout(typingStopTimer);
-    typingStopTimer = null;
-  }
-  if (!useMock() && sessionId.value) {
-    const peerId = resolvePeerUserId();
-    if (peerId !== null) {
-      wsClient.send("/app/chat/typing", {
-        conversationId: sessionId.value,
-        recipientId: String(peerId),
-        typing: false,
-      });
-    }
-  }
-}
-
 
 /** 对方头像（正在输入行展示）。
  * 优先使用会话下发的 partnerAvatar；缺失时按会话稳定 hash 从头像池推导，

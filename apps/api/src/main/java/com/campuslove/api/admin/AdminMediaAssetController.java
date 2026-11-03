@@ -71,6 +71,13 @@ public class AdminMediaAssetController {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.campuslove.api.media.MediaAccessService mediaAccessService;
 
+    /**
+     * 媒体孤儿文件治理（N-6，2026-11-03）：手动触发扫描/回收（默认 dry-run）。
+     * nullable 注入同上方口径：旧测试构造器不注入时端点 503。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.media.MediaGcService mediaGcService;
+
     public AdminMediaAssetController(
             MediaAssetRepository mediaAssetRepository,
             UserRepository userRepository,
@@ -169,6 +176,50 @@ public class AdminMediaAssetController {
      * @param req 审核请求体（decision: approved/rejected，拒绝时 remark 必填）
      * @return 操作结果；不存在返回 404；校区越权返回 403
      */
+    /**
+     * 手动触发媒体孤儿文件扫描/回收（N-6，2026-11-03；仅 SUPER_ADMIN）。
+     *
+     * <p>POST /api/v1/admin/media-assets/gc?dryRun=true</p>
+     *
+     * <p>与每日定时任务（默认总闸关）同一套判定：无 media_asset 登记且超过保留窗口
+     * （app.media.gc.retention-days，默认 90 天）的物理文件才属孤儿。
+     * dryRun=true（默认）只返回候选清单与读数、零删除——运维先看报告，
+     * 核对后 dryRun=false 才真实回收。temp/ 临时会话媒体子树永不触碰。</p>
+     *
+     * @param dryRun true=仅报告（默认）；false=执行删除
+     * @return 扫描读数与（dry-run 时的）候选清单（最多列 50 条防响应爆炸）
+     */
+    @PostMapping("/gc")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<java.util.Map<String, Object>> triggerGc(
+            @org.springframework.web.bind.annotation.RequestParam(name = "dryRun",
+                    required = false, defaultValue = "true") boolean dryRun) {
+        if (mediaGcService == null) {
+            return ResponseEntity.status(503).body(java.util.Map.of(
+                    "error", "媒体治理服务未启用（real profile 专用）"));
+        }
+        if (!dryRun) {
+            log.info("管理员手动触发媒体GC真实回收（非 dry-run）");
+            mediaGcService.sweepDaily();
+            return ResponseEntity.ok(java.util.Map.of("success", true, "dryRun", false,
+                    "message", "回收已按配置执行，详见服务端日志（含删除数与释放空间）"));
+        }
+        com.campuslove.api.media.MediaGcService.GcReport report = mediaGcService.scan();
+        java.util.List<String> candidates = report.orphans().stream()
+                .limit(50)
+                .map(orphan -> orphan.toString())
+                .toList();
+        return ResponseEntity.ok(java.util.Map.of(
+                "success", true,
+                "dryRun", true,
+                "scannedFiles", report.scannedFiles(),
+                "orphanCandidates", report.orphans().size(),
+                "keptInWindow", report.keptRecent().size(),
+                "referenced", report.referencedCount(),
+                "candidatesPreview", candidates,
+                "message", "dry-run 零删除；确认后 dryRun=false 执行（保留期 app.media.gc.retention-days）"));
+    }
+
     @PostMapping("/{id}/audit")
     @Transactional
     @Auditable(value = AuditOperation.AUDIT_MEDIA_ASSET, targetType = "MEDIA_ASSET",

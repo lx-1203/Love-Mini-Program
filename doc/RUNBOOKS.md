@@ -166,3 +166,26 @@ docker compose exec mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot c
 | — | 尚未做过恢复演练 | 待补 | — |
 | 2026-10-30 | 待做：全量 + PITR（加密开启）恢复演练——S4-3 上线备份脚本后首次真实演练，记录耗时/是否成功/发现的问题 | ⬜ 待执行 | （填写执行人） |
 | 2026-10-31 | 恢复代码补上（`scripts/restore-mysql.sh`，dry-run + `--apply`）。**仍未演练**：本机 Docker 引擎停机，脚本的 `--apply` 路径一次都没跑过，只验证过 dry-run、覆盖缺口判定、生产库名拒绝、口令缺失拒绝四条分支（本机 bash 实测）。下一次演练请用上面的「恢复演练（可执行版）」步骤，并把结果写在下面 | ⬜ 待执行 | （填写执行人） |
+
+
+## 媒体存储治理（N-6，2026-11-03）
+
+**问题**：`uploads/` 只增不减（10k DAU ≈ 1.8GB/日增量），无回收能力。
+
+**机制**（`MediaGcService`，三层闸）：
+1. 总闸 `MEDIA_GC_ENABLED`（默认 **false**）：关着也每日 04:10 出读数（零删除）；
+2. 删除闸 `MEDIA_GC_DRY_RUN`（默认 **true**）：开着总闸也只打印候选清单；
+3. 范围闸：`temp/` 子树（临时会话媒体，TempChatCleanupService 管）永不触碰；
+   「孤儿」= 无 media_asset 登记 **且** 超过保留窗口 `MEDIA_GC_RETENTION_DAYS`（默认 90 天）——
+   帖子软删不删资产行，故**业务媒体永不误删**，只回收上传后登记失败的真孤儿。
+
+**运维流程**：
+```bash
+# ① 手动 dry-run 看报告（ SUPER_ADMIN ）：
+#    curl -X POST 'https://<api>/api/v1/admin/media-assets/gc?dryRun=true' -H "Authorization: Bearer <超管token>"
+# ② 开总闸跑一周（.env: MEDIA_GC_ENABLED=true，默认仍 dry-run），日志核对孤儿量级
+# ③ 确认无误后 .env: MEDIA_GC_DRY_RUN=false && docker compose up -d api（真实回收，日志含删除数/释放MB）
+```
+**保留期决策**：涉及合规留痕（举报取证引用图片），建议 ≥90 天；调整走 `.env` 即可无需改码。
+
+**相关环境变量**：`MEDIA_GC_ENABLED=false`｜`MEDIA_GC_DRY_RUN=true`｜`MEDIA_GC_RETENTION_DAYS=90`
