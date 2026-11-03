@@ -129,6 +129,13 @@ public class AdminSchoolController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Auditable(value = AuditOperation.CREATE_SCHOOL, targetType = "SCHOOL",
             description = "新增高校")
+    /**
+     * P1-8（2026-11-03）缓存键矩阵接线：学校表是客户端「校区列表」缓存
+     * （CLIENT_CONFIG 键 'campuses'，{@code RealConfigService#getCampuses}）的底层数据源，
+     * 后台增改删学校后精确清这一个键——另外 4 个 CLIENT_CONFIG 键与学校表无关，
+     * 不做 allEntries 全量清（口径见 {@code CacheNames#CLIENT_CONFIG} 的说明）。
+     */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = com.campuslove.api.config.CacheNames.CLIENT_CONFIG, key = "'campuses'")
     public ResponseEntity<AdminSchoolView> createSchool(@Valid @RequestBody AdminSchoolRequest req) {
         SecurityUtils.getCurrentUserId();
 
@@ -164,6 +171,13 @@ public class AdminSchoolController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Auditable(value = AuditOperation.UPDATE_SCHOOL, targetType = "SCHOOL",
             description = "编辑高校")
+    /**
+     * P1-8（2026-11-03）缓存键矩阵接线：学校表是客户端「校区列表」缓存
+     * （CLIENT_CONFIG 键 'campuses'，{@code RealConfigService#getCampuses}）的底层数据源，
+     * 后台增改删学校后精确清这一个键——另外 4 个 CLIENT_CONFIG 键与学校表无关，
+     * 不做 allEntries 全量清（口径见 {@code CacheNames#CLIENT_CONFIG} 的说明）。
+     */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = com.campuslove.api.config.CacheNames.CLIENT_CONFIG, key = "'campuses'")
     public ResponseEntity<AdminSchoolView> updateSchool(
             @PathVariable("id") @Min(1) Long id,
             @Valid @RequestBody AdminSchoolRequest req) {
@@ -211,6 +225,13 @@ public class AdminSchoolController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Auditable(value = AuditOperation.TOGGLE_SCHOOL, targetType = "SCHOOL",
             description = "启用/停用高校")
+    /**
+     * P1-8（2026-11-03）缓存键矩阵接线：学校表是客户端「校区列表」缓存
+     * （CLIENT_CONFIG 键 'campuses'，{@code RealConfigService#getCampuses}）的底层数据源，
+     * 后台增改删学校后精确清这一个键——另外 4 个 CLIENT_CONFIG 键与学校表无关，
+     * 不做 allEntries 全量清（口径见 {@code CacheNames#CLIENT_CONFIG} 的说明）。
+     */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = com.campuslove.api.config.CacheNames.CLIENT_CONFIG, key = "'campuses'")
     public ResponseEntity<AdminSchoolView> toggleSchoolStatus(
             @PathVariable("id") @Min(1) Long id,
             @RequestParam(name = "status", defaultValue = "disabled") String status) {
@@ -240,6 +261,13 @@ public class AdminSchoolController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Auditable(value = AuditOperation.DELETE_SCHOOL, targetType = "SCHOOL",
             description = "删除高校")
+    /**
+     * P1-8（2026-11-03）缓存键矩阵接线：学校表是客户端「校区列表」缓存
+     * （CLIENT_CONFIG 键 'campuses'，{@code RealConfigService#getCampuses}）的底层数据源，
+     * 后台增改删学校后精确清这一个键——另外 4 个 CLIENT_CONFIG 键与学校表无关，
+     * 不做 allEntries 全量清（口径见 {@code CacheNames#CLIENT_CONFIG} 的说明）。
+     */
+    @org.springframework.cache.annotation.CacheEvict(cacheNames = com.campuslove.api.config.CacheNames.CLIENT_CONFIG, key = "'campuses'")
     public ResponseEntity<Void> deleteSchool(@PathVariable("id") @Min(1) Long id) {
         SecurityUtils.getCurrentUserId();
 

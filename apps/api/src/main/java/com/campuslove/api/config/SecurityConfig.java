@@ -132,7 +132,15 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 // 短信验证码（模拟短信：注册前获取验证码需未登录访问）
                 .requestMatchers("/api/v1/sms/**").permitAll()
-                // WebSocket 握手由单独机制处理
+                // WebSocket 握手由单独机制处理：
+                // P1-6（2026-11-03）说明为什么 /ws/** 必须 permitAll 且鉴权不在这一层——
+                // SockJS 的 /ws/info、xhr 发送/轮询等握手前探测路径都要匿名可达，
+                // HTTP 层无法按路径收窄；真正的认证闸有两道：
+                // ① WebSocketConfig.JwtHandshakeInterceptor（HTTP 升级握手，匿名/无效/媒体令牌
+                //    一律拒绝——单测见 JwtHandshakeInterceptorAuthTest 与
+                //    JwtWebSocketMediaScopeRejectionTest）；
+                // ② JwtChannelInterceptor（STOMP CONNECT/SEND 帧，Principal 校验 +
+                //    MessageWebSocketHandler 的 user == null 拒绝）。
                 .requestMatchers("/ws/**").permitAll()
                 // 公开端点：内容敏感词预检查（前端实时提示，不暴露敏感词字典）
                 .requestMatchers("/api/v1/content-filter/check").permitAll()
@@ -213,7 +221,42 @@ public class SecurityConfig {
                         .hasAnyRole("ADMIN", "SUPER_ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/admin/**")
                         .hasAnyRole("ADMIN", "SUPER_ADMIN")
-                .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "AUDITOR")
+                // P2-2（2026-11-03）AUDITOR 只读白名单——按域细化，替代原先的
+                // 「/api/v1/admin/** 全量读放行」。AUDITOR 是内容审核员，读面收敛为：
+                //   ① 内容审核域：forum 帖子/圈子/校园话题、posts、comments、举报、
+                //      媒体资产、敏感词、悄悄话、咨询课程、举报证据、工单、
+                //      校园认证、会话（聊天举报核查）、官方号公告
+                //   ② 审计与统计：audit-logs、stats
+                //   ③ 审核页支撑字典：circle-layers、dicts、schools、menus（动态菜单渲染，
+                //      不放行则 AUDITOR 登录后菜单接口 403，页面直接不可用）
+                // 刻意排除（敏感/运营域，ADMIN+ 才可读）：
+                //   users（PII）、account/roles/admin-layers（权限体系）、
+                //   business/**（钱包/VIP/商城/充值码/金币）、real-name-certifications（证件 PII）、
+                //   online-users/maintenance（运维）、notify-config/profile-config/legal-documents、
+                //   search/hot、activities（运营域，与内容审核无关）
+                .requestMatchers(HttpMethod.GET,
+                        "/api/v1/admin/forum/**",
+                        "/api/v1/admin/posts/**",
+                        "/api/v1/admin/comments/**",
+                        "/api/v1/admin/reports/**",
+                        "/api/v1/admin/media-assets/**",
+                        "/api/v1/admin/sensitive-words/**",
+                        "/api/v1/admin/whispers/**",
+                        "/api/v1/admin/consulting/**",
+                        "/api/v1/admin/evidence/**",
+                        "/api/v1/admin/feedback/**",
+                        "/api/v1/admin/certifications/**",
+                        "/api/v1/admin/conversations/**",
+                        "/api/v1/admin/official-accounts/**",
+                        "/api/v1/admin/audit-logs/**",
+                        "/api/v1/admin/stats/**",
+                        "/api/v1/admin/circle-layers/**",
+                        "/api/v1/admin/dicts/**",
+                        "/api/v1/admin/schools/**",
+                        "/api/v1/admin/menus/**")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN", "AUDITOR")
+                // 其余 admin 读路径（GET/HEAD 等）：仅 ADMIN/SUPER_ADMIN（P2-2 收紧）
+                .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                 // 公开端点：应用资产（/api/v1/media/app-assets/**）——小程序主包瘦身后
                 // 后端托管的装饰性图片（campus 场景/活动海报/插画等），免登录可看图。
                 // 注意：必须声明在 /api/v1/media/** 鉴权规则之前（Spring 按声明顺序取首个匹配）。

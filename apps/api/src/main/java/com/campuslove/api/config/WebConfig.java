@@ -199,6 +199,26 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     /**
+     * P2-6（2026-11-03）：统一分页上限过滤器——GET /api/** 的
+     * pageSize/size/limit 超过 {@link PaginationLimitFilter#MAX_PAGE_SIZE}
+     * 一律按 100 钳制，不再依赖每个 Controller 手工 {@code @Max} 标注
+     * （漏标端点即慢查询面）。端点自身更严的 {@code @Max} 校验不受影响。
+     *
+     * <p>注册顺序在幂等拦截器之前（过滤器先于 HandlerInterceptor 执行），
+     * 只拦 GET：分页语义不存在于写请求。</p>
+     */
+    @org.springframework.context.annotation.Bean
+    public org.springframework.boot.web.servlet.FilterRegistrationBean<PaginationLimitFilter> paginationLimitFilter() {
+        org.springframework.boot.web.servlet.FilterRegistrationBean<PaginationLimitFilter> registration =
+                new org.springframework.boot.web.servlet.FilterRegistrationBean<>();
+        registration.setFilter(new PaginationLimitFilter());
+        registration.addUrlPatterns("/api/*");
+        registration.setOrder(org.springframework.core.Ordered.HIGHEST_PRECEDENCE + 20);
+        registration.setName("paginationLimitFilter");
+        return registration;
+    }
+
+    /**
      * 工具方法：将逗号分隔的源字符串解析为列表（去空白、去空项）。
      *
      * <p>暴露为静态工具方法，便于 {@link SecurityConfig} 与单元测试复用解析逻辑。</p>

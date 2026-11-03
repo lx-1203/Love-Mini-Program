@@ -8,6 +8,26 @@ package com.campuslove.api.config;
  *
  * <p>每个常量对应 {@link RedisConfig#cacheManager} 中配置的独立 TTL，
  * 具体失效时间参见 RedisConfig 中 {@code cacheNameTtl} 映射表。</p>
+ *
+ * <p><b>缓存键矩阵（P1-8，2026-11-03 梳理）</b>——读侧 / 清侧 / 兜底三列对齐，
+ * 新增写路径时对号入座补清侧，防止「新键必漏清」：</p>
+ * <table border="1">
+ *   <tr><th>缓存</th><th>读侧（@Cacheable）</th><th>清侧（@CacheEvict / 写路径）</th><th>兜底</th></tr>
+ *   <tr><td>village_hot_posts</td><td>VillageQueryService 热榜（key='hot'）</td>
+ *       <td>VillagePostService 建帖/编辑/删帖（allEntries）；VillageInteractionService 点赞/评论/收藏（'hot' 单键）</td><td>TTL</td></tr>
+ *   <tr><td>client_config</td><td>RealConfigService 5 键（campuses/match_preferences/filter_options/hero_banners/unlock_guide_steps）</td>
+ *       <td>AdminSchoolController 4 个写方法清 'campuses' 精确键（P1-8 接线）；其余 4 键只读</td><td>TTL 5min</td></tr>
+ *   <tr><td>match_recommend / guest_recommend</td><td>RecommendationCacheManager</td>
+ *       <td>偏好更新/互动后清（UserPreferenceCalculator 等）</td><td>TTL</td></tr>
+ *   <tr><td>sensitive_words</td><td>SensitiveWordRepository</td>
+ *       <td>AdminSensitiveWordController 增删改（allEntries）</td><td>TTL</td></tr>
+ *   <tr><td>system_config</td><td>RealAdminConfigService（all/rules/switches）</td>
+ *       <td>同服务写方法逐键清</td><td>TTL</td></tr>
+ *   <tr><td>campus_schools / daily_question / user_tags</td><td>对应 real 服务</td>
+ *       <td>daily_question 有清；campus_schools/user_tags 低频变，靠 TTL</td><td>TTL</td></tr>
+ *   <tr><td>user_profile / admin_stats</td><td>（已无 @Cacheable 消费方）</td>
+ *       <td>—（RealAdminStatsService.invalidateStatsCache 走自身内存缓存）</td><td>TTL（空转）</td></tr>
+ * </table>
  */
 public final class CacheNames {
 
