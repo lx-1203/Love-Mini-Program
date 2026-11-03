@@ -403,6 +403,7 @@ BACKUP_ENCRYPT=true BACKUP_ENCRYPTION_KEY='<从密钥管理注入>' \
 | `mysql` | `mysql:8.0.39` | `${MYSQL_PORT:-3306}` | 3306 | 默认 | `mysqladmin ping` (10s/5s/10次/start 30s) | json-file (10m×5) |
 | `redis` | `redis:7.2.5-alpine` | `${REDIS_PORT:-6379}` | 6379 | 默认 | `redis-cli ping` (10s/5s/5次/start 10s) | json-file (10m×5) |
 | `migrate` | `flyway/flyway:10.10.0-alpine` | - | - | 默认（一次性，`restart: "no"`） | 无（跑完即退出，供 api 依赖其成功完成） | json-file (10m×3) |
+| `rabbitmq` | `rabbitmq:3.13.7-management-alpine` | `${RABBITMQ_PORT:-5672}`/15672 | 5672/15672 | **`mq`**（P2-12：`--profile mq` 才启动，默认不参与） | `rabbitmq-diagnostics ping` (10s/8s/6次/start 25s) | json-file (10m×5) |
 | `api` | `${IMAGE_PREFIX:-campus-love}/api:${TAG:-dev}` | `${API_PORT:-8080}` | 8080 | 默认 | `curl /actuator/health` (30s/5s/5次/start 90s) | json-file (10m×5) |
 | `admin` | `${IMAGE_PREFIX:-campus-love}/admin:${TAG:-dev}` | `${ADMIN_PORT:-5177}` | 8080 | 默认 | `curl /healthz` (30s/5s/3次/start 10s) | json-file (10m×5) |
 | `client` | `nginx:1.27.3-alpine` | `${CLIENT_PORT:-5173}` | 80 | `client-h5` | `wget /` (30s/5s/3次/start 10s) | json-file (10m×5) |
@@ -1455,3 +1456,35 @@ curl -sH "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/profile/me 
 - CI/CD 流程：`.github/workflows/ci.yml`
 - 发布检查清单：`README.md#发布窗口`（现行判定：CI Release Gate + `npm run test:release-gate`；
   历史模板见 `git show aefd8a72^:docs/release-checklist-template.md`，该目录已在瘦身时下线）
+
+## 告警可达性验收清单（P2-10，2026-11-03）
+
+背景：Alertmanager 的所有通知渠道默认是 localhost 占位（配置文件内的
+`NO-ALERT-CHANNEL-CONFIGURED` 哨兵标明了这一点，`tests/monitoring-wiring.spec.mjs`
+双向校验「哨兵在 ⇔ 渠道仍是占位」）。**监控"配了"不等于"会响"**——上线前必须完成
+以下验收，任何一条不通过都视为发布阻断：
+
+1. **配置真实渠道**：在 `docker/alertmanager/alertmanager.yml` 中替换
+   `DINGTALK_CRITICAL_WEBHOOK`（钉钉）与 `FEISHU_WARNING_WEBHOOK`（飞书）为真实
+   webhook；邮件通道按文件头注释启用 SMTP（`SMTP_*` / `CRITICAL_EMAIL`）。
+2. **删除哨兵**：渠道接通后删除 `# NO-ALERT-CHANNEL-CONFIGURED` 哨兵行
+   （monitoring-wiring 门禁会强制哨兵与占位状态一致，占位删除而渠道仍是
+   localhost 会被判红——这正是在防「以为配好了」）。
+3. **触发测试告警**：在 Prometheus 手动触发（或临时调低某条规则阈值）一条
+   critical 告警，确认钉钉/邮件**真实送达**且 Alertmanager UI（127.0.0.1:9093）
+   中该告警状态为 firing 并路由到预期 receiver。
+4. **恢复通知**：解除告警条件，确认 `send_resolved: true` 生效（收到恢复通知）。
+
+### MQ 事件链启用验收（P2-12，2026-11-03，可选）
+
+默认 `APP_EVENTS_ENABLED=false`（应用自动降级，不依赖 MQ）。需要启用
+CheckIn/Match/Notification 异步事件链时：
+
+```bash
+docker compose --profile mq up -d rabbitmq   # .env 先配 RABBITMQ_USERNAME/PASSWORD
+# .env: RABBITMQ_HOST=rabbitmq + APP_EVENTS_ENABLED=true，然后
+docker compose up -d api
+node tools/smoke-mq.mjs                       # 冒烟：管理 API 可达且应用队列已声明
+```
+
+冒烟不过不许上线：队列未声明说明 api 侧开关未生效或连不上 MQ，事件会静默丢失。

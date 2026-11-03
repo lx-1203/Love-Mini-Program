@@ -104,6 +104,8 @@ networks:
 volumes:
   mysql-data:
     name: campus-mysql-data
+  rabbitmq-data:
+    name: campus-rabbitmq-data
   redis-data:
     name: campus-redis-data
   prometheus-data:
@@ -226,6 +228,46 @@ services:
       - MKNOD
       - SYS_CHROOT
 
+  # ---------- RabbitMQ（P2-12，2026-11-03；opt-in：--profile mq） ----------
+  # 审查 P2-12：api 的 RabbitMQ 消费者默认关闭（APP_EVENTS_ENABLED=false，应用自动降级），
+  # 此前编排里也没有 MQ 服务——事件链（CheckIn/Match/Notification）一直空转。
+  # 现补上服务定义，但用 compose profile 隔离：不传 --profile mq 时不启动，
+  # 保持「不依赖 MQ 也能起全栈」的既有本地开发体验（与 .env.example 的可选字段口径一致）。
+  rabbitmq:
+    image: rabbitmq:3.13.7-management-alpine
+    container_name: campus-rabbitmq
+    restart: unless-stopped
+    profiles: ["mq"]
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:?RABBITMQ_USERNAME is required (profile mq)}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required (profile mq)}
+    ports:
+      # 仅绑定 127.0.0.1：AMQP 与管理台都不对外（口径同 mysql/redis，infra #3）
+      - "127.0.0.1:${RABBITMQ_PORT:-5672}:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 8s
+      retries: 6
+      start_period: 25s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    networks:
+      - data-net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512m
+    security_opt:
+      - no-new-privileges:true
+
   # ---------- Flyway 一次性迁移（S3-2：single writer）----------
   # 只跑一次、成功即退出；api 通过 depends_on.condition: service_completed_successfully
   # 等它跑完再启动，杜绝 N 个 api 副本并发抢跑同一批 DDL。
@@ -340,6 +382,10 @@ services:
       # 必须经 Compose 显式注入，不能只在宿主 .env 中存在。
       APP_AES_SECRET: ${APP_AES_SECRET:?APP_AES_SECRET is required (>=32 chars)}
       WEBSOCKET_ALLOWED_ORIGIN_PATTERNS: ${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:?WEBSOCKET_ALLOWED_ORIGIN_PATTERNS is required}
+      # P1-9（2026-11-03）mock profile 生产隔离：生产部署标记强制注入（缺参即 compose 报错）。
+      # api 进程启动时若发现 mock profile 与本标记同时生效（MockProfileProductionGuard）
+      # 会拒绝启动——杜绝「compose 里 profile 被误改成 mock、鉴权整体旁路」的静默事故。
+      APP_PRODUCTION: ${APP_PRODUCTION:?APP_PRODUCTION is required (true for production deployments)}
       # ---------- 微信小程序 ----------
       WECHAT_APPID: ${WECHAT_APPID:-}
       WECHAT_SECRET: ${WECHAT_SECRET:-}
@@ -391,6 +437,13 @@ services:
       RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-}
+      # P2-12（2026-11-03）MQ 事件链开关：默认 false（应用自动降级，不依赖 MQ 即可启动）。
+      # 启用步骤（启用后 CheckIn/Match/Notification 异步事件链生效）：
+      #   1) docker compose --profile mq up -d rabbitmq
+      #   2) .env 设 RABBITMQ_HOST=rabbitmq、RABBITMQ_USERNAME/RABBITMQ_PASSWORD
+      #   3) .env 设 APP_EVENTS_ENABLED=true 后重启 api
+      #   4) 验收：node tools/smoke-mq.mjs（冒烟：管理 API 可达且应用队列已声明）
+      APP_EVENTS_ENABLED: ${APP_EVENTS_ENABLED:-false}
       # ---------- Swagger UI ----------
       # infra #11：生产默认关闭 Swagger UI / /v3/api-docs，可通过 .env 覆盖
       SWAGGER_UI_ENABLED: ${SWAGGER_UI_ENABLED:-false}

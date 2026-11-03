@@ -274,3 +274,7 @@ appendonly.aof
 /assign_dump.txt
 # 数据库备份含手机号/openid/BCrypt，禁止再入库（现有 105 个待清理）
 /database/backup/
+
+# P3-3（2026-11-03）根目录残留工作文件归置区（dump.rdb/appendonly.aof/历史 dump 等），
+# 不入库、不随仓库分发；.env 按compose约定保留在根目录
+_local-artifacts/
