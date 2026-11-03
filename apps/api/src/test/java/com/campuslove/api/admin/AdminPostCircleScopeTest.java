@@ -138,13 +138,13 @@ class AdminPostCircleScopeTest extends ControllerTestBase {
 
         withUserId(ADMIN_ID, () -> {
             AdminPageView<AdminPostSummaryView> body =
-                    controller.listPosts(null, null, null, null, null, 1, 20);
+                    controller.listPosts(null, null, null, null, null, false, 1, 20);
             assertEquals(List.of(1L, 2L),
                     body.items().stream().map(AdminPostSummaryView::id).toList(),
                     "列表必须恰好是当前管理员绑定节点的子树");
         });
         // 旧校区轴查询不得再被使用（否则绑了大区也只看到本校，正交模型形同虚设）
-        verify(postRepository, never()).searchForAdmin(any(), any(), any(), any(), any(), any(), any());
+        verify(postRepository, never()).searchForAdmin(any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -157,7 +157,7 @@ class AdminPostCircleScopeTest extends ControllerTestBase {
                 isNull(), isNull(), eq("南开大学"), eq(ADMIN_ID), any(Pageable.class)))
                 .thenReturn(pageOf(List.of()));
 
-        withUserId(ADMIN_ID, () -> controller.listPosts(null, null, null, null, "南开大学", 1, 20));
+        withUserId(ADMIN_ID, () -> controller.listPosts(null, null, null, null, "南开大学", false, 1, 20));
 
         verify(postRepository).searchForAdminScoped(isNull(), isNull(), eq(PostStatus.deleted),
                 isNull(), isNull(), eq("南开大学"), eq(ADMIN_ID), any(Pageable.class));
@@ -170,12 +170,12 @@ class AdminPostCircleScopeTest extends ControllerTestBase {
         when(adminScopeService.currentPrefixes()).thenReturn(List.of());
         when(adminDataScope.getCurrentAdminCampusName()).thenReturn(CAMPUS_A);
         when(postRepository.searchForAdmin(isNull(), isNull(), eq(PostStatus.deleted),
-                isNull(), isNull(), eq(CAMPUS_A), any(Pageable.class)))
+                isNull(), isNull(), eq(CAMPUS_A), eq(false), any(Pageable.class)))
                 .thenReturn(pageOf(List.of(postInCircle(1L, 11L, CAMPUS_NODE))));
 
         withUserId(ADMIN_ID, () -> {
             AdminPageView<AdminPostSummaryView> body =
-                    controller.listPosts(null, null, null, null, null, 1, 20);
+                    controller.listPosts(null, null, null, null, null, false, 1, 20);
             assertEquals(1L, body.total());
         });
         verify(postRepository, never()).searchForAdminScoped(any(), any(), any(), any(), any(),
@@ -190,18 +190,18 @@ class AdminPostCircleScopeTest extends ControllerTestBase {
         when(adminDataScope.getCurrentAdminCampusName())
                 .thenReturn(AdminDataScope.NO_CAMPUS_SCOPE);
         when(postRepository.searchForAdmin(isNull(), isNull(), eq(PostStatus.deleted),
-                isNull(), isNull(), eq(AdminDataScope.NO_CAMPUS_SCOPE), any(Pageable.class)))
+                isNull(), isNull(), eq(AdminDataScope.NO_CAMPUS_SCOPE), eq(false), any(Pageable.class)))
                 .thenReturn(pageOf(List.of()));
 
         withUserId(ADMIN_ID, () -> {
             AdminPageView<AdminPostSummaryView> body =
-                    controller.listPosts(null, null, null, null, "任意校区", 1, 20);
+                    controller.listPosts(null, null, null, null, "任意校区", false, 1, 20);
             assertEquals(0L, body.total(), "哨兵账号不得被传入的 campusName 放开");
             assertTrue(body.items().isEmpty());
         });
         // 哨兵只做查询参数；校区账号忽略调用方 campusName（否则越权读别的校区）
         verify(postRepository).searchForAdmin(isNull(), isNull(), eq(PostStatus.deleted),
-                isNull(), isNull(), eq(AdminDataScope.NO_CAMPUS_SCOPE), any(Pageable.class));
+                isNull(), isNull(), eq(AdminDataScope.NO_CAMPUS_SCOPE), eq(false), any(Pageable.class));
         verify(postRepository, never()).searchForAdminScoped(any(), any(), any(), any(), any(),
                 any(), any(), any());
     }
@@ -212,12 +212,12 @@ class AdminPostCircleScopeTest extends ControllerTestBase {
         when(adminDataScope.isCurrentSuperAdmin()).thenReturn(true);
         when(adminScopeService.currentPrefixes()).thenReturn(List.of(AdminScopeService.GLOBAL_PREFIX));
         when(postRepository.searchForAdmin(isNull(), isNull(), eq(PostStatus.deleted),
-                isNull(), isNull(), eq("任意校区"), any(Pageable.class)))
+                isNull(), isNull(), eq("任意校区"), eq(false), any(Pageable.class)))
                 .thenReturn(pageOf(List.of(postInCircle(1L, 11L, OUTSIDE_NODE))));
 
         withUserId(ADMIN_ID, () -> {
             AdminPageView<AdminPostSummaryView> body =
-                    controller.listPosts(null, null, null, null, "任意校区", 1, 20);
+                    controller.listPosts(null, null, null, null, "任意校区", false, 1, 20);
             assertEquals(1L, body.total());
         });
         verify(postRepository, never()).searchForAdminScoped(any(), any(), any(), any(), any(),

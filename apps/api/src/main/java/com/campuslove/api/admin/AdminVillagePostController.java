@@ -101,6 +101,22 @@ public class AdminVillagePostController {
      */
     private final com.campuslove.api.village.HotScoreScheduler hotScoreScheduler;
 
+    /**
+     * P2-7（2026-11-03）首页实时化：影响他人可见性/排序的写操作（审核/删除/置顶）
+     * 成功后向 /topic/village/posts-changed 广播事件，客户端即时刷新首页流。
+     * nullable 注入口径同 VillagePostService.postMentionService：
+     * 旧测试构造器不注入，null 时跳过广播（事件是优化项，非事务一部分）。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.village.VillageFeedEventPublisher feedEventPublisher;
+
+    /** P2-7：null 安全广播（未注入=跳过）。 */
+    private void publishFeedEvent(String action, Long postId) {
+        if (feedEventPublisher != null) {
+            feedEventPublisher.publishPostsChanged(action, postId);
+        }
+    }
+
     public AdminVillagePostController(
             PostRepository postRepository,
             UserRepository userRepository,
@@ -139,6 +155,12 @@ public class AdminVillagePostController {
      *                    学校（C1/R1/Sx）命中，与 EvidenceController 的
      *                    viewer scope 前缀语义一致。仅为筛选条件，不改变
      *                    数据可见性规则（校区隔离照常生效）；空/缺省不过滤
+     * @param unassigned  「未归属」池筛选（P1-5，2026-11-03）：true 时仅列
+     *                    {@code owner_circle_path IS NULL} 的帖子（发帖人未挂圈层，
+     *                    圈层作用域子树查询永远查不到的运营盲区兜底出口）。
+     *                    <b>仅 SUPER_ADMIN 可用</b>，非平台管理员传 true 一律 403；
+     *                    与 circlePath 语义互斥（未归属行不可能命中任何圈层前缀），
+     *                    同时传时以 unassigned 为准并忽略 circlePath
      * @param page        页码，1-based，默认 1
      * @param pageSize    每页大小，默认 20，最大 100
      * @return 分页村落动态列表（置顶优先，按创建时间倒序）
@@ -150,9 +172,17 @@ public class AdminVillagePostController {
             @RequestParam(name = "keyword", required = false) String keyword,
             @RequestParam(name = "campusName", required = false) String campusName,
             @RequestParam(name = "circlePath", required = false) String circlePath,
+            @RequestParam(name = "unassigned", required = false, defaultValue = "false") boolean unassigned,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         SecurityUtils.getCurrentUserId();
+
+        // P1-5 未归属池守卫：与 AdminPostController#listPosts 同一口径——
+        // NULL 归属帖在圈层/校区两轴之外，仅平台管理员可见；局部作用域传 true 直接 403（可审计）
+        if (unassigned && !adminDataScope.isCurrentSuperAdmin()) {
+            throw new com.campuslove.api.common.OperationForbiddenException(
+                    "「未归属」帖子池仅平台管理员（SUPER_ADMIN）可见");
+        }
 
         AuditStatus auditStatusEnum = parseAuditStatus(auditStatus);
         PostStatus postStatusEnum = parsePostStatus(status);
@@ -175,6 +205,8 @@ public class AdminVillagePostController {
         // native 查询以字符串比对枚举列（列存储值即枚举 name，EnumType.STRING 口径）
         String auditStatusName = auditStatusEnum == null ? null : auditStatusEnum.name();
         String postStatusName = postStatusEnum == null ? null : postStatusEnum.name();
+        // P1-5：unassigned 与 circlePath 互斥（NULL 归属不可能命中任何前缀），选中未归属时忽略圈层筛选
+        String effectiveCirclePath = unassigned ? null : normalizedCirclePath;
 
         Page<Post> result;
         boolean superAdmin = adminDataScope.isCurrentSuperAdmin();
@@ -184,17 +216,19 @@ public class AdminVillagePostController {
             // 否则「绑华东大区」与「绑本校」结果完全相同，圈层×角色正交模型形同虚设。
             // 扩权是受控的：admin_layer 只有 SUPER_ADMIN 能写（见 AdminLayerController 类级鉴权）。
             // 调用方显式传入的 campusName 仍然生效，保留运营主动收窄的能力。
+            // P1-5：unassigned 已被上方守卫拦下（圈层绑定者不可能到这），原样传 0 保持语义
             Long adminId = SecurityUtils.getCurrentUserId();
             String scopedCampus = normalize(campusName);
             result = postRepository.searchForVillageAdminScoped(
                     auditStatusName, postStatusName,
-                    normalizedKeyword, scopedCampus, normalizedCirclePath, adminId, pageable);
+                    normalizedKeyword, scopedCampus, effectiveCirclePath, adminId, pageable);
         } else {
             // SUPER_ADMIN 或「无圈层绑定的账号」：逐字节沿用旧查询，行为不变（增量迁移：
             // 未绑定圈层的在用校区管理员仍按旧校区作用域可见，不会被误挡在门外）
             result = postRepository.searchForVillageAdmin(
                     auditStatusName, postStatusName,
-                    normalizedKeyword, effectiveCampus, normalizedCirclePath, pageable);
+                    normalizedKeyword, effectiveCampus, effectiveCirclePath,
+                    unassigned ? 1 : 0, pageable);
         }
 
         // 批量预加载作者信息（昵称/头像），避免 N+1 查询
@@ -295,6 +329,9 @@ public class AdminVillagePostController {
             postMentionService.notifyMentions(post.getId(), post.getAuthorId());
         }
 
+        // P2-7（2026-11-03）：审核结果改变他人可见性，广播事件驱动首页即时刷新
+        publishFeedEvent(newStatus == AuditStatus.approved ? "approved" : "rejected", post.getId());
+
         Map<String, Object> body = new HashMap<>();
         body.put("id", post.getId());
         body.put("auditStatus", post.getAuditStatus().name());
@@ -355,6 +392,8 @@ public class AdminVillagePostController {
         post.setIsPinned(pinned);
         post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         postRepository.save(post);
+        // P2-7（2026-11-03）：置顶改变列表排序，广播事件驱动首页即时刷新
+        publishFeedEvent(pinned ? "pinned" : "unpinned", post.getId());
         adminStatsService.invalidateStatsCache();
 
         Map<String, Object> body = new HashMap<>();
@@ -392,6 +431,8 @@ public class AdminVillagePostController {
         post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         postRepository.save(post);
         adminStatsService.invalidateStatsCache();
+        // P2-7（2026-11-03）：删除改变他人可见性，广播事件驱动首页即时刷新
+        publishFeedEvent("deleted", post.getId());
 
         Map<String, Object> body = new HashMap<>();
         body.put("id", post.getId());

@@ -195,6 +195,13 @@ export interface VillagePostListQuery {
   /** 圈层前缀筛选：按 posts.owner_circle_path 前缀匹配（LIKE '前缀%'），
    *  传大区路径（如 C1/R1）时其下全部学校命中；空/缺省不过滤 */
   circlePath?: string;
+  /**
+   * 仅看未归属池（2026-11-03 P1-5）：true 时后端只列 owner_circle_path IS NULL
+   * 的帖子（发帖人未挂圈层、圈层管理员不可见的池子）。
+   * 仅 SUPER_ADMIN 可用，非 SUPER_ADMIN 传 true 后端 403；
+   * 与 circlePath 互斥——选中未归属时后端忽略圈层筛选。
+   */
+  unassigned?: boolean;
   /** 页码，1-based */
   page?: number;
   /** 每页条数 */

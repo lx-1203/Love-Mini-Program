@@ -340,6 +340,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * @param category      帖子分类筛选，null 表示不筛选
      * @param authorId      作者用户 ID 筛选，null 表示不筛选
      * @param campusName    校区筛选（按作者所属校区过滤），null/空表示不筛选
+     * @param unassigned    「未归属」池筛选（P1-5，2026-11-03）：true 时仅返回
+     *                      {@code owner_circle_path IS NULL} 的帖子（发帖人未挂圈层、
+     *                      圈层作用域管理员看不到的运营盲区）。仅 SUPER_ADMIN 可用
+     *                      （控制器层守卫），与本查询其余筛选可自由组合
      * @param pageable      分页参数
      * @return 分页帖子列表
      */
@@ -353,6 +357,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
               AND (:campusName IS NULL OR :campusName = '' OR EXISTS (
                     SELECT 1 FROM UserCampusProfile ucp
                     WHERE ucp.userId = p.authorId AND ucp.campusName = :campusName))
+              AND (:unassigned = false OR p.ownerCirclePath IS NULL)
             ORDER BY p.createdAt DESC
             """)
     Page<Post> searchForAdmin(
@@ -362,6 +367,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("category") PostCategory category,
             @Param("authorId") Long authorId,
             @Param("campusName") String campusName,
+            @Param("unassigned") boolean unassigned,
             Pageable pageable);
 
     /**
@@ -481,6 +487,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                       AND (:circlePath IS NULL OR :circlePath = ''
                            OR p.owner_circle_path = :circlePath
                            OR p.owner_circle_path LIKE CONCAT(:circlePath, '/%'))
+                      AND (:unassigned = 0 OR p.owner_circle_path IS NULL)
                     ORDER BY p.is_pinned DESC, p.created_at DESC
                     """,
             countQuery = """
@@ -497,6 +504,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                       AND (:circlePath IS NULL OR :circlePath = ''
                            OR p.owner_circle_path = :circlePath
                            OR p.owner_circle_path LIKE CONCAT(:circlePath, '/%'))
+                      AND (:unassigned = 0 OR p.owner_circle_path IS NULL)
                     """,
             nativeQuery = true)
     Page<Post> searchForVillageAdmin(
@@ -505,6 +513,9 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("keyword") String keyword,
             @Param("campusName") String campusName,
             @Param("circlePath") String circlePath,
+            // P1-5 未归属池（2026-11-03）：1=仅未归属帖（owner_circle_path IS NULL）。
+            // native 查询用 Integer 0/1 绑定（Boolean 在原生 SQL 的绑定形态驱动间有差异）
+            @Param("unassigned") int unassigned,
             Pageable pageable);
 
     /**

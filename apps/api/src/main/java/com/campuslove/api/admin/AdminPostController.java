@@ -79,6 +79,22 @@ public class AdminPostController {
     private final AdminScopeService adminScopeService;
     private final RealAdminStatsService adminStatsService;
 
+    /**
+     * P2-7（2026-11-03）首页实时化：影响他人可见性的写操作（审核/删除/置顶）成功后
+     * 向 /topic/village/posts-changed 广播事件，客户端即时刷新首页流。
+     * nullable 注入口径同 VillagePostService.postMentionService：
+     * 旧测试构造器不注入，null 时跳过广播（事件是优化项，非事务一部分）。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.campuslove.api.village.VillageFeedEventPublisher feedEventPublisher;
+
+    /** P2-7：null 安全广播（未注入=跳过）。 */
+    private void publishFeedEvent(String action, Long postId) {
+        if (feedEventPublisher != null) {
+            feedEventPublisher.publishPostsChanged(action, postId);
+        }
+    }
+
     public AdminPostController(
             PostRepository postRepository,
             UserRepository userRepository,
@@ -106,6 +122,12 @@ public class AdminPostController {
      * @param campusName  校区筛选（按作者所属校区过滤），可选；
      *                    已绑圈层的账号：仅作<b>调用方主动收窄</b>用（圈层轴优先，不再叠加
      *                    管理员自身校区）；未绑圈层的校区管理员：强制按其管辖校区过滤，忽略本参数
+     * @param unassigned  「未归属」池筛选（P1-5，2026-11-03）：true 时仅列
+     *                    {@code owner_circle_path IS NULL} 的帖子——发帖事务虽已回填
+     *                    （VillagePostService#authorCirclePath），但历史数据/作者未挂圈层
+     *                    仍会落 NULL，圈层作用域管理员的子树查询永远查不到它们，
+     *                    形成「用户发了帖、后台看不见」的运营盲区。此池是兜底出口，
+     *                    <b>仅 SUPER_ADMIN 可用</b>（非平台管理员传 true 一律 403）
      * @param page        页码，1-based，默认 1
      * @param pageSize    每页大小，默认 20，最大 100
      * @return 分页帖子列表
@@ -117,9 +139,18 @@ public class AdminPostController {
             @RequestParam(name = "category", required = false) String category,
             @RequestParam(name = "authorId", required = false) @Positive Long authorId,
             @RequestParam(name = "campusName", required = false) String campusName,
+            @RequestParam(name = "unassigned", required = false, defaultValue = "false") boolean unassigned,
             @RequestParam(name = "page", defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "pageSize", defaultValue = "20") @Min(1) @Max(100) int pageSize) {
         Long adminId = SecurityUtils.getCurrentUserId();
+
+        // P1-5 未归属池守卫：NULL 归属帖在圈层/校区两轴之外，只有平台管理员看得到
+        // （assertInScope 对 NULL 一律 fail-closed 的同一逻辑延伸）——局部作用域管理员
+        // 传 unassigned=true 属越权尝试，直接 403 而不是静默忽略（可审计）。
+        if (unassigned && !adminDataScope.isCurrentSuperAdmin()) {
+            throw new com.campuslove.api.common.OperationForbiddenException(
+                    "「未归属」帖子池仅平台管理员（SUPER_ADMIN）可见");
+        }
 
         AuditStatus auditStatusEnum = parseAuditStatus(auditStatus);
         PostStatus postStatusEnum = parsePostStatus(status);
@@ -141,6 +172,7 @@ public class AdminPostController {
             // 与 auditPost/deletePost 的 assertPostAccess 同一口径（看得见才审得着）。
             // 只保留调用方显式传入的 campusName 作为主动收窄；不叠加管理员自身校区。
             // 扩权是受控的：admin_layer 只有 SUPER_ADMIN 能写（见 AdminLayerController 类级鉴权）。
+            // P1-5：unassigned 已被上方守卫拦下（SUPER_ADMIN 不走本分支），原样传 false 保持语义
             result = postRepository.searchForAdminScoped(
                     auditStatusEnum, postStatusEnum, excludeStatus,
                     categoryEnum, authorId, normalize(campusName), adminId, pageable);
@@ -156,7 +188,7 @@ public class AdminPostController {
                     : normalize(campusName);
             result = postRepository.searchForAdmin(
                     auditStatusEnum, postStatusEnum, excludeStatus,
-                    categoryEnum, authorId, effectiveCampus, pageable);
+                    categoryEnum, authorId, effectiveCampus, unassigned, pageable);
         }
 
         // 批量预加载作者昵称，避免 N+1 查询
@@ -221,6 +253,9 @@ public class AdminPostController {
         postRepository.save(post);
         adminStatsService.invalidateStatsCache();
 
+        // P2-7（2026-11-03）：审核结果改变他人可见性，广播事件驱动首页即时刷新
+        publishFeedEvent(newStatus == AuditStatus.approved ? "approved" : "rejected", post.getId());
+
         Map<String, Object> body = new HashMap<>();
         body.put("id", post.getId());
         body.put("auditStatus", post.getAuditStatus().name());
@@ -257,6 +292,9 @@ public class AdminPostController {
         post.setUpdatedAt(LocalDateTime.now(TimeZones.BUSINESS));
         postRepository.save(post);
         adminStatsService.invalidateStatsCache();
+
+        // P2-7（2026-11-03）：删除改变他人可见性，广播事件驱动首页即时刷新
+        publishFeedEvent("deleted", post.getId());
 
         Map<String, Object> body = new HashMap<>();
         body.put("id", post.getId());

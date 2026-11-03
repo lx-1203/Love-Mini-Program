@@ -73,6 +73,12 @@ const circlePathFilter = ref("");
 const circleNameFilter = ref("");
 /** 圈层树面板是否展开（折叠式，默认收起） */
 const circleTreeVisible = ref(false);
+/**
+ * 仅看未归属池（2026-11-03 P1-5）：owner_circle_path IS NULL 的帖子
+ * （发帖人未挂圈层、圈层管理员不可见的池子）。该池仅 SUPER_ADMIN 可查
+ * （后端对非 SUPER_ADMIN 传 true 返回 403），故开关只在超管工具栏渲染。
+ */
+const unassignedOnly = ref(false);
 
 // ===== 分页状态 =====
 const page = ref(1);
@@ -97,6 +103,9 @@ async function fetchPosts(): Promise<void> {
       keyword: keyword.value.trim() || undefined,
       campusName: campusFilter.value || undefined,
       circlePath: circlePathFilter.value || undefined,
+      // 未归属池（P1-5）：未勾选时传 undefined 省略参数，勾选时传 true；
+      // 后端在该模式下忽略 circlePath/campusName 维度，前端仅做视觉禁用
+      unassigned: unassignedOnly.value || undefined,
     });
     if (isStale(seq)) return;
     posts.value = result.items;
@@ -129,8 +138,20 @@ function handleResetFilters(): void {
   campusFilter.value = "";
   circlePathFilter.value = "";
   circleNameFilter.value = "";
+  unassignedOnly.value = false;
   jumpId.value = "";
   jumpError.value = "";
+  handleSearch();
+}
+
+/**
+ * 勾选/取消「仅看未归属」（2026-11-03 P1-5）：收起圈层面板再查询——
+ * 未归属模式下圈层维度被后端忽略，留着展开面板只会误导运营继续点选。
+ */
+function handleUnassignedChange(): void {
+  if (unassignedOnly.value) {
+    circleTreeVisible.value = false;
+  }
   handleSearch();
 }
 
@@ -527,6 +548,9 @@ onMounted(() => {
 
     <ScopeBanner />
 
+    <!-- 未归属池说明（2026-11-03 P1-5）：该池仅超管可查，顶部一行说明其语义 -->
+    <text v-if="isSuperAdmin" class="unassigned-hint">{{ t("villagePosts.unassignedHint") }}</text>
+
     <view class="toolbar">
       <select v-model="auditStatusFilter" class="filter-select" @change="handleSearch">
         <option value="">{{ t("villagePosts.filterAuditStatusAll") }}</option>
@@ -544,6 +568,7 @@ onMounted(() => {
         v-if="isSuperAdmin"
         v-model="campusFilter"
         class="filter-select"
+        :disabled="unassignedOnly"
         @change="handleSearch"
       >
         <option value="">{{ t("villagePosts.filterCampusAll") }}</option>
@@ -551,11 +576,17 @@ onMounted(() => {
           {{ school.name }}
         </option>
       </select>
+      <!-- 未归属池开关（2026-11-03 P1-5）：与圈层/校区互斥，勾选后两者视觉禁用（后端本就忽略） -->
+      <label v-if="isSuperAdmin" class="unassigned-toggle">
+        <input v-model="unassignedOnly" type="checkbox" @change="handleUnassignedChange" />
+        <span>{{ t("villagePosts.unassignedOnly") }}</span>
+      </label>
       <!-- 圈层筛选（折叠式三层树：公司 → 大区 → 学校；选中按 circlePath 前缀过滤） -->
       <view class="circle-filter">
         <button
           class="filter-select circle-toggle"
           type="button"
+          :disabled="unassignedOnly"
           @click="circleTreeVisible = !circleTreeVisible"
         >
           {{ t("villagePosts.circleFilterLabel") }}：{{ circleNameFilter || t("villagePosts.filterCircleAll") }} {{ circleTreeVisible ? "▴" : "▾" }}
@@ -1005,6 +1036,32 @@ onMounted(() => {
 
 .circle-toggle {
   cursor: pointer;
+}
+
+/* 未归属模式下圈层/校区维度被后端忽略（P1-5），视觉置灰提示不可用 */
+.filter-select:disabled,
+.circle-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* 「仅看未归属」开关（P1-5）：与筛选下拉同高对齐 */
+.unassigned-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--admin-font-md);
+  color: var(--admin-color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* 未归属池顶部说明（P1-5） */
+.unassigned-hint {
+  display: block;
+  margin-bottom: var(--admin-space-sm);
+  font-size: var(--admin-font-sm);
+  color: var(--admin-color-text-quaternary);
 }
 
 .circle-tree {
