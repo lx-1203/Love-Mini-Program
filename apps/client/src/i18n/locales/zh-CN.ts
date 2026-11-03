@@ -2791,6 +2791,30 @@ export default {
       "system": "系统"
     }
   },
+  "whisperInbox": {
+    "title": "悄悄话",
+    "tabReceived": "收到的",
+    "tabSent": "发出的",
+    "loadFailed": "加载失败，点击重试",
+    "loadFailedSub": "网络开小差了，稍后再试试",
+    "readFailed": "标记已读失败，请稍后重试",
+    "senderAria": "悄悄话发送者头像",
+    "unreadCount": "{n} 条未读",
+    "cardTitle": "悄悄话",
+    "cardDesc": "收到的付费留言都在这里",
+    "cardBtn": "去查看",
+    "emptyReceived": "还没有收到悄悄话",
+    "emptyReceivedSub": "有人喜欢你并留下悄悄话时，会出现在这里",
+    "emptySent": "还没有发出过悄悄话",
+    "emptySentSub": "在 TA 的主页可以送出一条悄悄话",
+    "status": {
+      "sent": "送达中",
+      "delivered": "已送达",
+      "read": "已读",
+      "pay_failed": "支付未成功",
+      "refunded": "已退款"
+    }
+  },
   "messages": {
     "title": "消息",
     "unreadSyncFailed": "标记未读失败，请重试",

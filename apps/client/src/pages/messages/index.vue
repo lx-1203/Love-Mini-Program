@@ -264,6 +264,11 @@ function openAssistant() {
   openAppPath(`${ROUTES.MESSAGES.OFFICIAL_CHAT}?accountId=official-assistant`);
 }
 
+// 2026-11-04 F-10：悄悄话收件箱入口（收件侧闭环的常驻出口，替代「仅通知可达」的脆弱入口）
+function goWhisperInbox() {
+  openAppPath(ROUTES.PROFILE.WHISPER_INBOX);
+}
+
 function goLikes() {
   void messagesStore.markTypeRead(["like", "visitor", "interaction_match"]);
   openAppPath(ROUTES.LIKES.VISITORS_LIKES);
@@ -479,6 +484,21 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
         <template #default>
           <!-- ========== Quick Action Cards ========== -->
           <view class="quick-cards">
+            <!-- 2026-11-04 F-10：悄悄话收件箱入口卡片（mail 图标注释即「私信/悄悄话」） -->
+            <view class="quick-card" hover-class="quick-card--hover" @tap="goWhisperInbox">
+              <view class="quick-card__head">
+                <view class="quick-card__icon-wrap quick-card__icon-wrap--pink">
+                  <image class="quick-card__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.MAIL)" mode="aspectFit" :aria-label="t('whisperInbox.cardTitle')" />
+                </view>
+                <view class="quick-card__body">
+                  <text class="quick-card__title">{{ t('whisperInbox.cardTitle') }}</text>
+                  <text class="quick-card__desc">{{ t('whisperInbox.cardDesc') }}</text>
+                </view>
+              </view>
+              <view class="quick-card__btn">
+                <text class="quick-card__btn-text">{{ t('whisperInbox.cardBtn') }}</text>
+              </view>
+            </view>
             <!-- R13-L02-D01（P2）：图标圆与标题/副标包进一行横向头部（图标左、文案右），
                  消除「64rpx 图标圆独占一行、标题压在图标下方」的单列堆叠，
                  整卡高度回落一档，与理想图横排头部同位；按钮保持右下角。 -->

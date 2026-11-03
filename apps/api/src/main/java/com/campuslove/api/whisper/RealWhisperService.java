@@ -63,6 +63,14 @@ public class RealWhisperService implements WhisperService {
     private final WhisperMessageRepository repository;
     private final WalletService walletService;
 
+    /**
+     * 通知服务（2026-11-04 第三辑 F-10：悄悄话到达通知）。
+     * required=false 兼容既有单测构造器（两参构造器不注入时跳过通知），
+     * 与 realNameCertificationRepository/sensitiveWordFilter 同款可空依赖模式。
+     */
+    @Autowired(required = false)
+    private com.campuslove.api.chat.NotificationService notificationService;
+
     /** 实名认证（v3 冻结：发送悄悄话需先完成实名认证；未注入时跳过校验） */
     @Autowired(required = false)
     private RealNameCertificationRepository realNameCertificationRepository;
@@ -177,8 +185,25 @@ public class RealWhisperService implements WhisperService {
                 );
             });
             persistStatusInNewTransaction(message, STATUS_REFUNDED, LocalDateTime.now(TimeZones.BUSINESS),
-                    "创建失败已退款，退款orderId=" + refundOrderId);
+                    "创建失败已退款，发送者钱包已回款");
             throw new IllegalArgumentException("悄悄话创建失败，已自动退款");
+        }
+
+        // 3) 到达通知（2026-11-04 第三辑 F-10：收件侧闭环的第一环）。
+        // 尽力而为：通知失败不回滚发送主流程——消息已 SENT，收件人可在收件箱看到；
+        // type=system + referenceType=whisper，客户端通知中心落点=悄悄话收件箱
+        // （utils/notification-target.ts）。sourceUserId=发送者：收件人看到发送者头像，
+        // 与私信消息语义一致。
+        if (notificationService != null) {
+            try {
+                notificationService.createSystemNotification(
+                        request.receiverId(), senderId,
+                        "你收到一条新的悄悄话，点击查看",
+                        message.getId(), "whisper");
+            } catch (RuntimeException ex) {
+                log.warn("悄悄话到达通知失败（不影响发送主流程）: whisperId={}, receiverId={}, cause={}",
+                        message.getId(), request.receiverId(), ex.getMessage());
+            }
         }
         return toView(message);
     }

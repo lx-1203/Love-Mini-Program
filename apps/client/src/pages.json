@@ -258,6 +258,13 @@
             }
           },
       {
+            "path": "whisper-inbox/index",
+            "style": {
+                "enablePullDownRefresh": true,
+                "navigationBarTitleText": "悄悄话"
+            }
+          },
+      {
             "path": "feedback/history"
           }
       ]

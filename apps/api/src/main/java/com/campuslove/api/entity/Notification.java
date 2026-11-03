@@ -63,7 +63,10 @@ public class Notification {
 
     /** 关联实体类型枚举 */
     public enum ReferenceType {
-        post, comment, user, topic
+        post, comment, user, topic,
+        /** 2026-11-04：悄悄话到达通知落点（客户端通知中心据此跳悄悄话收件箱；
+         *  DDL 见 V2026.11.04.0001——reference_type CHECK 同步拓宽） */
+        whisper
     }
 
     @Id

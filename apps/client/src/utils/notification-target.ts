@@ -27,6 +27,11 @@ export function resolveNotificationTarget(item: NotificationTargetInput): string
   if (referenceId && item.referenceType === "post") {
     return `${ROUTES.VILLAGE.DETAIL}?id=${encodeURIComponent(referenceId)}`;
   }
+  // 悄悄话到达通知（type=system + referenceType=whisper，2026-11-04 F-10）：
+  // 落悄悄话收件箱（不带 id——收件箱本身就是全量列表，避免单条深链 404）
+  if (item.type === "system" && item.referenceType === "whisper") {
+    return ROUTES.PROFILE.WHISPER_INBOX;
+  }
   if (item.type === "visitor" || item.type === "interaction_like" || item.type === "like") {
     return ROUTES.LIKES.VISITORS_LIKES;
   }

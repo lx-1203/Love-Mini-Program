@@ -38,6 +38,11 @@ scripts-start-backend.cmd
 *.bat.bak*
 *.ps1.bak*
 application*.yml.bak*
+# 设计回滚备份件（rerender-mascot.py 的「最早原图」备份；F-1 2026-11-04 停止跟踪：
+# 仅本地回滚有用，仓库分发无价值。reports/audit 证据件刻意保留跟踪——见上方收窄注释）
+apps/api/uploads/app-assets/assets/images/mascot/*.bak-*
+apps/client/src/static/assets/images/mascot/*.bak-*
+apps/client/static-local-backup/**/*.bak-*
 # Flyway 本机凭据（模板 flyway.user.toml.example 保留）
 database/flyway/flyway.user.toml
 # 数据库备份目录（宿主机备份产物）

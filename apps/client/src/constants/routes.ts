@@ -126,6 +126,8 @@ export const ROUTES = {
     SETUP_INTEREST: "/subpackages/setup/interest/index",
     /** 2026-10-28：通知中心页（点赞/提及/系统通知） */
     NOTIFICATIONS: "/subpackages/profile-extra/notifications/index",
+    /** 2026-11-04：悄悄话收件箱（F-10 收件侧闭环：收到的/发出的付费留言） */
+    WHISPER_INBOX: "/subpackages/profile-extra/whisper-inbox/index",
   },
 
   /** 圈子模块 */

@@ -208,13 +208,20 @@ public class AdminReportController {
 
         // 2026-11-03 举报闭环补齐：处理结果必须触达举报人——此前结案完全静默，
         // 用户提交举报后永远不知道结果，下次就不会再举报了（信任流失）。
-        // system 通知 + 处理管理员为来源；referenceType 缺省（客户端通知中心对
-        // system 类型已有渲染、未知落点只标记已读不强制跳转，见 notification-target）。
+        // 2026-11-04 第三辑 F-11 修正：改走 createSystemNotification 自定义文案通道。
+        // 原实现 type=system 落到 buildSummary default 分支，举报人实际收到
+        // 「{处理人昵称}与你互动」——语义完全不对且暴露处理人身份；现按处理结果
+        // 下发明确文案，sourceUserId=举报人本人（自来源系统通知，头像不暴露处理人）。
+        // referenceType 缺省（举报工单无用户侧详情页，未知落点只标已读不强制跳转）。
         // 尽力而为：通知失败不回滚处理主流程（与发帖@提及同一口径）。
         if (notificationService != null && report.getReporterId() != null) {
             try {
-                notificationService.createNotification(
-                        report.getReporterId(), "system", handlerId, report.getId(), null);
+                String outcome = RESULT_HANDLE.equals(req.result())
+                        ? "你的举报已处理完成，感谢你帮助社区变得更好"
+                        : "经核实，你反馈的内容未构成违规，感谢你的反馈";
+                notificationService.createSystemNotification(
+                        report.getReporterId(), report.getReporterId(), outcome,
+                        report.getId(), null);
             } catch (RuntimeException ex) {
                 log.warn("举报处理结果通知失败（不影响处理主流程）: reportId={}, reporterId={}, cause={}",
                         report.getId(), report.getReporterId(), ex.getMessage());

@@ -4,7 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.mock;
@@ -121,6 +124,38 @@ class WhisperServiceTest {
     void send_rejectsSelf() {
         assertThrows(IllegalArgumentException.class,
             () -> service.send(1L, new WhisperSendRequest(1L, "自己", "req-self")));
+    }
+
+    @Test
+    void send_notifiesReceiverOnSuccess() {
+        com.campuslove.api.chat.NotificationService notificationService =
+                mock(com.campuslove.api.chat.NotificationService.class);
+        ReflectionTestUtils.setField(service, "notificationService", notificationService);
+        when(repository.findByClientRequestId("req-notify")).thenReturn(Optional.empty());
+        when(repository.countActiveBetween(1L, 2L)).thenReturn(0L);
+        when(repository.countBySenderIdAndCreatedAtBetween(eq(1L), any(), any())).thenReturn(0L);
+
+        service.send(1L, new WhisperSendRequest(2L, "你好呀", "req-notify"));
+
+        verify(notificationService, times(1)).createSystemNotification(
+                eq(2L), eq(1L), contains("悄悄话"), isNull(), eq("whisper"));
+    }
+
+    @Test
+    void send_notificationFailureDoesNotBreakSend() {
+        com.campuslove.api.chat.NotificationService notificationService =
+                mock(com.campuslove.api.chat.NotificationService.class);
+        ReflectionTestUtils.setField(service, "notificationService", notificationService);
+        doThrow(new RuntimeException("ws down"))
+                .when(notificationService).createSystemNotification(any(), any(), any(), any(), any());
+        when(repository.findByClientRequestId("req-notify-fail")).thenReturn(Optional.empty());
+        when(repository.countActiveBetween(1L, 2L)).thenReturn(0L);
+        when(repository.countBySenderIdAndCreatedAtBetween(eq(1L), any(), any())).thenReturn(0L);
+
+        WhisperMessageView view = service.send(1L, new WhisperSendRequest(2L, "你好呀", "req-notify-fail"));
+
+        assertEquals("SENT", view.status());
+        verify(notificationService, times(1)).createSystemNotification(any(), any(), any(), any(), any());
     }
 
     @Test

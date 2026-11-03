@@ -278,16 +278,78 @@ public class RealNotificationService implements NotificationService {
         );
     }
 
+    /**
+     * 创建系统语义通知（自定义文案通道，F-11/F-10，2026-11-04）。
+     *
+     * <p>type 固定 system；summary 直接用调用方文案（不经 buildSummary——system
+     * 类型在模板里没有语义正确的分支，第二辑举报结果通知曾因此渲染成
+     * 「{处理人昵称}与你互动」）。sourceUser 由 userRepository.findById 实际加载，
+     * WS 推送视图与 REST 列表同源。落库+推送同 {@link #createNotification} 口径。</p>
+     */
+    @Override
+    @Transactional
+    public void createSystemNotification(Long userId, Long sourceUserId, String content, Long referenceId, String referenceType) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+        if (sourceUserId == null) {
+            throw new IllegalArgumentException("sourceUserId is required");
+        }
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("content is required");
+        }
+
+        Notification notification = new Notification();
+        notification.setUserId(userId);
+        notification.setType(NotificationType.system);
+        notification.setSourceUserId(sourceUserId);
+        notification.setReferenceId(referenceId);
+        if (referenceType != null) {
+            notification.setReferenceType(ReferenceType.valueOf(referenceType));
+        }
+        notification.setIsRead(false);
+        notification.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
+
+        notification = notificationRepository.save(notification);
+
+        User sourceUser = userRepository.findById(sourceUserId).orElse(null);
+        NotificationView view = new NotificationView(
+                notification.getId(),
+                notification.getType().name(),
+                sourceUser != null
+                        ? new NotificationSourceUserView(sourceUser.getNickname(), sourceUser.getAvatarUrl())
+                        : null,
+                notification.getReferenceId(),
+                notification.getReferenceType() != null ? notification.getReferenceType().name() : null,
+                notification.getIsRead(),
+                notification.getCreatedAt() != null ? notification.getCreatedAt().toString() : null,
+                content,
+                SIGNAL_TYPE_SOCIAL
+        );
+        messagingTemplate.convertAndSendToUser(
+                String.valueOf(userId),
+                "/queue/notifications",
+                view
+        );
+    }
+
     // ---- 私有辅助方法 ----
 
     /**
      * 将 Notification 实体转换为 NotificationView（兼容旧调用）。
-     * 单条通知场景（如 createNotification）调用，内部通过 userRepository.findById 加载源用户。
+     * 单条通知场景（如 createNotification 的 WS 实时推送）调用，内部通过
+     * userRepository.findById 加载源用户——2026-11-04 修复：原实现传 emptyMap，
+     * 实时推送的 summary 全部渲染成「未知用户赞了你的帖子」（F-15，与类注释
+     * 承诺的行为不符）；REST 列表侧本就正确，本修复对齐实时推送文案。
      * <p>注意：批量查询场景应使用 {@link #toNotificationView(Notification, Map)}，
      * 配合 {@link #batchLoadSourceUsers(List)} 预加载的 Map 复用，避免 N+1 查询。</p>
      */
     private NotificationView toNotificationView(Notification notification) {
-        return toNotificationView(notification, Collections.emptyMap());
+        User sourceUser = userRepository.findById(notification.getSourceUserId()).orElse(null);
+        Map<Long, User> map = sourceUser != null
+                ? Map.of(notification.getSourceUserId(), sourceUser)
+                : Collections.emptyMap();
+        return toNotificationView(notification, map);
     }
 
     /**
@@ -362,6 +424,8 @@ public class RealNotificationService implements NotificationService {
             case "topic_like" -> sourceUserName + "赞了你的话题";
             case "visitor" -> sourceUserName + "访问了你的主页";
             case "match" -> "你和" + sourceUserName + "配对成功";
+            case "system" -> "系统通知";
+            case "unmatch" -> sourceUserName + "取消了与你的匹配";
             default -> sourceUserName + "与你互动";
         };
     }

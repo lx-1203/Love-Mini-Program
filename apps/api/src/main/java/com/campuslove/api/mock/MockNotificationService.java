@@ -143,7 +143,11 @@ public class MockNotificationService implements NotificationService {
   }
 
   private NotificationView toNotificationView(NotificationState state) {
-    String summary = buildSummary(state.type(), state.sourceUserName());
+    // createSystemNotification 的自定义文案直通（不经 buildSummary，与 Real 同口径）
+    String customContent = systemContentByStateId.get(state.id());
+    String summary = customContent != null
+        ? customContent
+        : buildSummary(state.type(), state.sourceUserName());
     String signalType = RealNotificationService.determineSignalType(state.type());
     return new NotificationView(
         state.id(),
@@ -268,6 +272,30 @@ public class MockNotificationService implements NotificationService {
         notificationIdSeq.getAndIncrement(), String.valueOf(userId), type,
         "系统", null, referenceId, referenceType, false, Instant.now().toString());
     states.add(0, state);
+  }
+
+  /** createSystemNotification 的自定义文案按状态行 id 存放（mock 内存态，视图层直通） */
+  private final Map<Long, String> systemContentByStateId = new LinkedHashMap<>();
+
+  @Override
+  public void createSystemNotification(Long userId, Long sourceUserId, String content, Long referenceId, String referenceType) {
+    if (userId == null) {
+      throw new IllegalArgumentException("userId is required");
+    }
+    if (sourceUserId == null) {
+      throw new IllegalArgumentException("sourceUserId is required");
+    }
+    if (content == null || content.isBlank()) {
+      throw new IllegalArgumentException("content is required");
+    }
+    // Mock 实现：与 createNotification 同形（追加到当前用户通知列表头部，type 固定 system），
+    // 但 summary 直通自定义文案——不经 buildSummary 模板（与 Real 同口径，F-11/F-10）
+    List<NotificationState> states = getOrCreateUserNotifications(String.valueOf(userId));
+    NotificationState state = new NotificationState(
+        notificationIdSeq.getAndIncrement(), String.valueOf(userId), "system",
+        "系统", null, referenceId, referenceType, false, Instant.now().toString());
+    states.add(0, state);
+    systemContentByStateId.put(state.id(), content);
   }
 
 }

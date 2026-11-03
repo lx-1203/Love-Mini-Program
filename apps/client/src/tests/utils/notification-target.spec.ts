@@ -32,4 +32,14 @@ describe("notification target", () => {
     expect(resolveNotificationTarget({ type: "mention", referenceType: "user", referenceId: "1" }))
       .toBeNull();
   });
+
+  it("routes whisper arrival notifications (system+whisper) to whisper inbox", () => {
+    expect(resolveNotificationTarget({ type: "system", referenceType: "whisper", referenceId: "801" }))
+      .toBe(ROUTES.PROFILE.WHISPER_INBOX);
+  });
+
+  it("keeps plain system notifications (e.g. report outcome) at mark-read-only", () => {
+    expect(resolveNotificationTarget({ type: "system", referenceType: null, referenceId: "12" }))
+      .toBeNull();
+  });
 });
