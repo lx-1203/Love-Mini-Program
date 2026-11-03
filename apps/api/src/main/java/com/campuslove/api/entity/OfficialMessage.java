@@ -33,6 +33,20 @@ public class OfficialMessage {
         text, card
     }
 
+    /**
+     * 受众类型（P1-2「按人群群发」，2026-11-03）。
+     * <ul>
+     *   <li>{@code ALL}：全站可见（默认，与历史行为一致）</li>
+     *   <li>{@code CAMPUS}：仅 {@code audience_value} 指定校区的用户可见
+     *       （校区名与 {@code user_campus_profile.campus_name} 同口径）</li>
+     *   <li>{@code CIRCLE}：仅 {@code audience_value} 圈层子树内的用户可见
+     *       （前缀按路径段匹配 users.circle_path：等于节点或位于节点子树）</li>
+     * </ul>
+     */
+    public enum AudienceType {
+        ALL, CAMPUS, CIRCLE
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -72,6 +86,22 @@ public class OfficialMessage {
     /** 活动卡推荐理由（面向用户展示） */
     @Column(name = "recommend_reason", columnDefinition = "TEXT")
     private String recommendReason;
+
+    /**
+     * 受众类型（P1-2 按人群群发，2026-11-03；列由 V2026.11.03.0002 迁移新增）。
+     * <p>存量行为兼容：默认 {@code ALL}，即迁移前的「全站广播」。</p>
+     */
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "audience_type", nullable = false, length = 16,
+            columnDefinition = "VARCHAR(16) NOT NULL DEFAULT 'ALL'")
+    private AudienceType audienceType = AudienceType.ALL;
+
+    /**
+     * 受众值（P1-2）：CAMPUS=校区名；CIRCLE=圈层路径前缀（如 {@code C1/R1}）；
+     * ALL 时为 null。
+     */
+    @Column(name = "audience_value", length = 256)
+    private String audienceValue;
 
     /** 消息顺序（升序展示） */
     @Column(name = "sort_order", nullable = false)
@@ -179,6 +209,24 @@ public class OfficialMessage {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    /** P1-2 受众类型（默认 ALL=全站）。 */
+    public AudienceType getAudienceType() {
+        return audienceType;
+    }
+
+    public void setAudienceType(AudienceType audienceType) {
+        this.audienceType = audienceType;
+    }
+
+    /** P1-2 受众值（CAMPUS=校区名 / CIRCLE=圈层路径前缀 / ALL 时 null）。 */
+    public String getAudienceValue() {
+        return audienceValue;
+    }
+
+    public void setAudienceValue(String audienceValue) {
+        this.audienceValue = audienceValue;
     }
 }
 

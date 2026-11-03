@@ -49,6 +49,7 @@ public class OfficialAccountController {
      */
     @GetMapping
     @RateLimit(capacity = 60, refillTokens = 1, key = "#clientIp")
+    @PreAuthorize("isAuthenticated()")
     public List<OfficialAccountView> getAccounts() {
         return officialAccountService.getAccounts();
     }
@@ -57,19 +58,23 @@ public class OfficialAccountController {
      * 获取某官方号的消息流。
      * GET /api/official-accounts/{code}/messages
      *
+     * <p>P1-2（2026-11-03）：消息流先按当前用户受众过滤（ALL/CAMPUS/CIRCLE，
+     * 见 {@link OfficialAccountService#getMessages(String, Long)}），再合并双向会话。</p>
+     *
      * @param code 官方号唯一标识（official-assistant / official-promoter）
      * @return 消息视图列表（发布时间升序）；账号不存在或已下线时返回空列表
      */
     @GetMapping("/{code}/messages")
     @RateLimit(capacity = 60, refillTokens = 1, key = "#clientIp")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<OfficialMessageView>> getMessages(
             @PathVariable("code")
             @NotBlank(message = ErrorMessages.CODE_REQUIRED)
             @Size(max = 32, message = ErrorMessages.CODE_MAX_LENGTH) String code) {
-        List<OfficialMessageView> messages = officialAccountService.getMessages(code);
+        Long userId = SecurityUtils.getCurrentUserIdOrNull();
+        List<OfficialMessageView> messages = officialAccountService.getMessages(code, userId);
         // R16（2026-09-07）：合并当前登录用户与该官方号的双向会话消息（时间归并升序），
         // 使寻觅助手会话在刷新后仍保留用户发送与助手回复
-        Long userId = SecurityUtils.getCurrentUserIdOrNull();
         if (userId != null) {
             List<OfficialMessageView> conversation = officialChatService.getConversation(code, userId);
             if (!conversation.isEmpty()) {

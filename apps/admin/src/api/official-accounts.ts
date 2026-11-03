@@ -38,6 +38,13 @@ export interface OfficialMessageView {
   cardTargetUrl: string | null;
   publishedAt: string;
   cardActivity?: OfficialActivityCardView | null;
+  /**
+   * 广播受众类型（2026-11-03 P1-2 受众定向）：ALL 全站 / CAMPUS 校区 / CIRCLE 圈层。
+   * 历史消息无该字段，列表展示受众摘要前需判空。
+   */
+  audienceType?: string;
+  /** 受众值：CAMPUS=校区名 / CIRCLE=圈层路径（如 C1/R1）；ALL 时无意义 */
+  audienceValue?: string | null;
 }
 
 /** 查询全部启用官方账号 */
@@ -82,6 +89,18 @@ export interface PublishAnnouncementRequest {
   cardTargetUrl?: string | null;
   /** 关联活动 ID：card 类型必填，且必须是真实存在的活动 */
   cardActivityId?: number | null;
+  /**
+   * 广播受众类型（2026-11-03 P1-2 受众定向）：
+   * ALL=全站（缺省，行为同旧版）/ CAMPUS=按校区 / CIRCLE=按圈层。
+   * 非法组合（如 CAMPUS 未带校区名）后端返回 400 + message。
+   */
+  audienceType?: "ALL" | "CAMPUS" | "CIRCLE";
+  /**
+   * 受众值：CAMPUS 时=校区名（须与高校管理的校区名完全一致，后端按名校验）；
+   * CIRCLE 时=圈层路径（如 "C1/R1"，按前缀命中其下全部层级用户）；
+   * ALL 时后端忽略本字段（前端统一传 null，避免残留旧值）。
+   */
+  audienceValue?: string | null;
 }
 
 /** 写接口响应体（后端直出 Map，含 audience / success 提示字段） */
@@ -98,8 +117,15 @@ export interface AnnouncementOpResponse {
   cardActivityId: number | null;
   sortOrder: number;
   publishedAt: string;
-  /** 广播范围：后端固定返回 ALL_CAMPUS_ALL_USERS（official_messages 无校区维度） */
+  /**
+   * 广播范围可读摘要：2026-11-03 P1-2 起后端按受众定向直出
+   * 「全站」/「校区：X」/「圈层：X」（此前固定返回 ALL_CAMPUS_ALL_USERS）。
+   */
   audience?: string;
+  /** 受众类型：ALL / CAMPUS / CIRCLE（2026-11-03 P1-2 响应体新增） */
+  audienceType?: string;
+  /** 受众值：CAMPUS=校区名 / CIRCLE=圈层路径（2026-11-03 P1-2 响应体新增） */
+  audienceValue?: string | null;
   success: boolean;
   /** 仅下架接口返回 */
   deleted?: boolean;

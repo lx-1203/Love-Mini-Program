@@ -24,6 +24,8 @@ import {
   type OfficialMessageType,
 } from "@/api/official-accounts";
 import { listActivities, type ActivitySummary } from "@/api/activities";
+import { listSchoolOptions, type SchoolView } from "@/api/system";
+import { listAllLayers, buildLayerTree, type CircleLayer } from "@/api/circle";
 import { ApiError } from "@/api/http";
 import { useI18n } from "vue-i18n";
 import ErrorState from "@/components/ErrorState.vue";
@@ -81,6 +83,29 @@ const formCardTargetUrl = ref("");
 /** 关联活动 ID：select 绑定字符串，提交时转 number（空串表示未选） */
 const formCardActivityId = ref("");
 
+// ---- 受众选择（2026-11-03 P1-2：官方号公告支持全站/校区/圈层定向广播） ----
+
+/** 受众类型：ALL 全站（缺省，行为同旧版全平台广播）/ CAMPUS 校区 / CIRCLE 圈层 */
+const formAudienceType = ref<"ALL" | "CAMPUS" | "CIRCLE">("ALL");
+/** CAMPUS 时选中的校区名（须与高校管理一致，后端按名字精确校验，错值 400） */
+const formAudienceCampus = ref("");
+/** CIRCLE 时选中的圈层路径（如 C1/R1，按前缀命中其下全部层级用户） */
+const formAudienceCirclePath = ref("");
+
+/** 校区下拉数据（listSchoolOptions 仅返回启用高校，与「新增管理员」校区下拉同源） */
+const schoolOptions = ref<SchoolView[]>([]);
+const schoolOptionsLoading = ref(false);
+const schoolOptionsError = ref("");
+
+/** 圈层下拉项：扁平化后的 circlePath + 带缩进的显示名（option 不支持样式，只能文本缩进） */
+interface AudienceCircleOption {
+  circlePath: string;
+  label: string;
+}
+const circleOptions = ref<AudienceCircleOption[]>([]);
+const circleOptionsLoading = ref(false);
+const circleOptionsError = ref("");
+
 /** 发布中标志（防连点） */
 const publishing = ref(false);
 /** 表单级错误提示（校验失败或后端 400 message） */
@@ -136,6 +161,94 @@ function handleTypeChange(type: OfficialMessageType) {
   }
 }
 
+/** 加载校区下拉（受众选「按校区」时用；失败可重试，不阻断发布表单其余字段） */
+async function fetchSchoolOptions() {
+  if (schoolOptionsLoading.value) return;
+  schoolOptionsLoading.value = true;
+  schoolOptionsError.value = "";
+  try {
+    schoolOptions.value = await listSchoolOptions();
+  } catch (err: unknown) {
+    schoolOptions.value = [];
+    schoolOptionsError.value = errorMessageOf(err, t("officialAccounts.loadSchoolsFailed"));
+  } finally {
+    schoolOptionsLoading.value = false;
+  }
+}
+
+/**
+ * 加载圈层下拉（受众选「按圈层」时用，扁平化出 circlePath + 显示名）。
+ * 注意：后端 CircleLayer 实体序列化为嵌套 parent 对象而非 parentId 字段，
+ * 本地补齐 parentId 后再建树——与 VillagePosts.vue 圈层树同一套写法
+ * （api/circle.ts 归圈层管理页所有，不在其上改动）。
+ */
+async function fetchCircleOptions() {
+  if (circleOptionsLoading.value) return;
+  circleOptionsLoading.value = true;
+  circleOptionsError.value = "";
+  try {
+    const layers = await listAllLayers();
+    const normalized = layers.map((l) => ({
+      ...l,
+      parentId:
+        l.parentId ??
+        (l as CircleLayer & { parent?: { id?: number } | null }).parent?.id ??
+        null,
+    }));
+    const out: AudienceCircleOption[] = [];
+    // 深度优先走树，全角空格缩进表示层级（公司 → 大区 → 学校）
+    const walk = (nodes: CircleLayer[], depth: number): void => {
+      nodes.forEach((node) => {
+        out.push({
+          circlePath: node.circlePath,
+          label: `${"　".repeat(depth)}${node.name}（${node.circlePath}）`,
+        });
+        if (node.children && node.children.length > 0) walk(node.children, depth + 1);
+      });
+    };
+    walk(buildLayerTree(normalized), 0);
+    circleOptions.value = out;
+  } catch (err: unknown) {
+    circleOptions.value = [];
+    circleOptionsError.value = errorMessageOf(err, t("officialAccounts.loadCirclesFailed"));
+  } finally {
+    circleOptionsLoading.value = false;
+  }
+}
+
+/** 切换受众类型：惰性加载对应维度的下拉（缺省 ALL 无需任何选项数据） */
+function handleAudienceTypeChange() {
+  if (
+    formAudienceType.value === "CAMPUS" &&
+    schoolOptions.value.length === 0 &&
+    !schoolOptionsLoading.value
+  ) {
+    void fetchSchoolOptions();
+  }
+  if (
+    formAudienceType.value === "CIRCLE" &&
+    circleOptions.value.length === 0 &&
+    !circleOptionsLoading.value
+  ) {
+    void fetchCircleOptions();
+  }
+}
+
+/**
+ * 广播范围提示文案：按当前受众选择动态生成
+ * （2026-11-03 P1-2 之前写死「全平台」不再成立，定向广播时范围随之收窄）。
+ * 定向维度尚未选值时先回落到全站文案，避免提示与实际提交不一致。
+ */
+const broadcastScopeText = computed(() => {
+  if (formAudienceType.value === "CAMPUS" && formAudienceCampus.value) {
+    return t("officialAccounts.broadcastScopeCampus", { campus: formAudienceCampus.value });
+  }
+  if (formAudienceType.value === "CIRCLE" && formAudienceCirclePath.value) {
+    return t("officialAccounts.broadcastScopeCircle", { circle: formAudienceCirclePath.value });
+  }
+  return t("officialAccounts.broadcastScope");
+});
+
 /** 表单前端校验，返回错误文案（空串表示通过） */
 function validateForm(): string {
   const content = formContent.value.trim();
@@ -145,6 +258,13 @@ function validateForm(): string {
   }
   if (formType.value === "card" && !formCardActivityId.value) {
     return t("officialAccounts.activityRequired");
+  }
+  // 受众校验（2026-11-03 P1-2）：定向维度必须选值，前端拦下一次注定 400 的往返
+  if (formAudienceType.value === "CAMPUS" && !formAudienceCampus.value) {
+    return t("officialAccounts.audienceCampusRequired");
+  }
+  if (formAudienceType.value === "CIRCLE" && !formAudienceCirclePath.value) {
+    return t("officialAccounts.audienceCircleRequired");
   }
   return "";
 }
@@ -157,6 +277,10 @@ function resetForm() {
   formCardTag.value = "";
   formCardTargetUrl.value = "";
   formCardActivityId.value = "";
+  // 受众复位为缺省全站（ALL 无值维度，audienceValue 在提交时统一置 null）
+  formAudienceType.value = "ALL";
+  formAudienceCampus.value = "";
+  formAudienceCirclePath.value = "";
 }
 
 /** 提交发布公告 */
@@ -180,6 +304,14 @@ async function handlePublish() {
       cardTag: formType.value === "card" ? formCardTag.value.trim() || null : null,
       cardTargetUrl: formType.value === "card" ? formCardTargetUrl.value.trim() || null : null,
       cardActivityId: formType.value === "card" ? activityId : null,
+      // 受众定向（2026-11-03 P1-2）：ALL 时显式传 null，覆盖可能残留的旧值
+      audienceType: formAudienceType.value,
+      audienceValue:
+        formAudienceType.value === "CAMPUS"
+          ? formAudienceCampus.value
+          : formAudienceType.value === "CIRCLE"
+            ? formAudienceCirclePath.value
+            : null,
     });
     resetForm();
     showSuccess(t("officialAccounts.publishSuccess"));
@@ -270,6 +402,20 @@ function selectAccount(code: string) {
   void fetchMessages(code);
 }
 
+/**
+ * 消息列表受众摘要（2026-11-03 P1-2）：「全站」/「校区：X」/「圈层：X」。
+ * 历史消息无 audienceType 字段，调用方判空后才展示（本函数不做兜底文案）。
+ */
+function audienceLabel(msg: OfficialMessageView): string {
+  if (msg.audienceType === "CAMPUS") {
+    return t("officialAccounts.audienceSummaryCampus", { value: msg.audienceValue || "-" });
+  }
+  if (msg.audienceType === "CIRCLE") {
+    return t("officialAccounts.audienceSummaryCircle", { value: msg.audienceValue || "-" });
+  }
+  return t("officialAccounts.audienceSummaryAll");
+}
+
 onMounted(fetchAccounts);
 onBeforeUnmount(() => {
   if (successTimer) clearTimeout(successTimer);
@@ -307,10 +453,11 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
-      <!-- 广播范围提示：official_messages 无校区维度，一行公告全平台所有用户都看得到 -->
+      <!-- 广播范围提示：2026-11-03 P1-2 起按受众选择动态显示（全站/校区/圈层），
+           非超级管理员无表单、受众恒为缺省 ALL，仍展示全站文案 -->
       <div v-if="isActiveBroadcastAccount" class="broadcast-notice" role="note">
         <strong>{{ t("officialAccounts.broadcastScopeTitle") }}</strong>
-        <span>{{ t("officialAccounts.broadcastScope") }}</span>
+        <span>{{ broadcastScopeText }}</span>
       </div>
 
       <!-- 非超级管理员只读提示 -->
@@ -336,6 +483,63 @@ onBeforeUnmount(() => {
               <input type="radio" value="card" :checked="formType === 'card'" @change="handleTypeChange('card')" />
               <span>{{ t("officialAccounts.typeCard") }}</span>
             </label>
+          </span>
+        </div>
+
+        <!-- 受众选择（2026-11-03 P1-2）：全站=旧行为；按校区/按圈层为定向广播，
+             值下拉随类型出现，选项数据在首次切到对应类型时惰性加载 -->
+        <div class="form-row">
+          <label class="form-label" for="oa-audience-type">{{ t("officialAccounts.labelAudience") }}</label>
+          <span class="form-field">
+            <span class="audience-controls">
+              <select
+                id="oa-audience-type"
+                v-model="formAudienceType"
+                class="form-select"
+                @change="handleAudienceTypeChange"
+              >
+                <option value="ALL">{{ t("officialAccounts.audienceAll") }}</option>
+                <option value="CAMPUS">{{ t("officialAccounts.audienceCampus") }}</option>
+                <option value="CIRCLE">{{ t("officialAccounts.audienceCircle") }}</option>
+              </select>
+              <select
+                v-if="formAudienceType === 'CAMPUS'"
+                id="oa-audience-campus"
+                v-model="formAudienceCampus"
+                class="form-select"
+              >
+                <option value="">{{ t("officialAccounts.audienceCampusPlaceholder") }}</option>
+                <option v-for="school in schoolOptions" :key="school.id" :value="school.name">
+                  {{ school.name }}
+                </option>
+              </select>
+              <select
+                v-if="formAudienceType === 'CIRCLE'"
+                id="oa-audience-circle"
+                v-model="formAudienceCirclePath"
+                class="form-select"
+              >
+                <option value="">{{ t("officialAccounts.audienceCirclePlaceholder") }}</option>
+                <option v-for="opt in circleOptions" :key="opt.circlePath" :value="opt.circlePath">
+                  {{ opt.label }}
+                </option>
+              </select>
+              <button
+                v-if="formAudienceType === 'CAMPUS' && !schoolOptionsLoading"
+                type="button"
+                class="ghost-button"
+                @click="fetchSchoolOptions"
+              >{{ t("officialAccounts.reloadSchools") }}</button>
+              <button
+                v-if="formAudienceType === 'CIRCLE' && !circleOptionsLoading"
+                type="button"
+                class="ghost-button"
+                @click="fetchCircleOptions"
+              >{{ t("officialAccounts.reloadCircles") }}</button>
+            </span>
+            <span v-if="schoolOptionsLoading || circleOptionsLoading" class="form-hint">{{ t("common.loading") }}</span>
+            <span v-if="schoolOptionsError" class="form-error">{{ schoolOptionsError }}</span>
+            <span v-if="circleOptionsError" class="form-error">{{ circleOptionsError }}</span>
           </span>
         </div>
 
@@ -447,6 +651,7 @@ onBeforeUnmount(() => {
               <th>关联活动</th>
               <th>推荐理由 / 人数</th>
               <th>{{ t("officialAccounts.colTarget") }}</th>
+              <th>{{ t("officialAccounts.colAudience") }}</th>
               <th>{{ t("officialAccounts.colPublishedAt") }}</th>
               <th v-if="canBroadcast && sessionStore.canSuperAdminWrite">{{ t("officialAccounts.colActions") }}</th>
             </tr>
@@ -485,6 +690,11 @@ onBeforeUnmount(() => {
                 <a v-if="msg.cardTargetUrl" :href="msg.cardTargetUrl" target="_blank" rel="noopener">
                   {{ msg.cardTargetUrl }}
                 </a>
+                <span v-else>-</span>
+              </td>
+              <!-- 受众摘要：2026-11-03 P1-2 起后端携带 audienceType；历史消息无该字段则不展示 -->
+              <td>
+                <span v-if="msg.audienceType">{{ audienceLabel(msg) }}</span>
                 <span v-else>-</span>
               </td>
               <td class="cell-time">{{ formatDateTime(msg.publishedAt) }}</td>
@@ -753,7 +963,8 @@ onBeforeUnmount(() => {
 }
 
 .form-input,
-.form-textarea {
+.form-textarea,
+.form-select {
   width: 100%;
   max-width: 520px;
   padding: 8px 10px;
@@ -768,6 +979,21 @@ onBeforeUnmount(() => {
 .form-textarea {
   resize: vertical;
   line-height: 1.6;
+}
+
+/* 受众行三个控件横排（类型 + 值下拉 + 重载按钮），窄屏允许换行 */
+.audience-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+/* 下拉复用 .form-input 视觉，但按内容收缩宽度以适配横排（2026-11-03 P1-2） */
+.form-select {
+  width: auto;
+  min-width: 180px;
+  max-width: 520px;
 }
 
 .form-counter,

@@ -80,20 +80,34 @@ public class AdminOfficialAccountController {
     /** 卡片跳转地址长度上限（与 official_messages.card_target_url varchar(512) 对齐） */
     private static final int MAX_CARD_TARGET_URL_LENGTH = 512;
 
+    /** 受众值长度上限（P1-2，与 official_messages.audience_value varchar(256) 对齐） */
+    private static final int MAX_AUDIENCE_VALUE_LENGTH = 256;
+
     private final OfficialAccountService officialAccountService;
     private final OfficialAccountRepository officialAccountRepository;
     private final OfficialMessageRepository officialMessageRepository;
     private final ActivityRepository activityRepository;
+    /**
+     * P1-2（2026-11-03）受众取值校验：CAMPUS 受众值必须是真实校区（schools.name）、
+     * CIRCLE 受众值必须是真实圈层节点（circle_layer.circle_path）——
+     * 校验不过直接 400，杜绝「拼错一个字、公告发出去谁也收不到」的静默事故。
+     */
+    private final com.campuslove.api.repository.SchoolRepository schoolRepository;
+    private final com.campuslove.api.repository.circle.CircleLayerRepository circleLayerRepository;
 
     public AdminOfficialAccountController(
             OfficialAccountService officialAccountService,
             OfficialAccountRepository officialAccountRepository,
             OfficialMessageRepository officialMessageRepository,
-            ActivityRepository activityRepository) {
+            ActivityRepository activityRepository,
+            com.campuslove.api.repository.SchoolRepository schoolRepository,
+            com.campuslove.api.repository.circle.CircleLayerRepository circleLayerRepository) {
         this.officialAccountService = officialAccountService;
         this.officialAccountRepository = officialAccountRepository;
         this.officialMessageRepository = officialMessageRepository;
         this.activityRepository = activityRepository;
+        this.schoolRepository = schoolRepository;
+        this.circleLayerRepository = circleLayerRepository;
     }
 
     /**
@@ -128,8 +142,9 @@ public class AdminOfficialAccountController {
      *
      * <p>POST /api/v1/admin/official-accounts/{code}/messages</p>
      *
-     * <p>广播无校区/用户维度：official_messages 一行即对<b>全平台所有用户</b>可见，
-     * 故本端点仅超级管理员可用（校区管理员只读）。</p>
+     * <p>P1-2（2026-11-03）起支持按人群群发：audienceType=ALL（全站，缺省）/
+     * CAMPUS（按校区）/ CIRCLE（按圈层子树），用户端消息流按当前用户归属过滤。
+     * 定向触达仍仅超级管理员可用（校区管理员只读）。</p>
      *
      * @param code 官方号唯一标识，服务端强制只允许 {@code official-assistant}
      * @param req  公告内容（messageType text/card + content，card 需 cardActivityId）
@@ -198,6 +213,43 @@ public class AdminOfficialAccountController {
             message.setCardTag(limit(trimToNull(req.cardTag()), MAX_CARD_TAG_LENGTH));
             message.setCardTargetUrl(limit(trimToNull(req.cardTargetUrl()), MAX_CARD_TARGET_URL_LENGTH));
         }
+
+        // P1-2（2026-11-03）受众解析与校验：ALL/CAMPUS/CIRCLE；
+        // CAMPUS/CIRCLE 的取值必须真实存在（校区名/圈层路径），否则定向广播会静默触达 0 人
+        OfficialMessage.AudienceType audienceType;
+        String audienceValue = trimToNull(req.audienceValue());
+        String rawAudienceType = req.audienceType() == null
+                ? OfficialMessage.AudienceType.ALL.name()
+                : req.audienceType().trim().toUpperCase();
+        try {
+            audienceType = OfficialMessage.AudienceType.valueOf(rawAudienceType);
+        } catch (IllegalArgumentException e) {
+            return badRequest("audienceType 只支持 ALL（全站）/ CAMPUS（按校区）/ CIRCLE（按圈层）");
+        }
+        if (audienceType == OfficialMessage.AudienceType.ALL) {
+            audienceValue = null;
+        } else {
+            if (audienceValue == null) {
+                return badRequest("audienceType=" + audienceType.name()
+                        + " 时必须携带 audienceValue（" + (audienceType == OfficialMessage.AudienceType.CAMPUS
+                        ? "校区名" : "圈层路径，如 C1/R1") + "）");
+            }
+            if (audienceValue.length() > MAX_AUDIENCE_VALUE_LENGTH) {
+                return badRequest("audienceValue 长度不能超过 " + MAX_AUDIENCE_VALUE_LENGTH + " 字");
+            }
+            if (audienceType == OfficialMessage.AudienceType.CAMPUS
+                    && schoolRepository.findByName(audienceValue).isEmpty()) {
+                return badRequest("audienceValue 校区不存在：" + audienceValue
+                        + "（须与高校管理中的校区名完全一致）");
+            }
+            if (audienceType == OfficialMessage.AudienceType.CIRCLE
+                    && circleLayerRepository.findAllDescendants(audienceValue).isEmpty()) {
+                return badRequest("audienceValue 圈层节点不存在：" + audienceValue
+                        + "（须为圈层树中真实路径，如 C1/R1）");
+            }
+        }
+        message.setAudienceType(audienceType);
+        message.setAudienceValue(audienceValue);
 
         OfficialMessage saved = officialMessageRepository.save(message);
         return ResponseEntity.ok(toBody(saved, true));
@@ -270,8 +322,17 @@ public class AdminOfficialAccountController {
         body.put("cardActivityId", message.getCardActivityId());
         body.put("sortOrder", message.getSortOrder());
         body.put("publishedAt", message.getPublishedAt());
-        // 广播范围提示：official_messages 无校区/用户维度，一行即全平台可见
-        body.put("audience", "ALL_CAMPUS_ALL_USERS");
+        // P1-2（2026-11-03）：受众维度下发真实值（此前固定 ALL_CAMPUS_ALL_USERS）。
+        // audience 保留为可读摘要（管理端列表展示），audienceType/audienceValue 为机器口径
+        OfficialMessage.AudienceType audience = message.getAudienceType() == null
+                ? OfficialMessage.AudienceType.ALL : message.getAudienceType();
+        body.put("audienceType", audience.name());
+        body.put("audienceValue", message.getAudienceValue());
+        body.put("audience", audience == OfficialMessage.AudienceType.ALL
+                ? "全站"
+                : (audience == OfficialMessage.AudienceType.CAMPUS
+                        ? "校区：" + message.getAudienceValue()
+                        : "圈层：" + message.getAudienceValue()));
         body.put("success", success);
         return body;
     }
@@ -333,7 +394,15 @@ public class AdminOfficialAccountController {
             @Size(max = MAX_CARD_TAG_LENGTH, message = "cardTag 长度不能超过 32") String cardTag,
             @Size(max = MAX_CARD_TARGET_URL_LENGTH, message = "cardTargetUrl 长度不能超过 512")
             String cardTargetUrl,
-            @Positive(message = "cardActivityId 必须为正整数") Long cardActivityId
+            @Positive(message = "cardActivityId 必须为正整数") Long cardActivityId,
+            /**
+             * P1-2（2026-11-03）受众类型：ALL=全站（缺省，与历史行为一致）/
+             * CAMPUS=按校区 / CIRCLE=按圈层子树。服务端校验取值真实存在。
+             */
+            @Size(max = 16, message = "audienceType 长度不能超过 16") String audienceType,
+            /** P1-2 受众值：CAMPUS=校区名 / CIRCLE=圈层路径（如 C1/R1）；ALL 时忽略 */
+            @Size(max = MAX_AUDIENCE_VALUE_LENGTH,
+                    message = "audienceValue 长度不能超过 256") String audienceValue
     ) {
     }
 }
