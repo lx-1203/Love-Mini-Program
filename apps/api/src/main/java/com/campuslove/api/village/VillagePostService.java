@@ -382,6 +382,118 @@ public class VillagePostService {
                 .orElse(null);
     }
 
+    // ---- 2026-11-03 P1-1「更新帖子」（作者编辑自己的帖子） ----
+
+    /**
+     * 作者编辑<b>自己</b>的帖子（P1-1：全量替换标题/正文/标签/图片，软删帖不可编辑）。
+     *
+     * <p>处理流程（与 {@link #createPost} 同一条安检流水线，顺序一致）：</p>
+     * <ol>
+     *   <li>入参校验（标题 5-30 字、content 必填）</li>
+     *   <li>读帖：不存在或已软删 → 404（文案与删除口径一致）</li>
+     *   <li>作者校验（读之后、任何写之前）：非作者 → 403，数据零改动</li>
+     *   <li>内容安全检查（微信 msgSecCheck v2，scene=3）+ 敏感词过滤——
+     *       与发帖同一套 {@link #rejectIfRisky}，编辑是内容变更，必须重新过审</li>
+     *   <li>短事务内落库：替换四个内容字段、重写 post_tags 关联表、
+     *       {@code editCount + 1}、{@code editedAt = now}、
+     *       <b>{@code auditStatus 重置为 pending 重新过审}</b>（编辑后的内容
+     *       对公众不可见，直到再次审核通过——与发帖同口径，不给「编辑绕审」留缝）；
+     *       上一轮审核元数据（auditorId/auditedAt/auditRemark）清空，本轮审核重新写</li>
+     * </ol>
+     *
+     * <p>可见范围/圈层归属（visibility、circleId、ownerCirclePath、category）刻意
+     * 不可编辑：发布时已按当时身份做过成员/认证校验，放开等于允许作者把帖子
+     * 事后挪进自己已退出的圈子。乐观锁由 {@code @Version} 兜底（并发编辑 409）。</p>
+     *
+     * @param userId  当前登录用户 ID（JWT 上下文）
+     * @param postId  目标帖子 ID
+     * @param title   新标题（5-30 字）
+     * @param content 新正文（必填）
+     * @param images  新图片 URL 列表（null 视为清空）
+     * @param tags    新标签列表（null 视为清空，逐个过敏感词过滤）
+     * @return 编辑后的帖子详情视图（isAuthor=true；此时 auditStatus=pending）
+     * @throws ResourceNotFoundException   帖子不存在或已删除（404）
+     * @throws OperationForbiddenException 调用者不是作者（403，数据未改动）
+     */
+    @CacheEvict(cacheNames = CacheNames.VILLAGE_HOT_POSTS, allEntries = true)
+    public PostDetailView updatePost(Long userId, Long postId,
+                                     String title, String content, List<String> images, List<String> tags) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId is required");
+        }
+        if (postId == null) {
+            throw new IllegalArgumentException(ErrorMessages.POST_ID_INVALID);
+        }
+        // 标题/正文校验：与 createPost 逐字同一套（阈值常量共用，文案共用）
+        if (title == null || title.trim().length() < POST_TITLE_MIN_LENGTH
+                || title.trim().length() > POST_TITLE_MAX_LENGTH) {
+            throw new IllegalArgumentException(ErrorMessages.POST_TITLE_REQUIRED_LENGTH);
+        }
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("content is required");
+        }
+
+        // ① 读——不存在/已软删一律 404（墓碑帖不可编辑，文案与 deletePost 同源）
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorMessages.POST_NOT_FOUND_OR_DELETED));
+        if (post.getStatus() == PostStatus.deleted) {
+            throw new ResourceNotFoundException(ErrorMessages.POST_NOT_FOUND_OR_DELETED);
+        }
+
+        // ② 作者校验——非作者 403，数据零改动（口径与 deletePost ② 一致）
+        if (!userId.equals(post.getAuthorId())) {
+            log.warn("非作者尝试编辑帖子，已拒绝: postId={}, authorId={}, callerId={}",
+                    postId, post.getAuthorId(), userId);
+            throw new OperationForbiddenException("无权编辑该帖子");
+        }
+
+        // ③ 内容安全检查 + 敏感词过滤——与发帖同一条流水线；
+        // 外呼（msgSecCheck）必须挂起事务执行（S2-1 口径，见 createPost ③ 的说明）
+        suspendingTemplate.executeWithoutResult(status -> {
+            rejectIfRisky(title, userId, "3", "帖子标题");
+            rejectIfRisky(content, userId, "3", "帖子内容");
+        });
+        String filteredTitle = sensitiveWordFilter.filterWithLog(title.trim(), userId, "POST");
+        String filteredContent = sensitiveWordFilter.filterWithLog(content, userId, "POST");
+        List<String> filteredTags = filterTagList(tags, userId);
+
+        LocalDateTime now = LocalDateTime.now(TimeZones.BUSINESS);
+        return transactionTemplate.execute(status -> {
+            // 全量替换内容字段；images/tags 的 null 统一按清空处理（全量提交语义）
+            post.setTitle(filteredTitle);
+            post.setContent(filteredContent);
+            post.setImages(queryService.toJsonString(images));
+            post.setTags(queryService.toJsonString(filteredTags));
+
+            // R4-00328 同源：post_tags 关联表先清后写（编辑换标签后聚合查询不再读到旧标签；
+            // 重复标签冲突仅记日志不阻断，与 createPost 同口径）
+            if (postTagRepository != null) {
+                postTagRepository.deleteByPostId(postId);
+                for (String tag : filteredTags) {
+                    try {
+                        postTagRepository.save(new PostTag(postId, tag));
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        logDuplicateTag(tag);
+                    }
+                }
+            }
+
+            // 编辑留痕 + 重新过审：计数、时间戳、审核状态机复位（fail-closed）
+            post.setEditCount(post.getEditCount() + 1);
+            post.setEditedAt(now);
+            post.setUpdatedAt(now);
+            post.setAuditStatus(Post.AuditStatus.pending);
+            post.setAuditRemark(null);
+            post.setAuditorId(null);
+            post.setAuditedAt(null);
+
+            Post saved = postRepository.saveAndFlush(post);
+            log.info("作者编辑帖子完成，重回待审: postId={}, authorId={}, editCount={}",
+                    postId, userId, saved.getEditCount());
+            return queryService.toPostDetailView(saved, userId);
+        });
+    }
+
     /** 标签唯一约束冲突日志（R4-00328：重复标签不阻断发帖）。 */
     private void logDuplicateTag(String tag) {
         log.warn("post_tags 写入冲突，跳过重复标签：tag={}", tag);

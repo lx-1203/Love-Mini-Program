@@ -30,6 +30,10 @@ public record PostDetailView(
     /** 2026-08-09 帖子关联活动：关联活动 ID（无则 null） */
     Long activityId,
     /** 2026-08-09 帖子关联活动：关联活动摘要（无则 null） */
-    ActivitySummaryView activity
+    ActivitySummaryView activity,
+    /** P1-1 编辑留痕：作者编辑次数（0=从未编辑，2026-11-03） */
+    int editCount,
+    /** P1-1 编辑留痕：最近一次编辑时间（null=从未编辑，2026-11-03） */
+    String editedAt
 ) {
 }

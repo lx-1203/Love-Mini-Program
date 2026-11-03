@@ -73,8 +73,10 @@ public class Post {
      * 帖子审核状态枚举。
      * <p>由管理后台审核接口维护，与 PostStatus 正交：</p>
      * <ul>
-     *   <li>pending：待审核（新建帖子默认不进入此状态，由举报或风控触发）</li>
-     *   <li>approved：已通过（默认值，存量帖子视为已通过）</li>
+     *   <li>pending：待审核——<b>新帖默认状态</b>（2026-09-03 发帖审核制：
+     *       先审后发，createPost 显式写入；2026-11-03 P0-1/P2-9 起列默认值与
+     *       本字段初始化也统一为 pending，漏写不再静默放行）</li>
+     *   <li>approved：已通过（审核通过或后台代发显式设置；存量帖子视为已通过）</li>
      *   <li>rejected：已拒绝（管理员拒绝后，帖子在村口列表不可见）</li>
      * </ul>
      */
@@ -197,8 +199,12 @@ public class Post {
      * status 控制"是否软删/隐藏"，audit_status 控制"管理员审核结果"。</p>
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "audit_status", nullable = false, columnDefinition = "VARCHAR(16) DEFAULT 'approved'")
-    private AuditStatus auditStatus = AuditStatus.approved;
+    // 2026-11-03 P0-1/P2-9：默认值 approved→pending（先审后发），与
+    // VillagePostService.createPost 的显式赋值、media_asset 默认态三方对齐；
+    // 迁移 V2026.11.03.0001 已同步改列默认值。漏写 auditStatus 的写路径
+    // 从「静默放行」变为「进待审池」，fail-closed。
+    @Column(name = "audit_status", nullable = false, columnDefinition = "VARCHAR(16) DEFAULT 'pending'")
+    private AuditStatus auditStatus = AuditStatus.pending;
 
     /** 审核备注（管理员审核时填写，拒绝原因等） */
     @Column(name = "audit_remark", length = 500)
@@ -247,6 +253,23 @@ public class Post {
      */
     @Column(name = "owner_circle_path", length = 256)
     private String ownerCirclePath;
+
+    /**
+     * 最近一次作者编辑时间（P1-1「更新帖子」编辑留痕，2026-11-03）。
+     * <p>NULL = 从未编辑；每次成功编辑由 {@code VillagePostService.updatePost}
+     * 置为业务时区当前时间，并同步 {@code editCount + 1}、重置审核为 pending。
+     * 对应 {@code posts.edited_at} 列（V2026.11.03.0001 迁移新增）。</p>
+     */
+    @Column(name = "edited_at")
+    private LocalDateTime editedAt;
+
+    /**
+     * 作者编辑次数（P1-1 编辑留痕）。0 = 从未编辑。
+     * <p>对应 {@code posts.edit_count} 列（V2026.11.03.0001 迁移新增，
+     * NOT NULL DEFAULT 0）。</p>
+     */
+    @Column(name = "edit_count", nullable = false, columnDefinition = "INT NOT NULL DEFAULT 0")
+    private int editCount = 0;
 
     /** 记录创建时间（帖子发布时间，用于排序与展示） */
 
@@ -468,6 +491,24 @@ public class Post {
 
     public void setOwnerCirclePath(String ownerCirclePath) {
         this.ownerCirclePath = ownerCirclePath;
+    }
+
+    /** P1-1 编辑留痕：最近一次作者编辑时间（null=从未编辑）。 */
+    public LocalDateTime getEditedAt() {
+        return editedAt;
+    }
+
+    public void setEditedAt(LocalDateTime editedAt) {
+        this.editedAt = editedAt;
+    }
+
+    /** P1-1 编辑留痕：作者编辑次数（0=从未编辑）。 */
+    public int getEditCount() {
+        return editCount;
+    }
+
+    public void setEditCount(int editCount) {
+        this.editCount = editCount;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -282,7 +282,10 @@ public class VillageViewMapper {
                 post.getCommentsCount(), post.getShareCount(), post.getCreatedAt().toString(),
                 post.getUpdatedAt().toString(), isLiked, isAuthor, isAlumni,
                 favoriteCount, isFavorite, post.getViewCount(),
-                post.getActivityId(), activity);
+                post.getActivityId(), activity,
+                // P1-1 编辑留痕（2026-11-03）：0/null = 从未编辑；时间口径与 createdAt 相同（toString）
+                post.getEditCount(),
+                post.getEditedAt() == null ? null : post.getEditedAt().toString());
     }
 
     PostDetailView toPostDetailView(Post post) {

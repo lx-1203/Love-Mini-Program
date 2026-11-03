@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -69,6 +70,7 @@ public class VillageController {
    * 当 authorId 非空时，仅返回该作者发布的帖子（"我的动态"场景）。
    */
   @GetMapping
+  @PreAuthorize("isAuthenticated()")
   public PostListResponse getPosts(
       @RequestParam(name = "category", required = false) String category,
       @RequestParam(name = "tag", required = false) String tag,
@@ -182,6 +184,7 @@ public class VillageController {
    * 管理端可操纵 hot_boost/hot_banned 控制上榜。</p>
    */
   @GetMapping("/hot-board")
+  @PreAuthorize("isAuthenticated()")
   public PostListResponse getHotBoard(
       @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
       @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize) {
@@ -193,6 +196,7 @@ public class VillageController {
    */
   @GetMapping("/recommend")
   @RateLimit(capacity = 30, refillTokens = 2, key = "#clientIp")
+  @PreAuthorize("isAuthenticated()")
   public PostListResponse getPostRecommend(
       @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
       @RequestParam(name = "pageSize", required = false, defaultValue = "20") @Min(1) @Max(100) int pageSize) {
@@ -203,6 +207,7 @@ public class VillageController {
    * 获取帖子详情。
    */
   @GetMapping("/{id}")
+  @PreAuthorize("isAuthenticated()")
   public ApiResponse<PostDetailView> getPostDetail(@PathVariable("id") @Positive Long id) {
     return ApiResponse.ok(villageService.getPostDetail(id));
   }
@@ -256,8 +261,68 @@ public class VillageController {
   @PreAuthorize("hasRole('USER')")
   public ApiResponse<Void> deletePost(@PathVariable("id") @Positive Long id) {
     Long userId = SecurityUtils.getCurrentUserId();
+    // P2-1（2026-11-03）控制器层 owner 前置校验（深度防御）：
+    // 服务层 {@link VillagePostService#deletePost} 的作者校验仍是唯一事实源，
+    // 这里只是把同一判定提前一层——即便未来有人重构服务层遗漏校验，
+    // 控制器这层仍会把非作者挡在门外（零写入）。响应档位与服务层逐字对齐：
+    // 不存在/已删 → 404；存在但非作者 → 403（不把存在性泄露给非作者之外的人，
+    // 404/403 的区分与既有 DELETE 契约注释一致）。多付一次主键读，换来写路径双闸。
+    Post target = postRepository.findById(id)
+        .orElseThrow(() -> new com.campuslove.api.common.ResourceNotFoundException(
+            ErrorMessages.POST_NOT_FOUND_OR_DELETED));
+    if (!userId.equals(target.getAuthorId())) {
+      throw new OperationForbiddenException("无权删除该帖子");
+    }
     villageService.deletePost(userId, id);
     return ApiResponse.ok(null);
+  }
+
+  // ---------- 编辑（作者自助，P1-1） ----------
+
+  /**
+   * 作者编辑<b>自己</b>的村口帖子（P1-1「更新帖子」，2026-11-03）。
+   *
+   * <p>契约：</p>
+   * <ul>
+   *   <li>200 + {@code ApiResponse<PostDetailView>}：编辑成功；返回视图的
+   *       {@code auditStatus=pending}——编辑后的内容对公众不可见，直到再次审核通过
+   *       （与发帖同口径，堵住「先发后审 → 编辑绕审」的缝）</li>
+   *   <li>403 {@code OPERATION_FORBIDDEN}「无权编辑该帖子」：调用者不是作者</li>
+   *   <li>404 {@code RESOURCE_NOT_FOUND}：帖子不存在或已删除</li>
+   *   <li>400：标题长度不合法（5-30 字）/ content 为空 / 包含违规内容（内容安全检查）</li>
+   *   <li>409：乐观锁冲突（并发编辑）</li>
+   * </ul>
+   *
+   * <p>全量替换语义：title/content/tags/images 四个内容字段整体替换
+   * （未传的可选字段按清空处理）；可见范围/圈层/分类/活动关联不可编辑，
+   * 详见 {@link UpdatePostRequest}。编辑留痕：{@code edit_count + 1}、
+   * {@code edited_at = now}（posts 列，V2026.11.03.0001）。</p>
+   *
+   * <p>限流键与 {@link #deletePost} 同口径（按用户分桶，不踩
+   * {@code RateLimitAspect} 的 {@code #request} 覆盖坑，见其方法注释）。</p>
+   *
+   * @param id      帖子 ID（必须为正整数）
+   * @param request 编辑请求体（全量替换）
+   * @return 编辑后的帖子详情（isAuthor=true，auditStatus=pending）
+   */
+  @PutMapping("/{id}")
+  @RateLimit(capacity = 20, refillTokens = 1,
+      key = "T(com.campuslove.api.config.SecurityUtils).getCurrentUserId()")
+  @Idempotent
+  @PreAuthorize("hasRole('USER')")
+  public ApiResponse<PostDetailView> updatePost(
+      @PathVariable("id") @Positive Long id,
+      @Valid @RequestBody UpdatePostRequest request) {
+    Long userId = SecurityUtils.getCurrentUserId();
+    PostDetailView view = villageService.updatePost(userId, id,
+        request.title(), request.content(), request.images(), request.tags());
+    // 监控：复用帖子创建事件口径（编辑产生新的待审内容）
+    try {
+      villageMetrics.recordPostCreated();
+    } catch (RuntimeException ignore) {
+      // 监控逻辑失败忽略，不影响主流程
+    }
+    return ApiResponse.ok(view);
   }
 
   // ---------- 收藏 ----------
@@ -309,6 +374,7 @@ public class VillageController {
    * 获取帖子评论列表。
    */
   @GetMapping("/{id}/comments")
+  @PreAuthorize("isAuthenticated()")
   public CommentListResponse getComments(
       @PathVariable("id") @Positive Long id,
       @RequestParam(name = "page", required = false, defaultValue = "1") @Min(1) int page,
@@ -388,6 +454,7 @@ public class VillageController {
    * 聚合同校用户最新帖子、即将开始的活动、兴趣圈最新话题。
    */
   @GetMapping("/campus-feed")
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<CampusFeedView> getCampusFeed(
       @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
       @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(100) int size) {
@@ -411,6 +478,7 @@ public class VillageController {
    * @return 相似作者推荐响应（1-2 位用户）
    */
   @GetMapping("/{id}/similar-authors")
+  @PreAuthorize("isAuthenticated()")
   public ResponseEntity<SimilarAuthorsResponse> getSimilarAuthors(
       @PathVariable("id") @Positive Long postId) {
     Long userId = SecurityUtils.getCurrentUserId();

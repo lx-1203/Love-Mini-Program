@@ -251,7 +251,9 @@ class RealVillageServiceTest {
                 false, true, false,
                 0, false, 0,
                 // 2026-08-09 帖子关联活动：详情视图新增字段（测试场景无关联，null）
-                null, null);
+                null, null,
+                // P1-1 编辑留痕（2026-11-03）：详情视图新增字段（未编辑，0/null）
+                0, null);
     }
 
     /** 构造测试用 CommentItemView。 */

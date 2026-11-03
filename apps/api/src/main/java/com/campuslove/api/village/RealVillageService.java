@@ -199,6 +199,21 @@ public class RealVillageService implements VillageService {
         postService.deletePost(userId, postId);
     }
 
+    /**
+     * 作者编辑自己的帖子（P1-1，2026-11-03）。
+     *
+     * <p>纯委托，判定逻辑在 {@link VillagePostService#updatePost}
+     * （作者校验先于写入、编辑后重置 pending 重新过审、edit_count/edit_at 留痕）。
+     * 注解事务只是外层壳：真正的事务边界由 postService 内部的 transactionTemplate
+     * 划定（msgSecCheck 外呼必须挂起事务，见 S2-1 说明）。</p>
+     */
+    @Override
+    @Transactional
+    public PostDetailView updatePost(Long userId, Long postId, String title, String content,
+                                     java.util.List<String> images, java.util.List<String> tags) {
+        return postService.updatePost(userId, postId, title, content, images, tags);
+    }
+
     @Override
     @Transactional
     public PostLikeResponse likePost(Long userId, Long postId) {

@@ -187,7 +187,10 @@ public class MockVillageService implements VillageService {
         post.isFavorite,
         post.viewCount,
         post.activityId,
-        activity
+        activity,
+        // P1-1 编辑留痕（2026-11-03）：mock 演示数据不支持编辑（接口 default 显式失败），恒 0/null
+        0,
+        null
     );
   }
 

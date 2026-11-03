@@ -181,6 +181,30 @@ public interface VillageService {
     }
 
     /**
+     * 编辑<b>自己</b>的帖子（P1-1「更新帖子」，2026-11-03：全量替换标题/正文/标签/图片）。
+     *
+     * <p>real 实现（{@link RealVillageService} → {@link VillagePostService#updatePost}）
+     * 在编辑落库后把帖子重置为 {@code audit_status=pending} 重新过审，
+     * 并累计 {@code edit_count} / {@code edited_at} 编辑留痕。</p>
+     *
+     * <p>默认实现与 {@link #deletePost} 同理由选择「显式失败」：mock 档不落库，
+     * 空实现会返回 200 而内容不变——假装成功的静默缺陷比明确的 422 更危险。</p>
+     *
+     * @param userId  当前登录用户 ID（JWT 上下文）
+     * @param postId  目标帖子 ID
+     * @param title   新标题（5-30 字）
+     * @param content 新正文
+     * @param images  新图片列表（null=清空）
+     * @param tags    新标签列表（null=清空）
+     * @return 编辑后的帖子详情（此时 auditStatus=pending）
+     */
+    default PostDetailView updatePost(Long userId, Long postId, String title, String content,
+                                      java.util.List<String> images, java.util.List<String> tags) {
+        throw new com.campuslove.api.common.InvalidOperationException(
+                "当前后端档位（mock 演示数据不落库）不支持编辑帖子");
+    }
+
+    /**
      * 点赞帖子（切换点赞状态）。
      *
      * @param userId 当前用户 ID
