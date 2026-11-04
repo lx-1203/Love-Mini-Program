@@ -13,7 +13,8 @@ import { storeToRefs } from "pinia";
 // MP-R8-OWNPOST-001：判断作者是否为当前用户（自己的帖子不再显示「+关注」）
 import { useSessionStore } from "../../../stores/session";
 import { useI18n } from "vue-i18n";
-import { useVillageStore, formatRelativeTime, MAX_CONTENT_LENGTH, type CommentItem } from "../../../stores/village";
+// R3 第二刀：CommentItem 类型随评论区交互组迁入 use-comment-interactions，页面不再引用
+import { useVillageStore, formatRelativeTime, MAX_CONTENT_LENGTH } from "../../../stores/village";
 // R4-00087：评论分页加载更多（契约 CommentListResponse 含 total/page/pageSize）
 import { mapToCommentItem, isPostAuthor } from "../../../stores/village/utils";
 import type { CommentListResponse } from "../../../stores/village/types";
@@ -44,6 +45,7 @@ import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 // R11-G2：注入 --statusbar（本页样式使用 var(--statusbar, env(...))，DevTools env 恒 0 必须由 JS 注入）
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { usePostActions } from "./use-post-actions";
+import { useCommentInteractions } from "./use-comment-interactions";
 const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 
@@ -64,7 +66,6 @@ function initialOf(name?: string | null): string {
 }
 
 /** 评论输入内容 */
-const commentContent = ref("");
 // 2026-09-05 R19：评论排序（最热=点赞降序 / 最新=时间降序，作用于已加载评论）
 const commentSort = ref<"hot" | "latest">("hot");
 
@@ -112,18 +113,6 @@ function focusCommentInput() {
 }
 /** 是否正在提交评论 */
 const isSubmitting = ref(false);
-/**
- * P1-02 楼中楼：正在回复的根评论（null 表示普通根评论输入）。
- * 点击某条根评论的「回复」按钮后置为对应评论，提交时携带其 id 作为 parentId。
- */
-const replyingTo = ref<CommentItem | null>(null);
-
-/** 回复模式下输入框 placeholder（"回复 @昵称"）；普通模式为理想图「说点什么...」 */
-const replyPlaceholder = computed(() =>
-  replyingTo.value
-    ? t("village.detail.replyToPlaceholder", { name: replyingTo.value.author.name })
-    : t("village.commentPlaceholder"),
-);
 /** 转发弹窗是否显示 */
 const showShareModal = ref(false);
 /** 转发附加评论 */
@@ -244,17 +233,6 @@ function goToUserProfile(userId: string | number | undefined) {
  * 2026-08-08 贴吧式楼中楼：根评论的楼中楼回复默认收起（展示"展开 X 条回复"），
  * 点击展开/收起；replies 超 3 条时默认收起，否则直接展示。
  */
-const expandedReplies = ref<Set<string>>(new Set());
-
-function isRepliesCollapsed(comment: CommentItem): boolean {
-  const replies = comment.replies ?? [];
-  return replies.length > 3 && !expandedReplies.value.has(comment.id);
-}
-
-function visibleReplies(comment: CommentItem): CommentItem[] {
-  const replies = comment.replies ?? [];
-  return isRepliesCollapsed(comment) ? replies.slice(0, 3) : replies;
-}
 
 /**
  * SubTask 5.5.2：图片加载失败 key 集合。
@@ -340,6 +318,29 @@ const { handlePostLongpress, handleReportComment } = usePostActions({
     reportStore.reportTarget("COMMENT", commentId, reason, description),
   onReportPost: () => handleReportPost(),
   goBack,
+});
+
+/**
+ * R3 第二刀（2026-11-05，第八辑）：评论区交互组抽 use-comment-interactions composable。
+ * 楼中楼回复模式/展开收起/评论点赞/图片预览；commentContent/replyingTo 为 composable
+ * 持有的响应式状态（提交逻辑与 @/emoji 插入经解构 ref 直达，口径不变）；
+ * expandedReplies 仅内部使用不解构。单测见 tests/composables/use-comment-interactions.spec.ts。
+ */
+const {
+  commentContent,
+  replyingTo,
+  replyPlaceholder,
+  startReply,
+  toggleReplies,
+  cancelReply,
+  isRepliesCollapsed,
+  visibleReplies,
+  previewCommentImage,
+  handleCommentLike,
+} = useCommentInteractions({
+  t,
+  likeComment: (commentId: string) => villageStore.likeComment(commentId),
+  focusInput: focusCommentInput,
 });
 
 /**
@@ -534,49 +535,6 @@ function removeCommentImage(index: number) {
 }
 
 /** 评论图片点击预览（全屏查看） */
-function previewCommentImage(images: string[], current: number) {
-  uni.previewImage({ urls: images, current });
-}
-
-/**
- * P1-02 楼中楼：点击根评论「回复」按钮，进入回复模式。
- * 输入框聚焦后提交将携带 parentId。
- * R16：补输入框聚焦 + 键盘弹起（此前只有提示条变化，用户感知「无法回复」）。
- */
-function startReply(comment: CommentItem) {
-  replyingTo.value = comment;
-  focusCommentInput();
-}
-
-/** R16：展开/收起楼中楼（>3 条回复默认收起，此前的收起没有展开按钮） */
-function toggleReplies(comment: CommentItem) {
-  const next = new Set(expandedReplies.value);
-  if (next.has(comment.id)) {
-    next.delete(comment.id);
-  } else {
-    next.add(comment.id);
-  }
-  expandedReplies.value = next;
-}
-
-/** 取消回复模式（不提交） */
-function cancelReply() {
-  replyingTo.value = null;
-  commentContent.value = "";
-}
-
-/**
- * 点赞/取消点赞评论
- * R16：失败补用户可见 toast（此前仅 console.error，用户侧表现为"点了没反应"）
- */
-async function handleCommentLike(commentId: string) {
-  try {
-    await villageStore.likeComment(commentId);
-  } catch (error) {
-    console.error("评论点赞失败:", error);
-    uni.showToast({ title: t("village.likeFailed"), icon: "none" });
-  }
-}
 
 /**
  * 打开转发弹窗
