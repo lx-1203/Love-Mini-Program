@@ -61,6 +61,44 @@ class WhisperServiceTest {
     }
 
     @Test
+    void markRead_rejectsAuditRows_idEnumerationClosed() {
+        // R6-1（2026-11-05）：按-id 端点是 R5-1 的残留泄漏面——收件人枚举 id 命中
+        // PAY_FAILED/REFUNDED 审计行时必须「视同不存在」：不返回 content、不改状态。
+        for (String auditStatus : List.of("PAY_FAILED", "REFUNDED")) {
+            WhisperMessage m = new WhisperMessage();
+            m.setId(9L);
+            m.setSenderId(2L);
+            m.setReceiverId(1L);
+            m.setContent("未付费的内容");
+            m.setStatus(auditStatus);
+            m.setClientRequestId("req-audit-" + auditStatus);
+            m.setPriceCents(200L);
+            when(repository.findById(9L)).thenReturn(Optional.of(m));
+
+            assertThrows(IllegalArgumentException.class, () -> service.markRead(1L, 9L),
+                    "审计行标读必须拒绝: " + auditStatus);
+            verify(repository, never()).save(any(WhisperMessage.class));
+        }
+    }
+
+    @Test
+    void markRead_readIsIdempotent() {
+        WhisperMessage m = new WhisperMessage();
+        m.setId(7L);
+        m.setSenderId(2L);
+        m.setReceiverId(1L);
+        m.setContent("已读的悄悄话");
+        m.setStatus("READ");
+        m.setClientRequestId("req-read");
+        m.setPriceCents(200L);
+        when(repository.findById(7L)).thenReturn(Optional.of(m));
+
+        WhisperMessageView view = service.markRead(1L, 7L);
+        assertEquals("READ", view.status());
+        verify(repository, never()).save(any(WhisperMessage.class));
+    }
+
+    @Test
     void send_isIdempotentByClientRequestId() {
         WhisperMessage existing = new WhisperMessage();
         existing.setId(1L);

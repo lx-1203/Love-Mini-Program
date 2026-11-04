@@ -92,6 +92,10 @@ public class MockWhisperService implements WhisperService {
         if (v == null || !v.receiverId().equals(receiverId)) {
             throw new IllegalArgumentException("悄悄话不存在");
         }
+        // R6-1 同构：非送达态（假想扩展出审计行时）视同不存在，与 Real 口径一致
+        if ("PAY_FAILED".equals(v.status()) || "REFUNDED".equals(v.status())) {
+            throw new IllegalArgumentException("悄悄话不存在");
+        }
         WhisperMessageView updated = new WhisperMessageView(
             v.id(), v.senderId(), v.receiverId(), v.content(), "READ",
             v.priceCents(), v.createdAt(), LocalDateTime.now().toString(),

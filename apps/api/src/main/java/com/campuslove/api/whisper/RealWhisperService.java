@@ -318,7 +318,13 @@ public class RealWhisperService implements WhisperService {
         if (message == null || !message.getReceiverId().equals(receiverId)) {
             throw new IllegalArgumentException("悄悄话不存在");
         }
-        if (!STATUS_READ.equals(message.getStatus())) {
+        // R6-1（2026-11-05）：按-id 端点同样执行 R5-1 口径——PAY_FAILED/REFUNDED 审计行
+        // 对收件人视同不存在（id 枚举既取不到内容，也不得把审计行改成 READ 污染对账/有效对计数）。
+        String status = message.getStatus();
+        if (STATUS_PAY_FAILED.equals(status) || STATUS_REFUNDED.equals(status)) {
+            throw new IllegalArgumentException("悄悄话不存在");
+        }
+        if (!STATUS_READ.equals(status)) {
             message.setStatus(STATUS_READ);
             message.setReadAt(LocalDateTime.now(TimeZones.BUSINESS));
             repository.save(message);
