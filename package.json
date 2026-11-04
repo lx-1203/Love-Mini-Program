@@ -80,6 +80,7 @@
     "openapi-typescript": "~7.13.0",
     "puppeteer": "~24.43.1",
     "sharp": "~0.34.5",
+    "typescript": "5.9.3",
     "typescript-eslint": "^8.65.0",
     "yaml": "~2.5.0"
   },
