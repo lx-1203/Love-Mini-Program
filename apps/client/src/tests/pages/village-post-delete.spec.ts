@@ -160,19 +160,25 @@ describe("village store - deletePost（mock 档演示闭环）", () => {
   });
 });
 
-describe("村口详情页删除入口契约（detail.vue）", () => {
+describe("村口详情页删除入口契约（R3 首刀后：逻辑在 use-post-actions.ts，页面持接线）", () => {
   const detailSource = readFileSync(
     resolve(__dirname, "../../subpackages/village/village/detail.vue"),
     "utf-8"
   );
+  // R3 首刀（2026-11-05，第七辑）：删除/菜单/举报三函数搬入 composable，
+  // 断言对象跟随搬家（N-5 先例：chat-session-page.spec 对 use-chat-scroll 同款处理）。
+  const actionsSource = readFileSync(
+    resolve(__dirname, "../../subpackages/village/village/use-post-actions.ts"),
+    "utf-8"
+  );
 
-  /** 取 handleDeletePost 函数体（从声明处到下一个顶层函数声明），用于逐段判点。 */
+  /** 取 handleDeletePost 函数体（composable 内，从声明处到下一个函数声明），用于逐段判点。 */
   function deleteHandlerBody(): string {
-    const start = detailSource.indexOf("async function handleDeletePost");
-    expect(start, "详情页必须有 handleDeletePost 删除处理函数").toBeGreaterThan(-1);
-    const rest = detailSource.slice(start + 10);
-    const endOffset = rest.search(/\n(?:async )?function \w+/);
-    return endOffset > 0 ? detailSource.slice(start, start + 10 + endOffset) : detailSource.slice(start);
+    const start = actionsSource.indexOf("async function handleDeletePost");
+    expect(start, "use-post-actions 必须有 handleDeletePost 删除处理函数").toBeGreaterThan(-1);
+    const rest = actionsSource.slice(start + 10);
+    const endOffset = rest.search(/\n  (?:async )?function \w+/);
+    return endOffset > 0 ? actionsSource.slice(start, start + 10 + endOffset) : actionsSource.slice(start);
   }
 
   it("SFC 仍可被 Vue 编译器解析（改动没把模板/脚本改坏）", () => {
@@ -181,7 +187,9 @@ describe("村口详情页删除入口契约（detail.vue）", () => {
     // <script setup> 的内容落在 descriptor.scriptSetup，不在 descriptor.script：
     // 只看 .script 会让这条判点对任何 SFC 都恒红（真实删除函数在 387 行，确实存在）。
     const scriptBodies = [descriptor.script?.content ?? "", descriptor.scriptSetup?.content ?? ""].join("\n");
-    expect(scriptBodies).toContain("handleDeletePost");
+    // R3 首刀后页面不再内联 handleDeletePost，改持 composable 接线（deletePost/goBack 经回调注入）
+    expect(scriptBodies).toContain("usePostActions");
+    expect(scriptBodies).toContain("deletePost:");
     // setup 脚本编译通过 = 新增的 const/await 没有语法问题
     expect(() =>
       compileScript(descriptor, { id: "village-detail-delete" })
@@ -189,16 +197,17 @@ describe("村口详情页删除入口契约（detail.vue）", () => {
   });
 
   it("删除项挂在既有 per-post 菜单里，且只对作者本人出现", () => {
-    // 既有菜单口径：复制 / 举报 之后追加删除（同仓点状菜单，不新开弹窗）
+    // 既有菜单口径：复制 / 举报 之后追加删除（同仓点状菜单，不新开弹窗）。
+    // R3 首刀后判定经 options.isOwnPost() 回调（页面接线传 () => isOwnPost.value，口径不变）。
     const gateRe =
-      /isOwnPost\.value\s*\?\s*t\(\s*"village\.detail\.deleteAction"\s*\)\s*:\s*""/u;
-    expect(detailSource).toMatch(gateRe);
-    const actionsIdx = detailSource.indexOf("const deleteLabel");
-    const reportIdx = detailSource.indexOf('const reportLabel = t("village.detail.reportAction")');
+      /options\.isOwnPost\(\)\s*\?\s*t\(\s*"village\.detail\.deleteAction"\s*\)\s*:\s*""/u;
+    expect(actionsSource).toMatch(gateRe);
+    const actionsIdx = actionsSource.indexOf("const deleteLabel");
+    const reportIdx = actionsSource.indexOf('const reportLabel = t("village.detail.reportAction")');
     expect(actionsIdx).toBeGreaterThan(-1);
     expect(reportIdx).toBeGreaterThan(-1);
     // 删除项与举报在同一份 actions 列表里（不是另起一个入口）
-    expect(detailSource.slice(actionsIdx, actionsIdx + 400)).toContain("actions");
+    expect(actionsSource.slice(actionsIdx, actionsIdx + 400)).toContain("actions");
   });
 
   it("删除前二次确认，取消则不发请求", () => {
@@ -208,11 +217,13 @@ describe("村口详情页删除入口契约（detail.vue）", () => {
     expect(body).toContain("if (!confirmed) return");
   });
 
-  it("删除走 store，成功后回村口列表", () => {
+  it("删除走注入的 deletePost（页面接线=store.deletePost），成功后回村口列表", () => {
     const body = deleteHandlerBody();
-    expect(body).toContain("await villageStore.deletePost(post.id)");
+    expect(body).toContain("await options.deletePost(post.id)");
     expect(body).toContain('t("village.detail.deleteSuccess")');
-    expect(body).toContain("goBack()");
+    expect(body).toContain("options.goBack()");
+    // 页面侧接线契约：deletePost 回调必须落在 villageStore.deletePost 上（防绕 store 直发 HTTP）
+    expect(detailSource).toContain("villageStore.deletePost(postId)");
   });
 
   it("删除失败必须可见：toast 后端文案或兜底文案，且不得离开页面", () => {
@@ -221,7 +232,8 @@ describe("村口详情页删除入口契约（detail.vue）", () => {
     expect(catchIdx, "删除调用必须有带绑定的 catch").toBeGreaterThan(-1);
     const catchBlock = body.slice(catchIdx);
     expect(catchBlock).toContain("uni.showToast");
-    expect(catchBlock).toContain("villageStore.errorMessage");
+    // composable 经回调取文案；页面接线=() => villageStore.errorMessage（口径不变）
+    expect(catchBlock).toContain("options.getDeleteErrorMessage()");
     expect(catchBlock).toContain('t("village.detail.deleteFailed")');
     // 失败路径里不得出现 goBack()/navigateBack：帖子还在，页面必须留在原地可重试
     expect(catchBlock).not.toContain("goBack(");
