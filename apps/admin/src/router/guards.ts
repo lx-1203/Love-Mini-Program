@@ -2,7 +2,9 @@
  * Admin v2 路由守卫（复制自旧后台 apps/admin 并扩展动态菜单逻辑）。
  *
  * 守卫职责（eladmin 风格）：
- *   1. 校验 localStorage.admin_v2_token 存在且未过期（解析 JWT exp）；
+ *   1. 按 admin_v2_user 会话标记粗判登录态（R14-5：JWT 已迁入 HttpOnly Cookie，
+ *      前端不可读也不再解析 exp；会话真实有效期由后端每次请求鉴权兜底，401
+ *      时 api/http.ts 统一跳登录）；
  *   2. 未登录访问受保护路由 → 跳转 /login?redirect=<fullPath>；
  *   3. 已登录访问 /login → 跳转首页，避免重复登录；
  *   4. 首次进入受保护路由时按需加载动态菜单（menuStore.loadMenus）
@@ -16,43 +18,24 @@ import type { Router } from "vue-router";
 import { useMenuStore, findFirstMenuPath, isKnownMenuPath } from "../stores/menu";
 import { addDynamicRoutes, notFoundRoute } from "./index";
 import { logger } from "../utils/logger";
-import { env } from "../config/env";
 
 /**
- * JWT token 解析与过期校验工具。
+ * 会话标记存在性校验（R14-5，audit-r14 批5，2026-11-05）。
  *
  * 约定：
- * - localStorage.admin_v2_token 在生产环境为后端签发的 JWT（三段式，点号分隔）
- * - 仅开发环境（vite dev 模式）放行 "dev-admin-token-" 前缀的非 JWT token
- *   （由 session.ts dev 回退登录分支签发），生产构建该前缀分支被 dead-code eliminate；
- *   "mock-admin-token-" 前缀无任何签发方（死分支），已删除
- * - JWT payload 中的 exp 字段为 Unix 秒时间戳：
- *   - 缺少 exp 字段视为无效（安全修复：无过期时间的 token 不可信，拒绝放行）
- *   - exp 已过当前时间则视为未认证
+ * - JWT 由后端签发为 admin_session HttpOnly Cookie（JS 不可读），路由层的登录态
+ *   只能以 admin_v2_user 会话标记粗判——仅用于决定「放行/跳登录」，真正的鉴权
+ *   由后端在每次 API 请求时执行（401 → api/http.ts 统一清理标记并跳登录）；
+ * - 标记损坏（非 JSON）按未登录处理（fail-closed），与 write-policy 同口径。
  *
- * @param token localStorage 中的 admin_v2_token
- * @returns true 表示 token 有效（存在 + 未过期）；false 表示需要重新登录
+ * @returns true 表示本地存在可解析的会话标记；false 表示需要重新登录
  */
-export function isTokenValid(token: string): boolean {
-  if (!token) return false;
-  // dev 前缀 token 仅开发环境放行（长度 ≥16 基础校验），避免空串/极短伪造串被无条件放行
-  if (env.isDev && token.startsWith("dev-admin-token-")) {
-    return token.length >= 16;
-  }
-  const parts = token.split(".");
-  if (parts.length !== 3) return false;
-  // noUncheckedIndexedAccess 模式下 parts[1] 类型为 string | undefined，需显式校验
-  const payloadSegment = parts[1];
-  if (!payloadSegment) return false;
+export function hasSessionMarker(): boolean {
+  const raw = localStorage.getItem("admin_v2_user");
+  if (!raw) return false;
   try {
-    // JWT payload 使用 URL-safe base64，atob 前补齐 padding
-    const normalized = payloadSegment.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-    const payloadJson = atob(padded);
-    const payload = JSON.parse(payloadJson) as { exp?: number };
-    // 安全修复：JWT 无 exp 字段时拒绝（视为过期），避免"永不过期"的隐患
-    if (typeof payload.exp !== "number") return false;
-    return payload.exp * 1000 > Date.now();
+    JSON.parse(raw);
+    return true;
   } catch {
     return false;
   }
@@ -129,8 +112,9 @@ export function sanitizeRedirect(redirect: unknown): string {
  */
 export function setupRouterGuards(router: Router): void {
   router.beforeEach(async (to) => {
-    const token = localStorage.getItem("admin_v2_token") || "";
-    const authenticated = isTokenValid(token);
+    // R14-5（audit-r14 批5，2026-11-05）：JWT 迁入 HttpOnly Cookie 后前端不可读，
+    // 登录态改按 admin_v2_user 会话标记粗判（真实会话有效期由后端逐请求鉴权兜底）
+    const authenticated = hasSessionMarker();
 
     // 已登录访问登录页 → 加载动态菜单后跳转首页（避免 Dashboard 动态路由未注册导致 router 启动失败）
     if (to.name === "Login" && authenticated) {

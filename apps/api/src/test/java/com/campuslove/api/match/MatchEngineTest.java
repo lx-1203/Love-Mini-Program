@@ -25,6 +25,7 @@ import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
+import com.campuslove.api.repository.UserBlockRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collections;
 import java.util.List;
@@ -109,6 +110,35 @@ class MatchEngineTest {
         assertTrue(excluded.contains(2L), "应包含已喜欢用户");
         assertTrue(excluded.contains(3L), "应包含信号对方");
         assertTrue(excluded.contains(4L), "应包含已 pass 用户");
+    }
+
+    /**
+     * 场景：R14-4 拉黑关系排除——我拉黑的与拉黑我的（双向并集）均进排除集合，
+     * 使「心动匹配」候选不再出现拉黑双方（与推荐链路同构）。
+     */
+    @Test
+    void getExcludedUserIds_includesBlockedRelations() {
+        Long userId = 1L;
+
+        when(likeRepository.findByUserIdAndStatus(userId, LikeStatus.active))
+                .thenReturn(Collections.emptyList());
+        when(heartSignalRepository.findByUserAIdOrUserBIdAndStatus(userId, userId, SignalStatus.pending))
+                .thenReturn(Collections.emptyList());
+        when(heartSignalRepository.findByUserAIdOrUserBIdAndStatus(userId, userId, SignalStatus.accepted))
+                .thenReturn(Collections.emptyList());
+        when(passRecordRepository.findByUserIdOrderByCreatedAtDesc(userId))
+                .thenReturn(Collections.emptyList());
+
+        @SuppressWarnings("unchecked")
+        UserBlockRepository blockRepository = org.mockito.Mockito.mock(UserBlockRepository.class);
+        org.mockito.Mockito.when(blockRepository.findBlockedRelationUserIds(userId))
+                .thenReturn(List.of(20L, 21L));
+        org.springframework.test.util.ReflectionTestUtils.setField(matchEngine, "blockRepository", blockRepository);
+
+        Set<Long> excluded = matchEngine.getExcludedUserIds(userId);
+
+        assertTrue(excluded.contains(20L), "我拉黑的用户应被排除出匹配候选");
+        assertTrue(excluded.contains(21L), "拉黑我的用户应被排除出匹配候选");
     }
 
     /**

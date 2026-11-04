@@ -39,7 +39,11 @@ const SRC = resolve(arg("src", join(REPO, "apps/client/src")));
    删前用脚本断言结构：BEFORE=4169 AFTER=4143、差值恰为 26、
    非 matchHub 键 0 改动 0 新增（见下），删后 zh 键数与孤儿数都由本门重读。
    反证：--allow-orphans 1200 ⇒ exit 1（棘轮真的会咬）。 */
-const ALLOW = Number(arg("allow-orphans", "1243"));
+/* 棘轮收缩 1243 → 1242（2026-11-05 audit-r14 修复批 7）：
+   批 7 把 other.vue 取消匹配 catch 兜底 toast 从裸中文「操作失败，请稍后再试」迁到既有键
+   common.operationFailed —— 该键此前在孤儿名单里，迁入后获得真实引用，孤儿数随之 -1。
+   按双向棘轮纪律把基线钉到实测数。 */
+const ALLOW = Number(arg("allow-orphans", "1242"));
 const VERBOSE = argv.includes("--verbose");
 /* 第二维（第五轮 C-F8 / B-FINDING 14）：i18n 之外的"裸中文文案"棘轮。
    过去这把门只量反方向（定义了没人用的死键），完全看不见"绕过 i18n 直接硬编码进 UI 的中文"——
@@ -65,8 +69,22 @@ const VERBOSE = argv.includes("--verbose");
    余下按 Top 5 顺序由后续批次继续压这条基线。
    publish.vue 残留的 1 条是**本分类器的已知误差**，不是待迁文案：`>([^<>]*)<` 在 <script> 区把
    `length > 0 ? city : ""` 的 `>` 与 `ref<"general" | …>` 的 `<` 跨行配成一对，产出一个模板文本假命中
-   （整库这类跨行误配约 2 条）。修判据不在本车道权限内（只许动本行缺省值与注释），故入账不消数。 */
-const ALLOW_HARDCODED = Number(arg("allow-hardcoded", "341"));
+   （整库这类跨行误配约 2 条）。修判据不在本车道权限内（只许动本行缺省值与注释），故入账不消数。
+   ── audit-r14 修复批 7（2026-11-05）下调：341 → 311（只降不升，本行缺省即新实测数）──
+   迁的 30 条（toast/modal 24→1 为主，另含 3 条骨架/加载 label 属性与 2 条加载文案模板文本）：
+     subpackages/profile-extra/profile/other.vue        13（真实分支匹配成功弹窗 4 + 已喜欢/已关注/已取消关注
+                                                          toast 3 + 取消匹配弹窗 4 + 已取消匹配/catch 兜底 toast 2）
+     pages/home/index.vue                                5（openAppPath fail toast ×5，统一 home.openPathFailed）
+     subpackages/discover-extra/discover/match-success.vue 3（goChat/分享指引/截图占位 toast）
+     subpackages/profile-extra/profile/location.vue      2（地图选点失败 toast ×2）
+     subpackages/chat/official-chat/index.vue            3（会话设置/更多功能死按钮 toast 2 + 骨架 label 1）
+     subpackages/village/village/detail.vue              2（评论配图超限/上传失败 toast）
+     subpackages/tools/daily-question/index.vue          1（锁定卡签到失败 toast）
+     pages/messages/index.vue                            2（删除会话 showModal 标题 + PageStateContainer
+                                                          error-text 字面量兜底拆除）
+     components/home/（RelationActivity/InterestRecommendation/official-chat 骨架 label ×3、
+       TodayRecommendationCard 加载文案 ×1，profile/index.vue 无新增命中，纯键值消费） */
+const ALLOW_HARDCODED = Number(arg("allow-hardcoded", "311"));
 const SCAN_HARDCODED = !argv.includes("--no-hardcoded");
 
 /** locale 文件是纯对象字面量（结尾 `} as const;`），剥掉 TS 外衣后直接求值。 */

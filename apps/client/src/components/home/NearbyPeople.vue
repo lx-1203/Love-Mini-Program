@@ -1,10 +1,13 @@
 ﻿<script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import type { NearbyPersonViewModel } from "../../view-models/home-dashboard";
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
 
-defineProps<{ items: NearbyPersonViewModel[]; loading?: boolean }>();
-defineEmits<{ (e: "more"): void; (e: "select", userId: number): void }>();
+// R14-6（2026-11-05）：补 error/retry 组件 API（与 CommunityFeed 同形态）
+const { t } = useI18n();
+defineProps<{ items: NearbyPersonViewModel[]; loading?: boolean; error?: string | null }>();
+defineEmits<{ (e: "more"): void; (e: "select", userId: number): void; (e: "retry"): void }>();
 
 /** 默认头像（与社区头像缺省行为一致） */
 const defaultAvatar = resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR);
@@ -60,6 +63,13 @@ function onNearbyAvatarError(event: Event) {
       </view>
     </scroll-view>
     <!-- MP-R2-PAGES-HOME-INDEX-111：加载完成仍无人 → 空态块（口径对齐 CommunityFeed），替代此前的空白横滑区 -->
+    <!-- R14-6（2026-11-05）：dashboard 拉取失败错误态 + 重试（插在骨架与空态之间，口径对齐 CommunityFeed） -->
+    <view v-else-if="!loading && error" class="nearby-people__error">
+      <text class="nearby-people__error-text">{{ t("home.sectionErrorText", { message: error }) }}</text>
+      <view class="nearby-people__retry" hover-class="nearby-people__retry--pressed" @tap="$emit('retry')">
+        <text class="nearby-people__retry-text">{{ t("home.sectionRetry") }}</text>
+      </view>
+    </view>
     <view v-else-if="items.length === 0" class="nearby-people__empty">附近暂时没有可匹配的人，去看看推荐吧</view>
     <scroll-view v-else scroll-x class="nearby-scroll" :show-scrollbar="false">
       <view class="nearby-list">
@@ -141,6 +151,46 @@ function onNearbyAvatarError(event: Event) {
   color: #999999;
   font-size: 22rpx;
   text-align: center;
+}
+
+/* R14-6（2026-11-05）：错误态 + 重试按钮（行内样式对齐 CommunityFeed 错误行） */
+.nearby-people__error {
+  margin: 0 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 20rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  border: 1rpx solid #FFE3E3;
+}
+
+.nearby-people__error-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 16rpx;
+  font-size: 22rpx;
+  color: #999999;
+}
+
+.nearby-people__retry {
+  flex-shrink: 0;
+  padding: 10rpx 28rpx;
+  border-radius: 999rpx;
+  background: #36C99A;
+}
+
+.nearby-people__retry--pressed {
+  opacity: 0.8;
+}
+
+.nearby-people__retry-text {
+  font-size: 24rpx;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .nearby-scroll {

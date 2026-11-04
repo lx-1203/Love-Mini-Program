@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import type { InterestCircleViewModel } from "../../view-models/home-dashboard";
 import { circleCoverFor } from "../../config/circle-covers";
 import { resolveMediaUrl, isUploadedMediaUrl } from "../../utils/media";
 import SkeletonBlock from "../common/SkeletonBlock.vue";
+
+// R14-6（2026-11-05）：补 error/retry 组件 API（与 CommunityFeed 同形态）+ 骨架 label 走 i18n
+const { t } = useI18n();
 
 /** 圈名 → 封面统一走 config/circle-covers 单一映射（2026-09-12 收编本页副本，
  *  与圈子列表页/圈子主页共用，杜绝图文不一致） */
@@ -70,8 +74,8 @@ function coverSrc(icon: string | null | undefined, name: string): string {
   return circleCover(name);
 }
 
-withDefaults(defineProps<{ items: InterestCircleViewModel[]; loading?: boolean }>(), { loading: false });
-defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id: number): void }>();
+withDefaults(defineProps<{ items: InterestCircleViewModel[]; loading?: boolean; error?: string | null }>(), { loading: false });
+defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id: number): void; (e: "retry"): void }>();
 </script>
 
 <template>
@@ -82,7 +86,14 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
     </view>
     <!-- 2026-09-03 骨架屏：homeFeed 首拉期间占位 -->
     <view v-if="loading" role="status" aria-live="polite">
-      <SkeletonBlock variant="list" :rows="2" label="加载中" />
+      <SkeletonBlock variant="list" :rows="2" :label="t('common.loadingAria')" />
+    </view>
+    <!-- R14-6（2026-11-05）：dashboard 拉取失败错误态 + 重试（口径对齐 CommunityFeed） -->
+    <view v-else-if="error" class="interest-recommend__error">
+      <text class="interest-recommend__error-text">{{ t("home.sectionErrorText", { message: error }) }}</text>
+      <view class="interest-recommend__retry" hover-class="interest-recommend__retry--pressed" @tap="$emit('retry')">
+        <text class="interest-recommend__retry-text">{{ t("home.sectionRetry") }}</text>
+      </view>
     </view>
     <!-- MP-R2-PAGES-HOME-INDEX-111：骨架 → 空态 → 列表三分支，空态口径对齐 CommunityFeed -->
     <view v-else-if="items.length === 0" class="interest-recommend__empty">暂无兴趣圈</view>
@@ -153,6 +164,45 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
   color: var(--c-text-secondary, #999999);
   font-size: 22rpx;
   text-align: center;
+}
+
+/* R14-6（2026-11-05）：错误态 + 重试按钮（行内样式对齐 CommunityFeed 错误行） */
+.interest-recommend__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 20rpx;
+  border-radius: 20rpx;
+  background: #ffffff;
+  border: 1rpx solid #FFE3E3;
+}
+
+.interest-recommend__error-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 16rpx;
+  font-size: 22rpx;
+  color: #999999;
+}
+
+.interest-recommend__retry {
+  flex-shrink: 0;
+  padding: 10rpx 28rpx;
+  border-radius: 999rpx;
+  background: #36C99A;
+}
+
+.interest-recommend__retry--pressed {
+  opacity: 0.8;
+}
+
+.interest-recommend__retry-text {
+  font-size: 24rpx;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .interest-scroll {

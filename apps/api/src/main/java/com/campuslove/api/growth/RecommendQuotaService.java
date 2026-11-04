@@ -26,11 +26,10 @@ import org.springframework.stereotype.Service;
  *       TTL 36 小时自动清理）；Redis 不可用时降级到本地内存计数</li>
  * </ul>
  *
- * <p><b>TODO（P0-23 协调项）</b>：配额消费的接入点在
- * {@code discover/RealRecommendationService#getRecommendations}（每次拉取按次扣减，
- * 达到上限返回空列表 + 提示字段）。discover/ 模块由另一组负责（缓存/策略/控制器），
- * 本服务仅提供 growth 侧的配额计算与原子扣减能力，接入点待主线程协调后由 discover 组
- * 注入本服务调用 {@link #tryConsume} / {@link #getRemainingQuota}。</p>
+ * <p><b>B-5 已接线（R14-2，2026-11-05 复核结案）</b>：配额消费接入点已在
+ * {@code discover/RecommendationCacheManager#getCachedRecommendations}（L111/L274 两处
+ * {@link #tryConsume} 原子扣减，超限回滚递增）——原「待 discover 组协调」的 TODO 已陈旧了结；
+ * 本服务持续提供 growth 侧的配额计算与原子扣减能力。</p>
  */
 @Profile("real")
 @Service

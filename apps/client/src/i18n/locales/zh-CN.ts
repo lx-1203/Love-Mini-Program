@@ -442,7 +442,11 @@ export default {
     "explore": "继续探索",
     "reasonLabel": "你们因为",
     "reasonEnd": "开始连接",
-    "scoreTitle": "我们正在分享你们的共同点"
+    "scoreTitle": "我们正在分享你们的共同点",
+    // R14-6（2026-11-05）audit-r14 修复批 7：match-success.vue toast i18n 落点
+    "identityMissing": "暂时无法识别对方身份，请到寻觅页重新匹配",
+    "shareHint": "点右上角「···」选择发送给朋友即可转发",
+    "screenshotSoon": "截图功能即将上线"
   },
   "interestSelect": {
     "title": "选择兴趣",
@@ -646,7 +650,14 @@ export default {
     "loveStepProfileDone": "资料已完善，去认识新人吧",
     "loveStepDiscoverDone": "今日寻觅完成，关系更进一步",
     "loveStepWhisperDone": "悄悄话已回复，等待对方回应",
-    "loveStepInterestDone": "已加入兴趣圈，开始互动吧"
+    "loveStepInterestDone": "已加入兴趣圈，开始互动吧",
+    // R14-6（2026-11-05）audit-r14 修复批 7：首页分区错误/重试与跳转失败 toast 的 i18n 落点
+    // （四个分区组件 TodayRecommendationCard/RelationActivity/InterestRecommendation/NearbyPeople
+    //  共用同一对错误文案键，形态对齐 CommunityFeed 既有 error+retry）
+    "sectionErrorText": "加载失败：{message}",
+    "sectionRetry": "重试",
+    "openPathFailed": "页面打开失败，请重试",
+    "todayRecommendLoading": "正在为你挑选心动的人…"
   },
   "notLoggedWaiting": {
     "title": "正在为你寻找 同频的那个人",
@@ -1177,6 +1188,9 @@ export default {
     "officialSubtitle": "功能答疑 · 系统通知",
     "officialAria": "产品助手：功能答疑、系统通知",
     "officialWip": "产品助手功能开发中",
+    // R14-6（2026-11-05）audit-r14 修复批 7：official-chat/index.vue 死按钮 toast i18n 落点
+    "officialSessionSettingsSoon": "会话设置敬请期待",
+    "officialMoreSoon": "更多功能敬请期待",
     "assistantTitle": "活动官",
     "assistantSubtitle": "活动推送 · 惊喜福利",
     "assistantAria": "活动官：活动推送、惊喜福利",
@@ -1440,6 +1454,9 @@ export default {
     "otherFollow": "关注 TA",
     "otherFollowed": "已关注",
     "otherFollowFailed": "关注失败，请重试",
+    // R14-6（2026-11-05）audit-r14 修复批 7：他人/本人资料拉取失败 ErrorState 主文案
+    "otherProfileLoadFailed": "对方资料加载失败",
+    "ownProfileLoadFailed": "个人资料加载失败",
     "settings": "通用设置",
     "editProfile": "编辑资料",
     "editBackground": "编辑背景图",
@@ -1449,7 +1466,14 @@ export default {
       "matchContent": "你们互相喜欢了，快去打个招呼吧",
       "matchGoChat": "去聊天",
       "matchKeepBrowsing": "再看看",
-      "likeWaiting": "已喜欢，等待回应"
+      "likeWaiting": "已喜欢，等待回应",
+      // R14-6（2026-11-05）audit-r14 修复批 7：other.vue 弹窗/toast i18n 落点
+      //（unfollowed/followed 关注结果提示；unmatch* 取消匹配确认弹窗与结果提示）
+      "unfollowed": "已取消关注",
+      "unmatchTitle": "取消匹配",
+      "unmatchContent": "取消后你们将不再互为匹配，确定取消吗？",
+      "unmatchKeep": "再想想",
+      "unmatched": "已取消匹配"
     },
     "logoutConfirm": "确定要退出登录吗？",
     "profileIncomplete": "完善资料后解锁",
@@ -1685,7 +1709,10 @@ export default {
   "locationPage": {
     "serverCityTag": "服务器所在城市",
     "addressUnavailable": "暂时获取不到位置",
-    "locationEmpty": "暂无位置信息"
+    "locationEmpty": "暂无位置信息",
+    // R14-6（2026-11-05）audit-r14 修复批 7：location.vue 地图选点失败 toast i18n 落点
+    "pickResultMissing": "未获取到选点结果，请检查定位权限后重试",
+    "pickMpOnly": "地图选点仅小程序端可用"
   },
   "help": {
     "navTitle": "帮助与客服",
@@ -1942,7 +1969,10 @@ export default {
       "reportFailed": "举报失败",
       "commentFailed": "评论失败",
       "shareSuccess": "转发成功",
-      "shareFailed": "转发失败"
+      "shareFailed": "转发失败",
+      // R14-6（2026-11-05）audit-r14 修复批 7：detail.vue 评论配图 toast i18n 落点
+      "imageLimitToast": "最多 3 张图片",
+      "imageUploadFailedToast": "图片上传失败，请重试"
     },
     "post": {
       "headerTitle": "发布动态",
@@ -2875,6 +2905,8 @@ export default {
     "systemDesc": "系统通知",
     "chatDesc": "未读消息",
     "deleteSessionConfirm": "确认删除该会话？删除后无法恢复。",
+    // R14-6（2026-11-05）audit-r14 修复批 7：onSessionLongpress 删除会话 showModal 标题 i18n 落点
+    "deleteSessionTitle": "确定删除该会话？",
     "pinSession": "置顶会话",
     "unpinSession": "取消置顶",
     "unpinned": "已取消置顶",
@@ -3962,6 +3994,8 @@ export default {
     "lockTitle": "签到后解锁",
     "lockDesc": "完成今日签到即可参与每日一问",
     "unlockSuccess": "签到成功，每日一问已解锁",
+    // R14-6（2026-11-05）audit-r14 修复批 7：锁定卡「去签到」失败 toast i18n 落点
+    "checkInFailedToast": "签到失败，请稍后再试",
     "loadingAria": "加载中",
     "loadingTextProgress": "正在加载...",
     "todayTopic": "今日话题",

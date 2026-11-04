@@ -25,8 +25,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.method.HandlerMethod;
 
 /**
@@ -47,6 +50,9 @@ import org.springframework.web.method.HandlerMethod;
  *   <li>Idempotency-Key 含空白字符 → trim 后用于校验</li>
  *   <li>空字符串 Idempotency-Key → 视为缺失</li>
  *   <li>自定义 TTL 应正确传递给 Redis</li>
+ *   <li>R14-3（2026-11-05）补齐 strict 模式资金端点 fail-closed 专项：
+ *       strict + 资金端点 + Redis 异常/null → 503 拒绝；非资金端点与非 strict 维持降级放行；
+ *       正常重复请求仍 409（fail-closed 只作用于 Redis 故障窗口）</li>
  * </ul>
  *
  * <p>测试策略：纯 Mockito，模拟 RedisTemplate / ValueOperations 与 Servlet 三件套。
@@ -408,5 +414,91 @@ class IdempotentInterceptorTest {
         // Assert
         assertTrue(result, "使用占位值 '1' 时应正常放行");
         verify(valueOperations).setIfAbsent(anyString(), eq("1"), any(Duration.class));
+    }
+
+    /* ========== 场景 16-20：strict 模式资金端点 fail-closed（2026-10-05 引入，R14-3 补专项测试） ========== */
+
+    @Test
+    @DisplayName("strict + 资金端点（wallet）+ Redis 异常 → 503 拒绝（fail-closed）")
+    void preHandle_strictFundsEndpointRedisThrows_shouldRejectWith503() throws Exception {
+        // Arrange
+        ReflectionTestUtils.setField(interceptor, "strict", true);
+        when(request.getHeader(IdempotentInterceptor.HEADER_IDEMPOTENCY_KEY)).thenReturn(TEST_KEY);
+        when(request.getRequestURI()).thenReturn("/api/v1/wallet/recharge");
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.setIfAbsent(anyString(), any(), any(Duration.class)))
+                .thenThrow(new RuntimeException("Redis connection refused"));
+
+        // Act & Assert
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> interceptor.preHandle(request, response, handlerMethod("createOrder")));
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, ex.getStatusCode(),
+                "strict 模式下资金端点遇 Redis 故障必须 503 拒绝（防重复扣费闸失效窗口）");
+    }
+
+    @Test
+    @DisplayName("strict + 资金端点（vip）+ RedisTemplate 为 null → 503 拒绝")
+    void preHandle_strictFundsEndpointNullRedis_shouldRejectWith503() throws Exception {
+        // Arrange：strict 置位 + 无 RedisTemplate（模拟 Redis 整体不可用）
+        IdempotentInterceptor noRedisInterceptor = new IdempotentInterceptor(null);
+        ReflectionTestUtils.setField(noRedisInterceptor, "strict", true);
+        when(request.getHeader(IdempotentInterceptor.HEADER_IDEMPOTENCY_KEY)).thenReturn(TEST_KEY);
+        when(request.getRequestURI()).thenReturn("/api/v1/vip/orders");
+
+        // Act & Assert
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> noRedisInterceptor.preHandle(request, response, handlerMethod("createOrder")));
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, ex.getStatusCode(),
+                "strict 模式下资金端点遇 Redis 不可用必须 503 拒绝");
+    }
+
+    @Test
+    @DisplayName("strict + 非资金端点 + Redis 异常 → 维持降级放行")
+    void preHandle_strictNonFundsRedisThrows_shouldStillDegrade() throws Exception {
+        // Arrange
+        ReflectionTestUtils.setField(interceptor, "strict", true);
+        when(request.getHeader(IdempotentInterceptor.HEADER_IDEMPOTENCY_KEY)).thenReturn(TEST_KEY);
+        when(request.getRequestURI()).thenReturn("/api/v1/posts");
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.setIfAbsent(anyString(), any(), any(Duration.class)))
+                .thenThrow(new RuntimeException("Redis connection refused"));
+
+        // Act & Assert
+        boolean result = assertDoesNotThrow(
+                () -> interceptor.preHandle(request, response, handlerMethod("createOrder")));
+        assertTrue(result, "strict 只收紧资金端点；非资金端点维持降级放行");
+    }
+
+    @Test
+    @DisplayName("非 strict（默认）+ 资金端点 + Redis 异常 → 维持旧降级放行行为")
+    void preHandle_nonStrictFundsRedisThrows_shouldDegrade() throws Exception {
+        // Arrange：setUp 新建的拦截器 strict 默认 false（未注入配置）——不 stub getRequestURI，
+        // strict=false 下 isFundsEndpoint 永不调用，stub 会被 Mockito 严格模式判为多余
+        when(request.getHeader(IdempotentInterceptor.HEADER_IDEMPOTENCY_KEY)).thenReturn(TEST_KEY);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.setIfAbsent(anyString(), any(), any(Duration.class)))
+                .thenThrow(new RuntimeException("Redis connection refused"));
+
+        // Act & Assert
+        boolean result = assertDoesNotThrow(
+                () -> interceptor.preHandle(request, response, handlerMethod("createOrder")));
+        assertTrue(result, "strict=false 时维持旧的降级放行行为（向后兼容）");
+    }
+
+    @Test
+    @DisplayName("strict + 资金端点 + 正常重复请求（SETNX false）→ 仍 409 幂等拦截")
+    void preHandle_strictFundsNormalDuplicate_shouldStill409() throws Exception {
+        // Arrange：fail-closed 只作用于 Redis 故障窗口，正常重复拦截不受影响
+        // （SETNX=false 在 isFundsEndpoint 判定前即抛 409，故同样不 stub getRequestURI）
+        ReflectionTestUtils.setField(interceptor, "strict", true);
+        when(request.getHeader(IdempotentInterceptor.HEADER_IDEMPOTENCY_KEY)).thenReturn(TEST_KEY);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.setIfAbsent(anyString(), any(), any(Duration.class))).thenReturn(false);
+
+        // Act & Assert
+        IdempotencyException ex = assertThrows(IdempotencyException.class,
+                () -> interceptor.preHandle(request, response, handlerMethod("createOrder")));
+        assertEquals(IdempotencyException.ERROR_CODE, ex.getErrorCode(),
+                "正常重复请求仍走 409 幂等拦截，strict 不改变重复语义");
     }
 }

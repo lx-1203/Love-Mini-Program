@@ -127,8 +127,10 @@ public class RealInviteService implements InviteService {
         reward.setStatus(InviteReward.STATUS_GRANTED);
         inviteRewardRepository.saveAndFlush(reward);
 
-        // 5. accept 时即发放奖励入邀请人钱包（最简单可靠；
-        //    TODO(产品)：可改为「被邀请人完成注册后发」，届时由注册完成事件触发）
+        // 5. accept 时即发放奖励入邀请人钱包。
+        //    B-2 拍板（R14-2，2026-11-05）：维持 accept 即发为终态——acceptInvite 全程 JWT
+        //    鉴权（被邀请人必须已完成注册并登录才能绑定），「完成注册后发」与现状语义等价；
+        //    且绑定有唯一约束幂等 + 入账失败回滚绑定，滥用面已被双重控制，无改事件驱动之必要。
         long balanceAfter;
         try {
             balanceAfter = walletService.recharge(

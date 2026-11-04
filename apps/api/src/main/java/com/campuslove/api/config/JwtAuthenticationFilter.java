@@ -54,6 +54,22 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * 永不再换算成 {@code ROLE_USER} / {@code ROLE_ADMIN} / {@code ROLE_SUPER_ADMIN} /
  * {@code ROLE_AUDITOR} 会话；非媒体读取路径上更是直接不建立认证（401）。
  * 判定口径真源见 {@link MediaTokenPolicy}，授权规则见 {@link SecurityConfig}。</p>
+ *
+ * <p>R14-5（audit-r14 批5，infra R2-00300 落地，2026-11-05）：管理端 JWT 从 localStorage
+ * 迁移到 HttpOnly Cookie（{@code admin_session}，签发方
+ * {@link com.campuslove.api.auth.AuthController#loginAsAdmin}）。本过滤器新增两条规则：</p>
+ * <ol>
+ *   <li><b>Cookie 回退认证</b>：Authorization 头缺失（或非 Bearer 格式）且请求携带
+ *       {@code admin_session} cookie 时，回退用 cookie 值做同一套 JWT 校验（jti 黑名单、
+ *       scope 降权、用户状态快照全都不变）。凭据优先级：Bearer 头永远优先（QA 脚本与
+ *       既有测试不受影响）＞ 媒体 {@code ?token=}（既有通道，维持原行为）＞ cookie 回退；
+ *       三者互斥，先到先得。</li>
+ *   <li><b>CSRF 双层防护</b>：本次认证令牌来自 cookie 且请求方法为写
+ *       （POST/PUT/DELETE/PATCH）时，请求头 {@code X-Requested-With} 必须等于
+ *       {@code XMLHttpRequest}，否则直接 403 {@code {"code":"CSRF_REJECTED"}}（不进入
+ *       过滤器链）——跨站发起的表单/JS 请求无法携带自定义头，与 SameSite=Strict
+ *       互为两层；Bearer 头认证的写请求不受此限（QA 脚本用例不受影响）。</li>
+ * </ol>
  */
 @Component
 @Profile("real")
@@ -84,6 +100,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     /** 查询参数 token 的参数名 */
     private static final String TOKEN_QUERY_PARAM = "token";
+
+    /**
+     * R14-5（2026-11-05）：管理端会话 Cookie 名。签发真源在
+     * {@link com.campuslove.api.auth.AuthController#ADMIN_SESSION_COOKIE}，此处引用同一常量防漂移。
+     */
+    private static final String ADMIN_SESSION_COOKIE = com.campuslove.api.auth.AuthController.ADMIN_SESSION_COOKIE;
+
+    /** R14-5：X-Requested-With 头的标准取值（CSRF 第二层防护的判定值） */
+    private static final String XML_HTTP_REQUEST_VALUE = "XMLHttpRequest";
 
     /**
      * 用户角色/状态快照缓存（R4-00272）。
@@ -262,6 +287,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = null;
         // 标记 token 来源：query 参数（仅 /api/v1/media/** 开放，R4-00273 scope 校验用）
         boolean tokenFromQuery = false;
+        // R14-5：标记 token 来源为 admin_session cookie（CSRF 写请求校验的判定依据）
+        boolean tokenFromCookie = false;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
         } else if (pathMatcher.match(MEDIA_PROXY_PATH_PATTERN, requestPath)) {
@@ -277,6 +304,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 token = queryToken.trim();
                 tokenFromQuery = true;
             }
+        }
+        // R14-5（audit-r14 批5，2026-11-05）：管理端会话 Cookie 回退。Bearer 头缺失/非 Bearer
+        // 且媒体查询参数也未取到令牌时，回退读 admin_session cookie 走同一套校验——
+        // Bearer 头永远优先（QA 脚本/既有测试不受影响），凭据互斥先到先得。
+        if (token == null) {
+            String cookieToken = adminSessionCookieValue(request);
+            if (cookieToken != null) {
+                token = cookieToken;
+                tokenFromCookie = true;
+            }
+        }
+
+        // R14-5 CSRF 双层防护：cookie 认证的写请求必须携带 X-Requested-With: XMLHttpRequest。
+        // 跨站页面发起的表单提交/JS fetch 无法携带自定义头，被本闸拦下；管理端前端
+        // （apps/admin/src/api/http.ts）已对所有请求统一附带该头，正常操作不受影响。
+        // 判定只看凭据来源与请求形态，不看令牌是否有效（fail-closed）：
+        // Bearer 头认证（tokenFromCookie=false）不受此限。
+        if (token != null && tokenFromCookie && isWriteMethod(request.getMethod())
+                && !XML_HTTP_REQUEST_VALUE.equals(request.getHeader("X-Requested-With"))) {
+            rejectCrossSiteWrite(request, response, requestPath);
+            return;
         }
 
         // P0-2 收口最后一寸：能力型签名 URL（?exp=&sig=）不携带任何会话凭据，
@@ -471,5 +519,62 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         return false;
+    }
+
+    /**
+     * R14-5（audit-r14 批5，2026-11-05）：读取请求中的管理端会话 Cookie 值。
+     *
+     * <p>Cookie 为 HttpOnly，服务端读取不受限制；值为空白串按缺失处理（与媒体查询
+     * 参数同口径）。请求不带该 Cookie 时返回 null，调用方维持既有的无 token 流程。</p>
+     *
+     * @param request 当前请求
+     * @return cookie 值；缺失/空白返回 null
+     */
+    private String adminSessionCookieValue(HttpServletRequest request) {
+        jakarta.servlet.http.Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return null;
+        }
+        for (jakarta.servlet.http.Cookie cookie : cookies) {
+            if (ADMIN_SESSION_COOKIE.equals(cookie.getName())
+                    && cookie.getValue() != null && !cookie.getValue().isBlank()) {
+                return cookie.getValue();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * R14-5：判断 HTTP 方法是否为「写方法」（POST/PUT/DELETE/PATCH，大小写不敏感）。
+     * GET/HEAD/OPTIONS 等读方法不做 CSRF 校验。
+     *
+     * @param method 请求方法，可为 null（直调单测未打桩时）
+     * @return 是否写方法
+     */
+    private static boolean isWriteMethod(String method) {
+        return "POST".equalsIgnoreCase(method) || "PUT".equalsIgnoreCase(method)
+                || "DELETE".equalsIgnoreCase(method) || "PATCH".equalsIgnoreCase(method);
+    }
+
+    /**
+     * R14-5：拒绝 cookie 认证且缺少 {@code X-Requested-With: XMLHttpRequest} 的写请求。
+     *
+     * <p>直接写 403 + {@code {"code":"CSRF_REJECTED"}} 并终止过滤器链（不 doFilter），
+     * 不走 AuthenticationEntryPoint 的 401——因为这里拒绝的不是「未认证」而是
+     * 「疑似跨站伪造的写请求」，语义不同。日志只记路径与方法，不记令牌内容。</p>
+     *
+     * @param request     当前请求
+     * @param response    当前响应
+     * @param requestPath 请求路径（仅用于日志）
+     */
+    private void rejectCrossSiteWrite(HttpServletRequest request,
+                                      HttpServletResponse response,
+                                      String requestPath) throws IOException {
+        SecurityContextHolder.clearContext();
+        log.warn("R14-5 CSRF 防护：cookie 认证的写请求缺少 X-Requested-With 头，拒绝: path={}, method={}",
+                requestPath, request.getMethod());
+        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("{\"code\":\"CSRF_REJECTED\"}");
     }
 }

@@ -16,7 +16,7 @@ import {
   reviewRealNameCertification,
   type RealNameCertificationView,
 } from "@/api/real-name-certifications";
-import { ApiError, getToken } from "@/api/http";
+import { ApiError } from "@/api/http";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import ErrorState from "@/components/ErrorState.vue";
 import { formatDateTime } from "@/utils/format";
@@ -26,16 +26,15 @@ const { t } = useI18n();
 const sessionStore = useSessionStore();
 
 /**
- * MP-R7-ADMIN-IMG（2026-09-15）：媒体鉴权代理端点要求 Authorization 头，
- * 原直链 <a href target=_blank> 新开页不带 token → 401 JSON，管理员看不到
- * 身份证照片。改为 fetch（带 token）→ blob → objectURL 新窗口展示。
+ * MP-R7-ADMIN-IMG（2026-09-15）：媒体鉴权代理端点要求认证，原直链
+ * <a href target=_blank> 新开页不带凭据 → 401 JSON，管理员看不到身份证照片。
+ * 改为 fetch → blob → objectURL 新窗口展示。
+ * R14-5（audit-r14 批5，2026-11-05）：认证走 admin_session HttpOnly Cookie
+ * （同站 fetch 自动携带），不再读 token / 发 Authorization 头。
  */
 async function viewImage(url: string): Promise<void> {
   try {
-    const token = getToken();
-    const resp = await fetch(url, {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
+    const resp = await fetch(url);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const blob = await resp.blob();
     const objectUrl = URL.createObjectURL(blob);

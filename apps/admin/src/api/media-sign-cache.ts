@@ -18,7 +18,7 @@
  * 登记对本模块版本号的依赖，签名异步到达后 version +1 触发重渲染补图。
  */
 import { ref } from "vue";
-import { getToken, post } from "./http";
+import { post } from "./http";
 
 interface SignedEntry {
   /** 带 ?exp=&sig= 的完整路径（不含站点前缀） */
@@ -54,13 +54,15 @@ export function mediaSignVersion(): number {
 /**
  * 会话指纹：签名 URL 是「上一个账号能读这些文件」的能力凭据，换账号/登出后不能
  * 继续用。与客户端同款自愈方案：每次访问时比对指纹，不一致即整缓存作废。
- * 指纹只取 JWT 末段，不把令牌本身留在内存结构里。
+ * R14-5（audit-r14 批5，2026-11-05）：JWT 迁入 HttpOnly Cookie 后前端不可读，
+ * 指纹改取 admin_v2_user 会话标记末段（换账号/登出必然改写该标记），同样
+ * 不把任何凭据内容留在内存结构里。
  */
 let sessionFingerprint = "";
 
 function currentFingerprint(): string {
-  const token = getToken();
-  return token.length > 12 ? token.slice(-12) : token;
+  const marker = localStorage.getItem("admin_v2_user") ?? "";
+  return marker.length > 12 ? marker.slice(-12) : marker;
 }
 
 function assertSameSession(): void {

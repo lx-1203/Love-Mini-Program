@@ -152,7 +152,7 @@ const circleTags = computed<string[]>(() =>
   useMock() ? ["摄影技巧", "风景拍摄", "人像写真", "城市漫游"] : circleMeta.value.tags
 );
 
-/** 置顶公告（本地 mock —— TODO(后端): 圈公告接口）。
+/** 置顶公告（R14-1 2026-11-05：后端 /circles/{id}/meta 已于 2026-10-28 表化下发，TODO 已了结）。
  *  MP-R1-CIRCLEHOME-001：real 模式不渲染写死演示公告
  *  MP-R2VIS-SUBPACKAGES-CIRCLES-CIRCLES-CIRCLE-HOME-002（2026-09-27）：演示文案不再
  *  写死中文字面量，改走本页其余文案同一套 useI18n().t()（circle.home.* 命名，
@@ -449,7 +449,7 @@ function goToPostTopic(): void {
 }
 
 /**
- * 点赞（本地态翻转 —— TODO(后端): 点赞接口回填）
+ * 点赞（乐观翻转 + toggleTopicLike 回填，R14-1 2026-11-05：后端点赞接口已接线，TODO 已了结）
  * R11-L04-D14：真实数据没有点赞列，item.likes 缺省时点赞位不渲染，本函数也不会被调到；
  * 这里保留守卫，避免将来接线时对 undefined 做 += 得到 NaN。
  */

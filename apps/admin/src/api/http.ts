@@ -1,22 +1,23 @@
 /**
- * Admin v2 API 请求工具（复制自旧后台 apps/admin，token key 改为 admin_v2_token）。
+ * Admin v2 API 请求工具。
  *
  * 封装 fetch，统一处理：
  *  - API base URL（来自 VITE_API_BASE_URL 环境变量，回退到 /api，由 vite proxy 转发到后端）
- *  - JWT token（从 localStorage.admin_v2_token 读取，与旧后台 admin_token 隔离）
+ *  - 认证：R2-00300 已于 audit-r14 批5 落地（2026-11-05）：HttpOnly Cookie + X-Requested-With
+ *    CSRF 双层。JWT 由后端在 /auth/admin/login 成功时签发为 admin_session HttpOnly Cookie
+ *    （JS 不可读），本层不再读写 admin_v2_token、不再发送 Authorization 头；
+ *    所有请求统一附带 X-Requested-With: XMLHttpRequest（后端对 cookie 认证的写请求
+ *    强校验该头，跨站伪造请求无法携带自定义头，见 JwtAuthenticationFilter R14-5）
  *  - JSON 序列化/反序列化
  *  - 查询参数序列化
  *  - 401 自动登出并跳转登录页（携带 redirect 参数便于回跳）；
- *    凭据已被别处更新时用新 token 原地重发一次（幂等键沿用，见 request 注释）
+ *    凭据已被别处更新时按会话标记原地重发一次（幂等键沿用，见 request 注释）
  *  - 写请求（POST/PUT/DELETE）按「一次逻辑调用」附带 Idempotency-Key
  *  - 错误响应处理
  *
- * 安全说明（infra R2-00300）：
- * JWT 目前明文存储于 localStorage（admin_v2_token），任何 XSS 均可窃取管理员令牌。
- * 改进方向（需后端协同）：
- *   1. 迁移 HttpOnly Cookie + CSRF 防护；
- *   2. 或缩短 token 有效期并引入刷新机制；
- *   3. 至少应限制 token 作用域（audience）与来源站点（sameSite）。
+ * 安全说明（R2-00300 已于 audit-r14 批5 落地）：HttpOnly Cookie + X-Requested-With CSRF
+ * 双层防护。登录态在前端的可见面只剩 admin_v2_user 会话标记（仅供路由/写权限粗判，
+ * 真正的鉴权由后端每次请求执行）。
  */
 
 import { env } from "../config/env";
@@ -136,14 +137,6 @@ export const REQUEST_TIMEOUT_MS = 15000;
  * 需要长超时的调用方显式传入该值（见 request 的 timeout 参数）。
  */
 export const LONG_REQUEST_TIMEOUT_MS = 120000;
-
-/**
- * 获取当前管理员 token。
- * @returns JWT token 字符串，未登录时返回空字符串
- */
-export function getToken(): string {
-  return localStorage.getItem("admin_v2_token") || "";
-}
 
 /**
  * 将查询参数对象序列化为 URL query string。
@@ -279,13 +272,13 @@ export async function del<T>(
 let redirecting = false;
 
 /**
- * 401 未授权统一处理：清除本地凭据并跳转登录页。
- * 与 session.ts 中的 localStorage key 保持一致：admin_v2_token / admin_v2_user；
+ * 401 未授权统一处理：清除本地会话标记并跳转登录页。
+ * 与 session.ts 中的 localStorage key 保持一致：admin_v2_user（R14-5 起 JWT 走
+ * HttpOnly Cookie，本地不再存 admin_v2_token，Cookie 由后端登出接口负责过期）；
  * 携带 redirect 参数，便于登录后回跳到当前被拦截的页面；
  * 通过模块级 redirecting 标志收敛并发 401 为一次跳转（1s 窗口内只跳一次）。
  */
 function handleUnauthorized(): void {
-  localStorage.removeItem("admin_v2_token");
   localStorage.removeItem("admin_v2_user");
   if (typeof window !== "undefined" && window.location.pathname !== "/login") {
     if (!redirecting) {
@@ -354,11 +347,10 @@ export async function downloadFile(
   filename: string,
   timeout: number = LONG_REQUEST_TIMEOUT_MS,
 ): Promise<void> {
-  const token = getToken();
+  // R14-5：认证走 admin_session HttpOnly Cookie（同站 fetch 自动携带），
+  // 不再读 token / 发 Authorization；统一附带 X-Requested-With（CSRF 双层口径一致）
   const headers = new Headers();
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
+  headers.set("X-Requested-With", "XMLHttpRequest");
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -416,14 +408,15 @@ export async function downloadFile(
  * 「双击防连点」也不再由幂等键兜底：那是页面的 submitting/禁用态职责，
  * 与客户端同一取舍（apps/client/src/services/http.ts:265-267）。
  *
- * 键在投递循环**之外**生成一次，循环内的所有投递（网络重试、401 换 token 重发）
+ * 键在投递循环**之外**生成一次，循环内的所有投递（网络重试、401 会话标记重发）
  * 复用同一个 headers 对象——这才是不变式的意义所在：
  * **切勿把键生成下沉到单次投递里**，那样每次投递换一把键，幂等保护归零
  * （一次操作被送达两次正是 @Idempotent 要防的，也是被误删的旧签名缓存本来想做的事）。
  *
- * 401 处理：本地凭据已被别处更新（另一页签重新登录）时，用新 token 原地重发
- * 一次（只覆盖 Authorization，幂等键原样继承，同客户端 http.ts:819-825）；
- * 凭据没变则维持原行为——清理本地凭据并跳转登录页。
+ * 401 处理（R14-5 起信道从 token 改为会话标记）：请求发起时快照
+ * localStorage.admin_v2_user；收到 401 时若当前值与快照不同（本地凭据已被别处更新，
+ * 如另一页签重新登录），原地重发一次（幂等键原样继承，同客户端 http.ts:819-825）；
+ * 会话标记没变则维持原行为——清理本地会话标记并跳转登录页。
  *
  * @param timeout 可选超时（毫秒），批量导入/导出等慢操作可传 LONG_REQUEST_TIMEOUT_MS
  *                超时按**每次投递**计（开启 retry 时总耗时上限为 timeout ×(1+retry)）
@@ -440,10 +433,12 @@ async function request<T>(
   const isWrite = method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
 
   const headers = new Headers(init.headers);
-  let tokenUsed = getToken();
-  if (tokenUsed) {
-    headers.set("Authorization", `Bearer ${tokenUsed}`);
-  }
+  // R14-5（audit-r14 批5，2026-11-05）：认证完全走 admin_session HttpOnly Cookie，
+  // 不再读取/发送 Authorization 头；所有请求统一附带 X-Requested-With，
+  // 与后端 JwtAuthenticationFilter 的 cookie 写请求 CSRF 闸配套（双层防护第二层）
+  headers.set("X-Requested-With", "XMLHttpRequest");
+  // 会话标记快照：cookie 不可读，「凭据已被别处更新」只能由 admin_v2_user 的变化判定
+  const sessionMarkerAtStart = localStorage.getItem("admin_v2_user");
 
   // 写请求统一注入 Idempotency-Key（API-CONTRACT.md:139 约定）
   if (isWrite) {
@@ -473,8 +468,10 @@ async function request<T>(
   // 重试沿用同一 headers ⇒ 幂等键不变，后端据此识别重复投递。
   const maxRetries = options?.retry ?? 0;
   let retriesLeft = maxRetries;
-  // 401 原地重发最多一次：只有「本地凭据已被别处刷新」才会走到，
-  // 重发只换 Authorization、幂等键继承，因此不会重复扣款/重复建单。
+  // 401 原地重发最多一次：只有「本地会话标记已被别处刷新」才会走到，
+  // 重发沿用同一 headers（幂等键/X-Requested-With 继承），
+  // 认证凭据由浏览器自动携带的最新 admin_session Cookie 提供，
+  // 因此不会重复扣款/重复建单。
   let refreshResendsLeft = 1;
 
   for (;;) {
@@ -506,15 +503,14 @@ async function request<T>(
 
     // 401 未授权
     if (response.status === 401) {
-      const currentToken = getToken();
-      if (refreshResendsLeft > 0 && currentToken && currentToken !== tokenUsed) {
-        // 凭据已被别处刷新：沿用本次逻辑调用的幂等键，只换 Authorization 重发
+      const currentMarker = localStorage.getItem("admin_v2_user");
+      if (refreshResendsLeft > 0 && currentMarker && currentMarker !== sessionMarkerAtStart) {
+        // 会话标记已被别处更新（另一页签重新登录）：原样重发一次，
+        // 同一 headers ⇒ 幂等键不变；凭据走浏览器最新 Cookie
         refreshResendsLeft -= 1;
-        tokenUsed = currentToken;
-        headers.set("Authorization", `Bearer ${currentToken}`);
         continue;
       }
-      // 统一清理凭据并跳转登录页（收敛并发 401 为一次跳转）
+      // 统一清理会话标记并跳转登录页（收敛并发 401 为一次跳转）
       handleUnauthorized();
       throw new ApiError(401, t("errors.auth"));
     }

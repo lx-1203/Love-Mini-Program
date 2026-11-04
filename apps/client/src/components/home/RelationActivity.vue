@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
 import type { RelationActivityViewModel } from "../../view-models/home-dashboard";
 import SkeletonBlock from "../common/SkeletonBlock.vue";
 
-withDefaults(defineProps<{ data: RelationActivityViewModel; loading?: boolean }>(), { loading: false });
+// R14-6（2026-11-05）：补 error/retry 组件 API（与 CommunityFeed 同形态）+ 骨架 label 走 i18n
+const { t } = useI18n();
+withDefaults(defineProps<{ data: RelationActivityViewModel; loading?: boolean; error?: string | null }>(), { loading: false });
 // 2026-09-03：4 个 cell 各自可点击跳转到对应信息页（likes/whispers/visitors/matches）
 defineEmits<{
   (e: "all"): void;
@@ -12,6 +15,7 @@ defineEmits<{
   (e: "whispers"): void;      // 条悄悄话
   (e: "visitors"): void;      // 人看过你
   (e: "matches"): void;       // 个新匹配
+  (e: "retry"): void;         // R14-6：dashboard 拉取失败重试
 }>();
 </script>
 
@@ -23,7 +27,14 @@ defineEmits<{
     </view>
     <!-- 2026-09-03 骨架屏：homeFeed 首拉期间占位（避免空数据跳变） -->
     <view v-if="loading" role="status" aria-live="polite">
-      <SkeletonBlock variant="list" :rows="2" label="加载中" />
+      <SkeletonBlock variant="list" :rows="2" :label="t('common.loadingAria')" />
+    </view>
+    <!-- R14-6（2026-11-05）：dashboard 拉取失败错误态 + 重试（口径对齐 CommunityFeed） -->
+    <view v-else-if="error" class="relation-activity__error">
+      <text class="relation-activity__error-text">{{ t("home.sectionErrorText", { message: error }) }}</text>
+      <view class="relation-activity__retry" hover-class="relation-activity__retry--pressed" @tap="$emit('retry')">
+        <text class="relation-activity__retry-text">{{ t("home.sectionRetry") }}</text>
+      </view>
     </view>
     <template v-else>
     <view class="relation-activity__grid">
@@ -103,6 +114,45 @@ defineEmits<{
 .relation-activity__all {
   font-size: 28rpx;
   color: #9AA39F;
+}
+
+/* R14-6（2026-11-05）：错误态 + 重试按钮（行内样式对齐 CommunityFeed 错误行） */
+.relation-activity__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 20rpx;
+  border-radius: 24rpx;
+  background: var(--c-bg-container, #ffffff);
+  border: 1rpx solid #FFE3E3;
+}
+
+.relation-activity__error-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 16rpx;
+  font-size: 22rpx;
+  color: #999999;
+}
+
+.relation-activity__retry {
+  flex-shrink: 0;
+  padding: 10rpx 28rpx;
+  border-radius: 999rpx;
+  background: #36C99A;
+}
+
+.relation-activity__retry--pressed {
+  opacity: 0.8;
+}
+
+.relation-activity__retry-text {
+  font-size: 24rpx;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .relation-activity__grid {

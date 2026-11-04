@@ -192,10 +192,12 @@ async function handleLike(): Promise<void> {
     if (signal && signal.id) {
       successHaptic();
       uni.showModal({
-        title: "匹配成功",
-        content: "你们互相喜欢了，快去打个招呼吧",
-        confirmText: "去聊天",
-        cancelText: "再看看",
+        // R14-6（2026-11-05）：real 分支弹窗与 mock 分支（上方 t() 版）同文案同键，
+        // 消除同页两套弹窗文案漂移
+        title: t("profile.other.matchTitle"),
+        content: t("profile.other.matchContent"),
+        confirmText: t("profile.other.matchGoChat"),
+        cancelText: t("profile.other.matchKeepBrowsing"),
         success: (res) => {
           if (res.confirm) {
             openAppPath(`${ROUTES.CHAT.SESSION}?userId=${encodeURIComponent(targetUserId.value)}`);
@@ -204,7 +206,7 @@ async function handleLike(): Promise<void> {
       });
       return;
     }
-    uni.showToast({ title: "已喜欢，等待回应", icon: "success" });
+    uni.showToast({ title: t("profile.other.likeWaiting"), icon: "success" });
   } catch (error) {
     errorHaptic();
     uni.showToast({
@@ -242,12 +244,12 @@ async function handleFollowToggle() {
     if (following.value) {
       await clientApi.unfollowUser(targetUserId.value);
       following.value = false;
-      uni.showToast({ title: "已取消关注", icon: "none" });
+      uni.showToast({ title: t("profile.other.unfollowed"), icon: "none" });
     } else {
       await clientApi.followUser(targetUserId.value);
       following.value = true;
       successHaptic();
-      uni.showToast({ title: "已关注", icon: "success" });
+      uni.showToast({ title: t("profile.otherFollowed"), icon: "success" });
     }
   } catch (_e) {
     uni.showToast({ title: t("profile.otherFollowFailed"), icon: "none" });
@@ -259,18 +261,19 @@ async function handleFollowToggle() {
 function handleUnmatch() {
   if (!targetUserId.value) return;
   uni.showModal({
-    title: "取消匹配",
-    content: "取消后你们将不再互为匹配，确定取消吗？",
-    confirmText: "取消匹配",
-    cancelText: "再想想",
+    // R14-6（2026-11-05）：弹窗文案走 i18n（原裸中文字面量）
+    title: t("profile.other.unmatchTitle"),
+    content: t("profile.other.unmatchContent"),
+    confirmText: t("profile.other.unmatchTitle"),
+    cancelText: t("profile.other.unmatchKeep"),
     success: async (res) => {
       if (!res.confirm) return;
       try {
         await likesStore.unlikeUser(targetUserId.value);
-        uni.showToast({ title: "已取消匹配", icon: "success" });
+        uni.showToast({ title: t("profile.other.unmatched"), icon: "success" });
         void loadProfile();
       } catch (_e) {
-        uni.showToast({ title: "操作失败，请稍后再试", icon: "none" });
+        uni.showToast({ title: t("common.operationFailed"), icon: "none" });
       }
     },
   });

@@ -47,7 +47,7 @@ ENVCHECK_RESULT=FAIL errors=2
    ```
    期望：`RELEASECHAIN_RESULT=PASS` 且 `shippable=yes`；`LOOPBACK_WAIVER.json` 不应作为放行依据。
 6. 真机验收：用真实 AppID 打开开发版/体验版，验证 `wx.login`、图片上传、临时会话图片、通知中心与后台登录。
-7. 提审材料：按 `docs/wechat-submission-materials-checklist.md` 与 `docs/WECHAT-MINI-PROGRAM-ACCEPTANCE.md` 执行。
+7. 提审材料：按 `docs/wechat-submission-materials-checklist.md`（唯一提审材料清单；R14-3 2026-11-05 悬空引用清理——`docs/WECHAT-MINI-PROGRAM-ACCEPTANCE.md` 已不存在）执行。
 
 ## 当前可交付范围
 

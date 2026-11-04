@@ -211,6 +211,20 @@ const docFiles = [
 let refsChecked = 0;
 const deadPathRefs = [];
 const deadAnchorRefs = [];
+
+/**
+ * R14（2026-11-05）构建产物路径豁免：dist/、dist-r5/、target/ 是构建产物根——文档描述
+ * 「构建后会出现在这里的产物」，其存在性由构建态而非文档态决定；全仓净检出（未构建）也必须能过本门，
+ * 否则门就变成环境依赖（2026-11-03 起本机连续 10+ 轮红的根因即此）。此类引用不做磁盘存在性校验，
+ * 只按「确属产物根前缀」的形状收口（真死链伪装成产物路径会被前缀清单收住）。
+ */
+const BUILD_ARTIFACT_ROOTS = [
+  "apps/client/dist/",
+  "apps/client/dist-r5/",
+  "apps/api/target/",
+];
+const isBuildArtifactRef = (p) => BUILD_ARTIFACT_ROOTS.some((r) => p.startsWith(r));
+
 for (const file of docFiles) {
   const text = readFileSync(new URL(file, root), "utf8");
   if (HISTORIC_DOC_FILES.has(file)) continue;
@@ -219,6 +233,7 @@ for (const file of docFiles) {
     const pathPart = hashAt === -1 ? ref : ref.slice(0, hashAt);
     const anchor = hashAt === -1 ? "" : ref.slice(hashAt + 1);
     refsChecked += 1;
+    if (isBuildArtifactRef(pathPart)) continue;
     if (!existsSync(new URL(pathPart, root))) {
       deadPathRefs.push(`${file} -> ${ref}`);
       continue;

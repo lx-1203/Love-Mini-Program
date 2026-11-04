@@ -17,7 +17,6 @@ import {
   API_BASE_URL,
   ApiError,
   LONG_REQUEST_TIMEOUT_MS,
-  getToken,
   post,
 } from "./http";
 
@@ -140,11 +139,11 @@ export function createAdminPost(req: ComposePostRequest): Promise<ComposedPost> 
  * @throws ApiError 401 会话过期 / 400 格式不支持 / 413 超过 10MB / 503 小编账号未配置
  */
 export async function uploadComposeImage(file: File): Promise<ComposeUploadResult> {
-  const token = getToken();
+  // R14-5（audit-r14 批5，2026-11-05）：认证走 admin_session HttpOnly Cookie（同站 fetch
+  // 自动携带），不再读 token / 发 Authorization；写接口统一附带 X-Requested-With，
+  // 与 http.ts 的 CSRF 双层口径一致（后端对 cookie 认证的写请求强校验该头）
   const headers = new Headers();
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
+  headers.set("X-Requested-With", "XMLHttpRequest");
   // 写接口统一携带 Idempotency-Key（API-CONTRACT 约定）：FormData 无法参与签名，
   // 每次上传生成独立随机键，重复点击由按钮禁用态防抖
   headers.set(

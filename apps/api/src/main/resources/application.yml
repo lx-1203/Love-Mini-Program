@@ -243,6 +243,11 @@ app:
   security:
     media-query-token-strict: ${APP_MEDIA_QUERY_TOKEN_STRICT:true}
     trusted-proxies: ${APP_TRUSTED_PROXIES:}
+    # R14-5（audit-r14 批5，infra R2-00300 落地，2026-11-05）：管理端会话 Cookie
+    # （admin_session，见 AuthController#loginAsAdmin）是否仅经 HTTPS 传输。
+    # 生产 HTTPS 部署【必须置 true】（APP_ADMIN_COOKIE_SECURE=true），否则 Cookie
+    # 可能经明文 HTTP 泄露；本地 HTTP 联调保持 false。
+    admin-cookie-secure: ${APP_ADMIN_COOKIE_SECURE:false}
   jwt:
     # JWT 签名密钥：必须通过环境变量 JWT_SECRET 设置，不允许使用默认值。
     # 启动时若未设置或使用了不安全的默认值，应用将拒绝启动。

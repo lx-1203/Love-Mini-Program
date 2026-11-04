@@ -227,6 +227,11 @@ components:
     NotificationSourceUser:
       type: object
       properties:
+        id:
+          type: integer
+          format: int64
+          nullable: true
+          description: Source user ID (R14-4 2026-11-05; null for mock-tenant synthetic users — client falls back to referenceId for navigation)
         displayName:
           type: string
         avatar:

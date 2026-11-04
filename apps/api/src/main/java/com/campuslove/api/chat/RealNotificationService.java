@@ -317,7 +317,7 @@ public class RealNotificationService implements NotificationService {
                 notification.getId(),
                 notification.getType().name(),
                 sourceUser != null
-                        ? new NotificationSourceUserView(sourceUser.getNickname(), sourceUser.getAvatarUrl())
+                        ? new NotificationSourceUserView(sourceUser.getId(), sourceUser.getNickname(), sourceUser.getAvatarUrl())
                         : null,
                 notification.getReferenceId(),
                 notification.getReferenceType() != null ? notification.getReferenceType().name() : null,
@@ -375,7 +375,8 @@ public class RealNotificationService implements NotificationService {
         return new NotificationView(
                 notification.getId(),
                 type,
-                new NotificationSourceUserView(displayName, avatar),
+                // R14-4：id 直取 sourceUserId（即使源用户被删/不在预载 Map，ID 仍可靠下发）
+                new NotificationSourceUserView(notification.getSourceUserId(), displayName, avatar),
                 notification.getReferenceId(),
                 notification.getReferenceType() != null ? notification.getReferenceType().name() : null,
                 notification.getIsRead(),

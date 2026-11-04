@@ -146,11 +146,12 @@ async function pickFromMap() {
       void reportLocation(res.latitude, res.longitude, true);
     }
   } catch (_e) {
-    uni.showToast({ title: "未获取到选点结果，请检查定位权限后重试", icon: "none" });
+    // R14-6（2026-11-05）：toast 文案走 i18n（原裸中文字面量）
+    uni.showToast({ title: t("locationPage.pickResultMissing"), icon: "none" });
   }
   // #endif
   // #ifndef MP-WEIXIN
-  uni.showToast({ title: "地图选点仅小程序端可用", icon: "none" });
+  uni.showToast({ title: t("locationPage.pickMpOnly"), icon: "none" });
   // #endif
 }
 

@@ -1,14 +1,8 @@
 /**
- * Agnes AI 视频和图片生成服务
+ * Agnes AI 视频和图片生成服务（客户端侧）
  *
- * API 基础: https://api.agnes-ai.com/api/
- * 文档: https://agnes-ai.com/zh-Hans/docs/agnes-video-v20
- *
- * 已验证端点:
- *   GET  /health          → 200 OK
- *   POST /chat/completions → 401 (need valid key)
- *   POST /video/generate   → 401 (need valid key)
- *   POST /image/generate   → 401 (need valid key)
+ * 直连第三方（api.agnes-ai.com）的历史链路已废弃：现统一经后端 /ai/** 代理转发，
+ * 客户端不持有第三方 API 基址与密钥（密钥仅存后端 AGNES_API_KEY 环境变量）。
  *
  * 重构（P3 代码风格）：原实现直接调用 uni.request 重复书写
  * header/method/data 模板，且未走 services/http.ts 的统一拦截器链，

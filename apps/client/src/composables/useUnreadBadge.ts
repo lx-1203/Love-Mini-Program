@@ -25,7 +25,7 @@
  * useUnreadBadge();
  * ```
  */
-import { watch } from "vue";
+import { computed, watch } from "vue";
 import { onLaunch } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useMessagesStore } from "../stores/messages";
@@ -42,6 +42,7 @@ import { STORAGE_KEYS } from "../constants";
  * tab 顺序调整时红点自动跟随，不再依赖人工同步。
  */
 const CHAT_TAB_INDEX = Math.max(0, appTabs.findIndex((t) => t.id === "chat"));
+
 
 /** 红点上限：超过 99 显示 "99+" */
 const BADGE_MAX = 99;
@@ -133,14 +134,25 @@ export function useUnreadBadge(): void {
   onLaunch(() => {
     try {
       const messagesStore = useMessagesStore();
-      const { totalUnreadCount } = storeToRefs(messagesStore);
+      // R14-6（2026-11-05）：tab 红点与页内角标同源——messages 页「恋爱助手」卡角标口径是
+      // totalUnreadCount + unreadNotificationCount 合计（pages/messages/index.vue 助手卡），
+      // tab 侧原只 watch totalUnreadCount，通知未读不进红点，两处口径漂移。
+      // 改为同一合计；custom-tab-bar/index.js 只镜像本函数写入的 TABBAR_CHAT_UNREAD，
+      // 没有其他独立计数口径，改这里即全端同源。
+      // ⚠ 已知限制（R14 在案）：watch 不在任何组件/effect 作用域内（onLaunch 回调无实例），
+      // 重复调用本函数会叠加监听器——生产面唯一调用点 App.vue 只调一次故无碍；
+      // 若未来多入口调用需先作用域化（登记为技术债，勿直接加模块级幂等闸：会破坏
+      // useUnreadBadge.spec.ts 的多次注册确定性用例）。
+      const { totalUnreadCount, unreadNotificationCount } = storeToRefs(messagesStore);
+      // 通知未读缺位（旧测试桩 / 异常 store）时按 0 处理，不让红点链路整体失效
+      const chatTabUnread = computed(() => totalUnreadCount.value + (unreadNotificationCount?.value ?? 0));
 
       // 立即同步一次初始值
-      setChatTabBadge(totalUnreadCount.value);
+      setChatTabBadge(chatTabUnread.value);
 
-      // 监听变化（WebSocket 推送新消息 → store 更新 unreadCount → getter 重算 → 触发 watch）
+      // 监听变化（WebSocket 推送新消息/通知 → store 更新 → getter 重算 → 触发 watch）
       watch(
-        totalUnreadCount,
+        chatTabUnread,
         (newCount) => {
           setChatTabBadge(newCount);
         },

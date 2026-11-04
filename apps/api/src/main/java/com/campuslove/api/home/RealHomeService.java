@@ -350,7 +350,9 @@ public class RealHomeService implements HomeService {
      *   <li>onlineCount：MVP 使用 guest 推荐结果中 just_now 活跃人数，不消耗用户配额</li>
      *   <li>crushing = myLikes - likedMe（我喜欢但对方尚未喜欢）</li>
      *   <li>matched = myLikes ∩ likedMe（互相喜欢）</li>
-     *   <li>whispers：MVP 使用收件箱数量；TODO 后续改为 pending/unread 数量</li>
+     *   <li>whispers：R14-2（2026-11-05 拍板）改用未读数口径（{@link WhisperService#unreadCount}，
+     *       SENT/DELIVERED 计未读、排除审计行；mock/real 同构）——原 MVP 收件箱全量口径已废弃，
+     *       「角标数字=未读待处理数」才符合用户对角标的普遍预期</li>
      * </ul>
      */
     private MatchCenterView aggregateMatchCenter(Long userId) {
@@ -399,7 +401,7 @@ public class RealHomeService implements HomeService {
                     .filter(like -> likedMeIds.contains(like.userId()))
                     .count();
             int crushing = Math.max(0, myLikes.size() - matched);
-            int whispers = whisperService.inbox(userId).size();
+            int whispers = (int) whisperService.unreadCount(userId);
             return new RelationProgressView(crushing, matched, whispers);
         } catch (RuntimeException e) {
             log.warn("聚合关系进度失败, userId={}: {}", userId, e.getMessage());
@@ -469,8 +471,10 @@ public class RealHomeService implements HomeService {
     }
 
     /**
-     * 首页今日推荐候选：当前使用 guest 推荐池，避免首页展示消耗用户寻觅额度；
-     * TODO 后续接入独立的首页推荐策略。
+     * 首页今日推荐候选：当前使用 guest 推荐池，避免首页展示展示消耗用户寻觅额度；
+     * B-3 拍板（R14-2，2026-11-05）：维持 guest 池为首页推荐终态——首页展示是「逛」的入口，
+     * 消耗用户寻觅额度会把「看一眼」变成「付费/限量行为」，伤害浏览体验；独立策略（如运营位/活动位）
+     * 属运营二期需求，登记路线图，不在首页主链路混入。
      */
     private java.util.List<RecommendedPersonView> homeCandidates() {
         try {
@@ -565,7 +569,7 @@ public class RealHomeService implements HomeService {
             int newMatches = (int) myLikes.stream()
                 .filter(like -> likedMeIds.contains(like.userId()))
                 .count();
-            int whispers = whisperService.inbox(userId).size();
+            int whispers = (int) whisperService.unreadCount(userId);
             int visitors = matchService.getVisitors(userId).size();
             int likesReceived = likedMe.size();
             int totalUnread = likesReceived + whispers + visitors + newMatches;

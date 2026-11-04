@@ -12,13 +12,18 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -50,6 +55,30 @@ public class AuthController {
     private final org.springframework.beans.factory.ObjectProvider<com.campuslove.api.repository.UserRepository> userRepositoryProvider;
     /** 运行环境(security_review R2-LOW-01:mock 降级分支需校验 active profiles) */
     private final org.springframework.core.env.Environment environment;
+
+    /**
+     * 管理端会话 Cookie 名（R14-5，audit-r14 批5，2026-11-05）。
+     * 签发方为本类 {@link #loginAsAdmin}，回退认证方为
+     * {@code com.campuslove.api.config.JwtAuthenticationFilter}，两侧引用同一常量防漂移。
+     */
+    public static final String ADMIN_SESSION_COOKIE = "admin_session";
+
+    /**
+     * R14-5（audit-r14 批5，infra R2-00300 落地，2026-11-05）：管理端会话 Cookie
+     * 是否仅经 HTTPS 传输。生产 HTTPS 部署【必须置 true】（APP_ADMIN_COOKIE_SECURE=true，
+     * 并在 .env.example 登记），否则 admin_session Cookie 可能经明文 HTTP 泄露给中间人；
+     * 本地 HTTP 联调可保持 false。
+     */
+    @Value("${app.security.admin-cookie-secure:false}")
+    private boolean adminCookieSecure = false;
+
+    /**
+     * R14-5：JWT 实际有效期（毫秒），读取 {@code app.jwt.expiration-ms} 真实配置
+     * （application.yml 默认 7200000ms = 7200s，R4-00276 起 2h），不硬编码。
+     * admin_session Cookie 的 Max-Age 与该 TTL 对齐，保证 Cookie 生命周期不超出 JWT 本身。
+     */
+    @Value("${app.jwt.expiration-ms:7200000}")
+    private long jwtExpirationMs = 7200000L;
 
     private static final org.slf4j.Logger log =
             org.slf4j.LoggerFactory.getLogger(AuthController.class);
@@ -251,10 +280,15 @@ public class AuthController {
     })
     public Map<String, Boolean> logout(
             @Parameter(name = "Authorization", description = "JWT Bearer Token，格式 'Bearer {token}'", required = true)
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
         String token = extractBearerToken(authHeader);
         authService.logout(token);
+        // R14-5（audit-r14 批5）：请求携带 admin_session cookie 时在响应上同步过期该 Cookie；
+        // 既有 JWT 黑名单撤销逻辑保持不变
+        expireAdminSessionCookie(request, response);
         return Map.of("success", true);
     }
 
@@ -284,7 +318,8 @@ public class AuthController {
     @Idempotent
     public ApiResponse<AdminLoginView> loginAsAdmin(
             @Parameter(description = "管理员登录请求体（username + password）", required = true)
-            @Valid @RequestBody AdminLoginRequest request) {
+            @Valid @RequestBody AdminLoginRequest request,
+            HttpServletResponse response) {
         try {
             UserSessionView session = authService.loginAsAdmin(request.username(), request.password());
             // 管理员登录成功：记录成功指标
@@ -323,6 +358,9 @@ public class AuthController {
                                 session != null ? session.campusName() : null
                         )
                 );
+                // R14-5（audit-r14 批5）：mock 分支登录成功同样在同一响应上签发
+                // HttpOnly Cookie，与 real 分支口径一致（管理端前端不再持久化 JWT）
+                issueAdminSessionCookie(response, session.token());
                 return ApiResponse.ok(mockView);
             }
             com.campuslove.api.entity.User admin = userId != null
@@ -349,6 +387,9 @@ public class AuthController {
                             admin.getCampusName()
                     )
             );
+            // R14-5（audit-r14 批5）：登录成功在同一响应上签发 HttpOnly Cookie（R2-00300），
+            // 管理端 JWT 从 localStorage 迁移到 admin_session Cookie；签名/校验逻辑不变
+            issueAdminSessionCookie(response, session.token());
             return ApiResponse.ok(view);
         } catch (RuntimeException e) {
             // 管理员登录失败：记录失败指标（reason 统一为 admin_invalid_credentials 避免泄露账号信息）
@@ -380,11 +421,72 @@ public class AuthController {
     })
     public Map<String, Boolean> logoutAsAdmin(
             @Parameter(name = "Authorization", description = "JWT Bearer Token，格式 'Bearer {token}'", required = true)
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
         String token = extractBearerToken(authHeader);
         authService.logoutAsAdmin(token);
+        // R14-5（audit-r14 批5）：管理端登出携带 admin_session cookie 时同步过期该 Cookie
+        //（管理后台前端登出走本端点，Cookie 不清除会导致登出后会话残留）；JWT 黑名单逻辑不变
+        expireAdminSessionCookie(request, response);
         return Map.of("success", true);
+    }
+
+    /**
+     * R14-5（audit-r14 批5，2026-11-05）：在登录成功响应上签发管理端会话 Cookie。
+     *
+     * <p>属性口径（R2-00300）：HttpOnly（JS 不可读，XSS 窃不走）、Path=/（全站生效）、
+     * SameSite=Strict（跨站请求不携带，CSRF 第一层）、Max-Age 与 JWT 实际 TTL
+     * （{@code app.jwt.expiration-ms}，默认 7200s）对齐、secure 由
+     * {@code app.security.admin-cookie-secure} 控制（生产 HTTPS 部署必须置 true）。</p>
+     *
+     * @param response 当前登录响应
+     * @param token    已签发的管理端 JWT
+     */
+    private void issueAdminSessionCookie(HttpServletResponse response, String token) {
+        if (response == null || token == null || token.isBlank()) {
+            return;
+        }
+        ResponseCookie cookie = ResponseCookie.from(ADMIN_SESSION_COOKIE, token)
+                .httpOnly(true)
+                .path("/")
+                .sameSite("Strict")
+                // 与 JWT TTL 对齐：读 app.jwt.expiration-ms 真实配置（毫秒）换算秒，不硬编码
+                .maxAge(Math.max(1, jwtExpirationMs / 1000))
+                .secure(adminCookieSecure)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    /**
+     * R14-5（audit-r14 批5，2026-11-05）：当请求携带 admin_session Cookie 时，
+     * 在登出响应上 Set-Cookie 立即过期（Max-Age=0），浏览器据此删除本地 Cookie。
+     *
+     * @param request  当前请求（用于探测是否携带该 Cookie；直调单测传 null 时跳过）
+     * @param response 登出响应
+     */
+    private void expireAdminSessionCookie(HttpServletRequest request, HttpServletResponse response) {
+        if (request == null || response == null) {
+            return;
+        }
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null) {
+            return;
+        }
+        for (Cookie cookie : cookies) {
+            if (ADMIN_SESSION_COOKIE.equals(cookie.getName())) {
+                ResponseCookie expired = ResponseCookie.from(ADMIN_SESSION_COOKIE, "")
+                        .httpOnly(true)
+                        .path("/")
+                        .sameSite("Strict")
+                        .maxAge(0)
+                        .secure(adminCookieSecure)
+                        .build();
+                response.addHeader(HttpHeaders.SET_COOKIE, expired.toString());
+                return;
+            }
+        }
     }
 
     /**

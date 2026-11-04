@@ -1,12 +1,14 @@
 <script setup lang="ts">
 /**
- * Admin v2 登录视图（复制自旧后台 apps/admin 逻辑，token key 改 admin_v2_token）。
+ * Admin v2 登录视图。
  *
  * 关键差异：
  * - 登录成功后调用 menuStore.loadMenus() + addDynamicRoutes()，
  *   确保跳转目标（Dashboard 等动态路由）已注册；
  * - 回跳 redirect 参数通过 sanitizeRedirect 校验（防开放重定向）；
  * - 开发环境账号提示从环境变量读取，生产环境不渲染。
+ * - R14-5（audit-r14 批5，2026-11-05）：JWT 不再持久化（后端以 admin_session
+ *   HttpOnly Cookie 下发），本页只经 sessionStore.login 持久化用户信息（admin_v2_user）。
  */
 import { ref, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";

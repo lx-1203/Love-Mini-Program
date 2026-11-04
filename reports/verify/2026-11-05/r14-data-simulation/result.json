@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-11-04T16:44:46.953Z",
+  "results": [
+    {
+      "dau": 5000,
+      "db": {
+        "rowsPerDay": 84000,
+        "rowsPerYear": 30660000,
+        "dbBytesPerYearTotal": 12754560000,
+        "breakdownPerDay": {
+          "messages": 50000,
+          "notifications": 25000,
+          "posts": 500,
+          "replies": 1500,
+          "whispers": 1000,
+          "interactions": 5000,
+          "visitors": 1000
+        }
+      },
+      "redis": {
+        "idempotentKeysSteady": 2500,
+        "quotaKeysSteady": 7500,
+        "memBytes": 1050000
+      },
+      "media": {
+        "bytesPerDay": 524288000,
+        "steadyBytesWithGc": 47185920000,
+        "yearBytesNoGc": 191365120000
+      },
+      "pressure": {
+        "peakConcurrent": 500,
+        "peakQps": 1000
+      }
+    },
+    {
+      "dau": 50000,
+      "db": {
+        "rowsPerDay": 840000,
+        "rowsPerYear": 306600000,
+        "dbBytesPerYearTotal": 127545600000,
+        "breakdownPerDay": {
+          "messages": 500000,
+          "notifications": 250000,
+          "posts": 5000,
+          "replies": 15000,
+          "whispers": 10000,
+          "interactions": 50000,
+          "visitors": 10000
+        }
+      },
+      "redis": {
+        "idempotentKeysSteady": 25000,
+        "quotaKeysSteady": 75000,
+        "memBytes": 10500000
+      },
+      "media": {
+        "bytesPerDay": 5242880000,
+        "steadyBytesWithGc": 471859200000,
+        "yearBytesNoGc": 1913651200000
+      },
+      "pressure": {
+        "peakConcurrent": 5000,
+        "peakQps": 10000
+      }
+    },
+    {
+      "dau": 500000,
+      "db": {
+        "rowsPerDay": 8400000,
+        "rowsPerYear": 3066000000,
+        "dbBytesPerYearTotal": 1275456000000,
+        "breakdownPerDay": {
+          "messages": 5000000,
+          "notifications": 2500000,
+          "posts": 50000,
+          "replies": 150000,
+          "whispers": 100000,
+          "interactions": 500000,
+          "visitors": 100000
+        }
+      },
+      "redis": {
+        "idempotentKeysSteady": 250000,
+        "quotaKeysSteady": 750000,
+        "memBytes": 105000000
+      },
+      "media": {
+        "bytesPerDay": 52428800000,
+        "steadyBytesWithGc": 4718592000000,
+        "yearBytesNoGc": 19136512000000
+      },
+      "pressure": {
+        "peakConcurrent": 50000,
+        "peakQps": 100000
+      }
+    }
+  ],
+  "triggerLines": [
+    {
+      "item": "WebSocket 单机并发（路线图 R4 线 5k）",
+      "dauTrigger": 50000,
+      "note": "DAU 5 万即达 5k 峰值并发，触发 broker 外置评估"
+    },
+    {
+      "item": "本地媒体磁盘（100GB 盘 + 90 天 GC 稳态）",
+      "dauTrigger": 11377.777777777777,
+      "note": "超过即需对象存储迁移（路线图 R5）或扩盘"
+    },
+    {
+      "item": "DB 连接池（20 连接，30ms/查询假设）",
+      "dauTrigger": 1111.111111111111,
+      "note": "超过即出现连接排队，先查慢查询再考虑扩池/读写分离"
+    },
+    {
+      "item": "Redis 内存（512MB 预算）",
+      "dauTrigger": 2556528.1523809526,
+      "note": "键模型含 idempotent(4h)+quota(36h)；超线需扩内存或降 TTL"
+    },
+    {
+      "item": "主包体积（2.00MB 硬限）",
+      "dauTrigger": null,
+      "note": "当前静态 1114KB/2048KB，余量 934KB ≈ 2~3 个新主包页；新增应进分包"
+    }
+  ]
+}

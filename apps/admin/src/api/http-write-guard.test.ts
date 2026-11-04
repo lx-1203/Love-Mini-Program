@@ -61,13 +61,16 @@ describe("admin http 只读角色写拦截", () => {
     expect((err as ApiError).status).toBe(403);
   });
 
-  it("ADMIN / SUPER_ADMIN 照常发出写请求并带 Idempotency-Key", async () => {
+  it("ADMIN / SUPER_ADMIN 照常发出写请求并带 Idempotency-Key 与 X-Requested-With", async () => {
     for (const role of ["ADMIN", "SUPER_ADMIN"]) {
       installStorage({ admin_v2_user: JSON.stringify({ role }) });
       await expect(post("/v1/admin/activities/1/publish")).resolves.toBeTruthy();
     }
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(lastFetchHeaders().get("Idempotency-Key")).toMatch(/\S/);
+    // R14-5（audit-r14 批5）：写请求统一附带 X-Requested-With（后端对 cookie 认证的
+    // 写请求强校验该头，CSRF 双层防护第二层）
+    expect(lastFetchHeaders().get("X-Requested-With")).toBe("XMLHttpRequest");
   });
 
   it("AUDITOR 的读请求不受影响", async () => {

@@ -152,7 +152,8 @@ public class MockNotificationService implements NotificationService {
     return new NotificationView(
         state.id(),
         state.type(),
-        new NotificationSourceUserView(state.sourceUserName(), state.sourceUserAvatar()),
+        // R14-4：mock 档源用户为假想用户（无真实 userId），id 置 null——客户端回退 resourceId 跳转
+        new NotificationSourceUserView(null, state.sourceUserName(), state.sourceUserAvatar()),
         state.referenceId(),
         state.referenceType(),
         state.isRead(),

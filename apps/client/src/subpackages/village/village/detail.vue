@@ -493,7 +493,8 @@ function appendEmoji(emoji: string) {
 /** 选择并上传评论图片（uni.chooseImage → /media/upload 换 URL，限 3 张） */
 async function chooseCommentImage() {
   if (commentImages.value.length >= 3) {
-    uni.showToast({ title: "最多 3 张图片", icon: "none" });
+    // R14-6（2026-11-05）：toast 文案走 i18n（原裸中文字面量）
+    uni.showToast({ title: t("village.detail.imageLimitToast"), icon: "none" });
     return;
   }
   // 第六轮 W2-5（W2b）：此前本页是全仓两处「受限 API 前没有隐私授权」的漏页之一——
@@ -528,7 +529,8 @@ async function chooseCommentImage() {
           commentImages.value = [...commentImages.value, url];
         }
       } catch (_e) {
-        uni.showToast({ title: "图片上传失败，请重试", icon: "none" });
+        // R14-6（2026-11-05）：toast 文案走 i18n（原裸中文字面量）
+        uni.showToast({ title: t("village.detail.imageUploadFailedToast"), icon: "none" });
       } finally {
         uni.hideLoading();
         commentImageUploading.value = false;

@@ -18,7 +18,7 @@
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
     "typecheck": "vue-tsc --noEmit",
-    "test:unit": "vitest run"
+    "test:unit": "node scripts/run-vitest.mjs run"
   },
   "dependencies": {
     "dayjs": "^1.11.23",
@@ -31,7 +31,7 @@
   "devDependencies": {
     "@types/node": "~26.0.1",
     "@vitejs/plugin-vue": "~5.0.0",
-    "typescript": "~5.3.0",
+    "typescript": "5.9.3",
     "vite": "~5.4.0",
     "vitest": "~2.1.0",
     "vue-tsc": "~2.0.0"

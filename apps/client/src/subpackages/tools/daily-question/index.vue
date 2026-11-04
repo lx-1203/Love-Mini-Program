@@ -46,7 +46,8 @@ async function handleCheckIn() {
       uni.showToast({ title: checkInStore.errorMessage || "签到未完成，请稍后再试", icon: "none" });
     }
   } catch (_e) {
-    uni.showToast({ title: "签到失败，请稍后再试", icon: "none" });
+    // R14-6（2026-11-05）：toast 文案走 i18n（原裸中文字面量）
+    uni.showToast({ title: t("dailyQuestion.checkInFailedToast"), icon: "none" });
   } finally {
     isCheckingIn.value = false;
   }

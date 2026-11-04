@@ -16,6 +16,7 @@ import com.campuslove.api.repository.UserBasicProfileRepository;
 import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
+import com.campuslove.api.repository.UserBlockRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,6 +67,15 @@ public class MatchEngine {
     private final UserBasicProfileRepository userBasicProfileRepository;
     private final UserScheduleProfileRepository userScheduleProfileRepository;
     private final ObjectMapper objectMapper;
+
+    /**
+     * 拉黑关系仓储（R14-4，2026-11-05 接线；可选注入——mock profile 无该 Bean，
+     * 直连 new 的单测不受影响）。参照 {@code RealRecommendationService} 的
+     * {@code @Autowired(required=false)} 同源模式：为 null 时跳过拉黑过滤，不阻断匹配主链路。
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.lang.Nullable
+    private UserBlockRepository blockRepository;
 
     public MatchEngine(
             MatchConfig matchConfig,
@@ -124,13 +134,11 @@ public class MatchEngine {
             excluded.add(passRecord.getPassedUserId());
         }
 
-        // TODO(3-F 拉黑-匹配排除)：此处应追加拉黑关系排除——
-        // 注入 UserBlockRepository（参考 RealRecommendationService 的
-        // @Autowired(required=false) blockRepository 字段注入模式），
-        // 将 findBlockedRelationUserIds(userId)（我拉黑的 + 拉黑我的，双向并集）
-        // 加入 excluded 集合，即可使「心动匹配」候选不出现拉黑双方。
-        // 当前实现未接入（匹配引擎候选打分链路较深，改动面大），
-        // 仅推荐/会话/消息链路已接入拉黑过滤。
+        // R14-4（2026-11-05）：拉黑关系排除——我拉黑的 + 拉黑我的（双向并集）不进匹配候选，
+        // 与推荐/会话/消息链路的拉黑过滤全仓同构（RealRecommendationService 同源模式）。
+        if (blockRepository != null) {
+            excluded.addAll(blockRepository.findBlockedRelationUserIds(userId));
+        }
 
         return excluded;
     }

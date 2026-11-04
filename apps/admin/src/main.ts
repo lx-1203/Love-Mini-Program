@@ -18,7 +18,8 @@ import { setupRouterGuards } from "./router/guards";
  * 2. i18n —— 非组件场景（api/stores）通过全局 t() 使用文案；
  * 3. setupRouterGuards(router) —— 守卫内部使用 useSessionStore / useMenuStore，
  *    必须在 pinia 安装之后注册；
- * 4. bootstrap() —— 从 localStorage 恢复会话（admin_v2_token / admin_v2_user）；
+ * 4. bootstrap() —— 从 localStorage 恢复会话（admin_v2_user 会话标记；R14-5 起
+ *    JWT 走 HttpOnly Cookie，不再恢复 admin_v2_token）；
  * 5. mount。
  *
  * 动态路由说明：菜单由守卫按需加载（首次进入受保护路由时
@@ -36,7 +37,7 @@ setupRouterGuards(router);
 // 类型断言：vue-router 4.x 的 Router 类型与 Vue Plugin 类型存在已知不匹配
 app.use(router as never);
 
-// 启动时从 localStorage 恢复会话，确保 isLoggedIn 在守卫之外也可用
+// 启动时从 localStorage 恢复会话标记（R14-5：认证凭据在 HttpOnly Cookie，无需恢复 token）
 const sessionStore = useSessionStore();
 void sessionStore.bootstrap();
 

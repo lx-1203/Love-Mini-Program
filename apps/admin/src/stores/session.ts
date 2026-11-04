@@ -22,7 +22,7 @@ export interface AdminUser {
 }
 
 /**
- * 管理员会话 Store（复制自旧后台 apps/admin，token key 改为 admin_v2_token）。
+ * 管理员会话 Store。
  *
  * 安全说明：
  * - 开发环境（env.isDev）：优先调用真实后端登录接口；仅当后端不可达（网络层
@@ -39,15 +39,18 @@ export interface AdminUser {
  *   （AUDITOR 为只读审核员：可进后台看数据，但所有写控件由 canWrite 关闭，
  *    后端 SecurityConfig 亦按 HTTP 方法拒绝其 POST/PUT/PATCH/DELETE）
  *
- * localStorage key 约定（v2 与旧后台隔离）：
- *   - admin_v2_token：JWT
- *   - admin_v2_user：序列化的 AdminUser JSON
+ * localStorage key 约定（v2 与旧后台隔离；R14-5 起仅剩会话标记一项）：
+ *   - admin_v2_user：序列化的 AdminUser JSON（会话标记，供路由守卫/写权限粗判）
+ *   - admin_v2_token 已于 R14-5（audit-r14 批5，2026-11-05）移除：JWT 由后端签发为
+ *     admin_session HttpOnly Cookie（XSS 窃不走），前端不可读也不再持久化
  */
 export const useSessionStore = defineStore("session", () => {
   const user = ref<AdminUser | null>(null);
+  /** 内存留存最近一次登录拿到的 JWT（仅供登出时拼 Authorization 头；不再落盘，R14-5） */
   const token = ref<string>("");
 
-  const isLoggedIn = computed(() => !!user.value && !!token.value);
+  // R14-5：JWT 迁入 HttpOnly Cookie 后前端不可读，登录态以 admin_v2_user 会话标记为准
+  const isLoggedIn = computed(() => !!user.value);
 
   /** 当前登录角色（大写归一；未登录为空串） */
   const currentRole = computed(() => String(user.value?.role || "").toUpperCase());
@@ -83,15 +86,15 @@ export const useSessionStore = defineStore("session", () => {
   /**
    * 从 localStorage 恢复管理员会话。
    *
-   * 应用启动时调用一次，尝试读取 admin_v2_token / admin_v2_user 并填充响应式状态。
+   * 应用启动时调用一次，读取 admin_v2_user 会话标记填充响应式状态。
+   * R14-5（audit-r14 批5，2026-11-05）：不再恢复 admin_v2_token——JWT 走
+   * HttpOnly Cookie，刷新后由浏览器随请求自动携带；会话过期由后端 401 兜底。
    * 解析失败时清空 user，避免残留脏数据影响后续登录流程。
    */
   async function bootstrap() {
-    const savedToken = localStorage.getItem("admin_v2_token");
     const savedUser = localStorage.getItem("admin_v2_user");
 
-    if (savedToken && savedUser) {
-      token.value = savedToken;
+    if (savedUser) {
       try {
         user.value = JSON.parse(savedUser) as AdminUser;
       } catch {
@@ -107,7 +110,8 @@ export const useSessionStore = defineStore("session", () => {
    * - 开发环境：优先调用真实后端；后端不可达（网络层错误）时回退本地 dev 凭据分支。
    * - 生产环境：强制调用后端，仅 role=ADMIN/SUPER_ADMIN/AUDITOR 允许登录。
    *
-   * 登录成功后将 token 与 user 写入 localStorage（admin_v2_token / admin_v2_user）。
+   * 登录成功后将 user 写入 localStorage（admin_v2_user）；R14-5 起 token 由后端
+   * 以 HttpOnly Cookie 下发，前端不再持久化（原 admin_v2_token 已移除）。
    *
    * @param credentials - 用户名 + 密码
    * @returns 登录成功返回 true；失败抛出 Error（含用户可读 message）
@@ -121,6 +125,9 @@ export const useSessionStore = defineStore("session", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          // R14-5：与 http.ts 同口径——后端对 cookie 认证的写请求强校验该头，
+          // 旧 Cookie 残留时重登也必须带（否则 403 CSRF_REJECTED）
+          "X-Requested-With": "XMLHttpRequest",
           // 后端 loginAsAdmin 标注 @Idempotent(required=true)，
           // 必须携带唯一幂等键，否则返回 422 缺少 Idempotency-Key 请求头
           "Idempotency-Key": `admin-login-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
@@ -138,8 +145,8 @@ export const useSessionStore = defineStore("session", () => {
         ) {
           const loggedInUser = payload.user as AdminUser;
           user.value = loggedInUser;
+          // R14-5：token 由后端 Set-Cookie（HttpOnly），仅内存留存供登出拼头，不落盘
           token.value = payload.token;
-          localStorage.setItem("admin_v2_token", payload.token);
           localStorage.setItem("admin_v2_user", JSON.stringify(loggedInUser));
           logger.info("[AdminV2 Session] 真实后端登录成功", { username: credentials.username });
           return true;
@@ -181,8 +188,9 @@ export const useSessionStore = defineStore("session", () => {
           role: "ADMIN",
         };
         user.value = devUser;
+        // R14-5：dev 回退分支无后端可签发 Cookie，token 仅内存留存（后端不可达时
+        // API 请求本就会失败），不再持久化 admin_v2_token
         token.value = devAdminToken;
-        localStorage.setItem("admin_v2_token", devAdminToken);
         localStorage.setItem("admin_v2_user", JSON.stringify(devUser));
         logger.warn("[AdminV2 Session] 当前为开发环境登录，token 由 VITE_DEV_ADMIN_TOKEN 注入");
         return true;
@@ -222,6 +230,9 @@ export const useSessionStore = defineStore("session", () => {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${token.value}`,
+            // R14-5：与 http.ts 同口径（cookie 认证的写请求需携带；后端同时
+            // 对携带 admin_session Cookie 的登出响应 Set-Cookie 过期）
+            "X-Requested-With": "XMLHttpRequest",
           },
         });
       } catch {
@@ -231,7 +242,7 @@ export const useSessionStore = defineStore("session", () => {
 
     user.value = null;
     token.value = "";
-    localStorage.removeItem("admin_v2_token");
+    // R14-5：admin_v2_token 已移除（Cookie 由后端登出接口负责过期）
     localStorage.removeItem("admin_v2_user");
     // 清空动态菜单（含 loadedFor），确保下一账号登录时守卫一定重拉菜单树。
     useMenuStore().reset();

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
 import type { NearbyPersonViewModel } from "../../view-models/home-dashboard";
+// R14-6（2026-11-05）：组件补 error/retry 后引入 useI18n（错误文案 i18n 化），
+// 挂载需装 i18n 插件（同 ErrorState.spec.ts 惯例）
+import { i18n } from "../../i18n";
 
 // Stub global uni to avoid mp-weixin runtime references in tests
 (globalThis as any).uni = {};
@@ -16,6 +19,7 @@ function mountNearby(props: { items: NearbyPersonViewModel[]; loading?: boolean 
   return mount(NearbyPeople, {
     props,
     global: {
+      plugins: [i18n],
       stubs: {
         view: { template: '<div class="mock-view"><slot /></div>', name: "uni-view" },
         text: { template: '<span class="mock-text"><slot /></span>', name: "uni-text" },

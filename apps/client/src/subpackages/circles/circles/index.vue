@@ -43,38 +43,17 @@ const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 /**
  * Task B2：从圈子 Tab 兴趣分类宫格带入的 category 参数（study/sports/music/movie/travel/game/food/reading）。
- * 携带该参数时，页面标题展示对应兴趣分类名称。
+ * 携带该参数时走服务端过滤（R14-4：fetchCircles(category) 上收）。
  */
 const category = ref("");
 
-/** 分类 ID → i18n key 映射（与圈子 Tab 兴趣分类宫格保持一致） */
-const CATEGORY_KEY_MAP: Record<string, string> = {
-  study: "circle.catStudy",
-  sports: "circle.catSports",
-  music: "circle.catMusic",
-  movie: "circle.catMovie",
-  travel: "circle.catTravel",
-  game: "circle.catGame",
-  food: "circle.catFood",
-  reading: "circle.catReading",
-};
-
 /**
- * 分类 ID → 圈子名称关键词（页面级过滤，review #21：category 参数不再只改标题）。
- * TODO(后端): 兴趣圈列表支持按分类服务端过滤后，改由后端查询并移除本映射。
- * R4-00098：en-US 下圈子名（后端返回）不命中中文关键词即回退全量，
- * 现补充 i18n 标签兜底匹配（当前 locale 的分类名），并移除"过滤不中即回退全量"。
+ * 分类 ID → 圈子名称关键词映射已于 R14-4（2026-11-05）移除：
+ * 后端 GET /api/circles?category= 服务端过滤自 2026-08-10 B4 起可用，页面 onLoad/onShow
+ * 直接携带 category 拉取，客户端关键词映射（含 R4-00098 的 i18n 兜底匹配）整体退役——
+ * 双重过滤会对「分类列与名称不一致」的圈子产生漏杀（如 category=study 的「英语角」
+ * 不命中「读书」关键词），服务端单源过滤才是正确形态。
  */
-const CATEGORY_KEYWORDS: Record<string, string> = {
-  study: "读书",
-  sports: "运动",
-  music: "音乐",
-  movie: "电影",
-  travel: "旅行",
-  game: "游戏",
-  food: "美食",
-  reading: "读书",
-};
 
 onLoad((query) => {
   if (query?.category) {
@@ -85,8 +64,9 @@ onLoad((query) => {
   // mock 模式（useMock=true）无网络请求，直接加载本地 8 圈 Style A 封面，
   // 保证 dev-user/mock 登录态下列表可渲染（原 onMounted 的 token 守卫在
   // "已登录但无 token"的 mock 会话下会拦截，导致空态）。
+  // R14-4：携带 category 走服务端过滤（fetchCircles 可选参数，mock 档不受影响）。
   if (getToken() || useMock()) {
-    void circleStore.fetchCircles();
+    void circleStore.fetchCircles(category.value || undefined);
   }
 });
 
@@ -94,37 +74,22 @@ onLoad((query) => {
 // 页面永久停在空态。onShow 补拉：已登录但列表为空且不在加载中时自愈。
 onShow(() => {
   if ((getToken() || useMock()) && circleStore.circles.length === 0 && !circleStore.loading) {
-    void circleStore.fetchCircles();
+    void circleStore.fetchCircles(category.value || undefined);
   }
 });
 
 /**
  * 2026-08-25 P0：页面标题在自定义 header slot 中硬编码 "兴趣<under>趣</under>圈"，
  * 此处删除原 pageTitle computed（由 CATEGORY_KEY_MAP 派生，已不再被模板引用）。
- * category / CATEGORY_KEYWORDS 仍由 filteredCircles 消费，保留。
+ * R14-4：category 过滤已上收服务端（见 onLoad 注释），CATEGORY_KEY_MAP 仅保留标题映射用途。
  */
 
 /**
- * 按 category 过滤后的兴趣圈列表（review #21：category 参数用于过滤而非仅改标题）。
- * R4-00098：匹配维度 = 中文关键词 ∪ 当前 locale 分类标签（en-US 下圈子名
- * 含 "Reading"/"Sports" 等英文名可命中）；无关键词映射的未知分类回退全量。
- * 有映射但无匹配时展示空列表（诚实过滤，不再静默回退全量误导用户）。
+ * 按 category 过滤后的兴趣圈列表。
+ * R14-4（2026-11-05）：过滤已上收服务端（fetchCircles(category)），本地仅透传——
+ * 客户端关键词映射已退役（双重过滤会漏杀「分类列与名称不一致」的圈子）。
  */
-const filteredCircles = computed(() => {
-  if (!category.value) return circles.value;
-  const keyword = CATEGORY_KEYWORDS[category.value];
-  const labelKey = CATEGORY_KEY_MAP[category.value];
-  if (!keyword && !labelKey) return circles.value;
-  const label = labelKey ? t(labelKey) : "";
-  const matched = circles.value.filter((c) => {
-    if (keyword && c.name.includes(keyword)) return true;
-    if (label && c.name.includes(label)) return true;
-    // 圈子名同时含分类 ID 时也命中（如后端返回 "Reading Club"）
-    if (c.name.toLowerCase().includes(category.value)) return true;
-    return false;
-  });
-  return matched;
-});
+const filteredCircles = computed(() => circles.value);
 
 /**
  * 页面统一状态映射

@@ -139,7 +139,8 @@ function goChat() {
   // 仅当连 id 都拿不到（直开缺参）才拦，且给可重试导向而非取证串。
   const targetId = partnerUserId.value;
   if (!targetId) {
-    uni.showToast({ title: "暂时无法识别对方身份，请到寻觅页重新匹配", icon: "none" });
+    // R14-6（2026-11-05）：toast 文案走 i18n（原裸中文字面量）
+    uni.showToast({ title: t("matchSuccess.identityMissing"), icon: "none" });
     return;
   }
   matchStore.markChatReady();
@@ -157,7 +158,8 @@ function handleShare() {
   // 微信不允许脚本化调起转发面板，页内「分享喜悦」节点在组件 MatchSuccess.vue:173
   // （view，非 <button open-type="share">，该文件不在本车道可写集）⇒ 本侧先把
   // 回复改成真存在的出口导向（onShareAppMessage 已注册，胶囊菜单转发为真能力）。
-  uni.showToast({ title: "点右上角「···」选择发送给朋友即可转发", icon: "none" });
+  // R14-6（2026-11-05）：toast 文案走 i18n（原裸中文字面量）
+  uni.showToast({ title: t("matchSuccess.shareHint"), icon: "none" });
 }
 
 /* R11-L06-D06（需新建 P2）：真分享出口——注册页面级 onShareAppMessage，系统胶囊
@@ -188,7 +190,8 @@ function goBack() {
 
 /** 2026-08-25 P0：右上相机/截图（规格书 7.2，素材库 r06_c01 相机图标） */
 function handleScreenshot() {
-  uni.showToast({ title: "截图功能即将上线", icon: "none" });
+  // R14-6（2026-11-05）：toast 文案走 i18n（原裸中文字面量）
+  uni.showToast({ title: t("matchSuccess.screenshotSoon"), icon: "none" });
 }
 </script>
 

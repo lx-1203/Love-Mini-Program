@@ -332,7 +332,7 @@ function openNearbyList() {
   // 2026-09-04 问题4修复：补 fail 回调消除"无响应"静默失败（目标页已在 pages.json 注册，
   // 但运行时仍可能被拦截/栈满；失败时给用户可见 toast）
   openAppPath(ROUTES.NEARBY.PEOPLE, {
-    fail: () => uni.showToast({ title: "页面打开失败，请重试", icon: "none" }),
+    fail: () => uni.showToast({ title: t("home.openPathFailed"), icon: "none" }),
   });
 }
 
@@ -342,22 +342,22 @@ function openNearbyList() {
 // openAppPath 自动 switchTab，无需特殊处理。
 function openRelationLikedBy() {
   openAppPath(ROUTES.LIKES.VISITORS_LIKES, {
-    fail: () => uni.showToast({ title: "页面打开失败，请重试", icon: "none" }),
+    fail: () => uni.showToast({ title: t("home.openPathFailed"), icon: "none" }),
   });
 }
 function openRelationWhispers() {
   openAppPath(ROUTES.MESSAGES.INDEX, {
-    fail: () => uni.showToast({ title: "页面打开失败，请重试", icon: "none" }),
+    fail: () => uni.showToast({ title: t("home.openPathFailed"), icon: "none" }),
   });
 }
 function openRelationVisitors() {
   openAppPath(ROUTES.PROFILE.VISITORS, {
-    fail: () => uni.showToast({ title: "页面打开失败，请重试", icon: "none" }),
+    fail: () => uni.showToast({ title: t("home.openPathFailed"), icon: "none" }),
   });
 }
 function openRelationMatches() {
   openAppPath(ROUTES.LIKES.INDEX, {
-    fail: () => uni.showToast({ title: "页面打开失败，请重试", icon: "none" }),
+    fail: () => uni.showToast({ title: t("home.openPathFailed"), icon: "none" }),
   });
 }
 
@@ -393,10 +393,14 @@ function openInvite() {
         @notifyTap="goNotifications"
       />
 
+      <!-- R14-6（2026-11-05）：四个分区补 error/retry——dashboard 拉取错误透传给分区，
+           重试统一走 refreshHomeFeed（onShow 重拉同一入口），不再只让社区动态独自报错 -->
       <TodayRecommendationCard
         :item="viewModel.todayRecommendation"
         :loading="loading"
         :like-loading="likeLoading"
+        :error="homeStore.errorMessage"
+        @retry="refreshHomeFeed"
         @view="goTodayProfile"
         @like="likeToday"
         @rotate="rotateToday"
@@ -413,6 +417,8 @@ function openInvite() {
       <RelationActivity
         :data="viewModel.relationActivity"
         :loading="loading"
+        :error="homeStore.errorMessage"
+        @retry="refreshHomeFeed"
         @all="goMessages"
         @liked-by="openRelationLikedBy"
         @whispers="openRelationWhispers"
@@ -423,6 +429,8 @@ function openInvite() {
       <InterestRecommendation
         :items="viewModel.interestRecommendations"
         :loading="loading"
+        :error="homeStore.errorMessage"
+        @retry="refreshHomeFeed"
         @more="openAppPath(ROUTES.CIRCLES.INDEX)"
         @select="openCircle"
         @join="joinCircle"
@@ -431,6 +439,8 @@ function openInvite() {
       <NearbyPeople
         :items="viewModel.nearbyPeople"
         :loading="loading"
+        :error="homeStore.errorMessage"
+        @retry="refreshHomeFeed"
         @more="openNearbyList"
         @select="openUserProfile"
       />

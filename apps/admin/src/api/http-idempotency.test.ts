@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ApiError, generateIdempotencyKey, get, post } from "./http";
+import { ApiError, generateIdempotencyKey, get, post, put } from "./http";
 
 /**
  * 幂等键语义测试（api/http.ts 写请求补键）。
@@ -66,10 +66,16 @@ function authOf(index: number): string {
   return sent[index]?.headers.get("Authorization") ?? "";
 }
 
-/** 已登录的 ADMIN：既不会被本地只读预检拦下，也带 token 供 401 用例比对。 */
-function loginAsAdmin(store: Map<string, string>, token = "jwt-old") {
-  store.set("admin_v2_token", token);
-  store.set("admin_v2_user", JSON.stringify({ id: 1, username: "ops", role: "ADMIN" }));
+/**
+ * 已登录的 ADMIN：既不会被本地只读预检拦下，admin_v2_user 会话标记也供 401 用例比对。
+ * R14-5：JWT 迁入 HttpOnly Cookie（JS 不可读），本地不再存 admin_v2_token，
+ * 「凭据被别处更新」改由 admin_v2_user 会话标记的变化判定。
+ */
+function loginAsAdmin(
+  store: Map<string, string>,
+  marker = JSON.stringify({ id: 1, username: "ops", role: "ADMIN" }),
+) {
+  store.set("admin_v2_user", marker);
 }
 
 const DISABLE = "/v1/admin/users/7/disable";
@@ -190,11 +196,12 @@ describe("admin http 幂等键语义（一键一逻辑调用）", () => {
   // ----------------------------------------------------------------
   // (c) 401 换 token 重发：只换 Authorization，幂等键原样继承
   // ----------------------------------------------------------------
-  it("(c) 401 后凭据已被别处更新时重发一次，复用同一把 key 且只换 Authorization", async () => {
-    // 模拟「另一个页签重新登录」：401 落地时 localStorage 里的 token 已被换成新的
+  it("(c) 401 后会话标记已被别处更新时重发一次，复用同一把 key 且凭据走最新 Cookie", async () => {
+    // 模拟「另一个页签重新登录」：401 落地时 localStorage 里的 admin_v2_user 已被改写
+    const updatedMarker = JSON.stringify({ id: 1, username: "ops-next", role: "ADMIN" });
     respond = (index) => {
       if (index === 0) {
-        localStorage.setItem("admin_v2_token", "jwt-new");
+        localStorage.setItem("admin_v2_user", updatedMarker);
         return errorResponse(401, "登录已过期");
       }
       return okResponse();
@@ -204,13 +211,16 @@ describe("admin http 幂等键语义（一键一逻辑调用）", () => {
 
     expect(sent).toHaveLength(2);
     expect(keyOf(1)).toBe(keyOf(0));
-    expect(authOf(0)).toBe("Bearer jwt-old");
-    expect(authOf(1)).toBe("Bearer jwt-new");
+    // R14-5：不再发送 Authorization 头（认证凭据由浏览器携带的最新 HttpOnly Cookie 提供）
+    expect(authOf(0)).toBe("");
+    expect(authOf(1)).toBe("");
+    // 重发沿用同一 headers ⇒ X-Requested-With 原样继承（CSRF 双层口径）
+    expect(sent[1]?.headers.get("X-Requested-With")).toBe("XMLHttpRequest");
     // 重发成功 ⇒ 没有触发登出
-    expect(localStorage.getItem("admin_v2_token")).toBe("jwt-new");
+    expect(localStorage.getItem("admin_v2_user")).toBe(updatedMarker);
   });
 
-  it("(c) 401 且凭据没变时仍只发一次并登出跳转（不重发、不死循环）", async () => {
+  it("(c) 401 且会话标记没变时仍只发一次并登出跳转（不重发、不死循环）", async () => {
     respond = () => errorResponse(401, "登录已过期");
 
     const err = await post(DISABLE).catch((e) => e);
@@ -218,7 +228,7 @@ describe("admin http 幂等键语义（一键一逻辑调用）", () => {
     expect((err as ApiError).status).toBe(401);
 
     expect(sent).toHaveLength(1);
-    expect(localStorage.getItem("admin_v2_token")).toBeNull();
+    expect(localStorage.getItem("admin_v2_user")).toBeNull();
   });
 
   // ----------------------------------------------------------------
@@ -245,7 +255,20 @@ describe("admin http 幂等键语义（一键一逻辑调用）", () => {
 
     expect(sent).toHaveLength(1);
     expect(keyOf(0)).toBe("");
-    expect(authOf(0)).toBe("Bearer jwt-old");
+    // R14-5：GET 同样不发 Authorization（认证走 HttpOnly Cookie）
+    expect(authOf(0)).toBe("");
+    expect(sent[0]?.headers.get("X-Requested-With")).toBe("XMLHttpRequest");
+  });
+
+  it("(R14-5) 所有请求统一携带 X-Requested-With=XMLHttpRequest（CSRF 双层防护第二层）", async () => {
+    await expect(get("/v1/admin/users")).resolves.toBeTruthy();
+    await expect(post(DISABLE)).resolves.toBeTruthy();
+    await expect(put("/v1/admin/schools/1", { name: "x" })).resolves.toBeTruthy();
+
+    expect(sent).toHaveLength(3);
+    for (const { headers } of sent) {
+      expect(headers.get("X-Requested-With")).toBe("XMLHttpRequest");
+    }
   });
 
   // ----------------------------------------------------------------

@@ -53,6 +53,8 @@ import CertDetailSheet from "../../components/profile/CertDetailSheet.vue";
 import BottomSheet from "../../components/common/BottomSheet.vue";
 import NotLoggedProfile from "../../components/profile/NotLoggedProfile.vue";
 import SafeImage from "../../components/common/SafeImage.vue";
+// R14-6（2026-11-05）：他人/本人资料拉取失败不再静默——复用全局错误态组件给重试出口
+import ErrorState from "../../components/common/ErrorState.vue";
 // 2026-08-08：QQ 头像框机制（注册表驱动，按身份佩戴不同主题）
 import AvatarFrame from "../../components/common/AvatarFrame.vue";
 import { useAvatarFrame } from "../../composables/useAvatarFrame";
@@ -285,6 +287,18 @@ const otherBgUrl = ref<string>("");
 const otherProfile = ref<RecommendedPersonView | null>(null);
 
 /**
+ * R14-6（2026-11-05）：他人资料拉取失败标记（原 catch 置空数据仅留 console，页面静默渲染
+ * 空占位，用户无法区分「没资料」与「拉取失败」）。true 时在他人资料区渲染 ErrorState + 重试。
+ */
+const otherProfileLoadFailed = ref(false);
+
+/**
+ * R14-6（2026-11-05）：本人资料拉取失败标记（原 fetchProfile 失败只 console.warn，同静默问题）。
+ * true 时在本人主页区渲染 ErrorState + 重试。
+ */
+const ownProfileLoadFailed = ref(false);
+
+/**
  * 加载他人主页公开资料（背景 + 完整视图）。
  *
  * 2026-08-13 游客门禁（核心 BUG 修复）：未登录直接 return——不发起受保护请求。
@@ -304,8 +318,11 @@ async function loadOtherProfile(userId: string): Promise<void> {
   if (!sessionStore.isLoggedIn) {
     otherProfile.value = null;
     otherBgUrl.value = "";
+    otherProfileLoadFailed.value = false;
     return;
   }
+  // R14-6（2026-11-05）：进入拉取先清上一轮失败态（成功路径上失败标记不残留）
+  otherProfileLoadFailed.value = false;
   try {
     if (useMock()) {
       // mock 演示：先从 mock 推荐池（4001-4009）按 id 查找目标用户构造公开视图。
@@ -386,11 +403,20 @@ async function loadOtherProfile(userId: string): Promise<void> {
   } catch (error) {
     // 拉取失败不阻断页面（他人主页其余区域按占位渲染），保持纯色兜底；
     // 已登录 401 走既有刷新链路，不会误伤游客
+    // R14-6（2026-11-05）：不再完全静默——置失败标记，资料区渲染 ErrorState + 重试
     if (isDev) {
       console.warn("[ProfilePage] 拉取他人主页失败:", error);
     }
     otherProfile.value = null;
     otherBgUrl.value = "";
+    otherProfileLoadFailed.value = true;
+  }
+}
+
+/** R14-6（2026-11-05）：他人资料拉取失败的重试出口（ErrorState @retry） */
+function retryOtherProfile(): void {
+  if (targetUserId.value && !isOwnProfile.value) {
+    void loadOtherProfile(targetUserId.value);
   }
 }
 
@@ -1204,6 +1230,25 @@ function refreshMyPostsWithRetry(retries: number): void {
   }
 }
 
+/**
+ * R14-6（2026-11-05）：本人资料拉取链路（onShow 首拉与失败重试共用同一实现）。
+ * 成功后清失败标记并判断头像引导气泡；失败置标记，由本人主页区 ErrorState 呈现。
+ */
+function fetchOwnProfile(): void {
+  profileStore.fetchProfile().then(() => {
+    // 2026-08-09：首次进入且无头像时展示上传引导气泡（数据就绪后再判断）
+    ownProfileLoadFailed.value = false;
+    maybeShowAvatarHint();
+  }).catch((error) => {
+    // R4-batch4：诊断日志仅开发环境输出
+    // R14-6（2026-11-05）：不再完全静默——置失败标记，本人主页区渲染 ErrorState + 重试
+    ownProfileLoadFailed.value = true;
+    if (isDev) {
+      console.warn("[ProfilePage] fetchProfile 失败:", error);
+    }
+  });
+}
+
 onShow(() => {
   loadPageUserIdParam();
   // MP-R1-PROFILE-207：用户经 tabBar 主动切回「我的」→ 复位一次性他人浏览上下文，
@@ -1214,6 +1259,7 @@ onShow(() => {
       targetUserId.value = "";
       otherProfile.value = null;
       otherBgUrl.value = "";
+      otherProfileLoadFailed.value = false;
     }
   }
   // 2026-08-12 V3：他人主页按对方背景显示（每次进入他人态都拉取，避免切换目标后残留）
@@ -1224,6 +1270,7 @@ onShow(() => {
   } else {
     otherProfile.value = null;
     otherBgUrl.value = "";
+    otherProfileLoadFailed.value = false;
   }
   if (profileRequestedOnce) {
     // R16：日常可能刚在发布页新增，每次 onShow 轻量刷新「我的故事」数据源
@@ -1254,15 +1301,8 @@ onShow(() => {
   void likesStore.fetchLikes().catch((error) => {
     captureException(error, { source: "profile.fetchLikes" });
   });
-  profileStore.fetchProfile().then(() => {
-    // 2026-08-09：首次进入且无头像时展示上传引导气泡（数据就绪后再判断）
-    maybeShowAvatarHint();
-  }).catch((error) => {
-    // R4-batch4：诊断日志仅开发环境输出
-    if (isDev) {
-      console.warn("[ProfilePage] fetchProfile 失败:", error);
-    }
-  });
+  // R14-6（2026-11-05）：拉取链路抽成 fetchOwnProfile，onShow 首拉与失败重试共用同一实现
+  fetchOwnProfile();
   // MP-R2-PROFILE-034：这里原来每次都 socialProgressStore.fetchProgress()，
   // 而本页早已没有任何进度 UI 消费它的结果——纯粹的每次 onShow 空跑一个请求。已连同实例化一并删除。
 });
@@ -1291,6 +1331,14 @@ onUnload(() => {
 
     <!-- ==================== 已完善资料：完整个人中心 ==================== -->
     <template v-else>
+      <!-- R14-6（2026-11-05）：本人资料拉取失败不再静默——页面顶部给 ErrorState + 重试
+           （与 loadOtherProfile 失败呈现同口径；重试与 onShow 首拉共用 fetchOwnProfile） -->
+      <ErrorState
+        v-if="isOwnProfile && ownProfileLoadFailed"
+        type="network"
+        :message="t('profile.ownProfileLoadFailed')"
+        @retry="fetchOwnProfile"
+      />
       <ProfileShell
         v-if="isOwnProfile"
         mode="mine"
@@ -1381,6 +1429,15 @@ onUnload(() => {
         </view>
         <MatchCountChip :count="matchCount" />
       </view>
+
+      <!-- R14-6（2026-11-05）：他人资料拉取失败不再静默——资料区给 ErrorState + 重试
+           （原 catch 只置空数据 + console，用户无法区分「没资料」与「拉取失败」） -->
+      <ErrorState
+        v-if="!isOwnProfile && otherProfileLoadFailed"
+        type="network"
+        :message="t('profile.otherProfileLoadFailed')"
+        @retry="retryOtherProfile"
+      />
 
       <!-- 个人信息区 -->
       <view class="profile-info">

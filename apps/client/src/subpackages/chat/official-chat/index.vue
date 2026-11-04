@@ -108,10 +108,11 @@ function handleEmojiSelect(emoji: string) {
   inputValue.value += emoji;
 }
 function onSessionMoreTap() {
-  uni.showToast({ title: "会话设置敬请期待", icon: "none" });
+  // R14-6（2026-11-05）：toast 文案走 i18n（原裸中文字面量）
+  uni.showToast({ title: t("chat.officialSessionSettingsSoon"), icon: "none" });
 }
 function onPlusTap() {
-  uni.showToast({ title: "更多功能敬请期待", icon: "none" });
+  uni.showToast({ title: t("chat.officialMoreSoon"), icon: "none" });
 }
 import SkeletonBlock from "../../../components/common/SkeletonBlock.vue";
 /* 2026-09-06 修复：本人头像单一数据源 = profileStore.avatarUrl（与会话页一致），
@@ -420,7 +421,8 @@ onLoad((query) => {
     <LockScreen v-if="!isUnlocked" :completion-percent="completionPercent" />
     <template v-else>
       <!-- 2026-08-31 Phase 1：进入骨架（消除 1~1.5s 纯白过渡） -->
-      <SkeletonBlock v-if="!ready" variant="chat" :rows="4" label="加载中" />
+      <!-- R14-6（2026-11-05）：骨架 label 走 i18n（原裸中文字面量，文案同 common.loadingAria） -->
+      <SkeletonBlock v-if="!ready" variant="chat" :rows="4" :label="t('common.loadingAria')" />
       <!-- ===== 顶部导航栏（navBarStyle：statusBarHeight 注入 + R11-L11-D22 胶囊避让；
            R20：Math.max 兜底 24px，标题不再贴刘海/压状态栏） ===== -->
       <view class="nav-bar" :style="navBarStyle">

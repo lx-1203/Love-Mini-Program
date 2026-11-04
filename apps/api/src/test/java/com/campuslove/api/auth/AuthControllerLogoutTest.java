@@ -15,6 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * {@link AuthController#logout} 与 {@link AuthController#logoutAsAdmin} 单元测试（Task 0.5.3）。
@@ -88,7 +90,7 @@ class AuthControllerLogoutTest {
         String authHeader = "Bearer " + TEST_TOKEN;
 
         // Act
-        Map<String, Boolean> result = controller.logout(authHeader);
+        Map<String, Boolean> result = controller.logout(authHeader, new MockHttpServletRequest(), new MockHttpServletResponse());
 
         // Assert：调用 authService.logout(token)
         verify(authService).logout(TEST_TOKEN);
@@ -107,7 +109,7 @@ class AuthControllerLogoutTest {
     @Test
     void logout_withNoAuthHeader_shouldDelegateNullAndReturnSuccess() {
         // Act
-        Map<String, Boolean> result = controller.logout(null);
+        Map<String, Boolean> result = controller.logout(null, new MockHttpServletRequest(), new MockHttpServletResponse());
 
         // Assert：调用 authService.logout(null)
         verify(authService).logout(null);
@@ -130,7 +132,7 @@ class AuthControllerLogoutTest {
         doNothing().when(authService).logout(null);
 
         // Act
-        Map<String, Boolean> result = controller.logout(malformedHeader);
+        Map<String, Boolean> result = controller.logout(malformedHeader, new MockHttpServletRequest(), new MockHttpServletResponse());
 
         // Assert：调用 authService.logout(null)
         verify(authService).logout(null);
@@ -151,7 +153,7 @@ class AuthControllerLogoutTest {
         String authHeader = "Bearer " + TEST_TOKEN;
 
         // Act
-        Map<String, Boolean> result = controller.logoutAsAdmin(authHeader);
+        Map<String, Boolean> result = controller.logoutAsAdmin(authHeader, new MockHttpServletRequest(), new MockHttpServletResponse());
 
         // Assert：调用 authService.logoutAsAdmin(token)
         verify(authService).logoutAsAdmin(TEST_TOKEN);
@@ -177,7 +179,7 @@ class AuthControllerLogoutTest {
         // Act & Assert：异常向上传播
         RuntimeException thrown = assertThrows(
                 RuntimeException.class,
-                () -> controller.logout(authHeader));
+                () -> controller.logout(authHeader, new MockHttpServletRequest(), new MockHttpServletResponse()));
         assertEquals("Redis unavailable", thrown.getMessage());
     }
 
@@ -189,7 +191,7 @@ class AuthControllerLogoutTest {
     @Test
     void logout_shouldReturnMapWithOnlySuccessField() {
         // Act
-        Map<String, Boolean> result = controller.logout("Bearer " + TEST_TOKEN);
+        Map<String, Boolean> result = controller.logout("Bearer " + TEST_TOKEN, new MockHttpServletRequest(), new MockHttpServletResponse());
 
         // Assert：Map 仅包含 success 字段
         assertEquals(1, result.size(), "logout 返回的 Map 应仅包含 success 字段");
@@ -211,7 +213,7 @@ class AuthControllerLogoutTest {
         String authHeader = "Bearer ";
 
         // Act
-        Map<String, Boolean> result = controller.logout(authHeader);
+        Map<String, Boolean> result = controller.logout(authHeader, new MockHttpServletRequest(), new MockHttpServletResponse());
 
         // Assert：调用 authService.logout("") —— extractBearerToken 返回 substring(7) = ""
         verify(authService).logout("");
@@ -230,9 +232,9 @@ class AuthControllerLogoutTest {
         String authHeader = "Bearer " + TEST_TOKEN;
 
         // Act：连续 3 次登出
-        controller.logout(authHeader);
-        controller.logout(authHeader);
-        controller.logout(authHeader);
+        controller.logout(authHeader, new MockHttpServletRequest(), new MockHttpServletResponse());
+        controller.logout(authHeader, new MockHttpServletRequest(), new MockHttpServletResponse());
+        controller.logout(authHeader, new MockHttpServletRequest(), new MockHttpServletResponse());
 
         // Assert：authService.logout 被调用 3 次
         verify(authService, times(3)).logout(TEST_TOKEN);

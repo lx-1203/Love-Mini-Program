@@ -256,12 +256,12 @@ export interface BackendMessageView {
 }
 
 /**
- * 后端 NotificationView 类型（Phase 3 更新：增加 signalType 字段）
+ * 后端 NotificationView 类型（Phase 3 更新：增加 signalType 字段；R14-4：sourceUser 补 id）
  */
 export interface BackendNotificationView {
   id: number;
   type: string;
-  sourceUser: { displayName: string; avatar: string } | null;
+  sourceUser: { id?: number | null; displayName: string; avatar: string } | null;
   referenceId: number | null;
   referenceType: string | null;
   isRead: boolean;
@@ -454,10 +454,10 @@ function buildLocalPreview(kind: MessageItem["kind"], content: string): string {
 
 function mapToSystemNotification(raw: BackendNotificationView): SystemNotification {
   const mappedSignalType: SignalType = raw.signalType === "CONTENT" ? "CONTENT" : "SOCIAL";
-  // 修复（P1 BUG）：triggerUserId 原实现写入 raw.sourceUser?.displayName（显示名而非 ID），
-  // 导致通知跳转用户资料时按名字查 ID 失败。后端 NotificationView.sourceUser 目前只提供
-  // displayName/avatar，未暴露用户 ID —— 这里置 null 并保留 resourceId 跳转，
-  // 待后端补 sourceUserId 字段后可恢复映射（TODO(backend): 补充 sourceUser.id）。
+  // 修复（P1 BUG）+ R14-4（2026-11-05 接线）：triggerUserId 原实现写入 raw.sourceUser?.displayName
+  // （显示名而非 ID），导致通知跳转用户资料时按名字查 ID 失败。后端 NotificationSourceUserView
+  // 已补 id 字段（R14-4，real 档恒有值、mock 档假想用户为 null），此处恢复 ID 映射：
+  // id 缺失时回退 null，跳转语义由 resourceId 兜底——两路任一可用即可跳转。
   return {
     id: String(raw.id),
     type: mapNotificationType(raw.type),
@@ -466,7 +466,7 @@ function mapToSystemNotification(raw: BackendNotificationView): SystemNotificati
     isRead: raw.isRead,
     createdAt: raw.createdAt,
     actionUrl: null,
-    triggerUserId: null,
+    triggerUserId: raw.sourceUser?.id != null ? String(raw.sourceUser.id) : null,
     sourceAvatar: raw.sourceUser?.avatar ?? null,
     resourceId: raw.referenceId ? String(raw.referenceId) : null,
     referenceType: raw.referenceType ? String(raw.referenceType) : null,
@@ -1435,8 +1435,10 @@ export const useMessagesStore = defineStore("messages", {
      * 2026-08-07 消息页重构：标为未读（长按菜单）。
      * 将已读会话重新标记为 1 条未读，恢复红色角标。
      *
-     * R4-00184：当前仅本地改状态，无后端同步（未读计数以服务端会话数据为准，
-     * 刷新后按后端计数还原）。TODO(backend): 后端补充会话未读元数据同步接口。
+     * R4-00184→R14-1（2026-11-05 复核更新）：后端会话未读元数据同步接口
+     * （PUT /messages/conversations/{id}/unread，PrivateMessageController）已于 2026-10-28 上线，
+     * 本 action 已接线 markConversationUnread 走服务端回执——原「无后端同步」TODO 已了结；
+     * 未读计数以服务端会话数据为准，刷新后按后端计数还原。
      */
     async markSessionUnread(sessionId: string): Promise<boolean> {
       const session = this.sessions.find((s) => s.id === sessionId);
@@ -1458,7 +1460,8 @@ export const useMessagesStore = defineStore("messages", {
      * 2026-08-09 未读红点修复（BUG 4）：改为后端同步——先发送显式已读回执
      * （复用 markConversationRead），成功后再本地清零；失败回滚返回 false，
      * 避免刷新列表后红点反弹（原实现仅本地清零，后端无感知）。
-     * markSessionUnread 后端无对应接口，保留本地 + TODO(backend)。
+     * R14-1（2026-11-05）：markSessionUnread 已接线后端 PUT /messages/conversations/{id}/unread
+     * （见 markConversationUnread），原「后端无对应接口」TODO 已了结。
      *
      * @param sessionId 会话 ID
      * @returns 是否已读成功（false=后端回执失败，本地未清零）

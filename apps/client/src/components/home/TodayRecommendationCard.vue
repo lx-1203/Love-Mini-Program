@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import type { TodayRecommendationViewModel } from "../../view-models/home-dashboard";
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
@@ -8,8 +9,11 @@ import { resolveMediaUrl } from "../../utils/media";
 // Vue SFC 编译器不提升 defineProps，引用 props 的 watch 若写在声明之前，
 // 编译产物 watcher getter 注册时立即求值，props 尚在 TDZ，组件每次挂载必抛
 // ReferenceError: Cannot access 'props' before initialization（29a2b1df 回归）。
-const props = defineProps<{ item: TodayRecommendationViewModel | null; loading?: boolean; likeLoading?: boolean }>();
-defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void }>();
+// R14-6（2026-11-05）：补 error/retry 组件 API（与 CommunityFeed 同形态：
+// dashboard 拉取失败时本分区给错误态 + 重试，不再静默渲染空卡）
+const props = defineProps<{ item: TodayRecommendationViewModel | null; loading?: boolean; likeLoading?: boolean; error?: string | null }>();
+const emit = defineEmits<{ (e: "view"): void; (e: "like"): void; (e: "rotate"): void; (e: "retry"): void }>();
+const { t } = useI18n();
 
 // MP-R2-PAGES-HOME-INDEX-012：主图加载失败终态——切占位图，不留永久灰底
 const photoFailed = ref(false);
@@ -86,7 +90,14 @@ const galleryPhotos = computed(() => (props.item?.photos ?? []).filter(Boolean).
       </view>
     </view>
 
-    <view v-if="loading" class="today-card__skeleton">正在为你挑选心动的人…</view>
+    <view v-if="loading" class="today-card__skeleton">{{ t("home.todayRecommendLoading") }}</view>
+    <!-- R14-6（2026-11-05）：dashboard 拉取失败错误态 + 重试（口径对齐 CommunityFeed） -->
+    <view v-else-if="error" class="today-card__error">
+      <text class="today-card__error-text">{{ t("home.sectionErrorText", { message: error }) }}</text>
+      <view class="today-card__retry" hover-class="today-card__retry--pressed" @tap="emit('retry')">
+        <text class="today-card__retry-text">{{ t("home.sectionRetry") }}</text>
+      </view>
+    </view>
     <view v-else-if="!item" class="today-card__empty">今天暂时没有合适的推荐，晚一点再来看看</view>
     <view v-else class="today-card__body">
       <!-- 2026-09-02 R5/R8：整张 body 可点击 + hover 视觉反馈 + photo 懒加载降首屏卡顿 -->
@@ -223,6 +234,45 @@ const galleryPhotos = computed(() => (props.item?.photos ?? []).filter(Boolean).
   justify-content: center;
   color: #999999;
   font-size: 24rpx;
+}
+
+/* R14-6（2026-11-05）：错误态 + 重试按钮（行内样式对齐 CommunityFeed 错误行） */
+.today-card__error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 16rpx;
+  border-radius: 20rpx;
+  background: #fff8f8;
+  border: 1rpx solid #FFE3E3;
+}
+
+.today-card__error-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-right: 16rpx;
+  font-size: 22rpx;
+  color: #999999;
+}
+
+.today-card__retry {
+  flex-shrink: 0;
+  padding: 10rpx 28rpx;
+  border-radius: 999rpx;
+  background: #36C99A;
+}
+
+.today-card__retry--pressed {
+  opacity: 0.8;
+}
+
+.today-card__retry-text {
+  font-size: 24rpx;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .today-card__body {

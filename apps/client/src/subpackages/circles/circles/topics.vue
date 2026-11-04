@@ -289,7 +289,8 @@ function formatTopicTime(iso: string): string {
  * `t('circle.home.pinnedNotice')`，不来自任何圈子数据 ⇒ 摄影圈/音乐圈/运动圈进本页都读作
  * 同一条「【圈规】友善交流，尊重原创，分享美好瞬间」，而同域 circle-home.vue:154-156 在 real
  * 模式对该字段恒返回 ""、:591 整条不渲染（MP-R1-CIRCLEHOME-001 在册裁定：real 模式不渲染写死
- * 演示公告）。后端没有圈公告列（circle-home.vue:149 已注明 TODO(后端): 圈公告接口），
+ * 演示公告）。后端圈公告已于 2026-10-28 经 /circles/{id}/meta 表化下发（R14-1：原
+ * TODO(后端): 圈公告接口 已了结），
  * 按 §12.4 的合法形态之二处置：没有真相源的内容 real 档整条撤下、降级为不承诺，
  * 只在 mock 演示档保留；等后端补列后把 useMock() 分支换成读字段。
  */
@@ -648,7 +649,7 @@ defineExpose({ goToAuthorProfile });
            R11-L04-D03（文案 P2）：改前 real 模式也照样渲染这条写死词条 ⇒ 任何圈子（摄影/音乐/运动）
            进本页都读作同一条「圈规」，冒充本圈公告，而同域 circle-home.vue:154-156 在 real 档恒返回
            ""、:591 整条不渲染（MP-R1-CIRCLEHOME-001 在册裁定）。后端没有圈公告列（circle-home.vue:149
-           已注明 TODO(后端): 圈公告接口）⇒ 按 §12.4 合法形态之二：无真相源的内容 real 档整条撤下，
+           已注明 TODO(后端): 圈公告接口，该 TODO 已于 R14-1（2026-11-05）了结：/circles/{id}/meta 已表化下发）⇒ 按 §12.4 合法形态之二：无真相源的内容 real 档整条撤下，
            只在 mock 演示档保留。改读 pinnedNotice 计算属性（见 <script> 内注释）。 -->
       <view v-if="(detailTab === 'feed' || detailTab === 'hot') && listForTab.length > 0 && pinnedNotice.length > 0" class="topic-rule press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="goCircleDetail(circleId)">
         <text class="topic-rule__pin">{{ t('circle.home.pinnedBadge') }}</text>

@@ -329,9 +329,10 @@ export const useCircleStore = defineStore("circle", {
 
   actions: {
     /**
-     * 获取兴趣圈列表
+     * 获取兴趣圈列表（R14-4：支持可选 category 服务端过滤——
+     * GET /api/circles?category=xx，后端 2026-08-10 B4 已支持；不传时全量，语义不变）
      */
-    async fetchCircles() {
+    async fetchCircles(category?: string) {
       this.loading = true;
       this.errorMessage = null;
 
@@ -343,7 +344,9 @@ export const useCircleStore = defineStore("circle", {
 
         // 调用后端 API: GET /api/circles（P2-13：userId 由后端 JWT 获取，CircleController.getCircles 无 userId 参数）
         const data = await request<BackendCircleView[]>({
-          url: "/circles",
+          url: category
+            ? `/circles?category=${encodeURIComponent(category)}`
+            : "/circles",
           method: "GET",
         });
         this.circles = data.map(mapToCircleItem);

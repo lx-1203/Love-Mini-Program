@@ -324,7 +324,8 @@ function onSessionLongpress(session: MessageSession) {
       }
       if (tapIndex === 3) {
         uni.showModal({
-          title: "确定删除该会话？",
+          // R14-6（2026-11-05）：弹窗标题走 i18n（原裸中文字面量）
+          title: t("messages.deleteSessionTitle"),
           success: (res) => {
             if (res.confirm) void messagesStore.deleteSession(session.id).catch(toastOpError);
           },
@@ -475,7 +476,9 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
     </view>
 
     <template v-if="isUnlocked">
-      <PageStateContainer :state="pageState" :error-text="messagesStore.errorMessage || '加载失败'" @retry="handleRetry">
+      <!-- R14-6（2026-11-05）：去掉字面量兜底——PageStateContainer 默认即 t("messages.loadFailed")，
+           errorMessage 为空时省略 error-text 即可，不再硬编码「加载失败」 -->
+      <PageStateContainer :state="pageState" :error-text="messagesStore.errorMessage" @retry="handleRetry">
         <template #loading>
           <Skeleton variant="list" :count="5" />
         </template>
