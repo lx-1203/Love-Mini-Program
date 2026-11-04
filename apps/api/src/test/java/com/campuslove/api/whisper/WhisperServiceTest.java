@@ -1,6 +1,7 @@
 package com.campuslove.api.whisper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -160,21 +161,63 @@ class WhisperServiceTest {
     }
 
     @Test
-    void inbox_marksDelivered() {
+    void inbox_marksDeliveredViaBulkUpdate() {
+        // R5-b（2026-11-05）：SENT→DELIVERED 改为一次批量 UPDATE——service 必须先置位再取列表，
+        // 且不再逐行 save（N+1 写已消除）。stub 返回置位后的 DB 状态（DELIVERED）。
         WhisperMessage m = new WhisperMessage();
         m.setId(1L);
         m.setSenderId(2L);
         m.setReceiverId(1L);
         m.setContent("你好呀");
-        m.setStatus("SENT");
+        m.setStatus("DELIVERED");
         m.setClientRequestId("req-in");
         m.setPriceCents(200L);
-        when(repository.findByReceiverIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(m));
+        when(repository.findByReceiverIdAndStatusInOrderByCreatedAtDesc(eq(1L), any()))
+                .thenReturn(List.of(m));
 
         List<WhisperMessageView> list = service.inbox(1L);
         assertEquals(1, list.size());
         assertTrue(list.get(0).status().equals("DELIVERED"));
-        verify(repository, times(1)).save(any(WhisperMessage.class));
+        verify(repository, times(1)).markInboxDelivered(1L);
+        verify(repository, never()).save(any(WhisperMessage.class));
+    }
+
+    @Test
+    void inbox_excludesAuditRows_paywallBypassClosed() {
+        // R5-1（2026-11-05）判点：PAY_FAILED/REFUNDED 审计行含未付费内容，
+        // 泄入收件人收件箱=「余额不足」旁路付费墙。收件查询的状态集合必须排除之。
+        when(repository.findByReceiverIdAndStatusInOrderByCreatedAtDesc(eq(1L), any()))
+                .thenReturn(List.of());
+
+        service.inbox(1L);
+
+        @SuppressWarnings("unchecked")
+        org.mockito.ArgumentCaptor<java.util.Collection<String>> captor =
+                org.mockito.ArgumentCaptor.forClass((Class<java.util.Collection<String>>) (Class<?>) java.util.Collection.class);
+        verify(repository).findByReceiverIdAndStatusInOrderByCreatedAtDesc(eq(1L), captor.capture());
+        java.util.Collection<String> statuses = captor.getValue();
+        assertTrue(statuses.containsAll(List.of("SENT", "DELIVERED", "READ")),
+                "收件箱必须覆盖全部送达态: " + statuses);
+        assertFalse(statuses.contains("PAY_FAILED"), "PAY_FAILED 审计行不得进入收件箱（付费墙旁路）");
+        assertFalse(statuses.contains("REFUNDED"), "REFUNDED 审计行不得进入收件箱（付费墙旁路）");
+    }
+
+    @Test
+    void unreadCount_usesUnreadStatusesOnly() {
+        // R9-b（2026-11-05）：未读口径=SENT/DELIVERED（READ 不计、审计行不计）
+        when(repository.countByReceiverIdAndStatusIn(eq(1L), any())).thenReturn(3L);
+
+        long n = service.unreadCount(1L);
+
+        assertEquals(3L, n);
+        @SuppressWarnings("unchecked")
+        org.mockito.ArgumentCaptor<java.util.Collection<String>> captor =
+                org.mockito.ArgumentCaptor.forClass((Class<java.util.Collection<String>>) (Class<?>) java.util.Collection.class);
+        verify(repository).countByReceiverIdAndStatusIn(eq(1L), captor.capture());
+        java.util.Collection<String> statuses = captor.getValue();
+        assertTrue(statuses.containsAll(List.of("SENT", "DELIVERED")), "未读必须含送达中/已送达: " + statuses);
+        assertFalse(statuses.contains("READ"));
+        assertFalse(statuses.contains("PAY_FAILED"));
     }
 
     @Test
@@ -197,7 +240,8 @@ class WhisperServiceTest {
         m.setStatus("DELIVERED");
         m.setClientRequestId("req-profile");
         m.setPriceCents(200L);
-        when(repository.findByReceiverIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(m));
+        when(repository.findByReceiverIdAndStatusInOrderByCreatedAtDesc(eq(1L), any()))
+                .thenReturn(List.of(m));
 
         List<WhisperMessageView> list = service.inbox(1L);
         assertEquals("胶片摄影师小林", list.get(0).senderNickname(), "收件箱应填充发送者昵称");
@@ -220,7 +264,8 @@ class WhisperServiceTest {
         m.setStatus("DELIVERED");
         m.setClientRequestId("req-missing");
         m.setPriceCents(200L);
-        when(repository.findByReceiverIdOrderByCreatedAtDesc(1L)).thenReturn(List.of(m));
+        when(repository.findByReceiverIdAndStatusInOrderByCreatedAtDesc(eq(1L), any()))
+                .thenReturn(List.of(m));
 
         List<WhisperMessageView> list = service.inbox(1L);
         assertNull(list.get(0).senderNickname());
@@ -229,7 +274,7 @@ class WhisperServiceTest {
 
     @Test
     void inbox_paged_over100ClampedAndSorted() {
-        // R8 分页：size clamp 到 [1,100]，page 从 0 起；分页路径同样填充发送者资料
+        // R8 分页：size clamp 到 [1,100]，page 从 0 起；分页路径同样带状态过滤（R5-1）
         WhisperMessage m = new WhisperMessage();
         m.setId(1L);
         m.setSenderId(2L);
@@ -238,10 +283,12 @@ class WhisperServiceTest {
         m.setStatus("DELIVERED");
         m.setClientRequestId("req-page");
         m.setPriceCents(200L);
-        when(repository.queryByReceiverIdOrderByCreatedAtDesc(eq(1L), any())).thenReturn(List.of(m));
+        when(repository.queryByReceiverIdAndStatusInOrderByCreatedAtDesc(eq(1L), any(), any()))
+                .thenReturn(List.of(m));
 
         List<WhisperMessageView> list = service.inbox(1L, 1, 500);
         assertEquals(1, list.size());
-        verify(repository, times(1)).queryByReceiverIdOrderByCreatedAtDesc(eq(1L), any());
+        verify(repository, times(1)).queryByReceiverIdAndStatusInOrderByCreatedAtDesc(eq(1L), any(), any());
+        verify(repository, times(1)).markInboxDelivered(1L);
     }
 }

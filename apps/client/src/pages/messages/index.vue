@@ -28,6 +28,7 @@ import { removeCache } from "../../utils/cache-ttl";
 import { applyDevUserFromQuery } from "../../utils/dev-user";
 import { IMAGE_PATHS } from "../../config/images";
 import { resolveMediaUrl } from "../../utils/media";
+import { clientApi } from "../../services/api";
 // R2b-B24/D13·D18：游客态不再整页顶换成 NotLoggedWaiting（寻觅口径登录墙），改由本页
 // 自渲染「消息」标题/副标 + 摘要卡·会话列表灰态骨架 + 收进一张卡的登录浮层，
 // 故本文件不再引用该组件（它仍由 subpackages/discover-extra/likes/index.vue 宿主使用）。
@@ -342,6 +343,8 @@ async function loadPage(force = false) {
     likesStore.fetchLikes().catch((e: unknown) => {
       console.warn("[messages] fetchLikes failed", e);
     }),
+    // R9-b：悄悄话入口徽标（独立 catch，失败不影响会话列表）
+    loadWhisperUnread(),
   ]);
   avatarFailedIds.value = new Set();
   warmAvatarFailedIds.value = new Set(); // R1-B25/D10：重载后升温行头像失败位同样清零，给坏链一次重试
@@ -404,6 +407,16 @@ function formatTime(dateStr?: string | null): string {
   // 不依赖任何语言包；保留分支是为了历史遗留的 locale 值不会把格式打回中文以外再报错。
   const locale = (locale_.value === "en-US" ? "en-US" : "zh-CN") as "zh-CN" | "en-US";
   return formatChatListTime(ts, locale);
+}
+
+/** R9-b（2026-11-05）：悄悄话入口未读数（SENT/DELIVERED 计未读；失败留痕不阻塞页面） */
+const whisperUnreadCount = ref(0);
+async function loadWhisperUnread(): Promise<void> {
+  try {
+    whisperUnreadCount.value = await clientApi.getWhisperUnreadCount();
+  } catch (e: unknown) {
+    console.warn("[messages] getWhisperUnreadCount failed", e);
+  }
 }
 
 /** MP-R2-PAGES-MESSAGES-INDEX-003：头像加载失败兜底（原内联版缺失） */
@@ -485,10 +498,13 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
           <!-- ========== Quick Action Cards ========== -->
           <view class="quick-cards">
             <!-- 2026-11-04 F-10：悄悄话收件箱入口卡片（mail 图标注释即「私信/悄悄话」） -->
-            <view class="quick-card" hover-class="quick-card--hover" @tap="goWhisperInbox">
+            <view class="quick-card" hover-class="quick-card--hover" :aria-label="whisperUnreadCount > 0 ? `${t('whisperInbox.cardTitle')}，${t('whisperInbox.unreadCount', { n: whisperUnreadCount })}` : t('whisperInbox.cardTitle')" @tap="goWhisperInbox">
               <view class="quick-card__head">
-                <view class="quick-card__icon-wrap quick-card__icon-wrap--pink">
+                <view class="quick-card__icon-wrap quick-card__icon-wrap--pink whisper-icon-wrap">
                   <image class="quick-card__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.MAIL)" mode="aspectFit" :aria-label="t('whisperInbox.cardTitle')" />
+                  <view v-if="whisperUnreadCount > 0" class="whisper-unread-badge">
+                    <text class="whisper-unread-badge__text">{{ whisperUnreadCount > 99 ? "99+" : whisperUnreadCount }}</text>
+                  </view>
                 </view>
                 <view class="quick-card__body">
                   <text class="quick-card__title">{{ t('whisperInbox.cardTitle') }}</text>
@@ -1051,6 +1067,30 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+/* R9-b（2026-11-05）：悄悄话入口徽标锚点（仅悄悄话卡用，不动共享样式） */
+.whisper-icon-wrap {
+  position: relative;
+}
+.whisper-unread-badge {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  min-width: 28rpx;
+  height: 28rpx;
+  padding: 0 6rpx;
+  border-radius: 14rpx;
+  background: var(--c-romance-400, #FF7C91);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.whisper-unread-badge__text {
+  font-size: 18rpx;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
 }
 .quick-card__icon-wrap--pink {
   /* R9-L02-D09：原 rgba(255,107,129,.12) 粉底与右卡 rgba(54,201,154,.12) 绿底不同族；

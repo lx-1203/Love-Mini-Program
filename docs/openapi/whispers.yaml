@@ -93,6 +93,24 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/WhisperMessageView'
+  /whispers/unread-count:
+    get:
+      summary: Count unread received whispers
+      description: |
+        R9-b（2026-11-05）：收件人未读数（消息页「悄悄话」入口徽标数据源）。
+        口径与收件箱可见性一致：SENT/DELIVERED 计未读；PAY_FAILED/REFUNDED
+        审计行不计（R5-1 起不进入收件人视角）。
+      operationId: getWhisperUnreadCount
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                type: integer
+                format: int64
   /whispers/{id}/read:
     post:
       summary: Mark a received whisper as read

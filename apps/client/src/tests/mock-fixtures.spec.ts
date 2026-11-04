@@ -130,4 +130,15 @@ describe("mock fixtures", () => {
     const inbox = mockFixtures.getWhisperInbox();
     expect(inbox.find((w) => w.id === view.id)?.senderNickname).toBe("我");
   });
+
+  it("R9-b: 未读数只数当前用户收到的非 READ 行（发出的不计）", () => {
+    const before = mockFixtures.getWhisperUnreadCount();
+    // 发出的悄悄话（senderId=1）不应影响「我」的未读数
+    mockFixtures.sendWhisper({
+      receiverId: 2,
+      content: "这条是我发出的，不计我的未读",
+      clientRequestId: "spec-r9b-1",
+    });
+    expect(mockFixtures.getWhisperUnreadCount()).toBe(before);
+  });
 });

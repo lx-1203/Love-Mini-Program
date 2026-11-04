@@ -64,6 +64,17 @@ public class RealWhisperService implements WhisperService {
 
     private static final int DAILY_LIMIT = 5;
 
+    /**
+     * R5-1（2026-11-05）：收件人可见状态——PAY_FAILED/REFUNDED 是发送侧审计行
+     * （扣费失败/退款的事实落库，含未付费的留言内容），进入收件箱即构成
+     * 付费墙旁路（余额不足也能把内容送到收件人眼前），必须排除。
+     */
+    private static final List<String> INBOX_VISIBLE_STATUSES =
+            List.of(STATUS_SENT, STATUS_DELIVERED, STATUS_READ);
+
+    /** R9-b（2026-11-05）：未读口径——送达中/已送达均计未读，与收件箱徽标一致 */
+    private static final List<String> UNREAD_STATUSES = List.of(STATUS_SENT, STATUS_DELIVERED);
+
     private final WhisperMessageRepository repository;
     private final WalletService walletService;
 
@@ -223,14 +234,11 @@ public class RealWhisperService implements WhisperService {
     @Override
     @Transactional
     public List<WhisperMessageView> inbox(Long receiverId) {
-        List<WhisperMessage> list = repository.findByReceiverIdOrderByCreatedAtDesc(receiverId);
-        // SENT → DELIVERED：进入收件箱即视为送达（优先送达语义）
-        for (WhisperMessage m : list) {
-            if (STATUS_SENT.equals(m.getStatus())) {
-                m.setStatus(STATUS_DELIVERED);
-                repository.save(m);
-            }
-        }
+        // R5-b：SENT→DELIVERED 一次批量置位（替代逐行 save 的 N+1 写）。
+        // R5-1：查询限定送达态——PAY_FAILED/REFUNDED 审计行（含未付费内容）不进收件箱。
+        repository.markInboxDelivered(receiverId);
+        List<WhisperMessage> list = repository
+                .findByReceiverIdAndStatusInOrderByCreatedAtDesc(receiverId, INBOX_VISIBLE_STATUSES);
         return withSenderProfiles(list.stream().map(this::toView).toList());
     }
 
@@ -240,21 +248,17 @@ public class RealWhisperService implements WhisperService {
             .map(this::toView).toList());
     }
 
-    /** R8 分页收件箱：size 有值时真分页（SENT→DELIVERED 仍按当前页转换），其余同全量口径 */
+    /** R8 分页收件箱：size 有值时真分页；送达置位在全量口径下完成（先置位后取页，语义一致） */
     @Override
     @Transactional
     public List<WhisperMessageView> inbox(Long receiverId, Integer page, Integer size) {
         if (size == null) {
             return inbox(receiverId);
         }
-        List<WhisperMessage> list = repository.queryByReceiverIdOrderByCreatedAtDesc(
-                receiverId, PageRequest.of(normalizePage(page), normalizeSize(size)));
-        for (WhisperMessage m : list) {
-            if (STATUS_SENT.equals(m.getStatus())) {
-                m.setStatus(STATUS_DELIVERED);
-                repository.save(m);
-            }
-        }
+        repository.markInboxDelivered(receiverId);
+        List<WhisperMessage> list = repository.queryByReceiverIdAndStatusInOrderByCreatedAtDesc(
+                receiverId, INBOX_VISIBLE_STATUSES,
+                PageRequest.of(normalizePage(page), normalizeSize(size)));
         return withSenderProfiles(list.stream().map(this::toView).toList());
     }
 
@@ -267,6 +271,12 @@ public class RealWhisperService implements WhisperService {
         return withSenderProfiles(repository.queryBySenderIdOrderByCreatedAtDesc(
                 senderId, PageRequest.of(normalizePage(page), normalizeSize(size))).stream()
             .map(this::toView).toList());
+    }
+
+    /** R9-b（2026-11-05）：收件人未读数（SENT/DELIVERED；与收件箱可见口径一致，排除审计行） */
+    @Override
+    public long unreadCount(Long receiverId) {
+        return repository.countByReceiverIdAndStatusIn(receiverId, UNREAD_STATUSES);
     }
 
     private int normalizePage(Integer page) {

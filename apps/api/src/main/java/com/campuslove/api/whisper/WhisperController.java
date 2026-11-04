@@ -59,6 +59,17 @@ public class WhisperController {
         return ApiResponse.ok(whisperService.sent(userId, page, size));
     }
 
+    /**
+     * 收件人未读数（R9-b 2026-11-05）：消息页「悄悄话」入口徽标数据源。
+     * 口径与收件箱可见性一致（SENT/DELIVERED 计未读；审计行不计，见 R5-1）。
+     */
+    @GetMapping("/unread-count")
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<Long> unreadCount() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        return ApiResponse.ok(whisperService.unreadCount(userId));
+    }
+
     @PostMapping("/{id}/read")
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<WhisperMessageView> markRead(@PathVariable("id") Long id) {

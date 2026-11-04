@@ -28,6 +28,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
     indexes = {
         @Index(name = "idx_whisper_sender", columnList = "sender_id"),
         @Index(name = "idx_whisper_receiver_status", columnList = "receiver_id, status"),
+        // R5-a（2026-11-05）：收/发件箱按时间倒序的排序索引（10 万行前补齐，避免 filesort）
+        @Index(name = "idx_whisper_receiver_created", columnList = "receiver_id, created_at"),
+        @Index(name = "idx_whisper_sender_created", columnList = "sender_id, created_at"),
         @Index(name = "uk_whisper_client_request", columnList = "client_request_id", unique = true)
     }
 )

@@ -1198,6 +1198,17 @@ export const clientApi = {
   },
 
   /**
+   * 收件人未读数（R9-b 2026-11-05）：消息页「悄悄话」入口徽标数据源。
+   * 口径与收件箱一致（SENT/DELIVERED 计未读；审计行不计）。
+   */
+  async getWhisperUnreadCount(): Promise<number> {
+    if (useMock()) {
+      return mockFixtures.getWhisperUnreadCount();
+    }
+    return request<number>({ url: "/whispers/unread-count", method: "GET" });
+  },
+
+  /**
    * 查询悄悄话内容（B3 恋爱小纸条，付费解锁后可见）。
    *
    * 对应后端 GET /api/v1/recommendations/{userId}/whisper（R4-00314）：

@@ -77,6 +77,15 @@ public class MockWhisperService implements WhisperService {
             .toList();
     }
 
+    /** R9-b（2026-11-05）：mock 未读数——store 只有成功发送（SENT/DELIVERED/READ），非 READ 即未读 */
+    @Override
+    public long unreadCount(Long receiverId) {
+        return store.values().stream()
+            .filter(v -> v.receiverId().equals(receiverId))
+            .filter(v -> !"READ".equals(v.status()))
+            .count();
+    }
+
     @Override
     public WhisperMessageView markRead(Long receiverId, Long whisperId) {
         WhisperMessageView v = store.get(whisperId);

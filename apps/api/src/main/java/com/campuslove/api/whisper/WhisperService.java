@@ -34,4 +34,12 @@ public interface WhisperService {
     default List<WhisperMessageView> sent(Long senderId, Integer page, Integer size) {
         return sent(senderId);
     }
+
+    /**
+     * R9-b（2026-11-05）：收件人未读数（SENT/DELIVERED 计未读；
+     * PAY_FAILED/REFUNDED 审计行不计——不在收件箱可见口径内，见 R5-1）。
+     */
+    default long unreadCount(Long receiverId) {
+        return 0;
+    }
 }

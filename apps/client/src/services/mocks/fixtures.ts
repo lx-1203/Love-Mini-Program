@@ -2014,6 +2014,11 @@ export const mockFixtures = {
     return whisperInbox.filter((w) => w.senderId === 1);
   },
 
+  /** R9-b（2026-11-05）：当前用户（mock 视角 id=1）收到的未读数；发出的不计 */
+  getWhisperUnreadCount(): number {
+    return whisperInbox.filter((w) => w.receiverId === 1 && w.status !== 'READ').length;
+  },
+
   readWhisper(id: number): WhisperMessageView {
     const item = whisperInbox.find((w) => w.id === id);
     if (!item) throw new Error('whisper not found');
