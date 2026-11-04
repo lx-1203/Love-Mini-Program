@@ -46,6 +46,7 @@ import { ensurePrivacyAuthorized } from "../../../utils/privacy";
 import { useMenuButtonRect } from "../../../composables/useMenuButtonRect";
 import { usePostActions } from "./use-post-actions";
 import { useCommentInteractions } from "./use-comment-interactions";
+import { usePostShare } from "./use-post-share";
 const { styleVars: menuStyleVars } = useMenuButtonRect();
 
 
@@ -113,12 +114,6 @@ function focusCommentInput() {
 }
 /** 是否正在提交评论 */
 const isSubmitting = ref(false);
-/** 转发弹窗是否显示 */
-const showShareModal = ref(false);
-/** 转发附加评论 */
-const shareComment = ref("");
-/** 是否正在转发 */
-const isSharing = ref(false);
 /** 帖子举报弹窗是否显示 */
 const showReportDialog = ref(false);
 /** 2026-08-26 R4：详情接口加载中（无列表缓存时的首帧骨架屏） */
@@ -344,6 +339,19 @@ const {
 });
 
 /**
+ * R3 第三刀（2026-11-05，第九辑）：转发弹窗三态抽 use-post-share composable。
+ * 状态（showShareModal/shareComment/isSharing）随组迁移；失败保留弹窗与附言可重试；
+ * noop 为模板 catchtap 占位，留在页面。单测见 tests/composables/use-post-share.spec.ts。
+ */
+const { showShareModal, shareComment, isSharing, openShareModal, closeShareModal, confirmShare } =
+  usePostShare({
+    t,
+    getPost: () => currentPost.value,
+    sharePost: (postId: string, comment?: string) => villageStore.sharePost(postId, comment),
+    getShareErrorMessage: () => villageStore.errorMessage,
+  });
+
+/**
  * 跳转标签聚合页
  */
 function goToTagPosts(tagName: string) {
@@ -536,47 +544,9 @@ function removeCommentImage(index: number) {
 
 /** 评论图片点击预览（全屏查看） */
 
-/**
- * 打开转发弹窗
- */
-function openShareModal() {
-  if (!currentPost.value) return;
-  shareComment.value = "";
-  showShareModal.value = true;
-}
-
-/**
- * 关闭转发弹窗
- */
 /* ========== 空操作占位（catchtap 占位 handler，mp-weixin 要求 catchtap 必须绑定 handler） ========== */
 function noop() {}
 
-function closeShareModal() {
-  showShareModal.value = false;
-  shareComment.value = "";
-}
-
-/**
- * 确认转发
- */
-async function confirmShare() {
-  if (!currentPost.value) return;
-
-  isSharing.value = true;
-  try {
-    await villageStore.sharePost(currentPost.value.id, shareComment.value.trim() || undefined);
-    showShareModal.value = false;
-    shareComment.value = "";
-    uni.showToast({ title: t("village.detail.shareSuccess"), icon: "success" });
-  } catch (_error) {
-    uni.showToast({
-      title: villageStore.errorMessage || t("village.detail.shareFailed"),
-      icon: "none",
-    });
-  } finally {
-    isSharing.value = false;
-  }
-}
 
 /**
  * 关注/取消关注相似作者
