@@ -68,7 +68,11 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>权限说明：URL 层 /api/admin/** 已限制 ADMIN 角色；
  * 方法层 @PreAuthorize 作为深度防御（需 @EnableMethodSecurity 启用后生效）。</p>
- */
+ *
+ * <p>R7 复核（2026-11-05，第十辑）：与 {@link AdminPostController}（/api/v1/admin/posts）为
+ * <b>两代并存而非重复真相</b>——热榜/置顶/评论/浏览量/圈层 scope 在本控制器；
+ * 官方代发与经典审核/删除在 admin/posts 侧。功能面正交，维持双代并存（判定依据见第十辑报告 R10-3）。</p>
+*/
 @Profile("real")
 @RestController
 @RequestMapping("/api/v1/admin/forum/village-posts")

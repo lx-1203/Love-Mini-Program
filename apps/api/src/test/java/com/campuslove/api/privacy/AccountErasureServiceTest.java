@@ -192,9 +192,20 @@ class AccountErasureServiceTest {
         // uk_users_phone：两行都写 NULL，MySQL 唯一索引允许多行 NULL
         assertNull(a.getPhone());
         assertNull(b.getPhone());
-        // 且都不含自己的 userId（旧 "1****"+userId 哨兵正是把 id 写进了手机号列）
-        assertFalse(openidA.contains(String.valueOf(SUBJECT)));
-        assertFalse(openidB.contains(String.valueOf(OTHER_SUBJECT)));
+        // 墓碑值不得是「可反推 userId」的确定性拼接形态（旧 "1****"+userId 哨兵正是把 id 写进了手机号列）。
+        // R10-1（2026-11-05 第十辑）：原 contains 子串断言数学上站不住——UUID hex 32 字符对小数字
+        // userId 有天然子串概率（"100"/"200" 各 ≈0.59%，实测 1/169），全量跑约每 85 次必偶发红一次；
+        // 「不可反推」的可判定代理是非拼接形态（equals/前缀紧贴），而非子串不出现。
+        String prefix = openidA.substring(0, openidA.length() - 36); // 剥掉 UUID 段取前缀
+        assertFalse(openidA.equals(prefix + String.valueOf(SUBJECT)),
+                "墓碑 openid 不得是 前缀+userId 的确定性拼接（可反推）");
+        assertFalse(openidB.equals(prefix + String.valueOf(OTHER_SUBJECT)),
+                "墓碑 openid 不得是 前缀+userId 的确定性拼接（可反推）");
+        // 紧贴形态同样可反推（erased:100<uuid> 也能肉眼读出）：前缀后不得紧跟 userId
+        assertFalse(openidA.startsWith(prefix + String.valueOf(SUBJECT) + "-"),
+                "前缀后不得紧跟 userId（紧贴形态同样可反推）");
+        assertFalse(openidB.startsWith(prefix + String.valueOf(OTHER_SUBJECT) + "-"),
+                "前缀后不得紧跟 userId（紧贴形态同样可反推）");
     }
 
     // ---- 擦除值不得被误当成密文（AES 读取路径）----
