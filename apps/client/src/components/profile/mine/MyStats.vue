@@ -1,20 +1,24 @@
 <script setup lang="ts">
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import type { UserProfileSocialProof } from "../../../types/profile";
-import { IMAGE_PATHS } from "../../../config/images";
+import { PROFILE_STATS } from "../../../config/profile-stats";
 
 const props = defineProps<{ socialProof: UserProfileSocialProof }>();
 const emit = defineEmits<{ (e: "tap", key: string): void }>();
+const { t } = useI18n();
 
-const items = [
-  // 理想图口径：我喜欢 / 喜欢我的 / 我赞 / 访客
-  // （彩色图标+数字+文字四宫格，颜色区分互动类型）
-  // 2026-10-26 对齐理想图（已经填完资料的个人主页.png，P5#4）：四枚换实心彩色图标
-  // （紫色实心心/粉色双人/橙色实心拇指/蓝色实心眼），原细描边线性字形不符
-  { key: "iLike", label: "我喜欢", iconSrc: IMAGE_PATHS.ICONS_COMMON.HEART_FILL_PURPLE_SVG, color: "#A29BFE" },
-  { key: "likedMe", label: "喜欢我的", iconSrc: IMAGE_PATHS.ICONS_COMMON.USERS_FILL_PINK_SVG, color: "#FF6B81" },
-  { key: "praised", label: "我赞", iconSrc: IMAGE_PATHS.ICONS_COMMON.THUMBS_UP_FILL_ORANGE_SVG, color: "#FF9F43" },
-  { key: "visitor", label: "访客", iconSrc: IMAGE_PATHS.ICONS_COMMON.EYE_FILL_BLUE_SVG, color: "#4D8DFF" },
-];
+/* R16-2（2026-11-05 跨车道共享，原 TODO 划除）：四宫格常量收口到 config/profile-stats.ts
+   单一真相源（与 NotLoggedProfile 未登录态同口径）；label 从裸中文改走词条——四条文案
+   与原字面量逐字一致（我喜欢/喜欢我的/我赞/访客），裸中文基线随之 -4。 */
+const items = computed(() =>
+  PROFILE_STATS.map((s) => ({
+    key: s.key,
+    label: t(s.labelKey),
+    iconSrc: s.iconSrc,
+    color: s.color,
+  }))
+);
 
 function statValue(key: string, socialProof: UserProfileSocialProof): number {
   if (key === "iLike") return socialProof.iLikeCount ?? 0;

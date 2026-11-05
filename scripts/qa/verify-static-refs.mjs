@@ -97,5 +97,18 @@ if (SELFTEST) {
   console.log(`STATICREF_SELFTEST=${stOk === stTotal ? "PASS" : "FAIL"} ${stOk}/${stTotal}`);
   process.exit(stOk === stTotal ? 0 : 1);
 }
-console.log(`STATICREF_RESULT=${missing.length === 0 ? "PASS" : "FAIL"} 缺失=${missing.length}`);
+/* R16（2026-11-05）扫描面下限（R9 收口，QA 载具活性审计的低危实锤）：
+   原判定只看 missing===0——采集器退化到只剩 1 条引用且不缺失时照样 PASS（空转窗口）。
+   补两道下限：①refs.size >= 500（实测 2026-10-24 基线 544、R16 实测 556，500≈基线-8%，
+   只在「采集面塌掉三分之一以上」时才误红）；②unresolvable <= 2（:75-78 自陈「变多说明
+   有人加了更多动态路径」，此前无判点——实测 2 条为既有基线，超过即提示收口）。 */
+if (refs.size < 500) {
+  console.log(`STATICREF_RESULT=FAIL reason=采集面塌缩：源码字面量引用 ${refs.size} < 500（2026-10-24 基线 544、采集器失效或大面积改写动态路径都会击穿此线）`);
+  process.exit(1);
+}
+if (unresolvable.length > 2) {
+  console.log(`STATICREF_RESULT=FAIL reason=动态路径堆积：判不了(通配/插值) ${unresolvable.length} > 2——请在源码收口为字面量或登记进白名单`);
+  process.exit(1);
+}
+console.log(`STATICREF_RESULT=${missing.length === 0 ? "PASS" : "FAIL"} 缺失=${missing.length} 采集面=${refs.size}/下限500 动态路径=${unresolvable.length}/上限2`);
 process.exit(missing.length === 0 ? 0 : 1);

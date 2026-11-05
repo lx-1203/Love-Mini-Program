@@ -285,14 +285,19 @@ class PersonalDataServiceTest {
         TempChatSession asUserB = tempChatSession(11L, PEER, CALLER);
         when(tempChatSessionRepository.findByUserIdOrderByPinnedAndLastMessage(CALLER))
                 .thenReturn(List.of(asUserA, asUserB));
-        when(tempChatMessageRepository.findBySessionIdOrderByCreatedAtAsc(10L))
-                .thenReturn(List.of(
-                        tempChatMessage(201L, "self", "会话1我的消息"),
-                        tempChatMessage(202L, "peer", "会话1" + PEER_MESSAGE_BODY)));
-        when(tempChatMessageRepository.findBySessionIdOrderByCreatedAtAsc(11L))
-                .thenReturn(List.of(
-                        tempChatMessage(301L, "self", "会话2" + PEER_MESSAGE_BODY),
-                        tempChatMessage(302L, "peer", "会话2我的消息")));
+        // R16-3：导出改 IN 批查（findBySessionIdInOrderByCreatedAtAsc）——桩随新签名，
+        // 返回两会话合并列表，服务端按 session.id 分组（组内时序由 OrderByCreatedAtAsc 维持）；
+        // 消息实体经 setSession 关联（生产侧 nullable=false），分组键取 session.getId()
+        TempChatMessage m201 = tempChatMessage(201L, "self", "会话1我的消息");
+        m201.setSession(asUserA);
+        TempChatMessage m202 = tempChatMessage(202L, "peer", "会话1" + PEER_MESSAGE_BODY);
+        m202.setSession(asUserA);
+        TempChatMessage m301 = tempChatMessage(301L, "self", "会话2" + PEER_MESSAGE_BODY);
+        m301.setSession(asUserB);
+        TempChatMessage m302 = tempChatMessage(302L, "peer", "会话2我的消息");
+        m302.setSession(asUserB);
+        when(tempChatMessageRepository.findBySessionIdInOrderByCreatedAtAsc(List.of(10L, 11L)))
+                .thenReturn(List.of(m201, m202, m301, m302));
 
         PersonalDataExport export = service.exportForCurrentUser();
         PersonalDataCategory messages = category(export, "temp_chat_messages");

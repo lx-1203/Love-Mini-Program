@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
+import { PROFILE_STATS } from "../../config/profile-stats";
 import MyMore, { type MoreItem } from "./mine/MyMore.vue";
 
 // audit-r15 批 3-B：模板与数据表（STATS/INTERACTIONS/STORIES/MORE_ITEMS）裸中文迁 i18n
@@ -19,26 +20,28 @@ function goBack() {
 }
 
 /* R2b-L03-D02（文案）：四列标签与图标按理想图 未登录个人主页.png 口径收口
-   「我喜欢 / 喜欢我的 / 我赞 / 访客」，与本页已登录态 MyStats 同一套词
-   （pages/profile/index.vue:688 注释已把该口径写死给 MyStats）。
+   「我喜欢 / 喜欢我的 / 我赞 / 访客」，与本页已登录态 MyStats 同一套词。
    此前是「关注/粉丝/获赞/匹配」四项全错，图标也跟着错（第 1 列人形、第 4 列实心红心，
    理想图是空心紫心 + 蓝色眼睛）。色档沿用同页已登录态用过的四枚，不新造颜色。
-   TODO(跨车道)：理想状态是与 MyStats.vue 共用同一份常量，本组件先按同口径对齐。
    2026-10-26 对齐理想图（已登录个人主页.png，P5#4）：四枚字形换为实心彩色图标
    （紫色实心心/粉色双人/橙色实心拇指/蓝色实心眼，config/images.ts 七枚字形登记），
-   原细描边线性字形与理想图「实心彩色」不符。 */
-const STATS = [
-  { label: t("profile.statILike"), iconSrc: IMAGE_PATHS.ICONS_COMMON.HEART_FILL_PURPLE_SVG, color: "#A29BFE" },
-  { label: t("profile.likedMe"), iconSrc: IMAGE_PATHS.ICONS_COMMON.USERS_FILL_PINK_SVG, color: "#FF6B81" },
-  { label: t("profile.notLogged.statMyLikes"), iconSrc: IMAGE_PATHS.ICONS_COMMON.THUMBS_UP_FILL_ORANGE_SVG, color: "#FF9F43" },
-  { label: t("profile.heartValueVisitor"), iconSrc: IMAGE_PATHS.ICONS_COMMON.EYE_FILL_BLUE_SVG, color: "#4D8DFF" },
-];
+   原细描边线性字形与理想图「实心彩色」不符。
+   R16-2（2026-11-05 跨车道共享，原 TODO 划除）：常量收口到 config/profile-stats.ts
+   单一真相源（与 MyStats 已登录态同一份），本组件按展示形态映射。 */
+const STATS = PROFILE_STATS.map((s) => ({
+  label: t(s.labelKey),
+  iconSrc: s.iconSrc,
+  color: s.color,
+}));
 
 /* R2b-L03-D11（文案）：补 unit 量词，理想图四行右侧是「0人 ›」而非孤零零的「0」。
    R2b-L03-D12（颜色token）：底色彩排按理想图「粉 / 粉 / 粉 / 橙」归位
    （此前是 粉/橙/淡紫/蓝，整体错位一行），且不再写 #FF6B81FF.. 这类硬编码字面量，
    改走 --c-tint-pink-50 / --c-tint-orange-50 两枚 token。
-   TODO(跨车道)：与 MyInteraction.vue 共用同一份色档。 */
+   R16-2 裁定（原 TODO(跨车道) 划除）：不与 MyInteraction.vue 并案——后者是
+   Record<key,{iconSrc,color}> 按行键取色映射形态、本组件是展示行数组，数据形态与
+   生命周期（未登录静态 vs 已登录动态取数）均不同，强并会制造跨态耦合；色值本身
+   已全部走 token（--c-tint-*），不存在字面量漂移面。 */
 const INTERACTIONS = [
   // 2026-10-26 对齐理想图（P5#5）：「喜欢我的人」= 粉色双人剪影（原实心红心与第 3 行重复）；
   // 「最近访客」= 橙色圆环准星（原橙色眼睛）；「我喜欢的人」保留实心心形

@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -442,6 +443,11 @@ public class RecommendationRanker {
         // 用于去重，避免同一用户出现多次
         Set<Long> seenUserIds = new HashSet<>();
         List<User> historyUsers = new ArrayList<>();
+        // R16-3（2026-11-05 N+1 治理）：两段循环原逐条 findById（互动历史线性增长 ⇒ 每行一次
+        // DB 往返），改为先收集 ID 再一次 IN 批查（仓内范式 TempChatViewMapper.findByIdIn），
+        // 保序语义由 Collectors.toMap 的 LinkedHashMap + 记账顺序维持。
+        List<Long> signalPartnerIds = new ArrayList<>();
+        List<Long> likeTargetIds = new ArrayList<>();
 
         // 1. 从 HeartSignal 记录获取（优先级高，表示有深层互动）
         try {
@@ -452,7 +458,7 @@ public class RecommendationRanker {
                         ? signal.getUserBId()
                         : signal.getUserAId();
                 if (seenUserIds.add(partnerId)) {
-                    userRepository.findById(partnerId).ifPresent(historyUsers::add);
+                    signalPartnerIds.add(partnerId);
                 }
             }
         } catch (DataAccessException e) {
@@ -464,11 +470,29 @@ public class RecommendationRanker {
             List<Like> likes = likeRepository.findByUserIdAndStatus(userId, LikeStatus.active);
             for (Like like : likes) {
                 if (seenUserIds.add(like.getTargetUserId())) {
-                    userRepository.findById(like.getTargetUserId()).ifPresent(historyUsers::add);
+                    likeTargetIds.add(like.getTargetUserId());
                 }
             }
         } catch (DataAccessException e) {
             // Like 查询失败时忽略
+        }
+
+        // 两次 IN 批查替代逐条 findById：signals 段（先记账先出现）+ likes 段，保持原排序
+        if (!signalPartnerIds.isEmpty() || !likeTargetIds.isEmpty()) {
+            try {
+                List<Long> allIds = new ArrayList<>(signalPartnerIds);
+                allIds.addAll(likeTargetIds);
+                Map<Long, User> userById = userRepository.findByIdIn(allIds).stream()
+                        .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a, LinkedHashMap::new));
+                for (Long id : allIds) {
+                    User u = userById.get(id);
+                    if (u != null) {
+                        historyUsers.add(u);
+                    }
+                }
+            } catch (DataAccessException e) {
+                // 批查失败时降级为空列表，不影响推荐主流程
+            }
         }
 
         return historyUsers.stream()

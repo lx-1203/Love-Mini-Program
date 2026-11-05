@@ -25,7 +25,7 @@
  * useUnreadBadge();
  * ```
  */
-import { computed, watch } from "vue";
+import { computed, watch, effectScope } from "vue";
 import { onLaunch } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useMessagesStore } from "../stores/messages";
@@ -129,9 +129,22 @@ function setChatTabBadge(count: number): void {
  * - watch totalUnreadCount：变化时调用 setChatTabBadge 更新红点
  *
  * 使用方式：在 App.vue 顶部调用一次即可，全局生效。
+ *
+ * R16（2026-11-05 作用域化，R8 收口）：watch 经独立 effectScope 运行并返回 stop 句柄——
+ * 每次注册独立作用域，stop() 精确撤销自家 watch，多入口调用不再叠加监听器（R14 批 6
+ * 记录的已知限制就此划除）。既有 spec 零改动兼容：函数仍可无参调用、仍照常注册 onLaunch
+ * 回调（`toHaveLength(1)` 语义不变）、单调用触发语义逐位等价。
  */
-export function useUnreadBadge(): void {
+export interface UnreadBadgeHandle {
+  /** 撤销本次注册的 watch（独立 effectScope）——多入口场景按句柄精确清理 */
+  stop: () => void;
+}
+
+export function useUnreadBadge(): UnreadBadgeHandle {
+  const scope = effectScope();
   onLaunch(() => {
+    // R16：stop() 在 onLaunch 回调执行前被调 ⇒ 本次注册整体撤销（初始同步与 watch 都不发生）
+    if (!scope.active) return;
     try {
       const messagesStore = useMessagesStore();
       // R14-6（2026-11-05）：tab 红点与页内角标同源——messages 页「恋爱助手」卡角标口径是
@@ -139,10 +152,6 @@ export function useUnreadBadge(): void {
       // tab 侧原只 watch totalUnreadCount，通知未读不进红点，两处口径漂移。
       // 改为同一合计；custom-tab-bar/index.js 只镜像本函数写入的 TABBAR_CHAT_UNREAD，
       // 没有其他独立计数口径，改这里即全端同源。
-      // ⚠ 已知限制（R14 在案）：watch 不在任何组件/effect 作用域内（onLaunch 回调无实例），
-      // 重复调用本函数会叠加监听器——生产面唯一调用点 App.vue 只调一次故无碍；
-      // 若未来多入口调用需先作用域化（登记为技术债，勿直接加模块级幂等闸：会破坏
-      // useUnreadBadge.spec.ts 的多次注册确定性用例）。
       const { totalUnreadCount, unreadNotificationCount } = storeToRefs(messagesStore);
       // 通知未读缺位（旧测试桩 / 异常 store）时按 0 处理，不让红点链路整体失效
       const chatTabUnread = computed(() => totalUnreadCount.value + (unreadNotificationCount?.value ?? 0));
@@ -151,17 +160,23 @@ export function useUnreadBadge(): void {
       setChatTabBadge(chatTabUnread.value);
 
       // 监听变化（WebSocket 推送新消息/通知 → store 更新 → getter 重算 → 触发 watch）
-      watch(
-        chatTabUnread,
-        (newCount) => {
-          setChatTabBadge(newCount);
-        },
-        { immediate: false }
-      );
+      // R16：在独立 scope 内注册——stop() 可精确撤销，不再是无作用域的全局监听
+      scope.run(() => {
+        watch(
+          chatTabUnread,
+          (newCount) => {
+            setChatTabBadge(newCount);
+          },
+          { immediate: false }
+        );
+      });
     } catch (_e) {
       // store 初始化失败时静默忽略，不影响应用启动
     }
   });
+  return {
+    stop: () => scope.stop(),
+  };
 }
 
 export { setChatTabBadge, CHAT_TAB_INDEX };

@@ -519,10 +519,18 @@ public class PersonalDataService {
                 "delivery_status", "recalled", "quote_snapshot", "created_at");
         List<List<String>> rows = new ArrayList<>();
         boolean truncated = false;
+        // R16-3（N+1 治理 P3）：逐会话查询改一次 IN 批取后按 sessionId 分组（导出低频但
+        // 会话数随使用增长；排序语义由派生方法 OrderByCreatedAtAsc 维持，组内即会话内时序）
+        java.util.Map<Long, java.util.List<TempChatMessage>> messagesBySession =
+                tempChatMessageRepository
+                        .findBySessionIdInOrderByCreatedAtAsc(
+                                sessions.stream().map(TempChatSession::getId).toList())
+                        .stream()
+                        .collect(java.util.stream.Collectors.groupingBy(m -> m.getSession().getId()));
         for (TempChatSession session : sessions) {
             String ownSender = ownTempChatSenderValue(userId, session);
             List<TempChatMessage> messages =
-                    tempChatMessageRepository.findBySessionIdOrderByCreatedAtAsc(session.getId());
+                    messagesBySession.getOrDefault(session.getId(), java.util.List.of());
             for (TempChatMessage m : messages) {
                 if (!ownSender.equals(m.getSender())) {
                     continue;

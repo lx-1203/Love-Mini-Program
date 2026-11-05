@@ -90,6 +90,10 @@ public class AdminLayerController {
      * @param reqs    绑定白名单请求体列表（可为空列表 = 清空该管理员全部绑定）
      * @return 重建后的绑定行列表
      */
+    /* R16-3（2026-11-05 事务边界治理）：替换式写入（delete 全部 + saveAll 重建）必须原子——
+       原无 @Transactional，两步之间异常/宕机则该管理员的圈层绑定被清空且未重建；
+       纯 DB 两写无外呼，方法级注解即闭环（前置校验只挡业务非法，挡不住中断）。 */
+    @org.springframework.transaction.annotation.Transactional
     @PutMapping("/admin/{adminId}")
     public ApiResponse<List<AdminLayer>> replaceBindings(
             @PathVariable Long adminId,

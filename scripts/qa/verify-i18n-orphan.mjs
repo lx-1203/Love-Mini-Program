@@ -125,7 +125,7 @@ const VERBOSE = argv.includes("--verbose");
    profile.statILike/likedMe/heartValueVisitor/myMatches/editProfile/completeBannerAction/visitorsTitle）
    —— 复用使孤儿维实测同步收缩（957 → 941，16 个死键获得真实引用），allow-orphans 缺省值
    不属本批权限，由主控按其台账规则另行重钉。 */
-const ALLOW_HARDCODED = Number(arg("allow-hardcoded", "182"));
+const ALLOW_HARDCODED = Number(arg("allow-hardcoded", "181"));
 /* admin 裸中文维（audit-r15 批 3-C 新建，2026-11-05）：admin 此前无孤儿/裸中文门
    （同层重复键轴已在第四维覆盖 admin zh-CN），裸中文无尺 ⇒ 新页面漏迁无人看见
    （R15 实测探针：views/system/CircleLayers.vue 一页 64 处整页未迁）。本维复用 client

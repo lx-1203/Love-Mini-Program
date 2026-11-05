@@ -194,10 +194,13 @@ describe("useUnreadBadge：setChatTabBadge 平台分叉", () => {
 });
 
 describe("useUnreadBadge：onLaunch 初始化与 watch 联动", () => {
-  function launchBadge(): void {
-    useUnreadBadge();
+  // R16：watch 已作用域化——launchBadge 返回句柄，需要独占环境的用例在用例尾 stop
+  // （旧实现 watch 泄漏在模块级 ref 上只能靠用例排序妥协；作用域化后可精确回收）。
+  function launchBadge(): ReturnType<typeof useUnreadBadge> {
+    const h = useUnreadBadge();
     expect(hooks.onLaunch).toHaveLength(1);
     hooks.onLaunch[0]();
+    return h;
   }
 
   // 注意：源码在 onLaunch 里注册的 watch 是全局监听（无作用域、不随测试停止），
@@ -219,7 +222,7 @@ describe("useUnreadBadge：onLaunch 初始化与 watch 联动", () => {
 
   it("onLaunch 注册监听并立即同步初始值，watch 驱动红点增减与 99+ 封顶（全链路）", async () => {
     if (messagesApi.totalUnreadCount) messagesApi.totalUnreadCount.value = 3;
-    launchBadge();
+    const badgeHandle = launchBadge();
     // 初始值立即对齐，不靠下一次变化才纠正
     expect(setTabBarBadge).toHaveBeenCalledTimes(1);
     expect(setTabBarBadge.mock.calls[0][0]).toEqual(
@@ -258,6 +261,35 @@ describe("useUnreadBadge：onLaunch 初始化与 watch 联动", () => {
       expect.objectContaining({ index: CHAT_TAB_INDEX, text: "99+" })
     );
     expect(removeTabBarBadge).not.toHaveBeenCalled();
+    // R16：用例尾回收本用例的 watch（作用域句柄），不泄漏到后续用例
+    badgeHandle?.stop();
+  });
+
+  // R16（R8 收口）：watch 已作用域化（独立 effectScope + stop 句柄）——多入口注册不再
+  // 叠加监听器。注意不可复用上方 launchBadge（其 toHaveLength(1) 会判 2 红），
+  // 本用例用局部注册逻辑并显式清空 hooks。
+  it("两次注册 + stop 其一 → 仅存活的那只 watch 驱动红点（叠加缺陷已根治）", async () => {
+    hooks.onLaunch.length = 0;
+    setTabBarBadge.mockClear();
+    if (messagesApi.totalUnreadCount) messagesApi.totalUnreadCount.value = 1;
+
+    const h1 = useUnreadBadge();
+    const h2 = useUnreadBadge();
+    expect(hooks.onLaunch).toHaveLength(2);
+    h1.stop(); // 撤销第一只（其 scope 在 onLaunch 回调执行前 stop ⇒ 回调内 scope.run 成空转）
+    hooks.onLaunch[0]!(); // h1 的 onLaunch：scope 已停，watch 不生效
+    hooks.onLaunch[1]!(); // h2 的 onLaunch：正常注册
+    expect(setTabBarBadge).toHaveBeenCalledTimes(1); // 仅 h2 的初始同步
+
+    setTabBarBadge.mockClear();
+    if (messagesApi.totalUnreadCount) messagesApi.totalUnreadCount.value = 5;
+    await nextTick();
+    await nextTick();
+    // 若监听器仍会叠加，此处会变成 2 次——stop 句柄语义的确定性判点
+    expect(setTabBarBadge).toHaveBeenCalledTimes(1);
+    expect(setTabBarBadge.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ index: CHAT_TAB_INDEX, text: "5" })
+    );
   });
 });
 

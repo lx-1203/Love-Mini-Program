@@ -376,10 +376,15 @@ public class RealIcebreakerService implements IcebreakerService {
                 .findByTriggerConditionAndIsActiveTrue("common_circle");
 
         List<IcebreakerView> result = new ArrayList<>();
+        // R16-3（N+1 治理 P3）：循环逐条 findById 改 findAllById 一次批取（共同圈数有界但
+        // 仍省 N-1 次往返），内存 Map 保序取用。
+        java.util.Map<Long, InterestCircle> circleById = interestCircleRepository
+                .findAllById(commonCircleIds).stream()
+                .collect(java.util.stream.Collectors.toMap(InterestCircle::getId, c -> c));
         for (Long circleId : commonCircleIds) {
             if (result.size() >= maxCount) break;
 
-            InterestCircle circle = interestCircleRepository.findById(circleId).orElse(null);
+            InterestCircle circle = circleById.get(circleId);
             if (circle == null) continue;
 
             if (!templates.isEmpty()) {

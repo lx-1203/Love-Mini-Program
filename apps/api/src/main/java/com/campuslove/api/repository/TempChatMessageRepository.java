@@ -13,6 +13,9 @@ import org.springframework.data.repository.query.Param;
  */
 public interface TempChatMessageRepository extends JpaRepository<TempChatMessage, Long> {
 
+    /** R16-3（N+1 治理 P3）：数据导出按会话集合一次批取（原逐会话查询随会话数线性增长）。 */
+    java.util.List<TempChatMessage> findBySessionIdInOrderByCreatedAtAsc(java.util.Collection<Long> sessionIds);
+
     /**
      * 根据会话 ID 查询消息列表，按创建时间正序排列。
      *

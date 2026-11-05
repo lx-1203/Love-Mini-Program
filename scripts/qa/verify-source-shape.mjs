@@ -1815,6 +1815,35 @@ for (const p of ["apps/client/src/i18n/locales/zh-CN.ts"]) {
     process.exit(2);
   }
 }
+/* R16（2026-11-05）防 flux 第三道（R9 收口，QA 活性审计实锤）：strip-mock-for-mp.mjs 的
+   STUB_TARGETS 会把 7 个 src 文件桩化约百余秒（fixtures.ts 等，构建窗口内判据读到
+   「AUTO-GENERATED STUB」桩体 ⇒ absent 判点假绿、present 判点假红；SPEC:312 的
+   MP-R2-PAGES-HOME-INDEX-112 恰好承载在 fixtures.ts 上）。两道既有门都罩不住 src 承载：
+   门一只看 zh-CN.ts（不在 STUB_TARGETS）、门二只看 /dist/build/ 产物。本门从 strip 脚本
+   读 STUB_TARGETS 单一真相：桩化窗口内（文件含桩标记或备份目录在盘）拒绝出判决。 */
+{
+  const stripSrc = (() => {
+    try { return readFileSync(resolve(REPO, "apps/client/scripts/strip-mock-for-mp.mjs"), "utf8"); } catch { return ""; }
+  })();
+  const stubTargets = [...stripSrc.matchAll(/"([a-zA-Z0-9/_.-]+\.(?:ts|js))"/g)]
+    .map((m) => "apps/client/src/" + m[1])
+    .filter((p) => /mock-data\.ts$|fixtures\.ts$/.test(p));
+  const stubbed = stubTargets.filter((p) => {
+    const abs = resolve(REPO, p);
+    if (!existsSync(abs)) return false;
+    try {
+      const head = readFileSync(abs, "utf8").slice(0, 200);
+      return head.includes("AUTO-GENERATED STUB");
+    } catch { return false; }
+  });
+  const backupDir = resolve(REPO, "apps/client/scripts/.strip-mock-backup");
+  if (stubbed.length || existsSync(backupDir)) {
+    console.log("SRC_SHAPE_RESULT=FAIL reason=src 承载处于桩化 flux（strip-mock-for-mp 构建窗口："
+      + (stubbed.length ? "桩标记=" + stubbed.slice(0, 3).join(",") : "备份目录 .strip-mock-backup 在盘")
+      + "）⇒ 等构建结束再跑，不在 flux 上出判决");
+    process.exit(2);
+  }
+}
 /* 同一形状的 flux 门，第二条车道正在改的那 5 个页面 + 体积刀改过的引用点都可能在构建里：
    缺席判点的两档产物（mock / real）一旦被构建脚本清空或写成半截，absent 会"读成成立"＝假绿。
    所以判点开跑前先验：档目录在不在、每条判据点名的产物文件在不在且非 0 字节。缺就拒绝出判决。 */

@@ -19,7 +19,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 真实互动通知服务实现。
@@ -42,14 +44,18 @@ public class RealNotificationService implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    /** R16-3：落库短事务（REQUIRED）——推送移出事务后的落库载体（照抄 RealPrivateMessageService S2-1 口径） */
+    private final TransactionTemplate transactionTemplate;
 
     public RealNotificationService(
             NotificationRepository notificationRepository,
             UserRepository userRepository,
-            SimpMessagingTemplate messagingTemplate) {
+            SimpMessagingTemplate messagingTemplate,
+            PlatformTransactionManager transactionManager) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
         this.messagingTemplate = messagingTemplate;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     // ---- Phase 1 兼容方法 ----
@@ -240,9 +246,13 @@ public class RealNotificationService implements NotificationService {
 
     /**
      * 创建通知（内部方法，供其他服务调用）。
+     *
+     * <p>R16-3（2026-11-05 事务边界治理，S2-1 同口径）：原方法级 @Transactional 把 WS 推送
+     * 圈进事务——①推送 I/O 期间持有 Hikari 连接；②推送先于提交，事务回滚则客户端收到
+     * 幻影通知。改为 TransactionTemplate 短事务落库+取视图，推送移到事务提交之后
+     * （调用方自带事务时 REQUIRED 加入、推送仍在该外层事务外执行）。</p>
      */
     @Override
-    @Transactional
     public void createNotification(Long userId, String type, Long sourceUserId, Long referenceId, String referenceType) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
@@ -265,17 +275,22 @@ public class RealNotificationService implements NotificationService {
         notification.setIsRead(false);
         notification.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
-        // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
-        // 否则下方 toNotificationView 中 notification.getId() 为 null
-        notification = notificationRepository.save(notification);
+        // 落库 + 视图构建在短事务内完成（实体带 @Version 时 save 走 merge 返回新托管实例，
+        // 必须接收返回值回填 id，否则视图里 notification.getId() 为 null）
+        NotificationView notificationView = transactionTemplate.execute(status -> {
+            Notification saved = notificationRepository.save(notification);
+            return toNotificationView(saved);
+        });
 
-        // 通过 WebSocket 推送通知给目标用户
-        NotificationView notificationView = toNotificationView(notification);
-        messagingTemplate.convertAndSendToUser(
-                String.valueOf(userId),
-                "/queue/notifications",
-                notificationView
-        );
+        // WS 推送在事务提交之后（S2-1 口径：接收端先收到推送、回查却读不到的幻影窗口消除；
+        // 事务回滚时不再产生已推送的幻影通知）
+        if (notificationView != null) {
+            messagingTemplate.convertAndSendToUser(
+                    String.valueOf(userId),
+                    "/queue/notifications",
+                    notificationView
+            );
+        }
     }
 
     /**
@@ -287,7 +302,6 @@ public class RealNotificationService implements NotificationService {
      * WS 推送视图与 REST 列表同源。落库+推送同 {@link #createNotification} 口径。</p>
      */
     @Override
-    @Transactional
     public void createSystemNotification(Long userId, Long sourceUserId, String content, Long referenceId, String referenceType) {
         if (userId == null) {
             throw new IllegalArgumentException("userId is required");
@@ -310,27 +324,31 @@ public class RealNotificationService implements NotificationService {
         notification.setIsRead(false);
         notification.setCreatedAt(LocalDateTime.now(TimeZones.BUSINESS));
 
-        notification = notificationRepository.save(notification);
-
-        User sourceUser = userRepository.findById(sourceUserId).orElse(null);
-        NotificationView view = new NotificationView(
-                notification.getId(),
-                notification.getType().name(),
-                sourceUser != null
-                        ? new NotificationSourceUserView(sourceUser.getId(), sourceUser.getNickname(), sourceUser.getAvatarUrl())
-                        : null,
-                notification.getReferenceId(),
-                notification.getReferenceType() != null ? notification.getReferenceType().name() : null,
-                notification.getIsRead(),
-                notification.getCreatedAt() != null ? notification.getCreatedAt().toString() : null,
-                content,
-                SIGNAL_TYPE_SOCIAL
-        );
-        messagingTemplate.convertAndSendToUser(
-                String.valueOf(userId),
-                "/queue/notifications",
-                view
-        );
+        // R16-3（S2-1 同口径）：落库+视图在短事务内，推送移到事务提交后
+        NotificationView view = transactionTemplate.execute(status -> {
+            Notification saved = notificationRepository.save(notification);
+            User sourceUser = userRepository.findById(sourceUserId).orElse(null);
+            return new NotificationView(
+                    saved.getId(),
+                    saved.getType().name(),
+                    sourceUser != null
+                            ? new NotificationSourceUserView(sourceUser.getId(), sourceUser.getNickname(), sourceUser.getAvatarUrl())
+                            : null,
+                    saved.getReferenceId(),
+                    saved.getReferenceType() != null ? saved.getReferenceType().name() : null,
+                    saved.getIsRead(),
+                    saved.getCreatedAt() != null ? saved.getCreatedAt().toString() : null,
+                    content,
+                    SIGNAL_TYPE_SOCIAL
+            );
+        });
+        if (view != null) {
+            messagingTemplate.convertAndSendToUser(
+                    String.valueOf(userId),
+                    "/queue/notifications",
+                    view
+            );
+        }
     }
 
     // ---- 私有辅助方法 ----

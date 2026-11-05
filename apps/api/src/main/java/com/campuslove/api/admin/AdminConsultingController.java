@@ -50,6 +50,8 @@ public class AdminConsultingController {
 
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN')")
+    /* R16-3：写端点补事务边界（与同目录其余 Admin 控制器对齐；单行写由 save 自带事务兜底，显式声明消除「无边界」模式） */
+    @org.springframework.transaction.annotation.Transactional
     public ApiResponse<CourseView> create(@Valid @RequestBody CourseRequest request) {
         ConsultingCourse course = new ConsultingCourse();
         apply(course, request);
@@ -64,6 +66,8 @@ public class AdminConsultingController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
+    /* R16-3：写端点补事务边界（与同目录其余 Admin 控制器对齐；单行写由 save 自带事务兜底，显式声明消除「无边界」模式） */
+    @org.springframework.transaction.annotation.Transactional
     public ApiResponse<CourseView> update(@PathVariable("id") @Positive Long id,
                                           @Valid @RequestBody CourseRequest request) {
         ConsultingCourse course = courseRepository.findById(id)
@@ -75,6 +79,8 @@ public class AdminConsultingController {
 
     @PostMapping("/{id}/publish")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
+    /* R16-3：写端点补事务边界（与同目录其余 Admin 控制器对齐；单行写由 save 自带事务兜底，显式声明消除「无边界」模式） */
+    @org.springframework.transaction.annotation.Transactional
     public ApiResponse<CourseView> publish(@PathVariable("id") @Positive Long id) {
         ConsultingCourse course = courseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.CONSULTING_COURSE_NOT_FOUND_PREFIX + id));
@@ -89,6 +95,8 @@ public class AdminConsultingController {
 
     @PostMapping("/{id}/offline")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
+    /* R16-3：写端点补事务边界（与同目录其余 Admin 控制器对齐；单行写由 save 自带事务兜底，显式声明消除「无边界」模式） */
+    @org.springframework.transaction.annotation.Transactional
     public ApiResponse<CourseView> offline(@PathVariable("id") @Positive Long id) {
         ConsultingCourse course = courseRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorMessages.CONSULTING_COURSE_NOT_FOUND_PREFIX + id));
