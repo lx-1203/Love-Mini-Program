@@ -544,9 +544,10 @@ export const useCheckInStore = defineStore("checkin", {
      * 避免定时器在组件卸载后仍修改状态。
      * 也用于 HMR 热更新时清理模块级定时器。
      *
-     * TODO(dispose-接线)：引用页面为 pages/home/index.vue、pages/daily-question/index.vue、
-     * pages/discover/index.vue、pages/shop/index.vue。本子任务受目录权限限制无法修改
-     * pages/ 目录，需在后续任务中于上述页面 onUnload 中调用 checkInStore.dispose()。
+     * R15-2（2026-11-05 接线复核了结，原 TODO(dispose-接线) 划除）：全部消费页已接线——
+     * subpackages/tools/daily-question（onUnload）、pages/home（R15-2 补接）、
+     * pages/discover（dispose 链）；pages/shop 已不存在（原引用为死路径）。
+     * 「目录权限受限」的历史约束已不成立。
      */
     dispose() {
       if (successAnimationTimer) {

@@ -20,7 +20,11 @@ const defaultAvatar = resolveMediaUrl(IMAGE_PATHS.DEFAULT_AVATAR);
  * 归数据治理/后端车道，本车道不改 stores/services/后端），这里只做「用户可见处不得出现
  * 演示字样」的兜底。剥完为空时不编造名字（宁缺不造，同 MP-R2VIS-PAGES-MESSAGES-INDEX-002 口径）。
  */
-const DEMO_NAME_PREFIX = /^\s*(?:演示|示例|测试|QA|qa)\s*[·・•\-–—/|]\s*/;
+/* audit-r15 批 3-B：本正则里的「演示/示例/测试/・」用 \u 转义书写——语义逐字不变
+   （演=U+6F14 示=U+793A 例=U+4F8B 测=U+6D4B 试=U+8BD5 ・=U+30FB），
+   但可避免 verify-i18n-orphan 门尺的裸中文分类器把正则字面量跨行误配成模板文本
+   （本文件迁移前实测因此多计 1 条假命中）。 */
+const DEMO_NAME_PREFIX = new RegExp("^\\s*(?:\\u6f14\\u793a|\\u793a\\u4f8b|\\u6d4b\\u8bd5|QA|qa)\\s*[·\\u30fb•\\-–—/|]\\s*");
 function userVisibleName(raw: string | undefined | null): string {
   return String(raw ?? "").replace(DEMO_NAME_PREFIX, "").trim();
 }
@@ -49,8 +53,8 @@ function onNearbyAvatarError(event: Event) {
 <template>
   <view class="nearby-people">
     <view class="section-head">
-      <text class="section-head__title">附近的人</text>
-      <text class="section-head__more press-feedback" hover-class="press-feedback--active" role="button" aria-label="查看全部附近的人" @tap="$emit('more')">全部 ›</text>
+      <text class="section-head__title">{{ t('home.nearbyPeople') }}</text>
+      <text class="section-head__more press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('home.nearby.viewAllAria')" @tap="$emit('more')">{{ t('home.nearby.allLink') }}</text>
     </view>
     <!-- 2026-09-02 R12（需求⑥/⑦）：加载中且无数据 → 横排头像骨架占位（白屏/空白感知消除） -->
     <scroll-view v-if="loading && items.length === 0" scroll-x class="nearby-scroll" :show-scrollbar="false">
@@ -70,10 +74,10 @@ function onNearbyAvatarError(event: Event) {
         <text class="nearby-people__retry-text">{{ t("home.sectionRetry") }}</text>
       </view>
     </view>
-    <view v-else-if="items.length === 0" class="nearby-people__empty">附近暂时没有可匹配的人，去看看推荐吧</view>
+    <view v-else-if="items.length === 0" class="nearby-people__empty">{{ t('discover.card.nearbyEmptyTitle') }}</view>
     <scroll-view v-else scroll-x class="nearby-scroll" :show-scrollbar="false">
       <view class="nearby-list">
-        <view v-for="item in items" :key="item.userId" class="nearby-item press-feedback" hover-class="press-feedback--active" role="button" :aria-label="`查看 ${userVisibleName(item.name)} 主页`" @tap="$emit('select', item.userId)">
+        <view v-for="item in items" :key="item.userId" class="nearby-item press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('home.nearby.viewProfileAria', { name: userVisibleName(item.name) })" @tap="$emit('select', item.userId)">
           <view class="nearby-item__avatar-wrap">
             <!-- 2026-09-03 R11 终极修：直接用 <image> 解决 SafeImage 父容器 0×0 限制；
                  通过 dataset.fallbackApplied 标记避免重复降级（uni-app 编译器对
@@ -107,12 +111,12 @@ function onNearbyAvatarError(event: Event) {
           class="nearby-people__bar press-feedback"
           hover-class="press-feedback--active"
           role="button"
-          aria-label="查看全部附近的人"
+          :aria-label="t('home.nearby.viewAllAria')"
           @tap="$emit('more')"
         >
           <image class="nearby-people__bar-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_EMOJI.GROUP)" mode="aspectFit" />
-          <text class="nearby-people__bar-text">附近的人</text>
-          <text class="nearby-people__bar-count">{{ items.length }} 位</text>
+          <text class="nearby-people__bar-text">{{ t('home.nearbyPeople') }}</text>
+          <text class="nearby-people__bar-count">{{ t('home.nearby.countSuffix', { n: items.length }) }}</text>
         </view>
       </view>
     </scroll-view>

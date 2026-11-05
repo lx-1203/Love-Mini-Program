@@ -15,6 +15,7 @@ import { clearMediaSignCache } from "../utils/media-sign-cache";
 // Sentry 监控：登录成功关联用户身份，退出登录清除用户上下文
 import { setUser, clearUser } from "../services/sentry";
 import { toLoginHeroView } from "../view-models/login";
+import { resetPageAccessThrottle } from "../composables/usePageAccess";
 import { MOCK_LOGIN_HERO } from "../features/login/hero";
 import { useMock } from "./helpers/use-mock";
 // B6：后台配置即时生效——启动期非阻塞拉取功能开关/维护模式（见 bootstrap）
@@ -603,6 +604,10 @@ export const useSessionStore = defineStore("session", {
         // 新 store 不登记（也不写进「不跟账号走」）会被 logout-registry.spec.ts 判红。
         // 放在 session 字段清空之后：个别 store 的复位逻辑会读会话状态，先落到「已登出」。
         resetAccountScopedStores();
+
+        // R15-2：会话刷新节流时间戳登出清零——防止 A 账号登出后 30s 窗口内
+        // B 账号进入受保护页跳过会话恢复（模块级状态随登出复位）
+        resetPageAccessThrottle();
 
         // 3. 清除 Sentry 用户上下文：避免登出后的上报仍关联已登出用户
         try {

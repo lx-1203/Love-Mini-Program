@@ -85,8 +85,10 @@ const officialChatRequirements = { ...chatPageRequirements, requiresProfile: fal
 usePageAccess(officialChatRequirements);
 
 const accountId = ref("official-assistant");
-const accountName = ref("寻觅助手");
-const accountDesc = ref("你的恋爱小管家");
+// audit-r15 批 3-B：导航名/副标的裸中文默认值迁 i18n（同文复用 messages.assistantName /
+// messages.assistantSubtitle，与消息页寻觅助手卡共用一键）；后端 meta 下发后即被覆盖（:320）
+const accountName = ref(t("messages.assistantName"));
+const accountDesc = ref(t("messages.assistantSubtitle"));
 const loading = ref(false);
 const errorMessage = ref("");
 const messages = ref<ChatMessageView[]>([]);
@@ -436,7 +438,7 @@ onLoad((query) => {
             <!-- 2026-08-26 P1：V-08 官方小标签样式与参考图保持一致。
        参考图：浅绿描边胶囊（白底 + 薄荷绿描边 + 深绿文本），不再是渐变填充。 -->
           <view class="official-badge">
-            <text class="official-badge__text">官方</text>
+            <text class="official-badge__text">{{ t('chat.officialBadge') }}</text>
           </view>
           </view>
           <text class="nav-subtitle">{{ accountDesc }}</text>
@@ -447,10 +449,10 @@ onLoad((query) => {
       </view>
 
       <!-- ===== 加载 / 错误 ===== -->
-      <view v-if="loading" class="state-view"><text>加载中...</text></view>
+      <view v-if="loading" class="state-view"><text>{{ t('common.loading') }}</text></view>
       <view v-else-if="errorMessage" class="state-view">
         <text class="error-text">{{ errorMessage }}</text>
-        <view class="retry-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="loadOfficialChat"><text>重试</text></view>
+        <view class="retry-btn press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="loadOfficialChat"><text>{{ t('common.retry') }}</text></view>
       </view>
 
       <!-- ===== 聊天主体 ===== -->
@@ -479,12 +481,12 @@ onLoad((query) => {
                  alt＝装饰图。注：mp-weixin 忽略 alt，此改动只影响 H5 的可访问名计算。 -->
             <image class="hero-mascot" :src="mascotSmileSrc" mode="aspectFill" alt="" />
             <view class="hero-greeting">
-              <text>Hi~ 我是寻觅助手</text>
+              <text>{{ t('chat.official.heroGreeting') }}</text>
               <image class="hero-greeting-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPROUT" mode="aspectFit" alt="" />
             </view>
-            <text class="hero-desc">我会帮你发现有趣的人和活动</text>
+            <text class="hero-desc">{{ t('chat.official.heroDesc1') }}</text>
             <view class="hero-desc">
-              <text>让每一次相遇都更有意义</text>
+              <text>{{ t('chat.official.heroDesc2') }}</text>
               <image class="hero-desc-icon" :src="IMAGE_PATHS.ICONS_EMOJI.SPARKLES" mode="aspectFit" alt="" />
             </view>
           </view>
@@ -531,12 +533,12 @@ onLoad((query) => {
                         <text class="activity-embed__meta">{{ msg.cardActivity.locationText }}</text>
                         <view class="activity-embed__participants">
                           <view class="participant-dot" v-for="i in Math.min(msg.cardActivity.enrollmentCount ?? 0, 4)" :key="i" />
-                          <text class="activity-embed__count">{{ msg.cardActivity.enrollmentCount }}人已报名</text>
+                          <text class="activity-embed__count">{{ t('chat.official.enrolledCount', { n: msg.cardActivity.enrollmentCount }) }}</text>
                         </view>
                       </view>
                     </view>
                     <view class="activity-detail-link" @tap.stop="handleActivityTap(buildActivityDetailUrl(msg))">
-                      <text class="activity-detail-link__text">查看详情</text>
+                      <text class="activity-detail-link__text">{{ t('messages.officialActivityCta') }}</text>
                     </view>
                     <text class="bubble__text bubble__text--mt" v-if="msg.content && msg.content !== msg.cardTag">{{ msg.content }}</text>
                   </view>
@@ -544,10 +546,10 @@ onLoad((query) => {
                   <!-- 按钮消息 -->
                   <view v-else-if="isButtonMsg(msg)" class="msg-buttons">
                     <view class="action-btn action-btn--primary press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="onActionBtnTap('去看看')">
-                      <text class="action-btn__text action-btn__text--primary">去看看</text>
+                      <text class="action-btn__text action-btn__text--primary">{{ t('chat.official.goSee') }}</text>
                     </view>
                     <view class="action-btn action-btn--default press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="onActionBtnTap('稍后再说')">
-                      <text class="action-btn__text">稍后再说</text>
+                      <text class="action-btn__text">{{ t('chat.official.laterReply') }}</text>
                     </view>
                   </view>
 
@@ -568,10 +570,10 @@ onLoad((query) => {
                   <view class="bubble bubble--user">
                     <text class="bubble__text bubble__text--user">{{ msg.content }}</text>
                   </view>
-                  <text class="read-receipt">已读</text>
+                  <text class="read-receipt">{{ t('chat.official.readReceipt') }}</text>
                 </view>
                 <!-- A11Y-R：口径同 components/chat/ChatBubble.vue:186-189（自己头像 = role="img" + aria-label="我"） -->
-                <image class="msg-avatar" :src="userAvatar" mode="aspectFit" role="img" aria-label="我" />
+                <image class="msg-avatar" :src="userAvatar" mode="aspectFit" role="img" :aria-label="t('chat.official.selfAria')" />
               </view>
             </template>
           </view>
@@ -596,7 +598,7 @@ onLoad((query) => {
   cursor-spacing="20"
             class="input-bar__input"
             v-model="inputValue"
-            placeholder="对我说点什么吧～"
+            :placeholder="t('chat.official.inputPlaceholder')"
             placeholder-class="input-placeholder"
             confirm-type="send"
             @confirm="sendMessage"
@@ -611,7 +613,7 @@ onLoad((query) => {
           :class="{ 'input-bar__send--disabled': !canSend }"
           @tap="sendMessage"
         >
-          <text class="input-bar__send-text">发送</text>
+          <text class="input-bar__send-text">{{ t('common.send') }}</text>
         </view>
       </view>
 

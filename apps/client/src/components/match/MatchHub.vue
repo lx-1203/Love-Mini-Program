@@ -3,6 +3,11 @@
  * 匹配中心 Hub（v3.1 契约 §11/§19 页面 03）。
  * 展示：绿 Hero、今日剩余/已喜欢、在线速配卡、关系进度、开始匹配。
  */
+import { useI18n } from "vue-i18n";
+
+// audit-r15 批 3-B：模板裸中文迁 i18n（match.* 命名空间）
+const { t } = useI18n();
+
 withDefaults(
   defineProps<{
     remaining: number;
@@ -21,47 +26,47 @@ const emit = defineEmits<{ (e: "start"): void; (e: "onlineStart"): void }>();
 <template>
   <view class="match-hub">
     <view class="match-hub__hero">
-      <text class="match-hub__title">寻觅</text>
-      <text class="match-hub__subtitle">正在为你寻找同频的那个人</text>
+      <text class="match-hub__title">{{ t('match.title') }}</text>
+      <text class="match-hub__subtitle">{{ t('match.subtitle') }}</text>
       <view class="match-hub__quota">
         <view class="match-hub__quota-item">
           <text class="match-hub__quota-value">{{ remaining }}</text>
-          <text class="match-hub__quota-label">今日剩余（次）</text>
+          <text class="match-hub__quota-label">{{ t('match.quotaRemaining') }}</text>
         </view>
         <view class="match-hub__quota-divider" />
         <view class="match-hub__quota-item">
           <text class="match-hub__quota-value">{{ used }}</text>
-          <text class="match-hub__quota-label">今日已喜欢（人）</text>
+          <text class="match-hub__quota-label">{{ t('match.quotaLiked') }}</text>
         </view>
       </view>
       <view class="match-hub__start press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="emit('start')">
-        <text class="match-hub__start-text">开始匹配</text>
+        <text class="match-hub__start-text">{{ t('match.start') }}</text>
       </view>
     </view>
 
     <view class="match-hub__online press-feedback" hover-class="press-feedback--active" hover-stay-time="40" @tap="emit('onlineStart')">
       <view class="match-hub__online-dot" />
       <view class="match-hub__online-body">
-        <text class="match-hub__online-title">现在在线</text>
-        <text class="match-hub__online-desc">有 {{ onlineCount }} 位匹配度较高的人在线</text>
+        <text class="match-hub__online-title">{{ t('match.onlineTitle') }}</text>
+        <text class="match-hub__online-desc">{{ t('match.onlineDesc', { n: onlineCount }) }}</text>
       </view>
-      <text class="match-hub__online-cta">立即匹配</text>
+      <text class="match-hub__online-cta">{{ t('match.onlineCta') }}</text>
     </view>
 
     <view class="match-hub__relation">
-      <text class="match-hub__relation-title">关系进度</text>
+      <text class="match-hub__relation-title">{{ t('match.relationTitle') }}</text>
       <view class="match-hub__relation-row">
         <view class="match-hub__relation-item">
           <text class="match-hub__relation-value">{{ crushing }}</text>
-          <text class="match-hub__relation-label">心动中</text>
+          <text class="match-hub__relation-label">{{ t('match.crushing') }}</text>
         </view>
         <view class="match-hub__relation-item">
           <text class="match-hub__relation-value">{{ matched }}</text>
-          <text class="match-hub__relation-label">已匹配</text>
+          <text class="match-hub__relation-label">{{ t('match.matched') }}</text>
         </view>
         <view class="match-hub__relation-item">
           <text class="match-hub__relation-value">{{ whispers }}</text>
-          <text class="match-hub__relation-label">悄悄话</text>
+          <text class="match-hub__relation-label">{{ t('match.whispers') }}</text>
         </view>
       </view>
     </view>

@@ -29,6 +29,18 @@ const SESSION_REFRESH_THROTTLE_MS = 30_000;
 let lastSessionRefreshAt = 0;
 
 /**
+ * R15-2（2026-11-05）：登出/切换账号时清零会话刷新节流时间戳。
+ *
+ * <p>原缺陷（R14 批6 记录）：lastSessionRefreshAt 为模块级且登出不清零——A 账号登出后
+ * 30s 节流窗口内，B 账号登录进入受保护页会跳过会话恢复（:90 节流闸命中），
+ * 页面以「未恢复会话」的状态渲染。由 {@link import("../stores/session") session store}
+ * 的 logout() 在 resetAccountScopedStores 之后调用。</p>
+ */
+export function resetPageAccessThrottle(): void {
+  lastSessionRefreshAt = 0;
+}
+
+/**
  * 页面访问守卫组合式函数：在 onShow 时根据会话状态与页面要求决定是否放行或重定向。
  *
  * <p>处理流程（顺序）：</p>
@@ -141,9 +153,11 @@ export function usePageAccess(requirements: PageRequirements) {
     );
 
     if (!decision.allowed && decision.redirectTo) {
-      // 未登录且无 token 的场景已在上方提前跳登录（见 apiErrors.loginRequired 分支），
-      // 此处到达说明本地仍持有 token 但会话判定未登录（如 token 失效）→「登录已过期」语义正确
-      if (requirements.requiresAuth && !getToken()) {
+      // R15-2（2026-11-05 注释/条件对齐，修复恒假死代码）：原条件 `!getToken()` 在可达
+      // 状态下恒为假——「未登录且无 token」分支已在上方提前放行，「登录已过期」toast
+      // 从未触发过。正确语义 = 仅在「重定向登录页且本地持 token」（token 失效）时弹；
+      // 已登录但资料未完善等场景重定向资料页，不属于过期，不弹。
+      if (decision.redirectTo === ROUTES.LOGIN && getToken()) {
         uni.showToast({ title: t("apiErrors.unauthorized"), icon: "none" });
       }
       replaceAppPath(decision.redirectTo);

@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import type { UserProfileDTO } from "../../../types/profile";
 import { IMAGE_PATHS } from "../../../config/images";
 import { profileMetaParts } from "../../../utils/profile-meta";
+
+// audit-r15 批 3-B：模板与在线状态标签的裸中文迁 i18n（profile.publicIdentity.* 命名空间）
+const { t } = useI18n();
 
 const props = defineProps<{ profile: UserProfileDTO; online?: boolean }>();
 const emit = defineEmits<{
@@ -28,7 +32,11 @@ const onlineState = computed<"online" | "offline" | "unknown">(() => {
   return "unknown";
 });
 const onlineLabel = computed(() =>
-  onlineState.value === "online" ? "在线" : onlineState.value === "offline" ? "离线" : "未知",
+  onlineState.value === "online"
+    ? t("profile.publicIdentity.online")
+    : onlineState.value === "offline"
+      ? t("profile.publicIdentity.offline")
+      : t("profile.publicIdentity.unknown"),
 );
 
 /** 距离文案（理想图第三行本体只有 "2.3km"，「在线」不再在此重复 —— 见 D12） */
@@ -56,8 +64,8 @@ const genderIconSrc = computed(() => {
           </view>
           <!-- R11-L10-D01：性别缺失时不再整块塌陷，给一枚恒渲染的「未填写」占位徽
                （与 :88「资料暂未完善」/ :99「距离待更新」同一口径，不编造性别）。 -->
-          <view v-else class="public-identity__gender public-identity__gender--unknown" role="img" aria-label="性别未填写">
-            <text class="public-identity__gender-unknown-text">未填写</text>
+          <view v-else class="public-identity__gender public-identity__gender--unknown" role="img" :aria-label="t('profile.publicIdentity.genderUnknownAria')">
+            <text class="public-identity__gender-unknown-text">{{ t('profile.publicIdentity.genderUnknown') }}</text>
           </view>
           <!-- R11-L10-D01：在线胶囊恒渲染；true=在线 / false=离线 / 无值=未知，
                颜色与文案都跟随后端真值，缺值时不再整块消失。 -->
@@ -67,7 +75,7 @@ const genderIconSrc = computed(() => {
           </view>
         </view>
         <text v-if="profile.relation.matchScore" class="public-identity__match">
-          匹配度 {{ profile.relation.matchScore }}%
+          {{ t('profile.publicIdentity.matchScore', { n: profile.relation.matchScore }) }}
         </text>
       </view>
       <view class="public-identity__actions">
@@ -76,7 +84,7 @@ const genderIconSrc = computed(() => {
              没有任何文字标签，用户无法判断动作。配色沿用原注释口径，补齐 <text>。 -->
         <view class="public-identity__pill public-identity__pill--like" hover-class="public-identity__pill--pressed" @tap="emit('like')">
           <image class="public-identity__pill-icon" :src="IMAGE_PATHS.ICONS_V2.HEART_PINK" mode="aspectFit" alt="" />
-          <text class="public-identity__pill-text public-identity__pill-text--like">喜欢</text>
+          <text class="public-identity__pill-text public-identity__pill-text--like">{{ t('profile.publicIdentity.like') }}</text>
         </view>
         <view
           class="public-identity__pill public-identity__pill--hello"
@@ -85,7 +93,7 @@ const genderIconSrc = computed(() => {
           @longpress="emit('whisper')"
         >
           <image class="public-identity__pill-icon" :src="IMAGE_PATHS.ICONS_V2.CHAT_GREEN" mode="aspectFit" alt="" />
-          <text class="public-identity__pill-text public-identity__pill-text--hello">打招呼</text>
+          <text class="public-identity__pill-text public-identity__pill-text--hello">{{ t('profile.publicIdentity.sayHi') }}</text>
         </view>
         <!-- R7-L10-D04（文案 P3）：理想图（素材/理想效果图/他人显示主页.png）身份卡右侧
              只有浅粉「喜欢」+ 浅绿「打招呼」上下两枚胶囊，规范 §3.9 同口径；实帧多出第三行
@@ -104,7 +112,7 @@ const genderIconSrc = computed(() => {
           <text class="public-identity__meta-item">{{ part }}</text>
         </template>
       </template>
-      <text v-else class="public-identity__meta-item public-identity__meta-item--empty">资料暂未完善</text>
+      <text v-else class="public-identity__meta-item public-identity__meta-item--empty">{{ t('profile.publicIdentity.metaEmpty') }}</text>
     </view>
     <!-- R10-L10-D03（需新建 P1）：第三行不再按 distanceText 有无整块开关。
          先纠正本文件旧注释的事实错误：后端 /profile/{id} **已经**有这两列
@@ -115,7 +123,7 @@ const genderIconSrc = computed(() => {
          「在线」胶囊按 R11-L10-D01 改为三态恒渲染（true=在线 / false=离线 / 无值=未知）；
          仍不采纳「缺省兜底 true」——那等于给离线用户伪造在线状态。 -->
     <view class="public-identity__distance-row">
-      <text class="public-identity__distance-text">{{ distanceText || "距离待更新" }}</text>
+      <text class="public-identity__distance-text">{{ distanceText || t('profile.publicIdentity.distancePending') }}</text>
     </view>
   </view>
 </template>

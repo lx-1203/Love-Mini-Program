@@ -305,7 +305,12 @@ function openActivity(targetUrl?: string) {
 
 function onSessionLongpress(session: MessageSession) {
   uni.showActionSheet({
-    itemList: ["置顶/取消置顶", "标为未读", session.muted ? "恢复提醒" : "免打扰", "删除会话"],
+    itemList: [
+      t("messages.togglePin"),
+      t("messages.markAsUnread"),
+      session.muted ? t("messages.unmuteSession") : t("messages.muteSession"),
+      t("messages.deleteSession"),
+    ],
     success: ({ tapIndex }) => {
       // MP-R1-PAGES-MESSAGES-INDEX-008：单会话操作失败仅 toast（含隐藏的 unhandled rejection 修复），
       // 不再把整页切到 error 态
@@ -378,12 +383,12 @@ onPullDownRefresh(async () => {
 
 function getStatusLabel(status?: string): string {
   const map: Record<string, string> = {
-    chatting: "聊天中",
-    just_met: "刚认识",
-    mutual_follow: "互相关注",
-    ambiguous: "暧昧中",
+    chatting: t("messages.statusChatting"),
+    just_met: t("messages.statusJustMet"),
+    mutual_follow: t("messages.statusMutualFollow"),
+    ambiguous: t("messages.statusAmbiguous"),
   };
-  return map[status || ""] || "新朋友";
+  return map[status || ""] || t("messages.newFriends");
 }
 
 function getStatusClass(status?: string): string {
@@ -471,7 +476,7 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
     <!-- ========== Search Bar ========== -->
     <view v-if="searchActive && isUnlocked" class="search-bar">
       <input
-  cursor-spacing="20" v-model="searchKeyword" class="search-bar__input" placeholder="搜索聊天记录..." />
+  cursor-spacing="20" v-model="searchKeyword" class="search-bar__input" :placeholder="t('messages.searchChatPlaceholder')" />
       <text class="search-bar__clear" @tap="clearSearch">×</text>
     </view>
 
@@ -488,11 +493,11 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
         <template #empty>
           <view class="empty-chat">
             <image class="empty-chat__img" :src="IMAGE_PATHS.MASCOT.DEFAULT" mode="aspectFit" />
-            <text class="empty-chat__title">还没有新的缘分</text>
+            <text class="empty-chat__title">{{ t('messages.emptyMatchTitle') }}</text>
             <!-- MP-R1-PAGES-MESSAGES-INDEX-103/026：空态给可点的行动出口——
                  原 desc 为死文案，新用户空态成死胡同；改为「去附近看看」按钮 -->
             <view class="empty-chat__cta press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('messages.emptyExploreAria')" @tap="goNearby">
-              <text class="empty-chat__cta-text">去附近看看</text>
+              <text class="empty-chat__cta-text">{{ t('messages.emptyExplore') }}</text>
             </view>
           </view>
         </template>
@@ -527,12 +532,12 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
                   <image class="quick-card__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.MASCOT.HEART_GREEN)" mode="aspectFit" />
                 </view>
                 <view class="quick-card__body">
-                  <text class="quick-card__title">有人喜欢你</text>
-                  <text class="quick-card__desc">{{ likedMeCount }} 人喜欢了你</text>
+                  <text class="quick-card__title">{{ t('messages.likedMeTitle') }}</text>
+                  <text class="quick-card__desc">{{ t('messages.likedMeCount', { n: likedMeCount }) }}</text>
                 </view>
               </view>
               <view class="quick-card__btn">
-                <text class="quick-card__btn-text">去看看</text>
+                <text class="quick-card__btn-text">{{ t('messages.goSee') }}</text>
               </view>
             </view>
             <view v-if="waitingReplyCount > 0" class="quick-card" hover-class="quick-card--hover" @tap="goReply">
@@ -541,12 +546,12 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
                   <image class="quick-card__icon-img" :src="resolveMediaUrl(IMAGE_PATHS.MASCOT.CHAT_HI)" mode="aspectFit" />
                 </view>
                 <view class="quick-card__body">
-                  <text class="quick-card__title">正在等待回复</text>
-                  <text class="quick-card__desc">{{ waitingReplyCount }} 个聊天正在继续</text>
+                  <text class="quick-card__title">{{ t('messages.waitingReplyTitle') }}</text>
+                  <text class="quick-card__desc">{{ t('messages.waitingReplyDesc', { n: waitingReplyCount }) }}</text>
                 </view>
               </view>
               <view class="quick-card__btn">
-                <text class="quick-card__btn-text">去回复</text>
+                <text class="quick-card__btn-text">{{ t('messages.goReply') }}</text>
               </view>
             </view>
           </view>
@@ -570,12 +575,12 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
               </view>
               <view class="assistant-card__info">
                 <view class="assistant-card__name-row">
-                  <text class="assistant-card__name">寻觅助手</text>
+                  <text class="assistant-card__name">{{ t('messages.assistantName') }}</text>
                   <view class="assistant-card__official-badge">
-                    <text class="assistant-card__official-text">官方</text>
+                    <text class="assistant-card__official-text">{{ t('messages.officialBadge') }}</text>
                   </view>
                 </view>
-                <text class="assistant-card__subtitle">你的恋爱小管家</text>
+                <text class="assistant-card__subtitle">{{ t('messages.assistantSubtitle') }}</text>
               </view>
               <text class="assistant-card__arrow">→</text>
             </view>
@@ -588,7 +593,7 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
                        （icons/emoji/ 里没有 leaf.svg），帧上只剩一枚约 10×8px 灰色残形。
                        改用同页 :562 已验证出图的 ICONS_V2.SPROUT（包内 v2 桶，resolveMediaUrl 后仍是 /static）。 -->
                   <image class="assistant-card__activity-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_V2.SPROUT)" mode="aspectFit" alt="" />
-                  <text class="assistant-card__activity-text">今天附近有 {{ assistantActivityCount }} 场活动适合你参加</text>
+                  <text class="assistant-card__activity-text">{{ t('messages.assistantActivityNearby', { n: assistantActivityCount }) }}</text>
                 </view>
               </view>
               <view v-if="assistantFirstActivityTitle" class="assistant-card__activity-item">
@@ -600,7 +605,7 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
           <!-- ========== 正在升温 ========== -->
           <view v-if="warmPeople.length > 0" class="section">
             <view class="section__head">
-              <text class="section__title">正在升温</text>
+              <text class="section__title">{{ t('messages.warmingTitle') }}</text>
               <!-- R1-B25/D18（可达性）：「更多 ›」原先是裸 <text> 直接挂 @tap——无 role、无
                    aria-label、无按压反馈，读屏播报为空且热区只有文字宽。改包一层 view 补
                    role="button" + :aria-label + 全局 press-feedback（与同页空态 .empty-chat__cta 同口径），
@@ -642,7 +647,7 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
           <!-- ========== 最近聊天（R3：核心模块前移至活动推荐之前，对齐理想图信息层级） ========== -->
           <view class="section">
             <view class="section__head">
-              <text class="section__title">最近聊天</text>
+              <text class="section__title">{{ t('messages.recentChatsTitle') }}</text>
             </view>
 
             <!-- MP-R2-PAGES-MESSAGES-INDEX-003：主列表与搜索分支两段 ~50 行内联模板
@@ -667,7 +672,7 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
               </view>
               <view class="chat-item__content">
                 <view class="chat-item__top-row">
-                  <text class="chat-item__name">{{ session.partnerName || '未知用户' }}</text>
+                  <text class="chat-item__name">{{ session.partnerName || t('messages.unknownUser') }}</text>
                   <image
                     v-if="session.pinned"
                     class="chat-item__pin-icon"
@@ -692,7 +697,7 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
                   emoji-size="24rpx"
                   text-class="chat-item__preview"
                 />
-                <text v-else class="chat-item__preview">暂无消息</text>
+                <text v-else class="chat-item__preview">{{ t('messages.emptyTitle') }}</text>
               </view>
               <view class="chat-item__right">
                 <view class="chat-item__time-row">
@@ -708,14 +713,14 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
               v-if="(searchKeyword ? filteredSessions : orderedSessions).length === 0"
               class="section__empty"
             >
-              <text class="section__empty-text">{{ searchKeyword ? '未找到匹配的聊天' : '暂无聊天记录' }}</text>
+              <text class="section__empty-text">{{ searchKeyword ? t('messages.searchNoMatch') : t('messages.noChatHistory') }}</text>
             </view>
           </view>
 
           <!-- ========== 活动推荐（R3：后移，核心会话列表优先） ========== -->
           <view v-if="activityRecommendations.length > 0" class="section">
             <view class="section__head">
-              <text class="section__title">活动推荐</text>
+              <text class="section__title">{{ t('messages.activityRecTitle') }}</text>
             </view>
             <view class="activity-list">
               <view
@@ -734,7 +739,7 @@ function onWarmAvatarError(person: RelationshipPersonView): void {
                   <text class="activity-rec-card__title">{{ act.title }}</text>
                   <text v-if="act.subtitle" class="activity-rec-card__subtitle">{{ act.subtitle }}</text>
                   <view v-if="act.targetUrl" class="activity-rec-card__cta">
-                    <text class="activity-rec-card__cta-text">查看详情</text>
+                    <text class="activity-rec-card__cta-text">{{ t('messages.viewDetail') }}</text>
                     <text class="activity-rec-card__cta-arrow">›</text>
                   </view>
                 </view>

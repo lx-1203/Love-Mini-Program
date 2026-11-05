@@ -1,5 +1,7 @@
 package com.campuslove.api.chat;
 
+import com.campuslove.api.common.TimeZones;
+
 import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Pageable;
@@ -21,23 +23,23 @@ public class MockPrivateMessageService implements PrivateMessageService {
             new ConversationView(1L, "conv-demo-1", self, 1001L, "林晓",
                 "/static/assets/images/avatars/avatar-1.jpg",
                 "今天天气不错，一起在学校里走走吗？",
-                java.time.LocalDateTime.now().minusMinutes(8).toString(),
+                java.time.LocalDateTime.now(TimeZones.BUSINESS).minusMinutes(8).toString(),
                 2, "工业设计大三 · 摄影", false, "active", "private", false,
-                new RelationshipInfo("active", 72, java.time.LocalDateTime.now().minusDays(2), 6,
+                new RelationshipInfo("active", 72, java.time.LocalDateTime.now(TimeZones.BUSINESS).minusDays(2), 6,
                     java.util.List.of("摄影", "旅行"), 3, null)),
             new ConversationView(2L, "conv-demo-2", self, 1002L, "周沐",
                 "/static/assets/images/avatars/avatar-2.jpg",
                 "晚上有空一起看电影吗？《星际穿越》",
-                java.time.LocalDateTime.now().minusHours(2).toString(),
+                java.time.LocalDateTime.now(TimeZones.BUSINESS).minusHours(2).toString(),
                 1, "计算机研二 · 电影", false, "active", "private", false,
-                new RelationshipInfo("active", 55, java.time.LocalDateTime.now().minusDays(1), 3,
+                new RelationshipInfo("active", 55, java.time.LocalDateTime.now(TimeZones.BUSINESS).minusDays(1), 3,
                     java.util.List.of("电影", "音乐"), 1, null)),
             new ConversationView(3L, "conv-demo-3", self, 1003L, "许诺",
                 "/static/assets/images/avatars/avatar-3.jpg",
                 "周末的组织确认啦，等你来~",
-                java.time.LocalDateTime.now().minusDays(1).toString(),
+                java.time.LocalDateTime.now(TimeZones.BUSINESS).minusDays(1).toString(),
                 0, "艺术学院 · 音乐", true, "active", "private", false,
-                new RelationshipInfo("active", 38, java.time.LocalDateTime.now().minusDays(3), 2,
+                new RelationshipInfo("active", 38, java.time.LocalDateTime.now(TimeZones.BUSINESS).minusDays(3), 2,
                     java.util.List.of("音乐"), 0, null))
         );
     }
@@ -56,7 +58,7 @@ public class MockPrivateMessageService implements PrivateMessageService {
                                    Integer durationSeconds, String quoteRef) {
         return new MessageView(
             1L, conversationId, senderId, content, kind, false,
-            java.time.LocalDateTime.now().toString(),
+            java.time.LocalDateTime.now(TimeZones.BUSINESS).toString(),
             null, durationSeconds
         );
     }
@@ -66,19 +68,19 @@ public class MockPrivateMessageService implements PrivateMessageService {
         long self = userId == null ? 1L : userId;
         if (conversationId != null && conversationId == 1L) {
             return List.of(
-                new MessageView(1L, 1L, self, "你好呀，看到你也喜欢摄影~", "text", true, java.time.LocalDateTime.now().minusMinutes(20).toString(), null, null),
-                new MessageView(2L, 1L, 1001L, "是呀，最近在学胶片。你也在北京吗？", "text", false, java.time.LocalDateTime.now().minusMinutes(12).toString(), null, null),
-                new MessageView(3L, 1L, self, "在的，北京大学。周末去逛展吗？", "text", true, java.time.LocalDateTime.now().minusMinutes(6).toString(), null, null)
+                new MessageView(1L, 1L, self, "你好呀，看到你也喜欢摄影~", "text", true, java.time.LocalDateTime.now(TimeZones.BUSINESS).minusMinutes(20).toString(), null, null),
+                new MessageView(2L, 1L, 1001L, "是呀，最近在学胶片。你也在北京吗？", "text", false, java.time.LocalDateTime.now(TimeZones.BUSINESS).minusMinutes(12).toString(), null, null),
+                new MessageView(3L, 1L, self, "在的，北京大学。周末去逛展吗？", "text", true, java.time.LocalDateTime.now(TimeZones.BUSINESS).minusMinutes(6).toString(), null, null)
             );
         }
         if (conversationId != null && conversationId == 2L) {
             return List.of(
-                new MessageView(4L, 2L, 1002L, "今晚《星际穿越》有重映，走起？", "text", false, java.time.LocalDateTime.now().minusHours(2).toString(), null, null)
+                new MessageView(4L, 2L, 1002L, "今晚《星际穿越》有重映，走起？", "text", false, java.time.LocalDateTime.now(TimeZones.BUSINESS).minusHours(2).toString(), null, null)
             );
         }
         if (conversationId != null && conversationId == 3L) {
             return List.of(
-                new MessageView(5L, 3L, 1003L, "周末音乐节，我这边有票~", "text", false, java.time.LocalDateTime.now().minusDays(1).toString(), null, null)
+                new MessageView(5L, 3L, 1003L, "周末音乐节，我这边有票~", "text", false, java.time.LocalDateTime.now(TimeZones.BUSINESS).minusDays(1).toString(), null, null)
             );
         }
         return List.of();

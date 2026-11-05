@@ -1513,10 +1513,10 @@ export const useVillageStore = defineStore("village", {
      * 可能导致内存泄漏或已卸载组件的状态被修改。
      * 调用时机：页面 onUnmounted / HMR 热更新 / 切换账号。
      *
-     * TODO(dispose-接线)：引用页面为 pages/village/index.vue（主列表页）及
-     * pages/village/detail.vue、pages/village/post.vue、pages/village/tag-posts.vue、
-     * pages/profile/index.vue。本子任务受目录权限限制无法修改
-     * pages/ 目录，需在后续任务中于页面 onUnload 调用 villageStore.dispose()。
+     * R15-2（2026-11-05 接线复核了结，原 TODO(dispose-接线) 划除）：消费页已接线——
+     * subpackages/village/village 列表/detail/tag-posts、pages/profile；post.vue 为
+     * 有意移除（MP-R2-POST-002：dispose 会 abort 跨页共享控制器）；原注释引用的
+     * pages/village/* 路径已迁 subpackages，本注释随 R15-2 同步刷新。
      */
     dispose() {
       // 清理 fetchPosts 请求控制器

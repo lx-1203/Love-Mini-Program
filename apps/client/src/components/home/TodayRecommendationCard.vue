@@ -29,7 +29,7 @@ const metaLine = computed(() => {
   const item = props.item;
   if (!item) return "";
   const parts: string[] = [];
-  if (item.age > 0) parts.push(`${item.age}岁`);
+  if (item.age > 0) parts.push(t("home.todayRec.ageSuffix", { n: item.age }));
   if (item.campusName) parts.push(item.campusName);
   if (item.gradeLabel) parts.push(item.gradeLabel);
   return parts.join(" · ");
@@ -40,14 +40,14 @@ const metaLine = computed(() => {
  * 原模板把分隔符硬写进各分支（`{{ distanceText || '' }}` + `<text v-if="certified"> · </text>`
  * + `<text v-if="constellation"> · {{ constellation }}</text>`），distanceText 为空而
  * constellation 非空时整行以「 · 」开头（理想图 首页.png 无首分隔点）。
- * 「已认证」是本组件既有中文字面量（本组件无 t()），不属本条判据，保持原样。
+ * 「已认证」随 audit-r15 批 3-B 一并迁 i18n（home.todayRec.certified）。
  */
 const distanceLine = computed(() => {
   const item = props.item;
   if (!item) return "";
   const parts: string[] = [];
   if (item.distanceText) parts.push(item.distanceText);
-  if (item.certified) parts.push("已认证");
+  if (item.certified) parts.push(t("home.todayRec.certified"));
   if (item.constellation) parts.push(item.constellation);
   return parts.join(" · ");
 });
@@ -78,7 +78,7 @@ const galleryPhotos = computed(() => (props.item?.photos ?? []).filter(Boolean).
   <view class="today-card">
     <view class="today-card__head">
       <view class="today-card__titles">
-        <text class="today-card__title">今日推荐</text>
+        <text class="today-card__title">{{ t('home.todayRec.title') }}</text>
       </view>
       <!-- MP-R2VIS-PAGES-HOME-INDEX-004：「↻」字形在部分字体栈渲染成彩色 emoji 且违反
            R11 附录 B「业务组件禁 emoji」——按本组件 today-card__btn--love 的「♥ 字符→图片资源」
@@ -86,7 +86,7 @@ const galleryPhotos = computed(() => (props.item?.photos ?? []).filter(Boolean).
            real 模式不引入新资产），图标与本行 22rpx 文字同字号、行色统一走 --c-text-tertiary。 -->
       <view class="today-card__rotate" @tap="$emit('rotate')">
         <image class="today-card__rotate-icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.REFRESH_SVG)" mode="aspectFit" alt="" />
-        <text class="today-card__rotate-text">换一位</text>
+        <text class="today-card__rotate-text">{{ t('home.todayRec.rotate') }}</text>
       </view>
     </view>
 
@@ -98,10 +98,10 @@ const galleryPhotos = computed(() => (props.item?.photos ?? []).filter(Boolean).
         <text class="today-card__retry-text">{{ t("home.sectionRetry") }}</text>
       </view>
     </view>
-    <view v-else-if="!item" class="today-card__empty">今天暂时没有合适的推荐，晚一点再来看看</view>
+    <view v-else-if="!item" class="today-card__empty">{{ t('home.todayRec.empty') }}</view>
     <view v-else class="today-card__body">
       <!-- 2026-09-02 R5/R8：整张 body 可点击 + hover 视觉反馈 + photo 懒加载降首屏卡顿 -->
-      <view class="today-card__photo-wrap press-feedback" hover-class="press-feedback--active" @tap="$emit('view')" role="button" :aria-label="item.name || '查看推荐人主页'">
+      <view class="today-card__photo-wrap press-feedback" hover-class="press-feedback--active" @tap="$emit('view')" role="button" :aria-label="item.name || t('home.todayRec.viewProfileAria')">
         <image
           class="today-card__photo"
           :src="photoFailed || !item.photoUrl ? resolveMediaUrl(IMAGE_PATHS.POST_PLACEHOLDER) : resolveMediaUrl(item.photoUrl)"
@@ -112,7 +112,7 @@ const galleryPhotos = computed(() => (props.item?.photos ?? []).filter(Boolean).
         />
         <view v-if="item.online" class="today-card__online">
           <text class="today-card__online-dot"></text>
-          <text class="today-card__online-text">在线</text>
+          <text class="today-card__online-text">{{ t('home.todayRec.online') }}</text>
         </view>
         <!-- R2b-L01-D13：合拍度改横向胶囊（理想图右下），首行白色 ♥ + 百分比、次行「合拍度」。
              心形走已核实落盘的 MATCH_HEART 白色图片资源（本组件「喜欢」按钮同族）。 -->
@@ -121,11 +121,11 @@ const galleryPhotos = computed(() => (props.item?.photos ?? []).filter(Boolean).
             <image class="today-card__match-heart" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.MATCH_HEART)" mode="aspectFit" alt="" />
             <text class="today-card__match-score">{{ item.matchScore }}%</text>
           </view>
-          <text class="today-card__match-label">合拍度</text>
+          <text class="today-card__match-label">{{ t('home.todayRec.matchLabel') }}</text>
         </view>
       </view>
 
-      <view class="today-card__info press-feedback" hover-class="press-feedback--active" @tap="$emit('view')" role="button" :aria-label="`查看${item.name}主页`">
+      <view class="today-card__info press-feedback" hover-class="press-feedback--active" @tap="$emit('view')" role="button" :aria-label="t('home.todayRec.viewProfileNamedAria', { name: item.name })">
         <text class="today-card__name">{{ item.name }}</text>
         <template v-if="hasProfileInfo">
           <text class="today-card__meta">{{ metaLine }}</text>
@@ -137,7 +137,7 @@ const galleryPhotos = computed(() => (props.item?.photos ?? []).filter(Boolean).
           <text class="today-card__distance">{{ distanceLine }}</text>
         </template>
         <!-- R2b-L01-D12：右栏资料字段全空时给明确空态，不再留一片空白让按钮悬空 -->
-        <text v-else class="today-card__empty-hint">TA 还没有填写资料</text>
+        <text v-else class="today-card__empty-hint">{{ t('home.todayRec.noProfileHint') }}</text>
         <!-- R15-L01-D14：理想图 首页.png 今日推荐右栏在距离行与按钮之间放 4 联缩略图照片墙 -->
         <view v-if="galleryPhotos.length" class="today-card__gallery">
           <image
@@ -151,12 +151,12 @@ const galleryPhotos = computed(() => (props.item?.photos ?? []).filter(Boolean).
           />
         </view>
         <view class="today-card__actions">
-          <view class="today-card__btn today-card__btn--outline" @tap.stop="$emit('view')">看看TA</view>
+          <view class="today-card__btn today-card__btn--outline" @tap.stop="$emit('view')">{{ t('home.todayRec.viewThem') }}</view>
           <view class="today-card__btn today-card__btn--love" :class="{ 'today-card__btn--loading': likeLoading }" @tap.stop="$emit('like')">
             <!-- MP-R1-PAGES-HOME-INDEX-005：♥ 字符在部分字体栈渲染为彩色 emoji 且违反
                  R11 附录 B「业务组件禁 emoji」硬约束，改用既有白色心形图片资源 -->
             <image class="today-card__btn-heart-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_MATCH.MATCH_HEART)" mode="aspectFit" alt="" />
-            <text>喜欢</text>
+            <text>{{ t('home.todayRec.like') }}</text>
           </view>
         </view>
       </view>

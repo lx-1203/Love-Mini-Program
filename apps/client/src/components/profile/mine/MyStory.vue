@@ -17,9 +17,13 @@
  * - 不使用直读 DEV 环境标志 / backdrop blur / grid 网格布局 / 无绑定 catch 语法
  */
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import type { UserProfilePost, UserProfileStory } from "../../../types/profile";
 import { IMAGE_PATHS } from "../../../config/images";
 import { openAppPath } from "../../../utils/navigation";
+
+// audit-r15 批 3-B：模板与占位数据的裸中文迁 i18n（profile.myStory.* 命名空间）
+const { t } = useI18n();
 
 const props = withDefaults(defineProps<{
   photos: string[];
@@ -50,9 +54,9 @@ const albumThumbs = computed(() => props.photos.slice(0, 3));
    （NotLoggedProfile.vue:43-47 STORIES，理想图来源），计数是空态真值 0，
    不引入任何后端不存在的字段。 */
 const STORY_CATEGORY_PLACEHOLDERS = [
-  { name: "生活日常", unit: "篇" },
-  { name: "旅行足迹", unit: "个地方" },
-  { name: "我的心愿", unit: "个愿望" },
+  { name: t("profile.myStory.categoryDaily"), unit: t("profile.myStory.unitDaily") },
+  { name: t("profile.myStory.categoryTravel"), unit: t("profile.myStory.unitTravel") },
+  { name: t("profile.myStory.categoryWish"), unit: t("profile.myStory.unitWish") },
 ] as const;
 
 /** 点击帖子卡片 → 帖子详情页 */
@@ -64,7 +68,7 @@ function openPost(postId: string): void {
 
 <template>
   <view class="my-story">
-    <text class="my-story__title">我的故事</text>
+    <text class="my-story__title">{{ t('profile.myStory.title') }}</text>
 
     <!-- ===== 我的故事卡（R16：真实「日常」内容 + 添加故事虚线卡常驻） ===== -->
     <view class="story-cards">
@@ -108,22 +112,22 @@ function openPost(postId: string): void {
             hover-class="press-feedback--active"
             hover-stay-time="120"
             role="button"
-            aria-label="添加故事"
+            :aria-label="t('profile.myStory.addStory')"
             @tap="emit('addStory')"
           >
             <image class="story-add__icon" :src="IMAGE_PATHS.ICONS_EMOJI.PLUS" mode="aspectFit" alt="" />
-            <text class="story-add__text">添加故事</text>
+            <text class="story-add__text">{{ t('profile.myStory.addStory') }}</text>
           </view>
         </view>
       </scroll-view>
-      <text class="story-cards__hint">这些内容仅互相喜欢或你关注的人可见</text>
+      <text class="story-cards__hint">{{ t('profile.myStory.visibilityHint') }}</text>
     </view>
 
     <!-- ===== 我的相册：横排 3 张缩略图 ===== -->
     <view class="album-block">
       <view class="story-section-head">
-        <text class="story-section-head__title">我的相册</text>
-        <text v-if="props.photos.length > 0" class="story-section-head__count">{{ props.photos.length }} 张</text>
+        <text class="story-section-head__title">{{ t('profile.myStory.albumTitle') }}</text>
+        <text v-if="props.photos.length > 0" class="story-section-head__count">{{ t('profile.myStory.photoCount', { n: props.photos.length }) }}</text>
       </view>
       <view v-if="albumThumbs.length > 0" class="album-thumbs">
         <view
@@ -133,22 +137,22 @@ function openPost(postId: string): void {
           hover-class="press-feedback--active"
           hover-stay-time="120"
           role="button"
-          :aria-label="'查看相册'"
+          :aria-label="t('profile.myStory.albumAria')"
           @tap="emit('tapAlbum', index)"
         >
           <image class="album-thumb__img" :src="photo" mode="aspectFill" lazy-load alt="" />
         </view>
       </view>
       <view v-else class="album-empty">
-        <text class="album-empty__text">还没有相册照片，去相册上传一张吧～</text>
+        <text class="album-empty__text">{{ t('profile.myStory.albumEmpty') }}</text>
       </view>
     </view>
 
     <!-- ===== 我的帖子：卡片列表 ===== -->
     <view class="posts-block">
       <view class="story-section-head">
-        <text class="story-section-head__title">我的帖子</text>
-        <text v-if="props.posts.length > 0" class="story-section-head__count">{{ props.posts.length }} 篇</text>
+        <text class="story-section-head__title">{{ t('profile.myStory.postsTitle') }}</text>
+        <text v-if="props.posts.length > 0" class="story-section-head__count">{{ t('profile.myStory.postCount', { n: props.posts.length }) }}</text>
       </view>
       <view v-if="props.posts.length > 0" class="post-list">
         <view
@@ -194,7 +198,7 @@ function openPost(postId: string): void {
         </view>
       </view>
       <view v-else class="posts-empty">
-        <text class="posts-empty__text">还没有发布帖子，去村口分享你的第一篇吧～</text>
+        <text class="posts-empty__text">{{ t('profile.myStory.postsEmpty') }}</text>
       </view>
     </view>
   </view>

@@ -20,6 +20,9 @@ import {
 } from "../../api/circle";
 import ErrorState from "../../components/ErrorState.vue";
 import { useRequestRace } from "../../composables/useRequestRace";
+import { useI18n } from "vue-i18n";
+
+const { t } = useI18n();
 
 // 圈层扁平列表（用于详情与下钻）
 const allLayers = ref<CircleLayer[]>([]);
@@ -78,7 +81,7 @@ async function loadAll() {
     allLayers.value = result;
   } catch (e: unknown) {
     if (isStale(seq)) return;
-    errorMsg.value = e instanceof Error ? e.message : "加载圈层失败";
+    errorMsg.value = e instanceof Error ? e.message : t("circleLayers.loadFailedAll");
   } finally {
     if (!isStale(seq)) loading.value = false;
   }
@@ -92,11 +95,11 @@ async function selectLayer(layer: CircleLayer) {
   try {
     const [desc, users] = await Promise.all([
       getLayerDescendants(layer.id).catch((e: unknown) => {
-        descendantsError.value = e instanceof Error ? e.message : "请求失败";
+        descendantsError.value = e instanceof Error ? e.message : t("circleLayers.requestFailed");
         return [];
       }),
       getUsersInCircle(layer.id).catch((e: unknown) => {
-        usersError.value = e instanceof Error ? e.message : "请求失败";
+        usersError.value = e instanceof Error ? e.message : t("circleLayers.requestFailed");
         return [];
       }),
     ]);
@@ -110,7 +113,7 @@ async function selectLayer(layer: CircleLayer) {
 }
 
 function badgeText(level: CircleLevel): string {
-  return level === 1 ? "L1 公司" : level === 2 ? "L2 区域" : "L3 学校";
+  return level === 1 ? t("circleLayers.badgeL1") : level === 2 ? t("circleLayers.badgeL2") : t("circleLayers.badgeL3");
 }
 
 function levelBadgeClass(level: CircleLevel): string {
@@ -121,80 +124,77 @@ function levelBadgeClass(level: CircleLevel): string {
 <template>
   <div class="circle-page">
     <div class="page-header">
-      <h1 class="page-title">RBAC 三级圈层</h1>
+      <h1 class="page-title">{{ t("circleLayers.pageTitle") }}</h1>
       <p class="page-subtitle">
-        校园恋爱管理后台 · L1 公司 / L2 区域 / L3 学校 · 管辖范围前缀匹配
+        {{ t("circleLayers.pageSubtitle") }}
       </p>
     </div>
 
     <!-- 三级管理圈层总览（design Frame 08：cobalt 由深到浅三道色阶 + 管辖内容可见性表） -->
     <div class="grade-card">
       <div class="grade-card__header">
-        <h2 class="grade-card__title">管理员等级 · 三级管理圈层</h2>
-        <span class="grade-card__note">三级管理圈层（上层可下钻查看下层全部内容）</span>
+        <h2 class="grade-card__title">{{ t("circleLayers.gradeTitle") }}</h2>
+        <span class="grade-card__note">{{ t("circleLayers.gradeNote") }}</span>
       </div>
       <div class="grade-bars">
         <div class="grade-bar grade-bar--l1">
-          <span class="grade-bar__name">公司管理级</span>
-          <span class="grade-bar__desc">全平台最高权限 · 可下钻查看所有区域与学校</span>
+          <span class="grade-bar__name">{{ t("circleLayers.levelL1Name") }}</span>
+          <span class="grade-bar__desc">{{ t("circleLayers.levelL1Desc") }}</span>
         </div>
         <div class="grade-bar grade-bar--l2">
-          <span class="grade-bar__name">区域管理</span>
-          <span class="grade-bar__desc">如华北 / 华东 / 华南 · 可见本区域全部学校、用户与内容</span>
+          <span class="grade-bar__name">{{ t("circleLayers.levelL2Name") }}</span>
+          <span class="grade-bar__desc">{{ t("circleLayers.levelL2Desc") }}</span>
         </div>
         <div class="grade-bar grade-bar--l3">
-          <span class="grade-bar__name">学校管理</span>
-          <span class="grade-bar__desc">各大高校各派一名管理员 · 仅可见本校用户与内容</span>
+          <span class="grade-bar__name">{{ t("circleLayers.levelL3Name") }}</span>
+          <span class="grade-bar__desc">{{ t("circleLayers.levelL3Desc") }}</span>
         </div>
       </div>
-      <div class="grade-table-header">管辖内容可见性（举报时可直接调阅用户产生内容）</div>
+      <div class="grade-table-header">{{ t("circleLayers.visibilityHeader") }}</div>
       <p class="grade-legend">
-        下表逐格标注真实实现状态：<b>已生效</b>＝后端确实按该口径过滤，越权返回 403 或 0 行；
-        <b>设计口径</b>＝规格里规划、当前尚未接入该轴的过滤，不要当作既成事实对外承诺。
+        {{ t("circleLayers.legendIntro") }}<b>{{ t("circleLayers.noteLive") }}</b>{{ t("circleLayers.legendLiveDesc") }}
+        <b>{{ t("circleLayers.noteDesign") }}</b>{{ t("circleLayers.legendDesignDesc") }}
       </p>
       <table class="grade-table">
         <thead>
           <tr>
-            <th>层级</th>
-            <th>可见用户范围</th>
-            <th>聊天内容</th>
-            <th>上传图片</th>
-            <th>帖子</th>
-            <th>临时聊天</th>
+            <th>{{ t("circleLayers.colLevel") }}</th>
+            <th>{{ t("circleLayers.colVisibleUsers") }}</th>
+            <th>{{ t("evidence.typeChat") }}</th>
+            <th>{{ t("evidence.typeImage") }}</th>
+            <th>{{ t("evidence.typePost") }}</th>
+            <th>{{ t("evidence.typeTempChat") }}</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td class="grade-table__level grade-table__level--l1">公司管理级</td>
-            <td>全平台全部用户</td>
-            <td>✓ 全量<br><span class="cell-note cell-note--live">已生效</span></td>
-            <td>✓ 全量<br><span class="cell-note cell-note--partial">按角色分级</span></td>
-            <td>✓ 全量<br><span class="cell-note cell-note--live">已生效</span></td>
-            <td>—<br><span class="cell-note cell-note--todo">无接口</span></td>
+            <td class="grade-table__level grade-table__level--l1">{{ t("circleLayers.levelL1Name") }}</td>
+            <td>{{ t("circleLayers.scopeAllUsers") }}</td>
+            <td>{{ t("circleLayers.cellFull") }}<br><span class="cell-note cell-note--live">{{ t("circleLayers.noteLive") }}</span></td>
+            <td>{{ t("circleLayers.cellFull") }}<br><span class="cell-note cell-note--partial">{{ t("circleLayers.notePartial") }}</span></td>
+            <td>{{ t("circleLayers.cellFull") }}<br><span class="cell-note cell-note--live">{{ t("circleLayers.noteLive") }}</span></td>
+            <td>—<br><span class="cell-note cell-note--todo">{{ t("circleLayers.noteTodo") }}</span></td>
           </tr>
           <tr>
-            <td class="grade-table__level grade-table__level--l2">区域管理</td>
-            <td>本区域用户</td>
-            <td>✓ 本区域<br><span class="cell-note cell-note--design">设计口径</span></td>
-            <td>✓ 本区域<br><span class="cell-note cell-note--design">设计口径</span></td>
-            <td>✓ 本区域<br><span class="cell-note cell-note--live">已生效</span></td>
-            <td>—<br><span class="cell-note cell-note--todo">无接口</span></td>
+            <td class="grade-table__level grade-table__level--l2">{{ t("circleLayers.levelL2Name") }}</td>
+            <td>{{ t("circleLayers.scopeRegionUsers") }}</td>
+            <td>{{ t("circleLayers.cellRegion") }}<br><span class="cell-note cell-note--design">{{ t("circleLayers.noteDesign") }}</span></td>
+            <td>{{ t("circleLayers.cellRegion") }}<br><span class="cell-note cell-note--design">{{ t("circleLayers.noteDesign") }}</span></td>
+            <td>{{ t("circleLayers.cellRegion") }}<br><span class="cell-note cell-note--live">{{ t("circleLayers.noteLive") }}</span></td>
+            <td>—<br><span class="cell-note cell-note--todo">{{ t("circleLayers.noteTodo") }}</span></td>
           </tr>
           <tr>
-            <td class="grade-table__level grade-table__level--l3">学校管理</td>
-            <td>本校用户</td>
-            <td>✓ 本校<br><span class="cell-note cell-note--partial">按校区非圈层</span></td>
-            <td>✓ 本校<br><span class="cell-note cell-note--design">设计口径</span></td>
-            <td>✓ 本校<br><span class="cell-note cell-note--live">已生效</span></td>
-            <td>—<br><span class="cell-note cell-note--todo">无接口</span></td>
+            <td class="grade-table__level grade-table__level--l3">{{ t("circleLayers.levelL3Name") }}</td>
+            <td>{{ t("circleLayers.scopeSchoolUsers") }}</td>
+            <td>{{ t("circleLayers.cellSchool") }}<br><span class="cell-note cell-note--partial">{{ t("circleLayers.noteCampus") }}</span></td>
+            <td>{{ t("circleLayers.cellSchool") }}<br><span class="cell-note cell-note--design">{{ t("circleLayers.noteDesign") }}</span></td>
+            <td>{{ t("circleLayers.cellSchool") }}<br><span class="cell-note cell-note--live">{{ t("circleLayers.noteLive") }}</span></td>
+            <td>—<br><span class="cell-note cell-note--todo">{{ t("circleLayers.noteTodo") }}</span></td>
           </tr>
         </tbody>
       </table>
       <p class="grade-footnote">
-        逐格口径：帖子列表与用户列表已按 owner_circle_path / circle_path 前缀过滤（越权 403 或 0 行）；
-        私信按「双方校区」过滤，尚未改成圈层前缀；上传图片按角色分内容图与认证材料两级
-        （认证材料仅公司管理级可读），但不做圈层过滤；临时聊天后端没有对应查询接口。
-        层级可见性：公司级 &gt; 区域级 &gt; 学校级。
+        {{ t("circleLayers.gradeFootnote") }}
       </p>
     </div>
 
@@ -203,23 +203,23 @@ function levelBadgeClass(level: CircleLevel): string {
         class="filter-btn"
         :class="{ 'filter-btn--active': levelFilter === 0 }"
         @click="levelFilter = 0"
-      >全部</button>
+      >{{ t("common.all") }}</button>
       <button
         class="filter-btn"
         :class="{ 'filter-btn--active': levelFilter === 1 }"
         @click="levelFilter = 1"
-      >L1 公司</button>
+      >{{ t("circleLayers.badgeL1") }}</button>
       <button
         class="filter-btn"
         :class="{ 'filter-btn--active': levelFilter === 2 }"
         @click="levelFilter = 2"
-      >L2 区域</button>
+      >{{ t("circleLayers.badgeL2") }}</button>
       <button
         class="filter-btn"
         :class="{ 'filter-btn--active': levelFilter === 3 }"
         @click="levelFilter = 3"
-      >L3 学校</button>
-      <button class="refresh-btn" @click="loadAll">刷新</button>
+      >{{ t("circleLayers.badgeL3") }}</button>
+      <button class="refresh-btn" @click="loadAll">{{ t("common.refresh") }}</button>
     </div>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="loadAll" />
@@ -227,9 +227,9 @@ function levelBadgeClass(level: CircleLevel): string {
     <div v-else class="circle-layout">
       <!-- 左侧：圈层结构树 -->
       <div class="circle-tree-panel">
-        <h2 class="panel-title">圈层结构图</h2>
-        <div v-if="loading" class="loading-tip">加载中...</div>
-        <div v-else-if="filteredTree.length === 0" class="empty-tip">暂无圈层数据</div>
+        <h2 class="panel-title">{{ t("circleLayers.treePanelTitle") }}</h2>
+        <div v-if="loading" class="loading-tip">{{ t("common.loading") }}</div>
+        <div v-else-if="filteredTree.length === 0" class="empty-tip">{{ t("circleLayers.emptyTree") }}</div>
         <div v-else class="tree-list">
           <div
             v-for="node in filteredTree"
@@ -288,8 +288,8 @@ function levelBadgeClass(level: CircleLevel): string {
 
       <!-- 右侧：圈层详情 -->
       <div class="circle-detail-panel">
-        <h2 class="panel-title">圈层详情</h2>
-        <div v-if="!selectedLayer" class="empty-tip">← 请选择左侧圈层查看详情</div>
+        <h2 class="panel-title">{{ t("circleLayers.detailPanelTitle") }}</h2>
+        <div v-if="!selectedLayer" class="empty-tip">{{ t("circleLayers.emptySelectHint") }}</div>
         <div v-else class="detail-content">
           <div class="detail-header">
             <div>
@@ -297,12 +297,12 @@ function levelBadgeClass(level: CircleLevel): string {
                 {{ badgeText(selectedLayer.level) }}
               </span>
               <h3 class="detail-name">{{ selectedLayer.name }}</h3>
-              <p class="detail-path">圈层路径：<code>{{ selectedLayer.circlePath }}</code></p>
-              <p class="detail-color">色阶：<span :style="{ color: selectedLayer.color, fontWeight: 600 }">{{ selectedLayer.color }}</span></p>
+              <p class="detail-path">{{ t("circleLayers.pathLabel") }}<code>{{ selectedLayer.circlePath }}</code></p>
+              <p class="detail-color">{{ t("circleLayers.colorLabel") }}<span :style="{ color: selectedLayer.color, fontWeight: 600 }">{{ selectedLayer.color }}</span></p>
               <p class="detail-status">
-                状态：
+                {{ t("circleLayers.statusLabel") }}
                 <span :class="['status-tag', selectedLayer.status === 'active' ? 'status-tag--ok' : 'status-tag--off']">
-                  {{ selectedLayer.status === 'active' ? '启用' : '停用' }}
+                  {{ selectedLayer.status === 'active' ? t("circleLayers.statusEnabled") : t("circleLayers.statusDisabled") }}
                 </span>
               </p>
             </div>
@@ -310,17 +310,17 @@ function levelBadgeClass(level: CircleLevel): string {
 
           <!-- 下属圈层 -->
           <section class="detail-section">
-            <h4>下属圈层（Frame 04）</h4>
-            <div v-if="detailLoading" class="loading-tip">加载中...</div>
-            <div v-else-if="descendantsError" class="error-tip">下属圈层加载失败：{{ descendantsError }}</div>
-            <div v-else-if="descendants.length === 0" class="empty-tip">无下属圈层</div>
+            <h4>{{ t("circleLayers.descendantsTitle") }}</h4>
+            <div v-if="detailLoading" class="loading-tip">{{ t("common.loading") }}</div>
+            <div v-else-if="descendantsError" class="error-tip">{{ t("circleLayers.descendantsLoadFailedPrefix") }}{{ descendantsError }}</div>
+            <div v-else-if="descendants.length === 0" class="empty-tip">{{ t("circleLayers.descendantsEmpty") }}</div>
             <table v-else class="data-table">
               <thead>
                 <tr>
-                  <th>级别</th>
-                  <th>圈层</th>
-                  <th>路径</th>
-                  <th>状态</th>
+                  <th>{{ t("circleLayers.colRank") }}</th>
+                  <th>{{ t("circleLayers.colCircle") }}</th>
+                  <th>{{ t("circleLayers.colPath") }}</th>
+                  <th>{{ t("common.status") }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -330,7 +330,7 @@ function levelBadgeClass(level: CircleLevel): string {
                   <td><code>{{ d.circlePath }}</code></td>
                   <td>
                     <span :class="['status-tag', d.status === 'active' ? 'status-tag--ok' : 'status-tag--off']">
-                      {{ d.status === 'active' ? '启用' : '停用' }}
+                      {{ d.status === 'active' ? t("circleLayers.statusEnabled") : t("circleLayers.statusDisabled") }}
                     </span>
                   </td>
                 </tr>
@@ -340,18 +340,18 @@ function levelBadgeClass(level: CircleLevel): string {
 
           <!-- 圈层用户 -->
           <section class="detail-section">
-            <h4>管辖用户（Frame 05）</h4>
-            <div v-if="detailLoading" class="loading-tip">加载中...</div>
-            <div v-else-if="usersError" class="error-tip">管辖用户加载失败：{{ usersError }}</div>
-            <div v-else-if="usersInCircle.length === 0" class="empty-tip">无管辖用户</div>
+            <h4>{{ t("circleLayers.usersTitle") }}</h4>
+            <div v-if="detailLoading" class="loading-tip">{{ t("common.loading") }}</div>
+            <div v-else-if="usersError" class="error-tip">{{ t("circleLayers.usersLoadFailedPrefix") }}{{ usersError }}</div>
+            <div v-else-if="usersInCircle.length === 0" class="empty-tip">{{ t("circleLayers.usersEmpty") }}</div>
             <table v-else class="data-table">
               <thead>
                 <tr>
                   <th>ID</th>
-                  <th>昵称</th>
-                  <th>角色</th>
-                  <th>学校</th>
-                  <th>圈层路径</th>
+                  <th>{{ t("circleLayers.colNickname") }}</th>
+                  <th>{{ t("circleLayers.colRole") }}</th>
+                  <th>{{ t("circleLayers.colSchool") }}</th>
+                  <th>{{ t("circleLayers.colCirclePath") }}</th>
                 </tr>
               </thead>
               <tbody>

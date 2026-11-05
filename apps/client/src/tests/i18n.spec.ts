@@ -477,87 +477,6 @@ describe("Task 3.1 - 设计 Token 完整性回归", () => {
  * 3. 法律文本 i18n key 存在性（SubTask 3.3.5）
  * 4. 核心模块 locale 取值与中文兜底验证（英文版不上线后无「切英文出英文」一档）
  */
-describe("Task 3.3.2 - Admin 视图 i18n key 存在性", () => {
-  /**
-   * 递归收集对象的所有叶子 key（点号分隔路径）。
-   */
-  function collectKeys(obj: Record<string, unknown>, prefix = ""): string[] {
-    const keys: string[] = [];
-    for (const key of Object.keys(obj)) {
-      const path = prefix ? `${prefix}.${key}` : key;
-      const value = obj[key];
-      if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-        keys.push(...collectKeys(value as Record<string, unknown>, path));
-      } else {
-        keys.push(path);
-      }
-    }
-    return keys;
-  }
-
-  const zhKeys = new Set(
-    collectKeys(zhCN as unknown as Record<string, unknown>),
-  );
-
-  /**
-   * Admin 后台 8+ 视图清单（SubTask 3.3.2 要求至少 8 个视图）。
-   * 每个视图对应 admin.<view> 命名空间。
-   * 2026-10-29：英文版不上线，en-US 侧键位存在性检查随资源一并移除，只验 zh-CN。
-   */
-  const adminViews = [
-    "admin.login",
-    "admin.layout",
-    "admin.dashboard",
-    "admin.users",
-    "admin.posts",
-    "admin.feedback",
-    "admin.reports",
-    "admin.auditLogs",
-    "admin.notifyConfig",
-    "admin.sensitiveWords",
-    "admin.contentAudit",
-  ];
-
-  it("应至少覆盖 8 个 Admin 视图命名空间", () => {
-    expect(adminViews.length).toBeGreaterThanOrEqual(8);
-  });
-
-  it.each(adminViews)(
-    "zh-CN 应包含 %s.* 命名空间",
-    (namespace) => {
-      // 验证该命名空间下至少有一个 key
-      const hasKey = [...zhKeys].some((k) => k.startsWith(`${namespace}.`));
-      expect(hasKey).toBe(true);
-    },
-  );
-
-  it("zh-CN 的 Admin 视图词条合计应不低于 40 条", () => {
-    const total = adminViews.reduce(
-      (sum, namespace) =>
-        sum + [...zhKeys].filter((k) => k.startsWith(`${namespace}.`)).length,
-      0,
-    );
-    // 正向计数下限（英文版下线后唯一语言资源的体量守卫，防空集合恒真）
-    expect(total).toBeGreaterThanOrEqual(40);
-  });
-
-  it("admin.login 在 zh-CN 下应返回中文标题", () => {
-    i18n.global.locale.value = "zh-CN";
-    expect(t("admin.login.title")).toBe("管理员登录");
-  });
-
-  it("admin.login 在非中文 locale 下应回退到 zh-CN 文案", () => {
-    i18n.global.locale.value = "en-US";
-    // en-US 资源已删除，vue-i18n 按 fallbackLocale 取中文，不得露出 raw key
-    expect(t("admin.login.title")).toBe("管理员登录");
-    i18n.global.locale.value = "zh-CN";
-  });
-
-  it("admin.common.logout 在 zh-CN 下应返回'退出登录'", () => {
-    i18n.global.locale.value = "zh-CN";
-    expect(t("admin.common.logout")).toBe("退出登录");
-  });
-});
 
 describe("Task 3.3.3 - 14 个 Store 错误回退消息 i18n key 存在性", () => {
   function collectKeys(obj: Record<string, unknown>, prefix = ""): string[] {
@@ -716,30 +635,17 @@ describe("Task 3.3.5 - 法律文本 i18n key 存在性", () => {
 
 describe("Task 3.3 - 核心模块 locale 取值与中文兜底验证", () => {
   /**
-   * 验证 Task 3.3 新增的模块（admin / storeErrors / legal / success）在
+   * 验证 Task 3.3 新增的模块（storeErrors / legal / success）在
    * locale 取值时的响应式行为。
    *
    * 2026-10-29 英文版不上线：en-US 资源已删除，这些模块不再存在「切英文出英文」
    * 一档。此处按真实行为改写为——历史遗留的非中文 locale 值必须落回 zh-CN 文案，
    * 既不能是空串，也不能露出 raw key。
+   * R15-3：admin 命名空间已从 client 语言包删除（admin 为独立 app 有自己的
+   * 2053 键 locale，client 侧 287 键属旧共享架构死键），admin 用例随之移除。
    */
   beforeEach(() => {
     i18n.global.locale.value = "zh-CN";
-  });
-
-  it("admin 模块：zh-CN 取中文，非中文 locale 回退 zh-CN", () => {
-    i18n.global.locale.value = "zh-CN";
-    const zhTitle = t("admin.login.title");
-    expect(zhTitle).toBe("管理员登录");
-
-    i18n.global.locale.value = "en-US";
-    const fallbackTitle = t("admin.login.title");
-    expect(fallbackTitle).toBe("管理员登录");
-    expect(fallbackTitle).not.toBe("admin.login.title");
-
-    // 切回 zh-CN
-    i18n.global.locale.value = "zh-CN";
-    expect(t("admin.login.title")).toBe("管理员登录");
   });
 
   it("storeErrors 模块：非中文 locale 回退 zh-CN 文案", () => {

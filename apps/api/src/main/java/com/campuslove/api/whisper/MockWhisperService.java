@@ -1,5 +1,7 @@
 package com.campuslove.api.whisper;
 
+import com.campuslove.api.common.TimeZones;
+
 import com.campuslove.api.chat.NotificationService;
 import com.campuslove.api.whisper.WhisperViews.WhisperMessageView;
 import com.campuslove.api.whisper.WhisperViews.WhisperSendRequest;
@@ -38,7 +40,7 @@ public class MockWhisperService implements WhisperService {
             request.content(),
             "SENT",
             200L,
-            LocalDateTime.now().toString(),
+            LocalDateTime.now(TimeZones.BUSINESS).toString(),
             null,
             null,
             null
@@ -98,7 +100,7 @@ public class MockWhisperService implements WhisperService {
         }
         WhisperMessageView updated = new WhisperMessageView(
             v.id(), v.senderId(), v.receiverId(), v.content(), "READ",
-            v.priceCents(), v.createdAt(), LocalDateTime.now().toString(),
+            v.priceCents(), v.createdAt(), LocalDateTime.now(TimeZones.BUSINESS).toString(),
             v.senderNickname(), v.senderAvatar()
         );
         store.put(whisperId, updated);

@@ -1,5 +1,7 @@
 package com.campuslove.api.tasks;
 
+import com.campuslove.api.common.TimeZones;
+
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.wallet.WalletService;
 import com.campuslove.api.wallet.WalletTransactionLog;
@@ -45,7 +47,7 @@ public class MockTaskService implements TaskService {
     @Override
     public List<TaskView> listTasks(Long userId) {
         Set<String> claimed = claimedMap.getOrDefault(userId, Set.of());
-        String todayKey = TASK_DAILY_CHECKIN + "#" + LocalDate.now();
+        String todayKey = TASK_DAILY_CHECKIN + "#" + LocalDate.now(TimeZones.BUSINESS);
         boolean dailyClaimed = claimed.contains(todayKey);
         boolean profileClaimed = claimed.contains(TASK_COMPLETE_PROFILE);
         boolean postClaimed = claimed.contains(TASK_FIRST_POST);
@@ -82,7 +84,7 @@ public class MockTaskService implements TaskService {
         int reward = switch (taskCode) {
             case TASK_DAILY_CHECKIN -> {
                 // 每日任务：按当日维度去重
-                String todayKey = TASK_DAILY_CHECKIN + "#" + LocalDate.now();
+                String todayKey = TASK_DAILY_CHECKIN + "#" + LocalDate.now(TimeZones.BUSINESS);
                 if (!claimed.add(todayKey)) {
                     throw new IllegalArgumentException(ErrorMessages.TASK_ALREADY_CLAIMED);
                 }

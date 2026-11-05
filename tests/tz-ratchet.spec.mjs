@@ -24,16 +24,11 @@ const BARE_NOW = /Local(?:DateTime|Date)\.now\(\)/gu;
 
 /**
  * 残留基线（相对 apps/api/src/main/java，值为该文件允许的出现次数上限）。
- * 只在「mock 档演示数据」上豁免：这些服务只在 mock profile 下生效，不参与真实用户数据。
+ * R15-2（2026-11-05）基线清零：原 6 个 Mock 演示服务共 19 处无时区 now() 已全部机械改为
+ * now(TimeZones.BUSINESS)（mock 演示数据同样值得业务时区一致性，且改动零行为风险）。
+ * 空基线 = 全仓 0 豁免：任何文件（含新文件）出现无时区 now() 即红，是本门最严形态。
  */
-const BASELINE = {
-  "com/campuslove/api/chat/MockPrivateMessageService.java": 12,
-  "com/campuslove/api/tasks/MockTaskService.java": 2,
-  "com/campuslove/api/whisper/MockWhisperService.java": 2,
-  "com/campuslove/api/block/MockBlockService.java": 1,
-  "com/campuslove/api/consulting/MockConsultingService.java": 1,
-  "com/campuslove/api/invite/MockInviteService.java": 1,
-};
+const BASELINE = {};
 
 /** 注释行不算（Javadoc 里会写「通常为 LocalDateTime.now()」这种说明）。 */
 function bareNowCount(line) {
@@ -76,10 +71,9 @@ for (const rel of javaFiles) {
 // —— 自测：判点必须能红，且注释不得被误计 ——
 assert.equal(bareNowCount("  LocalDateTime now = LocalDateTime.now();"), 1, "解析失效：真实代码行未被计入");
 assert.equal(bareNowCount(" * @param cutoff 通常为 {@code LocalDateTime.now()}"), 0, "注释行被误计");
-assert.equal(
-  [...Object.values(BASELINE)].reduce((a, b) => a + b, 0) > 0, true,
-  "基线为空对象会让本门变成永不失败的空门",
-);
+// R15-2：原「基线非空」断言（sum>0）随基线清零移除——本门是逐文件白名单制，
+// 空基线 = 全仓 0 豁免（比非空基线更严，任何文件出现无时区 now() 即红），
+// 并非「永不失败的空门」；门活性由上面两条解析自测与下方正控（businessUsages>=300）保证。
 
 // —— 逐文件判上限（新增文件同样受约束：不在基线里就只能是 0） ——
 const overruns = [];

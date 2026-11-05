@@ -978,7 +978,7 @@ function handleSuggestedActionTap() {
 
 /** 顶部「···」菜单是否展开 */
 const navMenuVisible = ref(false);
-/** 本次会话内已拉黑的对方（本会话内隐藏操作入口；TODO(backend): POST /users/{id}/block） */
+/** 本次会话内已拉黑的对方（本会话内隐藏操作入口；后端 POST /users/{id}/block 已上线，R15-2 注释刷新） */
 const blockedPeerIds = ref<Set<string>>(new Set());
 
 /** 当前会话是否免打扰（顶部菜单切换文案用） */

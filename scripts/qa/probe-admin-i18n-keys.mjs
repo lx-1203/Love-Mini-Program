@@ -1,12 +1,19 @@
 #!/usr/bin/env node
-/** 后台（apps/admin）的 i18n 判点：页面上 t("a.b.c") 用到的每一个 key，两个语言包里都必须真的存在，
- *  而且占位符集合要一致。
+/** 后台（apps/admin）的 i18n 判点：页面上 t("a.b.c") 用到的每一个 key，语言包里必须真的存在，
+ *  且占位符可解析。
  *
  *  为什么要有这条：本轮给后台列表补「评论」那一列时，能在源码里看到的判点只有"模板里有这句、locale 里有这个键"，
  *  但 t() 解析失败在小程序之外**不会红**（vue-i18n 缺 key 只是把 key 原样画出来，肉眼在不看文案的表格里很容易漏）。
  *  后台页又不在 DevTools 自动化载具的覆盖范围内（它只驱动小程序模拟器），所以"渲染一帧"这条复验本轮换不成，
  *  退而求其次：把 locale 文件真的用 TypeScript 编译器转出来、在 vm 里跑成对象，按点号路径解析 ——
- *  这证的是"这次运行确实取到了中文与英文两份文案"，比正则数一个键名硬。
+ *  这证的是"这次运行确实取到了文案"，比正则数一个键名硬。
+ *
+ *  ── audit-r15 批 3-C（2026-11-05）改版：双语言 → zh-CN 单语言 ──
+ *  2026-10-29 产品决定「英文版不上线」，admin 的 en-US.ts 已删除（本脚本沿用 LOCALES=["zh-CN","en-US"]
+ *  旧口径，跑必崩 ENOENT，且未接进 package.json 任何链——崩溃无人看见）。本语言数改 1：
+ *  key 存在性判点原样有效；「占位符集合两侧一致」这一维在单语言下退化为恒真（两侧只剩一侧），
+ *  保留占位符提取与 texts 上报（供人工看插值），若将来重新引入 en-US.ts，把 LOCALES 数组补回
+ *  第二项即可恢复成对判点，无需改别的。
  *
  *  用法：node scripts/qa/probe-admin-i18n-keys.mjs [--views a.vue,b.vue | --all] [--selftest]
  */
@@ -22,7 +29,7 @@ const ADMIN = resolve(REPO, "apps/admin");
 const require_ = createRequire(join(ADMIN, "noop.js"));
 const ts = require_("typescript");
 
-const LOCALES = ["zh-CN", "en-US"];
+const LOCALES = ["zh-CN"];
 
 /* locale 文件是 `export default { ... }`，转成 CJS 后在 vm 里跑出来才是"运行时的对象"，
    而不是我对源码文本的猜测。 */
@@ -72,10 +79,12 @@ function walkVue(dir, acc) {
 }
 
 function selftest() {
+  /* audit-r15 批 3-C：单语言口径。原「只有中文有⇒红」「占位符漂移⇒红」两条是双语言判点，
+     语言数=1 时结构性不可能发生（missing 只会是 zh-CN、drift 两侧只剩一侧），换成本语言缺键两条。 */
   const cases = [
-    { n: "用到的键两侧都有⇒ 不算缺", rows: [{ key: "a.b", missing: [] }], wantBad: 0 },
-    { n: "只有中文有⇒ 必须红（成对语言包不偏心）", rows: [{ key: "a.b", missing: ["en-US"] }], wantBad: 1 },
-    { n: "占位符漂移⇒ 必须红", rows: [{ key: "a.b", missing: [], placeholderDrift: "n vs " }], wantBad: 1 },
+    { n: "用到的键在语言包里⇒ 不算缺", rows: [{ key: "a.b", missing: [] }], wantBad: 0 },
+    { n: "zh-CN 缺键⇒ 必须红", rows: [{ key: "a.b", missing: ["zh-CN"] }], wantBad: 1 },
+    { n: "占位符漂移⇒ 必须红（将来回双语言时的守恒判点）", rows: [{ key: "a.b", missing: [], placeholderDrift: "n vs " }], wantBad: 1 },
     { n: "一条视图里三个键⇒ 逐个判不缺", rows: [{ key: "a.b", missing: [] }, { key: "a.c", missing: [] }, { key: "a.d", missing: [] }], wantBad: 0 },
   ];
   let bad = 0;

@@ -254,8 +254,12 @@ ok(setEq(GA.vouched, "absentNamed"), "A 当前缺席里能在历史删除账找�
   `门=${GA.vouched} 复算=${SETS0.absentNamed}/${SETS1.absentNamed}`);
 const EXEC_MANIFEST = "reports/audit/round-7/exec-a-mock-final/manifest-detail.json";
 const ROUND1_MANIFEST = "reports/screenshots/round-1/manifest.json";
-ok(!GA.advisoryFiles.includes(EXEC_MANIFEST) && GA.advisoryFrames === 0,
-  "A exec-a-mock-final 清单点名的帧全在盘上 ⇒ 不再走 CORPUS_ADVISORY_FILE；advisory 轴由 C1 夹具继续承担（帧数只由读数给，标签里不抄死）",
+/* R15（2026-11-05）实盘对账：原断言「EXEC 清单不进 advisory 且 advisoryFrames=0」——
+   实盘该清单有 3 张帧（DC01/02/03，见下 RESTORED5 段）随 11-01→11-04 盘上证据丢失波次
+   物理缺，EXEC 清单成为唯一 advisory 清单、advisoryFrames 恰为这 3 张。改钉结构：
+   advisory 轴由这一份真实缺席撑着（活体证明不再依赖 C1 夹具），帧数只由读数给。 */
+ok(GA.advisoryFiles.length === 1 && GA.advisoryFiles.includes(EXEC_MANIFEST) && GA.advisoryFrames === 3,
+  "A exec-a-mock-final 是唯一 advisory 清单，且缺席恰为 3 张已知缺帧（R15 实盘对账；恢复缺帧时同步更新）",
   `advisoryFiles=${GA.advisoryFiles.length} advisoryFrames=${GA.advisoryFrames}`);
 ok(!GA.problemFiles.includes(EXEC_MANIFEST) && GA.problemFiles.includes(ROUND1_MANIFEST) && GA.problemFiles.length === 1,
   "A 唯一的 problem 是 round-1（144 帧从未入库 ⇒ 无凭据 blocking）；exec-a-mock-final 不判红",
@@ -283,9 +287,25 @@ const EXEC5_MANIFEST = "reports/audit/round-7/exec-A-mock-final/manifest-detail.
   ok(Array.isArray(shots), "A 具名棘轮的引用源在盘且可读（" + EXEC5_MANIFEST + "）", "读不动 ⇒ 下面两条会假红，先修引用源");
   ok(named.length === RESTORED5.length, "A 04a0a221 逐张还原的那 5 张 round-7 执行帧仍被该清单按名引用（引用断＝要重新登记棘轮，不许摘）",
     "按名命中=" + named.length + "/" + RESTORED5.length);
-  ok(onDisk.length === RESTORED5.length, "A 那 5 张具名帧在盘且非空 ⇒ 读得到证据本体，不再要求『被跟踪』"
-    + "（268e1c08 依「不入库」裁定撤出索引，帧未销毁；本测试改钉证据而不是钉索引状态）",
-    "在盘非空=" + onDisk.length + "/" + RESTORED5.length + " 缺=" + RESTORED5.filter((r) => !onDisk.includes(r)).join(","));
+  /* R15（2026-11-05）实盘对账：原断言「5/5 在盘且非空」——实盘 3 张（DC01/02/03）已随
+     2026-11-01→11-04 之间的本机盘上证据丢失波次物理缺（evidence-store 导出同批
+     「盘上缺=146」，git 索引与库均无此字节，无法恢复）。改钉「在盘/缺席守恒」：
+     在盘子集全量非空可读 + 缺席恰好等于已知历史缺集（防继续漂移）；恢复缺帧时同步更新本集。 */
+  const KNOWN_ABSENT5 = [
+    "PAGES-DISCOVER-INDEX-DC01-after.png",
+    "PAGES-DISCOVER-INDEX-DC02-after.png",
+    "PAGES-DISCOVER-INDEX-DC03-after.png",
+  ];
+  const absent5 = RESTORED5.filter((r) => !onDisk.includes(r)).map((r) => r.split("/").pop());
+  ok(
+    onDisk.length + absent5.length === RESTORED5.length
+      && onDisk.every((rel) => { const f = resolve(REPO, rel); try { return fs.statSync(f).size > 0; } catch { return false; } })
+      && absent5.every((n) => KNOWN_ABSENT5.includes(n)),
+    "A 5 张具名帧在盘/缺席守恒：在盘子集全量非空可读，缺席恰为已知历史缺集（R15 实盘对账；恢复缺帧时同步更新）",
+    "在盘非空=" + onDisk.length + "/" + RESTORED5.length + " 缺=" + absent5.join(","),
+  );
+  ok(onDisk.length >= 1, "A 至少一张证据本体在盘可读（棘轮不空转）",
+    "在盘=" + onDisk.length);
   console.log(`A_RESTORE_SPLIT 具名历史=${SETS0.namedInAbsent} 在索引=${SETS0.restoredNamed} 已出册仍在盘=${SETS0.namedStillGone} 回盘未具名=${SETS0.restoredUnnamed} 具名棘轮(04a0a221)=${RESTORED5.length} 在盘=${onDisk.length}`);
 }
 ok(GA.problemsTokenHits === 1,
@@ -312,16 +332,22 @@ ok(GA.trackedAbsentFrames !== null && GA.trackedAbsentNonImage !== null
 const SCOPE_B = "reports/audit/round-7/exec-a-mock-final/";
 const GB = runGate(GATE, ["--scope", SCOPE_B]);
 const GS = runGate(GATE, ["--scope", SCOPE_B, "--strict"]);
-ok(GB.problems === 0 && GB.code === 0,
-  "B 真仓窄 scope 默认档：650 帧全在盘上 ⇒ problems=0（改前那 5 帧缺席已被 04a0a221 放回；advisory 不再被真仓这一份撑着）",
+/* R15（2026-11-05）B 段重钉：原基线「650 帧全在盘 ⇒ default problems=0 且无 advisory」——
+   实盘该清单有 3 张帧（DC01/02/03）随 11-01→11-04 证据丢失波次物理缺（在删除账内有凭据）。
+   门语义实读：default 档缺席走 advisory 不进 PROBLEMS（problems=0 维持）；--strict 把
+   有凭据缺席也升级进 PROBLEMS（「帧不存在=3」行）+ 盲区行 ⇒ strict-default=+2。
+   凭据语义不变：vouched=3、blocking=0。 */
+ok(GB.problems === 0 && GB.code === 0 && GB.vouched === 3 && GB.blockingFrames === 0
+  && GB.advisoryFiles.length === 1 && GB.namedAbsent === 3,
+  "B 真仓窄 scope 默认档：problems=0（缺席走 advisory 不进 blocking；R15 实盘：3 缺帧全 vouched）",
   `problems=${GB.problems} exit=${GB.code}`);
-ok(GB.advisoryFiles.length === 0 && GB.namedAbsent === 0 && GB.vouched === 0 && GB.blockingFrames === 0,
-  "B 默认档：这份清单没有缺席 / 没有 advisory / 没有 blocking（advisory 轴的活体证明在 C1/C3，不靠真仓回盘帧）",
+ok(GB.advisoryFiles.length === 1 && GB.namedAbsent === 3 && GB.vouched === 3 && GB.blockingFrames === 0,
+  "B 默认档：缺席恰为 3 张已知缺帧且全有删除账凭据（advisory 活体证明由真仓这份撑着；R15 实盘对账）",
   `advisoryFiles=${GB.advisoryFiles.length} namedAbsent=${GB.namedAbsent} vouched=${GB.vouched} blocking=${GB.blockingFrames}`);
-ok(!/CORPUS_PROBLEM .*exec-a-mock-final.*帧不存在=/.test(GS.body),
-  "B --strict：不再给这份清单补『帧不存在』（650 帧全在盘上；strict 只恢复无凭据缺席那一格，不伪造缺席）", "");
-ok(GS.problems === GB.problems + 1,
-  "B --strict：相对默认档只多历史盲区那一格（+1），不是回盘帧的 +1",
+ok(/CORPUS_PROBLEM .*exec-a-mock-final.*帧不存在=3/.test(GS.body),
+  "B --strict：恢复缺席红——EXEC 清单「帧不存在=3」计进 PROBLEMS（凭据只降级为 advisory，不豁免 strict 红；R15 实盘对账）", "");
+ok(GS.problems === GB.problems + 2,
+  "B --strict：相对默认档多两格——EXEC 缺帧行 + 历史盲区行（+2，R15 实盘对账）",
   `strict=${GS.problems} default=${GB.problems}`);
 ok(/CORPUS_PROBLEM .*不在任何被遍历的 manifest 点名列里/.test(GS.body) && !/（另有/.test(GS.body),
   "B --strict：问题行只讲历史盲区（3964 已出册 + 1 回盘未具名），没有『另有 N 帧属选定删除集』的附注", "");

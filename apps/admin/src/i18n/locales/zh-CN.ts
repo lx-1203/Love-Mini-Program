@@ -449,6 +449,16 @@ export default {
     publishConfirm: "确定要上架活动「{title}」吗？",
     unpublishConfirm: "确定要下架活动「{title}」吗？",
     deleteConfirmMessage: "确定要删除活动「{title}」吗？其报名记录将一并清除，此操作不可恢复。",
+    /* audit-r15 批 3-C：活动分类标签迁入（原 api/activities.ts ACTIVITY_CATEGORY_LABELS
+       裸中文数据表；一词一键，表格列/筛选/表单三处共用）。 */
+    categorySocial: "联谊",
+    categorySports: "运动",
+    categoryGame: "桌游",
+    categoryStudy: "学习",
+    categoryVolunteer: "志愿",
+    categoryFood: "美食",
+    categoryMusic: "音乐",
+    categoryOther: "其他",
   },
   enrollments: {
     exportSuccess: "报名数据已导出",
@@ -821,6 +831,23 @@ export default {
     verificationIdcard: "实名认证",
     verified: "已认证",
     unverified: "未认证",
+    /* audit-r15 批 3-C：详情抽屉 educationLabel / relationshipLabel 映射与
+       编辑表单 option 的裸中文迁入（一词一键：映射与 option 同文共用一键）。 */
+    eduHighschool: "高中",
+    eduAssociate: "大专",
+    eduBachelor: "本科",
+    eduMaster: "硕士",
+    eduDoctor: "博士",
+    eduOther: "其他",
+    relSingle: "单身",
+    relDating: "恋爱中",
+    relEngaged: "已订婚",
+    relMarried: "已婚",
+    relNever: "未婚",
+    relSecret: "保密",
+    relMarriedBefore: "曾婚",
+    relDivorced: "离异",
+    relWidowed: "丧偶",
   },
 
   /* ========== 在线用户管理文案（eladmin「在线用户」对齐） ========== */
@@ -1931,6 +1958,9 @@ export default {
     audienceSummaryAll: "全站",
     audienceSummaryCampus: "校区：{value}",
     audienceSummaryCircle: "圈层：{value}",
+    /* audit-r15 批 3-C：消息流卡片列头与报名人数单位迁入 */
+    colRecommend: "推荐理由 / 人数",
+    enrollmentCountUnit: "{n} 人",
   },
   notifyConfig: {
     title: "通知配置",
@@ -2281,6 +2311,114 @@ export default {
   forbidden: {
     title: "无权限访问",
     description: "抱歉，您没有访问此页面的权限，请联系管理员或返回首页",
+  },
+
+  /* ========== 圈层管理文案（views/system/CircleLayers.vue，audit-r15 批 3-C 迁入） ========== */
+  circleLayers: {
+    pageTitle: "RBAC 三级圈层",
+    pageSubtitle: "校园恋爱管理后台 · L1 公司 / L2 区域 / L3 学校 · 管辖范围前缀匹配",
+    /* 三级管理圈层总览卡（design Frame 08） */
+    gradeTitle: "管理员等级 · 三级管理圈层",
+    gradeNote: "三级管理圈层（上层可下钻查看下层全部内容）",
+    levelL1Name: "公司管理级",
+    levelL1Desc: "全平台最高权限 · 可下钻查看所有区域与学校",
+    levelL2Name: "区域管理",
+    levelL2Desc: "如华北 / 华东 / 华南 · 可见本区域全部学校、用户与内容",
+    levelL3Name: "学校管理",
+    levelL3Desc: "各大高校各派一名管理员 · 仅可见本校用户与内容",
+    visibilityHeader: "管辖内容可见性（举报时可直接调阅用户产生内容）",
+    legendIntro: "下表逐格标注真实实现状态：",
+    noteLive: "已生效",
+    legendLiveDesc: "＝后端确实按该口径过滤，越权返回 403 或 0 行；",
+    noteDesign: "设计口径",
+    legendDesignDesc: "＝规格里规划、当前尚未接入该轴的过滤，不要当作既成事实对外承诺。",
+    colLevel: "层级",
+    colVisibleUsers: "可见用户范围",
+    scopeAllUsers: "全平台全部用户",
+    cellFull: "✓ 全量",
+    notePartial: "按角色分级",
+    noteTodo: "无接口",
+    scopeRegionUsers: "本区域用户",
+    cellRegion: "✓ 本区域",
+    scopeSchoolUsers: "本校用户",
+    cellSchool: "✓ 本校",
+    noteCampus: "按校区非圈层",
+    gradeFootnote:
+      "逐格口径：帖子列表与用户列表已按 owner_circle_path / circle_path 前缀过滤（越权 403 或 0 行）；" +
+      "私信按「双方校区」过滤，尚未改成圈层前缀；上传图片按角色分内容图与认证材料两级" +
+      "（认证材料仅公司管理级可读），但不做圈层过滤；临时聊天后端没有对应查询接口。" +
+      "层级可见性：公司级 > 区域级 > 学校级。",
+    /* 树节点徽标（脚本 badgeText）与筛选按钮同文共用 */
+    badgeL1: "L1 公司",
+    badgeL2: "L2 区域",
+    badgeL3: "L3 学校",
+    treePanelTitle: "圈层结构图",
+    detailPanelTitle: "圈层详情",
+    emptyTree: "暂无圈层数据",
+    emptySelectHint: "← 请选择左侧圈层查看详情",
+    pathLabel: "圈层路径：",
+    colorLabel: "色阶：",
+    statusLabel: "状态：",
+    statusEnabled: "启用",
+    statusDisabled: "停用",
+    descendantsTitle: "下属圈层（Frame 04）",
+    descendantsLoadFailedPrefix: "下属圈层加载失败：",
+    descendantsEmpty: "无下属圈层",
+    colRank: "级别",
+    colCircle: "圈层",
+    colPath: "路径",
+    usersTitle: "管辖用户（Frame 05）",
+    usersLoadFailedPrefix: "管辖用户加载失败：",
+    usersEmpty: "无管辖用户",
+    colNickname: "昵称",
+    colRole: "角色",
+    colSchool: "学校",
+    colCirclePath: "圈层路径",
+    loadFailedAll: "加载圈层失败",
+    requestFailed: "请求失败",
+  },
+
+  /* ========== 咨询课程文案（views/business/Consulting.vue + api/consulting.ts，audit-r15 批 3-C 迁入） ========== */
+  consulting: {
+    /* 页面标题「咨询课程」同文复用 layout.navConsulting，不另立键 */
+    loading: "加载中…",
+    subtitle: "编辑课程正文/讲师/排序并上下架。支付未就绪，价格与报名默认隐藏；发布后小程序咨询页展示正文。",
+    statusPublished: "已发布",
+    statusDraft: "草稿",
+    updatedAtPrefix: "更新：",
+    titleLabel: "标题",
+    categoryLabel: "分类",
+    lecturerLabel: "讲师",
+    sortOrderLabel: "排序",
+    priceLabel: "价格",
+    priceVisibleLabel: "展示价格",
+    signupEnabledLabel: "开放报名",
+    descLabel: "简介",
+    contentLabel: "正文",
+    publishAction: "发布",
+    offlineAction: "下线",
+    createFormTitle: "新增课程",
+    createAction: "新增",
+    loadFailed: "加载咨询课程失败",
+    saved: "已保存",
+    saveFailed: "保存失败",
+    publishFailed: "发布失败",
+    offlined: "已下线",
+    offlineFailed: "下线失败",
+    created: "已新增（默认下架，编辑后发布）",
+    createFailed: "新增失败",
+    /* api/consulting.ts unwrap 空响应兜底 */
+    createFailedEmpty: "新增课程失败：响应为空",
+    saveFailedEmpty: "保存课程失败：响应为空",
+    publishFailedEmpty: "发布课程失败：响应为空",
+    offlineFailedEmpty: "下线课程失败：响应为空",
+  },
+
+  /* ========== 法律文本文案（api/legal.ts，audit-r15 批 3-C 迁入；LegalTexts.vue 视图层迁移属后续批次） ========== */
+  legal: {
+    saveFailedEmpty: "保存法律文本失败：响应为空",
+    publishFailedEmpty: "发布法律文本失败：响应为空",
+    offlineFailedEmpty: "下线法律文本失败：响应为空",
   },
 
   /* ========== 错误信息文案（与后端 MessageSource 对齐） ========== */

@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <ul>
  *   <li>消息发送拦截：任一方拉黑另一方时返回业务错误码 BLOCKED（403）</li>
  *   <li>会话列表过滤：过滤存在拉黑关系的会话</li>
- *   <li>推荐候选排除：排除拉黑双方（匹配引擎 TODO 见 RealMatchService/MatchEngine）</li>
+ *   <li>推荐候选排除：排除拉黑双方（匹配引擎已接线拉黑排除，R14-4；本注释 R15-2 刷新）</li>
  * </ul>
  */
 @RestController

@@ -204,8 +204,10 @@ try {
   finish("FAIL", `登录表单没走通（${m}）⇒ 详情页/列表页那一堆断言全部没跑，本门这条红是产品侧的（找不到输入框或按钮）`);
 }
 await page.waitForFunction(() => !location.pathname.startsWith("/login"), { timeout: 15000 });
-const tokenLen = await page.evaluate(() => (localStorage.getItem("admin_v2_token") || "").length);
-report("登录后取得 JWT 并离开登录页", tokenLen > 20, `token ${tokenLen} chars, path=${new URL(page.url()).pathname}`);
+// R15-2：JWT 已迁 HttpOnly Cookie（R14-5），前端不再持有 admin_v2_token——
+// 登录成功的可观测凭证改为校验会话标记 admin_v2_user（前端可读的持久化用户信息）
+const markerLen = await page.evaluate(() => (localStorage.getItem("admin_v2_user") || "").length);
+report("登录后取得会话并离开登录页", markerLen > 20, `session marker ${markerLen} chars, path=${new URL(page.url()).pathname}`);
 await settle(800);
 
 // ===== 2. 详情页：配图必须是真像素 =====

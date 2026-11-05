@@ -1,5 +1,7 @@
 package com.campuslove.api.consulting;
 
+import com.campuslove.api.common.TimeZones;
+
 import com.campuslove.api.common.ResourceNotFoundException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -77,7 +79,7 @@ public class MockConsultingService implements ConsultingService {
                             course.title(),
                             course.price(),
                             course.coverUrl(),
-                            java.time.LocalDateTime.now().toString());
+                            java.time.LocalDateTime.now(TimeZones.BUSINESS).toString());
                     signups.add(created);
                     return created;
                 });

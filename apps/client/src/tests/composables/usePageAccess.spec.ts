@@ -15,7 +15,7 @@ import { reactive, ref } from "vue";
  *    防并发），认证类错误 reLaunch 登录页，网络/业务错误不跳转；
  * 5. 锁定页资料未完善：触发 unlockGuideStore.show（Phase 4 任务 20，不再静默重定向）；
  * 6. session-guard（真实 resolveSessionAccess）：按 requires* 决定重定向，
- *    requiresAuth 且本地无 token 时补「登录已过期」toast。
+ *    requiresAuth 重定向且本地持 token（token 失效）时补「登录已过期」toast（R15-2 对齐）。
  *
  * 载具说明：onShow 用收集器替换（与 pages/wallet-security-guest-gate.spec.ts 同款），
  * 守卫逻辑在测试里真实执行；session-guard 用真实实现（纯函数 + ROUTES 常量），
@@ -285,23 +285,25 @@ describe("usePageAccess：session-guard 重定向（真实 resolveSessionAccess�
     expect(nav.replaceAppPath).toHaveBeenCalledWith(SUBPACKAGE_ROUTES.SETUP_PROGRESS.CAMPUS);
   });
 
-  it("本地持 token 但会话判定未登录（userSession.loggedIn=false）→ 重定向登录页，不弹过期 toast", async () => {
+  it("本地持 token 但会话判定未登录（token 失效）→ 重定向登录页并补「登录已过期」toast（R15-2 对齐）", async () => {
     sessionApi.userSessionRef!.value = { ...fullSession(), loggedIn: false };
     flags.token = "tok-1";
     usePageAccess(req({ requiresAuth: true }));
     await runOnShow();
     expect(nav.replaceAppPath).toHaveBeenCalledTimes(1);
     expect(nav.replaceAppPath).toHaveBeenCalledWith(ROUTES.LOGIN);
-    expect(uniStub.showToast).not.toHaveBeenCalled();
+    // R15-2：原条件 !getToken() 恒为假（死代码），toast 从未触发；对齐后「重定向登录页
+    // 且持 token = token 失效」正是「登录已过期」的正确语义
+    expect(uniStub.showToast).toHaveBeenCalledTimes(1);
+    expect(uniStub.showToast).toHaveBeenCalledWith({ title: t("apiErrors.unauthorized"), icon: "none" });
   });
 
-  it("requiresAuth 达到重定向且本地无 token → 补「登录已过期」toast（token 丢失但会话仍在的现场）", async () => {
+  it("requiresProfile 未完善且本地无 token → 重定向资料页，不弹「登录已过期」（非重定向登录页，R15-2 对齐）", async () => {
     sessionApi.userSessionRef!.value = { ...fullSession(), profileCompleted: false };
     flags.token = "";
     usePageAccess(req({ requiresAuth: true, requiresProfile: true }));
     await runOnShow();
-    expect(uniStub.showToast).toHaveBeenCalledTimes(1);
-    expect(uniStub.showToast).toHaveBeenCalledWith({ title: t("apiErrors.unauthorized"), icon: "none" });
+    expect(uniStub.showToast).not.toHaveBeenCalled();
     expect(nav.replaceAppPath).toHaveBeenCalledWith(SUBPACKAGE_ROUTES.SETUP_PROGRESS.PROFILE);
   });
 

@@ -190,11 +190,13 @@ describe("A11Y-R · 图片可访问名：role=img + aria-label（mp-weixin 忽�
     }
   });
 
-  it("用户自己的消息头像按 ChatBubble.vue:189 既有写法标成「我」", () => {
+  it("用户自己的消息头像标成「我」（R15-3 批 3-B i18n 对齐：aria 经 chat.official.selfAria 词条，中文值不变）", () => {
     const src = readComponentSource("subpackages/chat/official-chat/index.vue");
     const selfTag = imageTag(src, ":src=\"userAvatar\"");
     expect(selfTag).toMatch(/role="img"/);
-    expect(selfTag).toMatch(/aria-label="我"/);
+    // 批 3-B：裸 aria「我」迁 t("chat.official.selfAria")——词条值钉住原中文语义
+    expect(selfTag).toMatch(/:aria-label="t\('chat\.official\.selfAria'\)"/);
+    expect(i18n.global.t("chat.official.selfAria")).toBe("我");
   });
 
   it("转发条目头像位于 role=button（ARIA 叶子）内 ⇒ 只标装饰空 alt，不编造名字", () => {

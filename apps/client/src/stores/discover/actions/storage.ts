@@ -191,10 +191,9 @@ export function resetForLogout(this: DiscoverStoreThis): void {
  * - HMR 热更新时（由 Vite 自动调用 dispose）
  * - 应用退出 / 切换账号时
  *
- * TODO(dispose-接线)：引用页面为 pages/discover/index.vue（主使用页）及
- * pages/discover/history.vue、pages/home/index.vue、pages/profile/index.vue。
- * 本子任务受目录权限限制无法修改 pages/ 目录，需在后续任务中于页面
- * onUnload/onUnmounted 调用 discoverStore.dispose()。
+ * R15-2（2026-11-05 接线复核了结，原 TODO(dispose-接线) 划除）：全部消费页已接线——
+ * pages/discover（主使用页）、subpackages/discover-extra/discover/history、
+ * pages/profile、pages/home（R15-2 补接）。「目录权限受限」的历史约束已不成立。
  */
 export function dispose(this: DiscoverStoreThis): void {
   // infra R2-00095: 清理前先强制 flush 一次防抖存储，避免页面销毁时最后操作丢失

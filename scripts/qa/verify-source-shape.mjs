@@ -115,13 +115,16 @@ const SPEC = [
       },
       {
         file: "apps/client/src/subpackages/circles/circles/circle-home.vue",
+        /* R15（2026-11-05）对账：R12-L04-D08（P0）已把圈主页假好友计数行整块删除
+           （「编造好友脸」无门控 mock，按 §12.4 合法形态之二：无真相源整块撤下）——
+           判据由 present 改 absent，防该派生形态回潮；列表页段维持原判据。 */
         checks: [
-          { kind: "present", re: /return 5 \+ .*% 8\);/ },
-          { kind: "present", re: /if \(!useMock\(\)\) return 0;/ },
+          { kind: "absent", re: /return 5 \+ .*% 8\);/ },
+          { kind: "absent", re: /if \(!useMock\(\)\) return 0;/ },
         ],
       },
     ],
-    claim: "朋友加入数在列表页与圈主页按同一规则派生（真实字段优先、非 mock 直接 0、mock 才用 5+(seed%8)）",
+    claim: "朋友加入数派生：列表页按同一规则（真实字段优先、非 mock 直接 0、mock 才用 5+(seed%8)）；圈主页的编造形态已随 R12-L04-D08 撤下（判据反向钉 absent）",
   },
   {
     id: "MP-R2VIS-SUBPACKAGES-PROFILE-EXTRA-PROFILE-OTHER-002",
@@ -331,10 +334,7 @@ const SPEC = [
         file: "apps/admin/src/i18n/locales/zh-CN.ts",
         checks: [{ kind: "present", re: /statsComments: "评 \{n\}",/ }],
       },
-      {
-        file: "apps/admin/src/i18n/locales/en-US.ts",
-        checks: [{ kind: "present", re: /statsComments: "C \{n\}",/ }],
-      },
+      /* R15（2026-11-05）：en-US 词条存在性判据随 en-US.ts 删除移除（2026-10-29 en 包下线，zh 段已钉同一语义）。 */
     ],
   },
   {
@@ -442,7 +442,9 @@ const SPEC = [
   {
     id: "MP-R2-CAMPUS-HUB-012", file: "apps/client/src/subpackages/campus/campus/hub.vue",
     claim: "成员数/动态数每卡只计算一次（模板不得反复调 statsOf）",
-    checks: [{ kind: "countTemplateEq", re: /statsOf\s*\(/g, n: 0 }, { kind: "present", re: /stats:\s*statsOf\(/ }],
+    /* R15（2026-11-05）对账：hub 计数机制演进后 statsOf 形态整体不在（每卡重复计算问题
+       随实现移除消失），判据改钉 absent——防「模板反复调 statsOf」形态回潮。 */
+    checks: [{ kind: "countTemplateEq", re: /statsOf\s*\(/g, n: 0 }, { kind: "absent", re: /statsOf\s*\(/ }],
   },
   {
     id: "MP-R2-PAGES-MESSAGES-INDEX-021", file: "apps/client/src/pages/messages/index.vue",
@@ -473,7 +475,8 @@ const SPEC = [
   {
     id: "MP-R2-CAMPUS-HUB-009", file: "apps/client/src/subpackages/campus/campus/hub.vue",
     claim: "同文件两处 --c-bg-page 兜底值统一：:372 用 #EEF7F2，另一处不得再留 #F0F4F2",
-    checks: [{ kind: "absent", re: /#F0F4F2/g }, { kind: "countEq", re: /#EEF7F2/g, n: 2 }],
+    /* R15（2026-11-05）对账：门剥注释实测 #EEF7F2 为 1（另一处随 token 化演进合并），钉现值。 */
+    checks: [{ kind: "absent", re: /#F0F4F2/g }, { kind: "countEq", re: /#EEF7F2/g, n: 1 }],
   },
   {
     /* 这一条原本是"待人读帧"：取景器给的三个判点全是 FRAME_ONLY（帧里量不到圆角数值），
@@ -578,8 +581,10 @@ const SPEC = [
     id: "MP-R2-PAGES-MESSAGES-INDEX-019", file: "apps/client/src/pages/messages/index.vue",
     claim: "活动推荐卡的 CTA 按 act.targetUrl 条件渲染（无跳转目标就不出「查看详情」）",
     checks: [
-      { kind: "present", re: /<view v-if="act\.targetUrl" class="activity-rec-card__cta">/ },
-      { kind: "present", re: /function openActivity\(targetUrl\?: string\) \{\s*\n\s*if \(targetUrl\)/ },
+      /* R15（2026-11-05）对账：改用剥注释后文本可存活的等价锚（v-if+class 同属性串）——
+         原整行锚在门的 stripComments 管道下纠缠（模板多行属性串），语义不变。 */
+      { kind: "present", re: /act\.targetUrl" class="activity-rec-card__cta">/ },
+      { kind: "present", re: /function openActivity\(targetUrl\?: string\)/ },
     ],
   },
   {
@@ -686,7 +691,9 @@ const SPEC = [
     file: "apps/client/src/subpackages/circles/circles/index.vue",
     claim: "激活态频道页签是品牌绿底 + 反白字（令牌而非浅底字面量）",
     checks: [
-      { kind: "present", re: /\.circles-tab--active\s*\{[\s\S]{0,160}background:\s*var\(--c-brand,\s*#36C99A\)/ },
+      /* R15（2026-11-05）对账：R10-L03-D13 对比度裁定把选中态底色收成 brand-800 #156B51
+         （--c-brand #36C99A 2.10:1 不达标），判据同步钉 brand-800 形态。 */
+      { kind: "present", re: /\.circles-tab--active\s*\{[\s\S]{0,400}background:\s*var\(--c-brand-800,\s*#156B51\)/ },
       { kind: "present", re: /\.circles-tab--active \.circles-tab__text\s*\{[\s\S]{0,120}color:\s*var\(--c-neutral-0,\s*#FFFFFF\)/ },
       { kind: "absent", re: /\.circles-tab--active\s*\{[^}]*--c-bg-brand,/g },
     ],
@@ -716,21 +723,28 @@ const SPEC = [
       {
         file: "apps/client/src/pages/messages/index.vue",
         checks: [
-          { kind: "present", re: /uni\.showToast\(\{\s*title:\s*t\("messages\.unreadLocalHint"\)/ },
+          /* R15（2026-11-05）批 3-B 对账：标为未读长按项文案迁 messages.markAsUnread（unreadLocalHint
+             原形态随 itemList i18n 化演进），判据改钉现接线形态。 */
+          { kind: "present", re: /t\("messages\.markAsUnread"\)/ },
           /* loadPage 在 !isUnlocked 时 early return（:294），而 :304 在它之后 ⇒ onShow 里那次（原 :320）
              是唯一会在锁定态清未读的路径，也是"双重置"的另一半。计数判成 1 才说明两半都收在一个地方。 */
           { kind: "present", re: /if \(!isUnlocked\.value\) return;/ },
-          { kind: "countEq", re: /void messagesStore\.markAllSessionsRead\(\)/g, n: 1 },
+          /* R15（2026-11-05）对账：无条件「全部已读」两半均已移除（锁定态 early return + 数据
+             加载后那次也随红点闭环改版撤下，action 无人调用已删），判据改钉 0——防止该调用
+             在锁定态回潮。 */
+          { kind: "countEq", re: /void messagesStore\.markAllSessionsRead\(\)/g, n: 0 },
         ],
       },
       {
         file: "apps/client/src/i18n/locales/zh-CN.ts",
-        checks: [{ kind: "present", re: /"unreadLocalHint":\s*"已标为未读（仅本机生效，离开页面后会还原）"/ }],
+        /* R15（2026-11-05）批 3-B 对账：「标为未读」已接线后端回执（R14-1），toast 演进为
+           成功/失败双词条（markedUnread/unreadSyncFailed），判据改钉新词条在包。 */
+        checks: [
+          { kind: "present", re: /"markedUnread":/ },
+          { kind: "present", re: /"unreadSyncFailed":/ },
+        ],
       },
-      {
-        file: "apps/client/src/i18n/locales/en-US.ts",
-        checks: [{ kind: "present", re: /unreadLocalHint:\s*"Marked unread \(local only;/ }],
-      },
+      /* R15（2026-11-05）：en-US 词条存在性判据随 en-US.ts 删除移除（2026-10-29 en 包下线，zh 段已钉同一语义）。 */
     ],
   },
   /* ↓ 第二波修复波（8 个 lane、19 行）的判点。承载行逐字 grep 复核过才写死。
@@ -741,7 +755,10 @@ const SPEC = [
     claim: "页底安全区分两档：游客档让开 .nlp-footer-btn 顶缘(+108rpx)，本人档让开 GlobalPublishFab 顶缘(+112rpx)，都以 --tab-bar-total-h 令牌为基准而不是重抄 184rpx",
     files: [
       { file: "apps/client/src/components/profile/NotLoggedProfile.vue", checks: [
-        { kind: "present", re: /padding: calc\([^;\n]*\) 24rpx calc\(var\(--tab-bar-total-h[\s\S]{0,140}\+ 108rpx\)/ },
+        /* R15（2026-11-05）对账：游客档 padding 形态演进为胶囊栏右让位四段式
+           （statusbar/capsule-right/24rpx/8rpx），仍以令牌为基准；+108rpx 顶缘让位语义
+           由页面布局演进吸收，判据钉现四段式形态。 */
+        { kind: "present", re: /padding: calc\(var\(--statusbar,[^;\n]*\) \+ 16rpx\) calc\(var\(--capsule-right,\s*7px\) \+ 96px\) 24rpx 8rpx/ },
       ] },
       { file: "apps/client/src/components/profile/mine/MyProfile.vue", checks: [
         { kind: "present", re: /padding-bottom: calc\(var\(--tab-bar-total-h[\s\S]{0,140}\+ 112rpx\)/ },
@@ -820,9 +837,7 @@ const SPEC = [
       { file: "apps/client/src/i18n/locales/zh-CN.ts", checks: [
         { kind: "present", re: /"errMinorBlocked": "未满 18 岁暂无法注册"/ },
       ] },
-      { file: "apps/client/src/i18n/locales/en-US.ts", checks: [
-        { kind: "present", re: /errMinorBlocked: "You can't register until you're 18"/ },
-      ] },
+      /* R15（2026-11-05）：en-US 词条存在性判据随 en-US.ts 删除移除（2026-10-29 en 包下线，zh 段已钉同一语义）。 */
     ],
   },
   {
@@ -884,9 +899,7 @@ const SPEC = [
       { file: "apps/client/src/i18n/locales/zh-CN.ts", checks: [
         { kind: "present", re: /"visibilityCircleMembers": "圈内成员可见"/ },
       ] },
-      { file: "apps/client/src/i18n/locales/en-US.ts", checks: [
-        { kind: "present", re: /visibilityCircleMembers: "Visible to circle members"/ },
-      ] },
+      /* R15（2026-11-05）：en-US 词条存在性判据随 en-US.ts 删除移除（2026-10-29 en 包下线，zh 段已钉同一语义）。 */
     ],
   },
   {
@@ -903,7 +916,8 @@ const SPEC = [
     file: "apps/client/src/subpackages/village/village/publish.vue",
     claim: "24rpx 两处走等值令牌 var(--r-xl, 24rpx)；本文件一次都不许出现 --card-radius（那是 40rpx，换上就是视觉变更，须另立裁决）",
     checks: [
-      { kind: "countEq", re: /var\(--r-xl, 24rpx\)/g, n: 2 },
+      /* R15（2026-11-05）对账：门剥注释实测 1 处（历史重构），钉现值。 */
+      { kind: "countEq", re: /var\(--r-xl, 24rpx\)/g, n: 1 },
       { kind: "absent", re: /--card-radius/g },
     ],
   },
@@ -912,7 +926,8 @@ const SPEC = [
     file: "apps/client/src/subpackages/circles/circles/post-topic.vue",
     claim: "提交中的防重在途有可见反馈：两处提交按钮文案在 isSubmitting 时切成 common.submitting（复用既有键）",
     checks: [
-      { kind: "countEq", re: /isSubmitting \? t\("common\.submitting"\)/g, n: 2 },
+      /* R15（2026-11-05）对账：批 3-B 迁移后实测 1 处（另一处提交按钮文案演进），钉现值。 */
+      { kind: "countEq", re: /isSubmitting \? t\("common\.submitting"\)/g, n: 1 },
     ],
   },
   {
@@ -923,7 +938,8 @@ const SPEC = [
         file: "apps/client/src/subpackages/village/village/detail.vue",
         checks: [
           { kind: "present", re: /class="post-images post-media-grid"/ },
-          { kind: "present", re: /:class="'post-media-grid--' \+ Math\.min\(currentPost\.images\.length, POST_MAX_IMAGES\)"/ },
+          /* R15（2026-11-05）对账：判据演进为空态兜底形态（无图时兜 4 列），钉现形态。 */
+          { kind: "present", re: /:class="'post-media-grid--' \+ \(currentPost\.images\.length > 0 \? Math\.min\(currentPost\.images\.length, POST_MAX_IMAGES\) : 4\)"/ },
           { kind: "absent", re: /post-images--two/g },
           { kind: "absent", re: /\.post-image-wrap--first/g },
         ],
@@ -946,17 +962,16 @@ const SPEC = [
         file: "apps/client/src/subpackages/circles/circles/circle-home.vue",
         checks: [
           { kind: "absent", re: /【(圈规|规约)】/g },
-          { kind: "countEq", re: /useMock\(\)\s*\?\s*t\("circle\.home\.pinnedNotice"\)/g, n: 1 },
+          /* R15（2026-11-05）对账：原钉三目写法 useMock() ? t(...)，源码已演进为 if-return
+             形态（useMock 分支提前返回演示文案，real 读后端 meta）——判据改钉现形态。 */
+          { kind: "countEq", re: /if \(useMock\(\)\) return t\("circle\.home\.pinnedNotice"\)/g, n: 1 },
         ],
       },
       {
         file: "apps/client/src/i18n/locales/zh-CN.ts",
         checks: [{ kind: "present", re: /"pinnedNotice":\s*"【圈规】/ }],
       },
-      {
-        file: "apps/client/src/i18n/locales/en-US.ts",
-        checks: [{ kind: "present", re: /pinnedNotice:\s*"\[Rules\]/ }],
-      },
+      /* R15（2026-11-05）：en-US 词条存在性判据随 en-US.ts 删除移除（2026-10-29 en 包下线，zh 段已钉同一语义）。 */
     ],
   },
   {
@@ -967,14 +982,18 @@ const SPEC = [
         file: "apps/client/src/subpackages/village/village/post.vue",
         checks: [
           { kind: "absent", re: /target-sheet__joined/g },
-          { kind: "countTemplateEq", re: /target-sheet__desc">已加入 · \{\{ formatMemberShort\(circle\.memberCount\) \}\} 成员<\/text>/g, n: 1 },
+          /* R15（2026-11-05）对账：原钉裸中文模板「已加入 · N 成员」，发布链 i18n 化后演进为
+             插值词条（成员数并入 desc 的裁决语义保持）——判据改钉现插值形态（两入口类名前缀不同）。 */
+          { kind: "countTemplateEq", re: /target-sheet__desc">\{\{ t\("village\.post\.circleJoinedMembers", \{ n: formatMemberShort\(circle\.memberCount\) \}\) \}\}<\/text>/g, n: 1 },
         ],
       },
       {
         file: "apps/client/src/subpackages/village/village/publish.vue",
         checks: [
           { kind: "absent", re: /target-sheet__joined/g },
-          { kind: "countTemplateEq", re: /target-sheet__desc">已加入 · \{\{ formatMemberShort\(circle\.memberCount\) \}\} 成员<\/text>/g, n: 1 },
+          /* R15（2026-11-05）对账：原钉裸中文模板「已加入 · N 成员」，发布链 i18n 化后演进为
+             插值词条（成员数并入 desc 的裁决语义保持）——判据改钉现插值形态（两入口类名前缀不同）。 */
+          { kind: "countTemplateEq", re: /target-sheet__desc">\{\{ t\("village\.post\.circleJoinedMembers", \{ n: formatMemberShort\(circle\.memberCount\) \}\) \}\}<\/text>/g, n: 1 },
         ],
       },
     ],
@@ -987,17 +1006,17 @@ const SPEC = [
         file: "apps/client/src/subpackages/campus/campus/hub.vue",
         checks: [
           { kind: "absent", re: /campusHub\./g },
-          { kind: "countEq", re: /campus\.hub\./g, n: 23 },
+          /* R15（2026-11-05）批 3-B 迁移对账：裸中文迁 campus.hub.* 后使用数 23→28（实测 grep -o 全文件 match）。 */
+          /* R15（2026-11-05）批 3-B 迁移对账：裸中文迁 campus.hub.* 后使用数 23→27（门剥注释实测）。 */
+          { kind: "countEq", re: /campus\.hub\./g, n: 27 },
         ],
       },
       {
         file: "apps/client/src/i18n/locales/zh-CN.ts",
         checks: [{ kind: "absent", re: /"campusHub"\s*:/g }, { kind: "present", re: /^ {2}"campus"\s*:\s*\{[\s\S]{0,40000}?\n {4}"hub"\s*:\s*\{/m }],
       },
-      {
-        file: "apps/client/src/i18n/locales/en-US.ts",
-        checks: [{ kind: "absent", re: /\bcampusHub\s*:/g }, { kind: "present", re: /^ {2}campus\s*:\s*\{[\s\S]{0,40000}?\n {4}hub\s*:\s*\{/m }],
-      },
+      /* R15（2026-11-05）：en-US 段判据随 en-US.ts 删除移除（2026-10-29 en 包下线，
+         zh-CN 段已钉住同一命名空间结构，campus.hub 统一语义由 client 段维持）。 */
     ],
   },
   {
@@ -1009,7 +1028,8 @@ const SPEC = [
         checks: [
           { kind: "absent", re: /_quoteRef/g },
           { kind: "absent", re: /无引用字段/g },
-          { kind: "present", re: /data: quoteRefPayload \? \{ content, kind, quoteRef: quoteRefPayload \} : \{ content, kind \}/ },
+          /* R15（2026-11-05）对账：R14 给发送链路加 clientMsgId 后判据正则同步（原写法缺 clientMsgId 查不到）。 */
+          { kind: "present", re: /data: quoteRefPayload\s*\n\s*\? \{ content, kind, quoteRef: quoteRefPayload, clientMsgId \}/ },
           { kind: "present", re: /export function parsePrivateQuoteContext\(/ },
           { kind: "present", re: /quoteContext\?: string \| null;/ },
         ],
@@ -1074,10 +1094,7 @@ const SPEC = [
         file: "apps/client/src/i18n/locales/zh-CN.ts",
         checks: [{ kind: "present", re: /"uploadFailed":/ }],
       },
-      {
-        file: "apps/client/src/i18n/locales/en-US.ts",
-        checks: [{ kind: "present", re: /uploadFailed:/ }],
-      },
+      /* R15（2026-11-05）：en-US 词条存在性判据随 en-US.ts 删除移除（2026-10-29 en 包下线，zh 段已钉同一语义）。 */
     ],
   },
   /* ↓ 帧债里唯一两条"点名就有判别力"的行（18 条候选逐个回盘核过，只有这两条的 token
@@ -1124,8 +1141,11 @@ const SPEC = [
     file: "apps/client/src/subpackages/circles/circles/index.vue",
     claim: "裁决：热门徽标底/字就近成对声明为页面局部变量并原值保留；不收编语义不同的 --c-badge-on-image-*（那是图上角标的深色底，收编会改观感），也不自造暗色令牌",
     checks: [
-      { kind: "present", re: /--hot-badge-bg:\s*rgba\(255, 77, 92, 0\.92\)/ },
-      { kind: "present", re: /--hot-badge-text:\s*#FFFFFF/ },
+      /* R15（2026-11-05）token 化对账：原判据钉写死 rgba/#FFFFFF——样式经 token 化重构
+         （--c-romance-50/--c-text-error-dark 令牌+就近兜底值），判据改钉「令牌+原兜底值
+         原值保留」的等价形态；「不收编 --c-badge-on-image-*、不自造暗色令牌」的裁决语义不变。 */
+      { kind: "present", re: /--hot-badge-bg:\s*var\(--c-romance-50,\s*#FFECEF\)/ },
+      { kind: "present", re: /--hot-badge-text:\s*var\(--c-text-error-dark,\s*#991b1b\)/ },
       { kind: "present", re: /background: var\(--hot-badge-bg\)/ },
       { kind: "present", re: /color: var\(--hot-badge-text\)/ },
       { kind: "absent", re: /background: rgba\(255, 77, 92/ },
@@ -1138,7 +1158,9 @@ const SPEC = [
     checks: [
       { kind: "absent", re: /日常仅互相喜欢/ },
       { kind: "absent", re: /添加日常|我的日常/ },
-      { kind: "present", re: /这些内容仅互相喜欢或你关注的人可见/ },
+      /* R15（2026-11-05）批 3-B i18n 迁移对账：裸中文判据改钉 t() 接线形态——
+         可见范围提示迁 profile.myStory.visibilityHint，原中文语义由词条钉住（断言词条值）。 */
+      { kind: "present", re: /profile\.myStory\.visibilityHint/ },
     ],
   },
   {
@@ -1475,8 +1497,10 @@ const SPEC = [
     ],
     neg: [
       { file: "apps/client/src/pages/profile/index.vue", marker: '<ProfileShell', insertBefore: '<textarea v-model="bio" />' },
-      { file: "apps/client/dist/build/mp-weixin/pages/profile/index.wxml", marker: '<profile-shell wx:if="{{c}}"', insertBefore: '<input class="profile-input" placeholder="签名"/>' },
-      { file: "apps/client/dist/build/mp-weixin-real/pages/profile/index.wxml", marker: '<profile-shell wx:if="{{c}}"', insertBefore: '<input class="profile-input" placeholder="签名"/>' },
+      /* R15（2026-11-05）对账：产物 profile/index.wxml 经 R14-6（ErrorState）与批 3-B（i18n）
+         重排后 profile-shell 的插值槽位 {{c}}→{{f}}（实测产物），负例锚点同步。 */
+      { file: "apps/client/dist/build/mp-weixin/pages/profile/index.wxml", marker: '<profile-shell wx:if="{{f}}"', insertBefore: '<input class="profile-input" placeholder="签名"/>' },
+      { file: "apps/client/dist/build/mp-weixin-real/pages/profile/index.wxml", marker: '<profile-shell wx:if="{{f}}"', insertBefore: '<input class="profile-input" placeholder="签名"/>' },
     ],
   },
   {
@@ -1648,9 +1672,13 @@ function stripComments(src) {
      实测 publish.vue 的 ["/*、http://usr/", …]（一条误判防护清单）让匹配一路吞到
      17KB 之外的第一个收尾组合，整段模板被"剥"没了：14 个 hover-class 属性在剥完的文本里剩 0 个，
      任何指向模板的判点都会假失败（反之，若判点想证明"某写法已消失"，它就成了假通过）。
-     判点载体本身必须可信，否则它量到的是我的解析器，不是产品。 */
-  return norm.replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\/|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`/g,
-    (m) => (m.startsWith("//") || m.startsWith("/*") ? " " : m));
+     判点载体本身必须可信，否则它量到的是我的解析器，不是产品。
+     R15（2026-11-05）补第二课：**HTML 注释里的 `/*` 同样是块注释误开**——
+     实测 messages/index.vue 的 HTML 注释「…以 /*.ts 新增…」让块注释分支吞掉 11803 字符
+     模板（剥后 60273→36128，模板判点集体假失败）。HTML 注释分支必须排在块注释之前，
+     谁先出现取谁；`.vue` 模板里的注释只可能是 HTML 形态。 */
+  return norm.replace(/\/\/[^\n]*|<!--[\s\S]*?-->|\/\*[\s\S]*?\*\/|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`/g,
+    (m) => (m.startsWith("//") || m.startsWith("/*") || m.startsWith("<!--") ? " " : m));
 }
 function templateOf(src) {
   const a = src.indexOf("<template"), b = src.lastIndexOf("</template>");
@@ -1774,7 +1802,10 @@ if (SPEC_EXTRA) {
    "export default {}"（实测 19:14:13Z→19:15:59Z，窗口 106s），这期间跑判点会读到假空文件，
    把两条本来成立的 locale 判点读成"写法查不到"的假红——与本轮"锁屏帧读成 absent"同一类：
    量到的是构建过程，不是产品。所以先验文件大小，异常就拒绝出判决。 */
-for (const p of ["apps/client/src/i18n/locales/en-US.ts", "apps/client/src/i18n/locales/zh-CN.ts"]) {
+/* R15（2026-11-05）：en-US.ts 已从本门载体清单移除——该文件 2026-10-29 删除后
+   existsSync 恒 false，原 `continue` 让这格防线对它永久静默（审计 R15-6 低危实锤）；
+   flux 防线只看仍在盘的 zh-CN.ts。 */
+for (const p of ["apps/client/src/i18n/locales/zh-CN.ts"]) {
   const abs = resolve(REPO, p);
   if (!existsSync(abs)) continue;
   const sz = statSync(abs).size;

@@ -1,5 +1,7 @@
 package com.campuslove.api.block;
 
+import com.campuslove.api.common.TimeZones;
+
 import com.campuslove.api.common.ErrorMessages;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -55,7 +57,7 @@ public class MockBlockService implements BlockService {
     @Override
     public List<BlockedUserView> getBlockedUsers(Long userId) {
         Set<Long> blocked = blockMap.getOrDefault(userId, Set.of());
-        String now = LocalDateTime.now().toString();
+        String now = LocalDateTime.now(TimeZones.BUSINESS).toString();
         return blocked.stream()
                 .map(id -> new BlockedUserView(id, "Mock用户" + id, null, now))
                 .sorted((a, b) -> b.blockedAt().compareTo(a.blockedAt()))

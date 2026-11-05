@@ -151,11 +151,17 @@ let P0 = null;
         "背书=" + vouched + " ｜ 所在 manifest=" + hostMan.replace(REPO + "\\", "").replace(REPO + "/", ""));
       t("4 帧被挪走后：PROBLEMS 不许因为「盘上缺这一张」而上涨", redOnEvict === pBefore,
         "挪开前=" + pBefore + " 挪开后=" + redOnEvict);
-      /* 反向证明：同一张帧，若不给库，就必须落进 missing ⇒ 上面那条绿不是"门根本不看缺帧" */
+      /* 反向证明：同一张帧，若不给库，就必须落进 missing ⇒ 上面那条绿不是"门根本不看缺帧"。
+         R15（2026-11-05）读数轴修正：门语义里缺帧默认 advisory——CORPUS_PROBLEMS（blocking
+         口径）不随单帧挪动变化（原断言「PROBLEMS 多一条红」在 advisory 语义下永不成立）；
+         缺帧的真实读数轴是 CORPUS_DENOM_SCANNED 行的 gateNamedAbsent。对比「挪开+配库」态：
+         同一张帧只有「库背书与否」一个变量。 */
       const noStore = run([GATE], { cleanStore: true });
-      t("4c 反证：同一状态不配库 ⇒ missing 必须涨、PROBLEMS 必须多一条红",
-        numOf(noStore.out, "CORPUS_PROBLEMS") > pBefore,
-        "不配库 PROBLEMS=" + numOf(noStore.out, "CORPUS_PROBLEMS") + " 基线=" + pBefore);
+      const absentOf = (out) => Number(/gateNamedAbsent=(\d+)/.exec(out)?.[1] || 0);
+      // R15：同一帧可被多个 manifest 条目引用（实测同名帧 3 条引用），增量 ≥1 即证明落账
+      t("4c 反证：同一状态不配库 ⇒ gateNamedAbsent 必须比配库态严格多（缺帧落账，不靠 blocking 数）",
+        absentOf(noStore.out) > absentOf(mid.out),
+        "不配库 absent=" + absentOf(noStore.out) + " 挪开+配库 absent=" + absentOf(mid.out));
     } finally {
       renameSync(aside, target);
       movedBack = existsSync(target) && sha16(target) === hash;

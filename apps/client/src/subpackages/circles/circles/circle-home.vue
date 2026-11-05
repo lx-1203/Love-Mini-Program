@@ -17,7 +17,10 @@
  * 数据策略：
  *  - 圈子主体数据来自 circleStore（fetchCircles 后按 circleId 匹配），
  *    未命中时回退本地演示数据（骨架可独立渲染，不阻塞验收）；
- *  - 动态 feed / 标签 / 朋友头像为本地 mock —— TODO(后端): 圈内动态分页接口。
+ *  - 动态 feed 接线后端分页接口（GET /circles/{id}/topics?page=&size=，客户端
+ *    stores/circle.ts fetchTopics 已传 page/size）——原 TODO(后端): 圈内动态分页接口
+ *    已于 R15-2 复核了结：后端 CircleController.getTopics 原生 Page 分页 + 客户端已接线；
+ *    feed 在真实数据缺失（fetchTopics 失败）时回退本地演示数据，属兜底非缺口。
  *
  * 视觉纪律：
  *  - 品牌绿 var(--c-brand-500, #36C99A)（#36C99A 系）与 tabBar selectedColor 同源；

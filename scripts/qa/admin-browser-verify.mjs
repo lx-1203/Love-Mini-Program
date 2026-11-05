@@ -140,9 +140,11 @@ try {
     } catch { bad("媒体资产页 30s 内没渲染出 tbody tr"); }
   }
 
-  /* ── 3) 计数对齐（走同一 5177 代理，凭证用页面里的 token） ── */
+  /* ── 3) 计数对齐（走同一 5177 代理；R15-2：JWT 已迁 HttpOnly Cookie（R14-5）——
+     页面上下文 fetch 自动携带 admin_session Cookie，走后端 cookie 回退认证；
+     不再拼 Bearer 头（localStorage 已无 admin_v2_token，拼出来是空令牌反而不触发回退）） ── */
   const j = async (p) => await page.evaluate(async (pp) => {
-    const r = await fetch(pp, { headers: { Authorization: `Bearer ${localStorage.getItem("admin_v2_token") || ""}` } });
+    const r = await fetch(pp);
     return { s: r.status, j: await r.json().catch(() => null) };
   }, p);
   const ov = await j("/api/v1/admin/stats/community-overview");

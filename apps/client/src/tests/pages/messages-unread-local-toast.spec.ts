@@ -21,7 +21,10 @@ describe("messages 页「标为未读」服务端同步", () => {
   );
 
   it("长按菜单保留「标为未读」能力", () => {
-    expect(pageSource).toContain('"标为未读"');
+    // audit-r15 批 3-B（2026-11-05）：长按菜单文案迁 i18n（itemList 走 t("messages.markAsUnread")，
+    // zh 值仍为「标为未读」）——能力保留断言由裸字面量改为「键接线 + 语言包取值」两段核。
+    expect(pageSource).toContain('t("messages.markAsUnread")');
+    expect(zhSource).toContain('"markAsUnread": "标为未读"');
   });
 
   it("tapIndex===1 调 markSessionUnread 并按返回显示成功/失败 toast", () => {

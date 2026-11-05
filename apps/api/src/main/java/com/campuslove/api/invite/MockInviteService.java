@@ -1,5 +1,7 @@
 package com.campuslove.api.invite;
 
+import com.campuslove.api.common.TimeZones;
+
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.wallet.WalletService;
 import com.campuslove.api.wallet.WalletTransactionLog;
@@ -87,7 +89,7 @@ public class MockInviteService implements InviteService {
                 "Mock用户" + userId,
                 INVITE_REWARD_POINTS,
                 "GRANTED",
-                java.time.LocalDateTime.now().toString());
+                java.time.LocalDateTime.now(TimeZones.BUSINESS).toString());
         rewards.put(userId, created);
         long balanceAfter = walletService.recharge(
                 inviterUserId, (long) INVITE_REWARD_POINTS, "INVITE-" + userId + "-MOCK",

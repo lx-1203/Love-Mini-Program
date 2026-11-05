@@ -1478,22 +1478,9 @@ export const useMessagesStore = defineStore("messages", {
       return true;
     },
 
-    /**
-     * 2026-08-31 待办：进入消息首页标记全部会话已读（消除「消息 tab 红点全程不清除」）。
-     *
-     * 进入消息列表页时调用，对所有带未读计数的会话发送显式已读回执并本地清零，
-     * 实现「badge → 进入 → 清除」的红点闭环（官方号/临时会话 ID 非数字，早退）。
-     * 逐个用 Promise.allSettled：部分失败不影响其余，失败的会话保持未读以便下次重试。
-     */
-    async markAllSessionsRead(): Promise<void> {
-      const targets = this.sessions.filter((s) => s.unreadCount > 0);
-      if (targets.length === 0) return;
-      const results = await Promise.allSettled(targets.map((s) => this.markConversationRead(s.id, true)));
-      results.forEach((r, i) => {
-        const target = targets[i];
-        if (target && r.status === "fulfilled" && r.value) target.unreadCount = 0;
-      });
-    },
+    // R15（2026-11-05）：markAllSessionsRead 死 action 已删——「全部已读」机制随红点闭环
+    // 改版整体撤下（页面两处调用点移除后全仓 0 调用，见 messages/index.vue:373 注释与
+    // messages-unread-local-toast.spec.ts:51 的 not.toContain 判点），保留即死代码。
 
     async deleteSession(sessionId: string) {
       this.errorMessage = null;

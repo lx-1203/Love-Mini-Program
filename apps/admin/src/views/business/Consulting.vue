@@ -16,8 +16,10 @@ import {
 import { ApiError } from "@/api/http";
 import ErrorState from "@/components/ErrorState.vue";
 import { useSessionStore } from "@/stores/session";
+import { useI18n } from "vue-i18n";
 
 const sessionStore = useSessionStore();
+const { t } = useI18n();
 
 const courses = ref<AdminConsultingCourse[]>([]);
 const loading = ref(false);
@@ -57,7 +59,7 @@ async function load() {
   try {
     courses.value = await listConsultingCourses();
   } catch (err: unknown) {
-    error.value = errorMessage(err, "加载咨询课程失败");
+    error.value = errorMessage(err, t("consulting.loadFailed"));
     courses.value = [];
   } finally {
     loading.value = false;
@@ -85,10 +87,10 @@ async function save(course: AdminConsultingCourse) {
   error.value = "";
   try {
     await updateConsultingCourse(course.id, toForm(course));
-    flash("已保存");
+    flash(t("consulting.saved"));
     await load();
   } catch (err: unknown) {
-    error.value = errorMessage(err, "保存失败");
+    error.value = errorMessage(err, t("consulting.saveFailed"));
   } finally {
     savingId.value = null;
   }
@@ -100,10 +102,10 @@ async function publish(course: AdminConsultingCourse) {
   error.value = "";
   try {
     await publishConsultingCourse(course.id);
-    flash("已发布");
+    flash(t("consulting.statusPublished"));
     await load();
   } catch (err: unknown) {
-    error.value = errorMessage(err, "发布失败");
+    error.value = errorMessage(err, t("consulting.publishFailed"));
   } finally {
     savingId.value = null;
   }
@@ -115,10 +117,10 @@ async function offline(course: AdminConsultingCourse) {
   error.value = "";
   try {
     await offlineConsultingCourse(course.id);
-    flash("已下线");
+    flash(t("consulting.offlined"));
     await load();
   } catch (err: unknown) {
-    error.value = errorMessage(err, "下线失败");
+    error.value = errorMessage(err, t("consulting.offlineFailed"));
   } finally {
     savingId.value = null;
   }
@@ -132,10 +134,10 @@ async function create() {
   try {
     await createConsultingCourse(newCourse.value);
     newCourse.value = blankForm();
-    flash("已新增（默认下架，编辑后发布）");
+    flash(t("consulting.created"));
     await load();
   } catch (err: unknown) {
-    error.value = errorMessage(err, "新增失败");
+    error.value = errorMessage(err, t("consulting.createFailed"));
   } finally {
     creating.value = false;
   }
@@ -147,83 +149,83 @@ onMounted(load);
 <template>
   <div class="config-page">
     <div class="page-header">
-      <h1 class="page-title">咨询课程</h1>
+      <h1 class="page-title">{{ t("layout.navConsulting") }}</h1>
       <p class="page-subtitle">
-        编辑课程正文/讲师/排序并上下架。支付未就绪，价格与报名默认隐藏；发布后小程序咨询页展示正文。
+        {{ t("consulting.subtitle") }}
       </p>
     </div>
 
     <ErrorState v-if="error" :message="error" @retry="load" />
     <div v-if="success" class="success-message">{{ success }}</div>
-    <div v-if="loading" class="legal-hint">加载中…</div>
+    <div v-if="loading" class="legal-hint">{{ t("consulting.loading") }}</div>
 
     <div v-for="course in courses" :key="course.id" class="legal-card">
       <div class="legal-card__meta">
         <strong>{{ course.title }}</strong>
         <span class="legal-status" :class="course.status === 1 ? 'legal-status--on' : ''">
-          {{ course.status === 1 ? "已发布" : "草稿" }}
+          {{ course.status === 1 ? t("consulting.statusPublished") : t("consulting.statusDraft") }}
         </span>
-        <span>更新：{{ course.updatedAt || "-" }}</span>
+        <span>{{ t("consulting.updatedAtPrefix") }}{{ course.updatedAt || "-" }}</span>
       </div>
 
       <div class="legal-field">
-        <label>标题</label>
+        <label>{{ t("consulting.titleLabel") }}</label>
         <input v-model="course.title" class="row-input" />
-        <label>分类</label>
+        <label>{{ t("consulting.categoryLabel") }}</label>
         <input v-model="course.category" class="row-input" />
-        <label>讲师</label>
+        <label>{{ t("consulting.lecturerLabel") }}</label>
         <input v-model="course.lecturer" class="row-input" />
       </div>
       <div class="legal-field">
-        <label>排序</label>
+        <label>{{ t("consulting.sortOrderLabel") }}</label>
         <input v-model.number="course.sortOrder" class="row-input" type="number" />
-        <label>价格</label>
+        <label>{{ t("consulting.priceLabel") }}</label>
         <input v-model.number="course.price" class="row-input" type="number" />
-        <label><input v-model="course.priceVisible" type="checkbox" /> 展示价格</label>
-        <label><input v-model="course.signupEnabled" type="checkbox" /> 开放报名</label>
+        <label><input v-model="course.priceVisible" type="checkbox" /> {{ t("consulting.priceVisibleLabel") }}</label>
+        <label><input v-model="course.signupEnabled" type="checkbox" /> {{ t("consulting.signupEnabledLabel") }}</label>
       </div>
       <div class="legal-field">
-        <label>简介</label>
+        <label>{{ t("consulting.descLabel") }}</label>
         <input v-model="course.description" class="row-input" />
       </div>
       <div class="legal-field legal-field--block">
-        <label>正文</label>
+        <label>{{ t("consulting.contentLabel") }}</label>
         <textarea v-model="course.content" class="legal-content" rows="10" />
       </div>
 
       <div class="legal-actions">
-        <button type="button" class="legal-btn legal-btn--primary" :disabled="!sessionStore.canSuperAdminWrite || savingId === course.id" @click="save(course)">保存</button>
-        <button type="button" class="legal-btn" :disabled="!sessionStore.canSuperAdminWrite || savingId === course.id" @click="publish(course)">发布</button>
-        <button type="button" class="legal-btn" :disabled="!sessionStore.canSuperAdminWrite || savingId === course.id" @click="offline(course)">下线</button>
+        <button type="button" class="legal-btn legal-btn--primary" :disabled="!sessionStore.canSuperAdminWrite || savingId === course.id" @click="save(course)">{{ t("common.save") }}</button>
+        <button type="button" class="legal-btn" :disabled="!sessionStore.canSuperAdminWrite || savingId === course.id" @click="publish(course)">{{ t("consulting.publishAction") }}</button>
+        <button type="button" class="legal-btn" :disabled="!sessionStore.canSuperAdminWrite || savingId === course.id" @click="offline(course)">{{ t("consulting.offlineAction") }}</button>
       </div>
     </div>
 
     <div class="legal-card">
-      <div class="legal-card__meta"><strong>新增课程</strong></div>
+      <div class="legal-card__meta"><strong>{{ t("consulting.createFormTitle") }}</strong></div>
       <div class="legal-field">
-        <label>标题</label>
+        <label>{{ t("consulting.titleLabel") }}</label>
         <input v-model="newCourse.title" class="row-input" />
-        <label>分类</label>
+        <label>{{ t("consulting.categoryLabel") }}</label>
         <input v-model="newCourse.category" class="row-input" />
-        <label>讲师</label>
+        <label>{{ t("consulting.lecturerLabel") }}</label>
         <input v-model="newCourse.lecturer" class="row-input" />
       </div>
       <div class="legal-field">
-        <label>排序</label>
+        <label>{{ t("consulting.sortOrderLabel") }}</label>
         <input v-model.number="newCourse.sortOrder" class="row-input" type="number" />
-        <label>价格</label>
+        <label>{{ t("consulting.priceLabel") }}</label>
         <input v-model.number="newCourse.price" class="row-input" type="number" />
       </div>
       <div class="legal-field">
-        <label>简介</label>
+        <label>{{ t("consulting.descLabel") }}</label>
         <input v-model="newCourse.description" class="row-input" />
       </div>
       <div class="legal-field legal-field--block">
-        <label>正文</label>
+        <label>{{ t("consulting.contentLabel") }}</label>
         <textarea v-model="newCourse.content" class="legal-content" rows="6" />
       </div>
       <div class="legal-actions">
-        <button type="button" class="legal-btn legal-btn--primary" :disabled="!sessionStore.canSuperAdminWrite || creating || !newCourse.title.trim()" @click="create">新增</button>
+        <button type="button" class="legal-btn legal-btn--primary" :disabled="!sessionStore.canSuperAdminWrite || creating || !newCourse.title.trim()" @click="create">{{ t("consulting.createAction") }}</button>
       </div>
     </div>
   </div>

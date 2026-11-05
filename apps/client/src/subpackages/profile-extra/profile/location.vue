@@ -68,8 +68,11 @@ const displayText = computed(() => {
 });
 /** 坐标行的占位：拿不到坐标也要留行（用户要知道"这一栏存在但暂时为空"，不是整行消失） */
 const coordText = computed(() => {
-  if (!coords.value) return "经度 — · 纬度 —";
-  return `经度 ${coords.value.longitude.toFixed(4)} · 纬度 ${coords.value.latitude.toFixed(4)}`;
+  if (!coords.value) return t("locationPage.coordEmpty");
+  return t("locationPage.coordLine", {
+    lng: coords.value.longitude.toFixed(4),
+    lat: coords.value.latitude.toFixed(4),
+  });
 });
 
 /** 地图中心：优先已选/定位坐标，无则默认北京中心（北京大学一带），避免地图空白 */
@@ -93,7 +96,7 @@ const mapMarkers = computed(() => {
       width: 36,
       height: 36,
       callout: {
-        content: addressText.value || shownCity.value || "当前位置",
+        content: addressText.value || shownCity.value || t("locationPage.currentLocation"),
         display: "ALWAYS",
         borderRadius: 10,
         padding: 8,
@@ -192,7 +195,7 @@ onLoad(() => {
           <text class="location-header__back-glyph">‹</text>
         </view>
       </view>
-      <text class="location-header__title">我的位置</text>
+      <text class="location-header__title">{{ t('locationPage.title') }}</text>
       <view class="location-header__placeholder" />
     </view>
 
@@ -201,23 +204,23 @@ onLoad(() => {
         <view class="location-card__row">
           <image class="location-card__icon" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.LOCATION)" mode="aspectFit" alt="" />
           <view class="location-card__info">
-            <text class="location-card__label">当前位置</text>
+            <text class="location-card__label">{{ t('locationPage.currentLocation') }}</text>
             <text class="location-card__value">{{ displayText }}</text>
             <!-- R6-B57/D07：坐标行不再整行消失，拿不到时留「—」占位（不编造数值） -->
             <text class="location-card__coords">{{ coordText }}</text>
             <!-- R6-B57/D07：空态时给次级说明 + 可行动指引（指引对象是页内真实按钮文案） -->
             <text v-if="!hasAnyLocationFact" class="location-card__hint">
-              {{ t("locationPage.addressUnavailable") }}，可点下方「重新定位」，或用「地图选点」手动选位置
+              {{ t("locationPage.addressUnavailable") }}{{ t("locationPage.addressHintAction") }}
             </text>
           </view>
         </view>
         <view v-if="campusName" class="location-card__campus">
-          <text class="location-card__campus-label">所属校区</text>
+          <text class="location-card__campus-label">{{ t('locationPage.campusLabel') }}</text>
           <text class="location-card__campus-value">{{ campusName }}</text>
         </view>
         <!-- 2026-09-03 项5：物理地址（选点/定位返回；无则提示） -->
         <view v-if="addressText" class="location-card__address">
-          <text class="location-card__address-label">物理地址</text>
+          <text class="location-card__address-label">{{ t('locationPage.addressLabel') }}</text>
           <text class="location-card__address-value">{{ addressText }}</text>
         </view>
       </view>
@@ -246,15 +249,15 @@ onLoad(() => {
             :show-compass="false"
           />
           <view v-else class="location-map__guide">
-            <text class="location-map__guide-title">尚未取得你的位置</text>
+            <text class="location-map__guide-title">{{ t('locationPage.guideTitle') }}</text>
             <text class="location-map__guide-desc">
-              定位成功后这里会显示你周边的地图，也可点右侧「地图选点」手动选择
+              {{ t('locationPage.guideDesc') }}
             </text>
           </view>
           <!-- #endif -->
           <!-- #ifndef MP-WEIXIN -->
           <view class="location-map__canvas location-map__canvas--h5">
-            <text class="location-map__h5-text">地图仅在小程序端展示</text>
+            <text class="location-map__h5-text">{{ t('locationPage.mapMpOnly') }}</text>
           </view>
           <!-- #endif -->
         </view>
@@ -263,19 +266,19 @@ onLoad(() => {
                「地图选点」钮与提示文字同行、在文字右侧（帧实测 y=483..527 / x=294..356），
                文字下方那枚是「重新定位」（GPS 重定位，不是地图选点）。按建议改法第一条
                把方位词与实际可点对象对齐。 -->
-          <text class="location-map__tip">轻点右侧「地图选点」，在地图上选择新位置</text>
-          <view class="location-map__pick press-feedback" hover-class="press-feedback--active" role="button" aria-label="在地图上选点" @tap="pickFromMap">
-            <text class="location-map__pick-text">地图选点</text>
+          <text class="location-map__tip">{{ t('locationPage.pickTip') }}</text>
+          <view class="location-map__pick press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('locationPage.pickAria')" @tap="pickFromMap">
+            <text class="location-map__pick-text">{{ t('locationPage.pickBtn') }}</text>
           </view>
         </view>
       </view>
 
       <view class="location-actions">
-        <view class="location-btn location-btn--primary press-feedback" hover-class="press-feedback--active" role="button" aria-label="重新定位" @tap="loadLocation">
-          <text class="location-btn__text">{{ locating ? '定位中...' : '重新定位' }}</text>
+        <view class="location-btn location-btn--primary press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('locationPage.relocateAria')" @tap="loadLocation">
+          <text class="location-btn__text">{{ locating ? t('locationPage.locating') : t('locationPage.relocate') }}</text>
         </view>
-        <view class="location-btn press-feedback" hover-class="press-feedback--active" role="button" aria-label="返回首页" @tap="goHome">
-          <text class="location-btn__text">返回首页</text>
+        <view class="location-btn press-feedback" hover-class="press-feedback--active" role="button" :aria-label="t('locationPage.homeAria')" @tap="goHome">
+          <text class="location-btn__text">{{ t('locationPage.homeBtn') }}</text>
         </view>
       </view>
     </view>

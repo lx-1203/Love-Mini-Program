@@ -14,6 +14,8 @@ import { useHomeStore } from "../../stores/home";
 import { useMessagesStore } from "../../stores/messages";
 import { useCircleStore } from "../../stores/circle";
 import { useSessionStore } from "../../stores/session";
+import { useCheckInStore } from "../../stores/checkin";
+import { useDiscoverStore } from "../../stores/discover";
 import { clientApi } from "../../services/api";
 import { openAppPath, openUserProfile, switchTabWithQuery } from "../../utils/navigation";
 import { useTabBar } from "../../composables/useTabBar";
@@ -135,6 +137,11 @@ onHide(() => {
 
 onUnload(() => {
   unsubscribeVillagePostsChanged();
+  // R15-2（dispose-接线收尾，2026-11-05）：home 页持有签到动画定时器与 discover
+  // 防抖/abort 控制器，离页不释放会持续占用（与 daily-question/discover 页同款纪律；
+  // 原 TODO(dispose-接线) 因「目录权限受限」未接线，该约束已不存在）。
+  useCheckInStore().dispose();
+  useDiscoverStore().dispose();
 });
 
 function refreshHomeFeed() {
@@ -465,7 +472,7 @@ function openInvite() {
     <!-- 2026-09-02 R5：顶部定位点击弹出的底部 BottomSheet（参考 t00012 弹窗样式：绿色顶部 + 位置信息 + 绿色按钮） -->
     <BottomSheet
       :visible="locationSheetVisible"
-      :title="'我的位置'"
+      :title="t('home.myLocation')"
       :show-handle="true"
       :max-height-ratio="0.88"
       @close="closeLocationSheet"
@@ -476,19 +483,19 @@ function openInvite() {
           class="location-sheet__hero press-feedback"
           hover-class="press-feedback--active"
           role="button"
-          aria-label="进入位置主页"
+          :aria-label="t('home.locationPageAria')"
           @tap="openLocationPage"
         >
           <view class="location-sheet__hero-icon">
             <image class="location-sheet__hero-icon-img" :src="resolveMediaUrl(IMAGE_PATHS.HOME_ICONS.LOCATION_PIN)" mode="aspectFit" alt="" />
           </view>
           <view class="location-sheet__hero-info">
-            <text class="location-sheet__hero-title">当前位置</text>
+            <text class="location-sheet__hero-title">{{ t('home.currentLocation') }}</text>
             <text class="location-sheet__hero-value">{{ locationText }}</text>
             <text v-if="sessionStore.userSession?.campusName" class="location-sheet__hero-campus">
-              所属校区 · {{ sessionStore.userSession.campusName }}
+              {{ t('home.campusLine', { name: sessionStore.userSession.campusName }) }}
             </text>
-            <text class="location-sheet__hero-link">进入位置主页 ›</text>
+            <text class="location-sheet__hero-link">{{ t('home.locationPageLink') }}</text>
           </view>
         </view>
 
@@ -501,10 +508,10 @@ function openInvite() {
               <image class="location-sheet__item-icon-img" :src="resolveMediaUrl(IMAGE_PATHS.HOME_ICONS.LOCATION_PIN)" mode="aspectFit" alt="" />
             </view>
             <view class="location-sheet__item-info">
-              <text class="location-sheet__item-name">城市定位</text>
+              <text class="location-sheet__item-name">{{ t('home.cityLocation') }}</text>
               <text class="location-sheet__item-desc">{{ locationText }}</text>
             </view>
-            <text class="location-sheet__item-value">已开启</text>
+            <text class="location-sheet__item-value">{{ t('home.locationEnabled') }}</text>
           </view>
 
           <view class="location-sheet__item">
@@ -512,10 +519,10 @@ function openInvite() {
               <image class="location-sheet__item-icon-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.SCHOOL)" mode="aspectFit" alt="" />
             </view>
             <view class="location-sheet__item-info">
-              <text class="location-sheet__item-name">校区</text>
-              <text class="location-sheet__item-desc">{{ sessionStore.userSession?.campusName || '未认证' }}</text>
+              <text class="location-sheet__item-name">{{ t('home.campus') }}</text>
+              <text class="location-sheet__item-desc">{{ sessionStore.userSession?.campusName || t('home.campusUnverified') }}</text>
             </view>
-            <text class="location-sheet__item-value">{{ sessionStore.userSession?.campusVerified ? '已认证' : '未认证' }}</text>
+            <text class="location-sheet__item-value">{{ sessionStore.userSession?.campusVerified ? t('home.campusVerified') : t('home.campusUnverified') }}</text>
           </view>
 
           <view class="location-sheet__item">
@@ -523,10 +530,10 @@ function openInvite() {
               <image class="location-sheet__item-icon-img" :src="resolveMediaUrl(IMAGE_PATHS.ICONS_COMMON.REFRESH_SVG)" mode="aspectFit" alt="" />
             </view>
             <view class="location-sheet__item-info">
-              <text class="location-sheet__item-name">定位精度</text>
-              <text class="location-sheet__item-desc">自动获取当前坐标</text>
+              <text class="location-sheet__item-name">{{ t('home.locationAccuracy') }}</text>
+              <text class="location-sheet__item-desc">{{ t('home.autoCoordinate') }}</text>
             </view>
-            <text class="location-sheet__item-value">高精度</text>
+            <text class="location-sheet__item-value">{{ t('home.highAccuracy') }}</text>
           </view>
         </view>
       </view>
@@ -537,19 +544,19 @@ function openInvite() {
           class="location-sheet__btn location-sheet__btn--primary press-feedback"
           hover-class="press-feedback--active"
           role="button"
-          :aria-label="locating ? '重新定位中' : '重新定位'"
+          :aria-label="locating ? t('home.relocatingAria') : t('home.relocateAria')"
           @tap="refetchLocation"
         >
-          <text class="location-sheet__btn-text">{{ locating ? '定位中...' : '重新定位' }}</text>
+          <text class="location-sheet__btn-text">{{ locating ? t('home.locating') : t('home.relocate') }}</text>
         </view>
         <view
           class="location-sheet__btn press-feedback"
           hover-class="press-feedback--active"
           role="button"
-          aria-label="我知道了"
+          :aria-label="t('home.gotItAria')"
           @tap="closeLocationSheet"
         >
-          <text class="location-sheet__btn-text location-sheet__btn-text--secondary">我知道了</text>
+          <text class="location-sheet__btn-text location-sheet__btn-text--secondary">{{ t('home.gotIt') }}</text>
         </view>
       </template>
     </BottomSheet>

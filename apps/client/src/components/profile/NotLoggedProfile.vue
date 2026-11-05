@@ -1,6 +1,11 @@
 ﻿<script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { IMAGE_PATHS } from "../../config/images";
 import MyMore, { type MoreItem } from "./mine/MyMore.vue";
+
+// audit-r15 批 3-B：模板与数据表（STATS/INTERACTIONS/STORIES/MORE_ITEMS）裸中文迁 i18n
+// （profile.notLogged.* 命名空间；同文复用 profile.*/profile.myStory.* 既有键）
+const { t } = useI18n();
 
 const emit = defineEmits<{ (e: "goLogin"): void }>();
 
@@ -23,10 +28,10 @@ function goBack() {
    （紫色实心心/粉色双人/橙色实心拇指/蓝色实心眼，config/images.ts 七枚字形登记），
    原细描边线性字形与理想图「实心彩色」不符。 */
 const STATS = [
-  { label: "我喜欢", iconSrc: IMAGE_PATHS.ICONS_COMMON.HEART_FILL_PURPLE_SVG, color: "#A29BFE" },
-  { label: "喜欢我的", iconSrc: IMAGE_PATHS.ICONS_COMMON.USERS_FILL_PINK_SVG, color: "#FF6B81" },
-  { label: "我赞", iconSrc: IMAGE_PATHS.ICONS_COMMON.THUMBS_UP_FILL_ORANGE_SVG, color: "#FF9F43" },
-  { label: "访客", iconSrc: IMAGE_PATHS.ICONS_COMMON.EYE_FILL_BLUE_SVG, color: "#4D8DFF" },
+  { label: t("profile.statILike"), iconSrc: IMAGE_PATHS.ICONS_COMMON.HEART_FILL_PURPLE_SVG, color: "#A29BFE" },
+  { label: t("profile.likedMe"), iconSrc: IMAGE_PATHS.ICONS_COMMON.USERS_FILL_PINK_SVG, color: "#FF6B81" },
+  { label: t("profile.notLogged.statMyLikes"), iconSrc: IMAGE_PATHS.ICONS_COMMON.THUMBS_UP_FILL_ORANGE_SVG, color: "#FF9F43" },
+  { label: t("profile.heartValueVisitor"), iconSrc: IMAGE_PATHS.ICONS_COMMON.EYE_FILL_BLUE_SVG, color: "#4D8DFF" },
 ];
 
 /* R2b-L03-D11（文案）：补 unit 量词，理想图四行右侧是「0人 ›」而非孤零零的「0」。
@@ -37,28 +42,28 @@ const STATS = [
 const INTERACTIONS = [
   // 2026-10-26 对齐理想图（P5#5）：「喜欢我的人」= 粉色双人剪影（原实心红心与第 3 行重复）；
   // 「最近访客」= 橙色圆环准星（原橙色眼睛）；「我喜欢的人」保留实心心形
-  { label: "喜欢我的人", value: 0, unit: "人", iconSrc: IMAGE_PATHS.ICONS_COMMON.USERS_FILL_PINK_SVG, tint: "var(--c-tint-pink-50, #FCE4EC)" },
-  { label: "我的匹配", value: 0, unit: "人", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE, tint: "var(--c-tint-pink-50, #FCE4EC)" },
-  { label: "我喜欢的人", value: 0, unit: "人", iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, tint: "var(--c-tint-pink-50, #FCE4EC)" },
-  { label: "最近访客", value: 0, unit: "人", iconSrc: IMAGE_PATHS.ICONS_COMMON.TARGET_FILL_ORANGE_SVG, tint: "var(--c-tint-orange-50, #FFF3E0)" },
+  { label: t("profile.notLogged.likedByMeStat"), value: 0, unit: t("profile.notLogged.unitPeople"), iconSrc: IMAGE_PATHS.ICONS_COMMON.USERS_FILL_PINK_SVG, tint: "var(--c-tint-pink-50, #FCE4EC)" },
+  { label: t("profile.myMatches"), value: 0, unit: t("profile.notLogged.unitPeople"), iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_OUTLINE, tint: "var(--c-tint-pink-50, #FCE4EC)" },
+  { label: t("profile.notLogged.iLikedStat"), value: 0, unit: t("profile.notLogged.unitPeople"), iconSrc: IMAGE_PATHS.ICONS_EMOJI.HEART_FILLED, tint: "var(--c-tint-pink-50, #FCE4EC)" },
+  { label: t("profile.notLogged.recentVisitors"), value: 0, unit: t("profile.notLogged.unitPeople"), iconSrc: IMAGE_PATHS.ICONS_COMMON.TARGET_FILL_ORANGE_SVG, tint: "var(--c-tint-orange-50, #FFF3E0)" },
 ];
 
 /* R2b-L03-D04（空态文案）：三枚占位块各自给「计数 + 量词」，理想图三档量词不同
    （篇 / 个地方 / 愿望），此前只有一个标题字符串数组、块内除 ＋ 外没有任何空态文本。 */
 const STORIES = [
-  { name: "生活日常", emptyCount: 0, unit: "篇" },
-  { name: "旅行足迹", emptyCount: 0, unit: "个地方" },
-  { name: "我的心愿", emptyCount: 0, unit: "个愿望" },
+  { name: t("profile.myStory.categoryDaily"), emptyCount: 0, unit: t("profile.myStory.unitDaily") },
+  { name: t("profile.myStory.categoryTravel"), emptyCount: 0, unit: t("profile.myStory.unitTravel") },
+  { name: t("profile.myStory.categoryWish"), emptyCount: 0, unit: t("profile.myStory.unitWish") },
 ];
 
 /* R2b-L03-D09（素材缺失）：游客态补「更多功能」模块。不另写一套——直接挂已登录态
    同一份 mine/MyMore.vue，items 与 pages/profile/index.vue:761 的 moreItems 同口径，
    游客点击一律走既有 emit('goLogin') 门禁。 */
 const MORE_ITEMS: MoreItem[] = [
-  { key: "favorites", label: "我的收藏" },
-  { key: "visitors", label: "谁看过我" },
-  { key: "album", label: "恋爱相册" },
-  { key: "privacy", label: "隐私设置" },
+  { key: "favorites", label: t("profile.notLogged.myFavorites") },
+  { key: "visitors", label: t("profile.visitorsTitle") },
+  { key: "album", label: t("profile.notLogged.loveAlbum") },
+  { key: "privacy", label: t("profile.notLogged.privacySettings") },
 ];
 </script>
 
@@ -72,7 +77,7 @@ const MORE_ITEMS: MoreItem[] = [
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
-        :aria-label="'返回'"
+        :aria-label="t('common.back')"
         @tap="goBack"
       >
         <text class="nlp-topbar__glyph nlp-topbar__glyph--back">‹</text>
@@ -90,7 +95,7 @@ const MORE_ITEMS: MoreItem[] = [
           hover-class="press-feedback--active"
           hover-stay-time="120"
           role="button"
-          :aria-label="'应用中心'"
+          :aria-label="t('profile.notLogged.appCenterAria')"
           @tap="emit('goLogin')"
         >
           <image class="nlp-topbar__qr" :src="IMAGE_PATHS.ICONS_COMMON.QR_CODE_SVG" mode="aspectFit" alt="" />
@@ -100,7 +105,7 @@ const MORE_ITEMS: MoreItem[] = [
           hover-class="press-feedback--active"
           hover-stay-time="120"
           role="button"
-          :aria-label="'设置'"
+          :aria-label="t('common.settingsAria')"
           @tap="emit('goLogin')"
         >
           <image class="nlp-topbar__icon-img" :src="IMAGE_PATHS.ICONS_EMOJI.SETTINGS" mode="aspectFit" alt="" />
@@ -120,8 +125,8 @@ const MORE_ITEMS: MoreItem[] = [
         <image class="nlp-header__avatar-img" :src="IMAGE_PATHS.ICONS_COMMON.USER_FILL_SVG" mode="aspectFit" alt="" />
       </view>
       <view class="nlp-header__info">
-        <text class="nlp-header__title">点击登录</text>
-        <text class="nlp-header__sub">登录后遇见心动的TA</text>
+        <text class="nlp-header__title">{{ t('profile.notLogged.tapToLogin') }}</text>
+        <text class="nlp-header__sub">{{ t('profile.notLogged.loginSubtitle') }}</text>
       </view>
       <!-- R8-L02-D14（需新建 P1）：游客态头部右侧原只有一枚 44rpx「›」，模板里根本没有「编辑资料」
            节点 ⇒ 理想图/规范要求的白底绿字入口在本页完全缺失，游客无法从「我的」进入资料填写。
@@ -133,10 +138,10 @@ const MORE_ITEMS: MoreItem[] = [
         hover-class="press-feedback--active"
         hover-stay-time="120"
         role="button"
-        :aria-label="'编辑资料'"
+        :aria-label="t('profile.editProfile')"
         @tap.stop="emit('goLogin')"
       >
-        <text class="nlp-header__edit-text">编辑资料</text>
+        <text class="nlp-header__edit-text">{{ t('profile.editProfile') }}</text>
       </view>
     </view>
 
@@ -146,17 +151,17 @@ const MORE_ITEMS: MoreItem[] = [
          第三行灰色说明文案独占末行。此前 0% 挤在标题行、去完善按钮又因
          align-self:flex-end 掉到说明下面另起一行，卡内变成四段。 -->
     <view class="nlp-card nlp-completion">
-      <text class="nlp-completion__title">资料完整度</text>
+      <text class="nlp-completion__title">{{ t('profile.notLogged.completionTitle') }}</text>
       <view class="nlp-completion__row">
         <view class="nlp-completion__bar">
           <view class="nlp-completion__bar-inner" />
         </view>
         <text class="nlp-completion__percent">0%</text>
         <view class="nlp-completion__btn" @tap.stop="emit('goLogin')">
-          <text class="nlp-completion__btn-text">去完善</text>
+          <text class="nlp-completion__btn-text">{{ t('profile.completeBannerAction') }}</text>
         </view>
       </view>
-      <text class="nlp-completion__tip">完善资料可以获得更多曝光和匹配机会</text>
+      <text class="nlp-completion__tip">{{ t('profile.notLogged.completionTip') }}</text>
     </view>
 
     <!-- 统计 -->
@@ -181,7 +186,7 @@ const MORE_ITEMS: MoreItem[] = [
          内容盒 351px、单枚 81.75px）到更宽机型都不会溢出；min-width:0 + 允许收缩兜住亚像素取整。
          R2b-L03-D04：块内补「计数 + 量词」；R2b-L03-D10：名称/计数移到色块内左下角。 -->
     <view class="nlp-section">
-      <text class="nlp-section__title">我的故事</text>
+      <text class="nlp-section__title">{{ t('profile.myStory.title') }}</text>
       <view class="nlp-stories">
         <view v-for="s in STORIES" :key="s.name" class="nlp-story" @tap="emit('goLogin')">
           <view class="nlp-story__img">
@@ -196,7 +201,7 @@ const MORE_ITEMS: MoreItem[] = [
           <view class="nlp-story__img">
             <view class="nlp-story__add-body">
               <text class="nlp-story__plus">＋</text>
-              <text class="nlp-story__add-label">添加故事</text>
+              <text class="nlp-story__add-label">{{ t('profile.myStory.addStory') }}</text>
             </view>
           </view>
         </view>
@@ -205,7 +210,7 @@ const MORE_ITEMS: MoreItem[] = [
 
     <!-- 我的互动 -->
     <view class="nlp-section">
-      <text class="nlp-section__title">我的互动</text>
+      <text class="nlp-section__title">{{ t('profile.notLogged.interactionTitle') }}</text>
       <view class="nlp-card nlp-interactions">
         <view
           v-for="(item, i) in INTERACTIONS"

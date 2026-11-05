@@ -43,7 +43,15 @@ const SRC = resolve(arg("src", join(REPO, "apps/client/src")));
    批 7 把 other.vue 取消匹配 catch 兜底 toast 从裸中文「操作失败，请稍后再试」迁到既有键
    common.operationFailed —— 该键此前在孤儿名单里，迁入后获得真实引用，孤儿数随之 -1。
    按双向棘轮纪律把基线钉到实测数。 */
-const ALLOW = Number(arg("allow-orphans", "1242"));
+/* 棘轮收缩 1242 → 957（2026-11-05 audit-r15 批 3-A）：
+   删除 client 语言包的 admin.* 死键段（287 键）——admin 为独立 app 且有自己的
+   2053 键 locale，client 侧 admin.* 属旧共享架构遗留；双重判据：①admin 根名在
+   client src 生产代码零命中（唯一引用 tests/i18n.spec.ts 的旧架构断言，已随删），
+   ②--allow-orphans 900 负对照 ⇒ exit 1（棘轮会咬）。同步删除 tests/i18n.spec.ts
+   两个 admin 测试块（81 行）与其 describe 内 admin 用例。
+   棘轮收缩 957 → 941（同日批 3-B 裸中文迁移）：批 3-B 迁移复用既有键 24 处，
+   使 16 个死键获得真实引用（含 common.operationFailed 等），孤儿随之收缩，重钉实测数。 */
+const ALLOW = Number(arg("allow-orphans", "941"));
 const VERBOSE = argv.includes("--verbose");
 /* 第二维（第五轮 C-F8 / B-FINDING 14）：i18n 之外的"裸中文文案"棘轮。
    过去这把门只量反方向（定义了没人用的死键），完全看不见"绕过 i18n 直接硬编码进 UI 的中文"——
@@ -84,7 +92,48 @@ const VERBOSE = argv.includes("--verbose");
                                                           error-text 字面量兜底拆除）
      components/home/（RelationActivity/InterestRecommendation/official-chat 骨架 label ×3、
        TodayRecommendationCard 加载文案 ×1，profile/index.vue 无新增命中，纯键值消费） */
-const ALLOW_HARDCODED = Number(arg("allow-hardcoded", "311"));
+   /* ── audit-r15 批 3-B（2026-11-05）下调：311 → 182（只降不升，本行缺省即新实测数）──
+   迁的 129 条（Top10 清单逐文件清零；新读数构成：模板文本 151 + 属性 18 + toast/modal 1 + ||兜底 12 + throw 0）：
+     pages/messages/index.vue                            23（模板 20 + placeholder 属性 1 + ||兜底 2；
+                                                          含getStatusLabel 状态表与长按 actionSheet itemList）
+     subpackages/profile-extra/profile/location.vue      17（模板 13 + aria 属性 3 + 地图 callout ||兜底 1；
+                                                          含两处跨行模板文本节点）
+     pages/home/index.vue                                16（定位 BottomSheet：模板 13 + aria 属性 2 + ||兜底 1；
+                                                          另迁 :title/:aria-label 绑定形态漏计 ×2）
+     subpackages/chat/official-chat/index.vue            15（模板 13 + aria/占位属性 2；另迁脚本
+                                                          accountName/accountDesc 裸中文默认值——
+                                                          该两串原是跨行误配假命中的捕获源，迁后假命中一并消数）
+     components/match/MatchHub.vue                       12（模板 12）
+     components/profile/mine/MyStory.vue                 11（模板 10 + aria 属性 1；第 11 条是
+                                                          STORY_CATEGORY_PLACEHOLDERS 脚本数据被跨行误配，
+                                                          迁入 profile.myStory.category* 与 unit* 后假命中消数）
+     components/profile/NotLoggedProfile.vue             10（模板 10；另迁脚本数据表 STATS/INTERACTIONS/
+                                                          STORIES/MORE_ITEMS 与 :aria-label 绑定形态 ×3）
+     components/home/TodayRecommendationCard.vue          9（模板 8 + :aria-label ||兜底 1；另迁脚本
+                                                          metaLine/distanceLine 的「{n}岁」「已认证」拼接）
+     components/home/NearbyPeople.vue                     8（模板 6 + aria 属性 2；正则字面量里的
+                                                          「演示/示例/测试/・」改 \u 转义书写（语义逐字不变），
+                                                          消掉迁移后暴露的 1 条跨行误配假命中）
+     components/profile/public/PublicIdentity.vue         8（模板 6 + aria 属性 1 + 距离 ||兜底 1；
+                                                          含脚本 onlineLabel 三态标签）
+   新增键 137 个：messages.* 23、home.* 19 + home.todayRec.* 12 + home.nearby.* 4、
+   locationPage.* 18（含坐标行 coordEmpty/coordLine 两条脚本拼接文案）、chat.official.* 9、match.* 12、profile.myStory.* 16、
+   profile.notLogged.* 14、profile.publicIdentity.* 10；
+   同文复用既有键 24 处（common.loading/retry/send/back/settingsAria、messages.likedMeCount/
+   officialBadge/emptyTitle/viewDetail/newFriends/markAsUnread/muteSession/unmuteSession/
+   officialActivityCta、chat.officialBadge、home.nearbyPeople、discover.card.nearbyEmptyTitle、
+   profile.statILike/likedMe/heartValueVisitor/myMatches/editProfile/completeBannerAction/visitorsTitle）
+   —— 复用使孤儿维实测同步收缩（957 → 941，16 个死键获得真实引用），allow-orphans 缺省值
+   不属本批权限，由主控按其台账规则另行重钉。 */
+const ALLOW_HARDCODED = Number(arg("allow-hardcoded", "182"));
+/* admin 裸中文维（audit-r15 批 3-C 新建，2026-11-05）：admin 此前无孤儿/裸中文门
+   （同层重复键轴已在第四维覆盖 admin zh-CN），裸中文无尺 ⇒ 新页面漏迁无人看见
+   （R15 实测探针：views/system/CircleLayers.vue 一页 64 处整页未迁）。本维复用 client
+   裸中文分类器扫 apps/admin/src（排除 locales/tests），双向棘轮同款只许降不许升。
+   admin 孤儿维本轮不建：2053 键中静态 t() 引用密集（common 247 次/users 139 次），
+   「键当数据传」形态少，建尺收益低——已有 probe-admin-i18n-keys 正向门（R15 修活）
+   把守视图引用键的存在性。 */
+const ALLOW_HARDCODED_ADMIN = Number(arg("allow-hardcoded-admin", "44"));
 const SCAN_HARDCODED = !argv.includes("--no-hardcoded");
 
 /** locale 文件是纯对象字面量（结尾 `} as const;`），剥掉 TS 外衣后直接求值。 */
@@ -208,6 +257,16 @@ if (SCAN_HARDCODED) {
   }
 }
 
+/* ── admin 裸中文维 ── */
+const ADMIN_SRC = resolve(arg("admin-src", join(REPO, "apps/admin/src")));
+const hardcodedAdmin = { total: 0, templateText: 0, attrText: 0, toastModal: 0, orFallback: 0, errorThrow: 0, files: 0 };
+for (const f of walkFiles(ADMIN_SRC)) {
+  const rel = relative(REPO, f);
+  const res = classifyHardcodedChinese(readFileSync(f, "utf8"), rel);
+  if (res.total > 0) hardcodedAdmin.files++;
+  for (const k of ["total", "templateText", "attrText", "toastModal", "orFallback", "errorThrow"]) hardcodedAdmin[k] += res[k] || 0;
+}
+
 /* ── 第四维（第七轮 §5.7）：同层重复键，文本级 ─────────────────────────────────
    为什么门要补这根轴：客户端 i18n-duplicate-keys.spec.ts 证过「运行时对象叶子路径唯一」
    恒真（Object.keys 永不重复，后写覆盖前写 ⇒ t() 退回裸键名，151 个 spec 全绿照不出）。
@@ -311,6 +370,10 @@ if (SCAN_HARDCODED) {
 } else {
   console.log("I18N_HARDCODED=SKIPPED reason=--no-hardcoded");
 }
+console.log(
+  `I18N_HARDCODED_ADMIN=${hardcodedAdmin.total} I18N_HARDCODED_ADMIN_FILES=${hardcodedAdmin.files} I18N_HARDCODED_ADMIN_ALLOWED=${ALLOW_HARDCODED_ADMIN}`
+    + `（模板文本=${hardcodedAdmin.templateText} 属性=${hardcodedAdmin.attrText} toast/modal=${hardcodedAdmin.toastModal} ||兜底=${hardcodedAdmin.orFallback} throw=${hardcodedAdmin.errorThrow}）`,
+);
 console.log(`I18N_DUP_KEYS client=${dupClient.length} admin=${dupAdmin === null ? "(无该文件)" : dupAdmin.length}（同层重复键：文本级，运行时后写覆盖前写 ⇒ t() 退回裸键名；基线 0，无棘轮）`);
 for (const d of dupClient.slice(0, 10)) console.log(`  DUP client zh-CN ${d}`);
 if (dupAdmin !== null) for (const d of dupAdmin.slice(0, 10)) console.log(`  DUP admin zh-CN ${d}`);
@@ -322,6 +385,8 @@ const orphanFail = orphans.length > ALLOW;
 const orphanShrink = !orphanFail && orphans.length < ALLOW;
 const hardcodedFail = SCAN_HARDCODED && hardcoded.total > ALLOW_HARDCODED;
 const hardcodedShrink = SCAN_HARDCODED && hardcoded.total < ALLOW_HARDCODED;
+const hardcodedAdminFail = hardcodedAdmin.total > ALLOW_HARDCODED_ADMIN;
+const hardcodedAdminShrink = hardcodedAdmin.total < ALLOW_HARDCODED_ADMIN;
 if (!existsSync(SRC)) { console.log("I18N_RESULT=FAIL reason=扫描目录不存在 " + relative(REPO, SRC)); process.exit(2); }
 if (enExists && !inBoth.length) { console.log("I18N_RESULT=FAIL reason=配对键集为空（扫描/求值塌了），不许空过"); process.exit(2); }
 if (pairFail) console.log("I18N_FAIL_PAIR 成对 locale 文件键集不一致 —— 本仓纪律是「成对文件无例外」，必须两端同时补/删");
@@ -329,6 +394,8 @@ if (orphanFail) console.log(`I18N_FAIL_ORPHAN 有 ${orphans.length - ALLOW} 条�
 if (orphanShrink) console.log(`I18N_RATCHET_SHRINK 实测孤儿 ${orphans.length} < 基线 ${ALLOW} ⇒ 基线必须降到 ${orphans.length}（只许降不许升，且现在起收缩也判红，与其它棘轮一致）`);
 if (hardcodedFail) console.log(`I18N_FAIL_HARDCODED 裸中文文案 ${hardcoded.total} > 允许 ${ALLOW_HARDCODED}：新增硬编码必须走 i18n 或把基线与理由写进本文件注释`);
 if (hardcodedShrink) console.log(`I18N_HARDCODED_SHRINK 实测裸中文 ${hardcoded.total} < 基线 ${ALLOW_HARDCODED} ⇒ 基线必须降到 ${hardcoded.total}（双向棘轮）`);
+if (hardcodedAdminFail) console.log(`I18N_FAIL_HARDCODED_ADMIN admin 裸中文 ${hardcodedAdmin.total} > 允许 ${ALLOW_HARDCODED_ADMIN}：新增硬编码必须走 i18n`);
+if (hardcodedAdminShrink) console.log(`I18N_HARDCODED_ADMIN_SHRINK admin 裸中文 ${hardcodedAdmin.total} < 基线 ${ALLOW_HARDCODED_ADMIN} ⇒ 基线必须降到 ${hardcodedAdmin.total}（双向棘轮）`);
 // 判决行只报【真正失败的那一维】：成对维在 EN 下线时是 SKIPPED，
 // 把它一起印进 FAIL 文案会让下一个人去追一个不存在的差异（2026-11-01 实测踩过）。
 const failDims = [];
@@ -336,6 +403,8 @@ if (orphanFail) failDims.push(`孤儿 ${orphans.length}>允许 ${ALLOW}`);
 if (orphanShrink) failDims.push(`孤儿可收缩 ${orphans.length}<基线 ${ALLOW}`);
 if (hardcodedFail) failDims.push(`裸中文 ${hardcoded.total}>允许 ${ALLOW_HARDCODED}`);
 if (hardcodedShrink) failDims.push(`裸中文可收缩 ${hardcoded.total}<基线 ${ALLOW_HARDCODED}`);
+if (hardcodedAdminFail) failDims.push(`admin 裸中文 ${hardcodedAdmin.total}>允许 ${ALLOW_HARDCODED_ADMIN}`);
+if (hardcodedAdminShrink) failDims.push(`admin 裸中文可收缩 ${hardcodedAdmin.total}<基线 ${ALLOW_HARDCODED_ADMIN}`);
 if (pairFail) failDims.push(`pair 差异 ${zhOnly.length + enOnly.length}`);
 if (dupFail) failDims.push(`同层重复键 client=${dupClient.length} admin=${dupAdmin === null ? "n/a" : dupAdmin.length}`);
 if (failDims.length) {
