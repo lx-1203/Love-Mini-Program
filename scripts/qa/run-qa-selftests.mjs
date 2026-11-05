@@ -54,7 +54,13 @@ for (const f of files) {
     continue;
   }
   const t0 = Date.now();
-  const r = spawnSync(process.execPath, [p], { cwd: REPO, encoding: "utf8", timeout: 300000, maxBuffer: 32 * 1024 * 1024 });
+  /* R15（2026-11-05）单腿超时映射：300s 缺省是历史值——证据轴腿的耗时随 reports/ 语料
+     增长而增长（evidence-store-axis 实测 323s：七次全域门跑每次 ~46s，manifest 数量每辑
+     增加则更慢）。缺件名单按 stem 精确匹配放宽到 600s；其余腿维持 300s 不变。 */
+  const TIMEOUT_OVERRIDES = { "test-evidence-store-axis": 600000 };
+  const stem = p.split(/[\\/]/).pop().replace(/\.(cjs|mjs|js)$/, "");
+  const timeout = TIMEOUT_OVERRIDES[stem] ?? 300000;
+  const r = spawnSync(process.execPath, [p], { cwd: REPO, encoding: "utf8", timeout, maxBuffer: 32 * 1024 * 1024 });
   const out = `${r.stdout || ""}${r.stderr || ""}`;
   /* 自报计数有两种既有写法，都得认（首版只认 "assertion failures ="，
      于是把 4 个本来正常的测试误判成"不可信"——聚合器的口径必须跟上仓库现状，不是反过来）：
