@@ -282,6 +282,10 @@ class WebSocketClient {
     }
 
     this.cleanup();
+    // R17 回归修复：cleanup() 已取消挂起的重连定时器，防重入标志须同步复位——否则
+    // disconnect（401 强踢/改密/注销）落在重连排期窗口内时标志永久卡 true，重登
+    // connect 成功后下一次断线 handleReconnect 在防重入门直接返回，自动重连静默失效。
+    this.reconnectScheduled = false;
 
     this.stompSessionReady = false;
     this.stateMachine.setState("disconnected");

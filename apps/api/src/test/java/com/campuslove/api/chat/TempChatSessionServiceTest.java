@@ -2,9 +2,12 @@ package com.campuslove.api.chat;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -12,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import com.campuslove.api.config.ChatConfig;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.entity.HeartSignal;
 import com.campuslove.api.entity.TempChatSession;
 import com.campuslove.api.entity.TempChatSession.SessionPhase;
 import com.campuslove.api.repository.TempChatContactExchangeRepository;
@@ -22,13 +26,23 @@ import com.campuslove.api.repository.UserCampusProfileRepository;
 import com.campuslove.api.repository.UserRepository;
 import com.campuslove.api.repository.UserScheduleProfileRepository;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.UnexpectedRollbackException;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
+import org.springframework.transaction.support.SmartTransactionObject;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * TempChatSessionService 单元测试（Task 4.2.3）。
@@ -48,17 +62,183 @@ class TempChatSessionServiceTest {
     @Mock private SimpMessagingTemplate messagingTemplate;
     @Mock private TempChatViewMapper viewMapper;
 
+    /** 真实 spring-tx 语义的内存事务管理器（见 {@link InMemoryTxManager}）。 */
+    private InMemoryTxManager txManager;
+
     private TempChatSessionService sessionService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        txManager = new InMemoryTxManager();
         sessionService = new TempChatSessionService(
                 chatConfig, sessionRepository, messageRepository, contactExchangeRepository,
                 userRepository, userBasicProfileRepository, userCampusProfileRepository,
                 userScheduleProfileRepository, recommendationService, heartSignalRepository,
-                messagingTemplate, viewMapper);
+                messagingTemplate, viewMapper, txManager);
         when(chatConfig.getSessionExpireHours()).thenReturn(24);
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    /**
+     * 场景（R17 回归修复）：并发同插命中 active-pair 唯一键——即便调用方带事务，写事务整体回滚后
+     * 在新事务里回读赢家幂等返回，调用方事务正常提交（无 UnexpectedRollbackException）；
+     * 不推送 session_created、不建联系交换记录。
+     */
+    @Test
+    void createSession_duplicateKey_returnsWinnerAndCallerTxCommits() {
+        // 对照（工装忠实性）：R17 原写法——同一事务内 catch 参与型边界的失败后继续——提交期必炸
+        DataIntegrityViolationException probe = new DataIntegrityViolationException("probe");
+        assertThrows(UnexpectedRollbackException.class, () -> new TransactionTemplate(txManager)
+                .executeWithoutResult(status -> {
+                    try {
+                        failAsParticipant(probe);
+                    } catch (DataIntegrityViolationException swallowed) {
+                        // 原写法：catch 后继续回读并返回
+                    }
+                }));
+        txManager.commits = 0;
+        txManager.rollbacks = 0;
+
+        TempChatSession winner = createSession(SessionPhase.matching);
+        TempChatSessionView winnerView = mock(TempChatSessionView.class);
+        stubConcurrentInsertConflict(Optional.of(winner));
+        when(viewMapper.toSessionView(eq(winner), eq(1L), anyBoolean())).thenReturn(winnerView);
+
+        TempChatSessionView result = new TransactionTemplate(txManager)
+                .execute(status -> sessionService.createSession(null, null, "5"));
+
+        assertSame(winnerView, result);
+        assertEquals(1, txManager.rollbacks);   // 仅写段物理回滚
+        assertEquals(3, txManager.commits);     // 对端解析 + 新事务回读 + 调用方事务
+        verify(contactExchangeRepository, never()).save(any());
+        verify(messagingTemplate, never()).convertAndSendToUser(any(), any(), any());
+    }
+
+    /**
+     * 场景（R17 回归修复）：唯一键冲突后新事务回读仍不命中——重抛原异常（409），不吞错。
+     */
+    @Test
+    void createSession_duplicateKeyAndWinnerMissing_rethrowsOriginal() {
+        DataIntegrityViolationException dup = stubConcurrentInsertConflict(Optional.empty());
+
+        DataIntegrityViolationException thrown = assertThrows(DataIntegrityViolationException.class,
+                () -> sessionService.createSession(null, null, "5"));
+
+        assertSame(dup, thrown);
+        assertEquals(2, txManager.rollbacks);   // 写段 + 回读段
+    }
+
+    /**
+     * 当前用户 1 经已接受的心动信号 5 解析对端 2；首查无活跃会话，插入撞唯一键（按
+     * SimpleJpaRepository.save 的 @Transactional 参与型边界失败），回读返回 {@code readBack}。
+     */
+    private DataIntegrityViolationException stubConcurrentInsertConflict(Optional<TempChatSession> readBack) {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(1L, null, List.of()));
+        HeartSignal signal = new HeartSignal();
+        signal.setUserAId(1L);
+        signal.setUserBId(2L);
+        signal.setStatus(HeartSignal.SignalStatus.accepted);
+        when(heartSignalRepository.findById(5L)).thenReturn(Optional.of(signal));
+        when(sessionRepository.findActiveByUserPair(1L, 2L, TempChatSessionService.INACTIVE_PHASES))
+                .thenReturn(Optional.empty(), readBack);
+        DataIntegrityViolationException dup =
+                new DataIntegrityViolationException("Duplicate entry for key 'uk_temp_chat_active_pair'");
+        when(sessionRepository.save(any(TempChatSession.class))).thenAnswer(inv -> failAsParticipant(dup));
+        return dup;
+    }
+
+    /** 模拟仓储 @Transactional(REQUIRED) 边界内抛异常：参与外层事务时由 spring-tx 标记 rollback-only。 */
+    private Object failAsParticipant(DataIntegrityViolationException dup) {
+        return new TransactionTemplate(txManager).execute(status -> {
+            throw dup;
+        });
+    }
+
+    /**
+     * 最小内存事务管理器：继承真实 {@link AbstractPlatformTransactionManager}（不覆写任何默认值，
+     * globalRollbackOnParticipationFailure=true），参与失败标记 rollback-only、提交期
+     * UnexpectedRollbackException、REQUIRES_NEW 挂起/恢复均走 spring-tx 原生逻辑；资源绑定按
+     * DataSourceTransactionManager 同构契约以线程本地变量实现。
+     */
+    static final class InMemoryTxManager extends AbstractPlatformTransactionManager {
+        int commits;
+        int rollbacks;
+        private final ThreadLocal<PhysicalTx> bound = new ThreadLocal<>();
+
+        static final class PhysicalTx {
+            boolean rollbackOnly;
+        }
+
+        static final class TxObject implements SmartTransactionObject {
+            PhysicalTx tx;
+
+            @Override
+            public boolean isRollbackOnly() {
+                return tx != null && tx.rollbackOnly;
+            }
+
+            @Override
+            public void flush() {
+            }
+        }
+
+        @Override
+        protected Object doGetTransaction() {
+            TxObject txObject = new TxObject();
+            txObject.tx = bound.get();
+            return txObject;
+        }
+
+        @Override
+        protected boolean isExistingTransaction(Object transaction) {
+            return ((TxObject) transaction).tx != null;
+        }
+
+        @Override
+        protected void doBegin(Object transaction, TransactionDefinition definition) {
+            PhysicalTx tx = new PhysicalTx();
+            ((TxObject) transaction).tx = tx;
+            bound.set(tx);
+        }
+
+        @Override
+        protected Object doSuspend(Object transaction) {
+            ((TxObject) transaction).tx = null;
+            PhysicalTx suspended = bound.get();
+            bound.remove();
+            return suspended;
+        }
+
+        @Override
+        protected void doResume(Object transaction, Object suspendedResources) {
+            bound.set((PhysicalTx) suspendedResources);
+        }
+
+        @Override
+        protected void doCommit(DefaultTransactionStatus status) {
+            commits++;
+        }
+
+        @Override
+        protected void doRollback(DefaultTransactionStatus status) {
+            rollbacks++;
+        }
+
+        @Override
+        protected void doSetRollbackOnly(DefaultTransactionStatus status) {
+            ((TxObject) status.getTransaction()).tx.rollbackOnly = true;
+        }
+
+        @Override
+        protected void doCleanupAfterCompletion(Object transaction) {
+            bound.remove();
+        }
     }
 
     /**

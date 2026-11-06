@@ -136,4 +136,36 @@ class GlobalExceptionHandlerTest {
         assertEquals(500, GlobalExceptionHandler.resolveMappedStatus(new RuntimeException("boom")));
         assertEquals(500, GlobalExceptionHandler.resolveMappedStatus(null));
     }
+
+    /**
+     * R17 回归修复：生产 profile 下 503 ResponseStatusException 的 reason 是刻意设计的降级指引
+     * （此处取注销服务缺席文案），必须透传——R17 的 5xx 统一脱敏曾把它替换成通用文案。
+     */
+    @Test
+    void handleResponseStatus_production503_passesDesignedReasonThrough() {
+        org.springframework.test.util.ReflectionTestUtils.setField(handler, "activeProfile", "real");
+        String reason = com.campuslove.api.common.ErrorMessages.ACCOUNT_ERASURE_SERVICE_UNAVAILABLE;
+
+        ResponseEntity<Map<String, Object>> response = handler.handleResponseStatus(
+                new org.springframework.web.server.ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, reason));
+
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, response.getStatusCode());
+        assertEquals(reason, response.getBody().get("message"));
+    }
+
+    /**
+     * R17 安全修复保持：生产 profile 下其余 5xx 的 reason 仍脱敏，不外泄内部实现细节。
+     */
+    @Test
+    void handleResponseStatus_production500_stillDesensitized() {
+        org.springframework.test.util.ReflectionTestUtils.setField(handler, "activeProfile", "real");
+        String internalReason = "storage root /data/media not writable";
+
+        ResponseEntity<Map<String, Object>> response = handler.handleResponseStatus(
+                new org.springframework.web.server.ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR, internalReason));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        org.junit.jupiter.api.Assertions.assertNotEquals(internalReason, response.getBody().get("message"));
+    }
 }

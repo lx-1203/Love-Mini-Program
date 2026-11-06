@@ -29,9 +29,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 临时聊天会话生命周期组件（Task 4.2.3 拆分）。
@@ -62,6 +66,19 @@ public class TempChatSessionService {
     private final SimpMessagingTemplate messagingTemplate;
     private final TempChatViewMapper viewMapper;
 
+    /**
+     * 会话创建专用事务模板（REQUIRES_NEW，R17 回归修复）。
+     *
+     * <p>并发同插命中 uk_temp_chat_active_pair 时，{@code save()} 是参与型事务边界：
+     * DataIntegrityViolationException 穿过仓储代理即把共享事务标成 rollback-only，
+     * 在同一事务里 catch 后回读命中也会在提交期 UnexpectedRollbackException、
+     * 回读不命中（REPEATABLE-READ 旧快照看不到赢家）则重抛——幂等返回不可达。
+     * 现改为写段独立事务：冲突时该事务整体回滚，再在新事务（新一致性读快照，
+     * 可见已提交的赢家）中回读。REQUIRES_NEW 保证不依赖调用方的注解写法——
+     * 调用方即便带事务，写段/回读段也各自是独立的物理事务。</p>
+     */
+    private final TransactionTemplate createSessionTemplate;
+
     public TempChatSessionService(
             ChatConfig chatConfig,
             TempChatSessionRepository sessionRepository,
@@ -74,7 +91,10 @@ public class TempChatSessionService {
             RecommendationService recommendationService,
             HeartSignalRepository heartSignalRepository,
             SimpMessagingTemplate messagingTemplate,
-            TempChatViewMapper viewMapper) {
+            TempChatViewMapper viewMapper,
+            PlatformTransactionManager transactionManager) {
+        this.createSessionTemplate = new TransactionTemplate(transactionManager);
+        this.createSessionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.chatConfig = chatConfig;
         this.sessionRepository = sessionRepository;
         this.messageRepository = messageRepository;
@@ -136,15 +156,36 @@ public class TempChatSessionService {
      * @param signalId            心动信号 ID（可选，2026-08-08 走查 P0-3：已接受信号开聊入口，
      *                            服务端校验信号归属与状态后解析对端用户）
      */
-    @Transactional
     public TempChatSessionView createSession(String recommendedPersonId, String matchId, String signalId) {
+        // 事务边界由 createSessionTemplate 显式划分（见字段注释），本方法不挂 @Transactional
         Long currentUserId = resolveCurrentUserId();
-        Long partnerUserId = resolvePartnerUserId(recommendedPersonId, matchId, signalId);
+        Long partnerUserId = createSessionTemplate.execute(status ->
+                resolvePartnerUserId(recommendedPersonId, matchId, signalId));
         if (partnerUserId == null) {
             throw new IllegalArgumentException(ErrorMessages.RECOMMENDER_PARSE_FAILED_PREFIX + recommendedPersonId
                     + ", matchId=" + matchId + ", signalId=" + signalId);
         }
 
+        try {
+            return createSessionTemplate.execute(status ->
+                    findOrInsertSession(currentUserId, partnerUserId, recommendedPersonId, matchId));
+        } catch (DataIntegrityViolationException dupEx) {
+            // R17（数据库审计 P2）并发兜底：并发同插被 uk_temp_chat_active_pair（迁移
+            // V2026.11.05.0002 生成列唯一键）拦截。写事务此时已整体回滚（物理事务终结，
+            // 不是参与型 rollback-only 标记），在新事务里回读已提交的赢家幂等返回，与
+            // 「已有会话直接返回」分支同语义；回读不命中则重抛原异常（409）。
+            log.warn("并发创建命中 active-pair 唯一键，写事务已回滚，新事务回读已有活跃会话: userA={}, userB={}",
+                    currentUserId, partnerUserId);
+            return createSessionTemplate.execute(status -> sessionRepository
+                    .findActiveByUserPair(currentUserId, partnerUserId, INACTIVE_PHASES)
+                    .map(winner -> toSessionView(winner, currentUserId))
+                    .orElseThrow(() -> dupEx));
+        }
+    }
+
+    /** 写段（在 createSessionTemplate 事务内执行）：已有活跃会话直接返回，否则插入会话与联系交换记录。 */
+    private TempChatSessionView findOrInsertSession(Long currentUserId, Long partnerUserId,
+                                                    String recommendedPersonId, String matchId) {
         Optional<TempChatSession> existing = sessionRepository.findActiveByUserPair(currentUserId, partnerUserId, INACTIVE_PHASES);
         if (existing.isPresent()) {
             log.debug("用户 {} 与 {} 已存在活跃会话: {}", currentUserId, partnerUserId, existing.get().getSessionUid());
@@ -176,21 +217,10 @@ public class TempChatSessionService {
         session.setCreatedAt(now);
         session.setUpdatedAt(now);
         // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
-        // 否则 contactExchange.setSession 与下方 toSessionView 中 session.getId() 为 null
-        // R17（数据库审计 P2）：服务层 check-then-insert 的并发兜底——并发同插被
-        // uk_temp_chat_active_pair（R17 迁移 V2026.11.05.0002 生成列唯一键）拦截时，
-        // 捕获 DataIntegrityViolationException 回读已有活跃会话幂等返回，与既有
-        // 「已有会话直接返回」分支同语义；不再让并发同插把该对用户打成交互循环 500。
-        try {
-            session = sessionRepository.save(session);
-        } catch (org.springframework.dao.DataIntegrityViolationException dupEx) {
-            log.warn("并发创建命中 active-pair 唯一键，回读已有活跃会话: userA={}, userB={}",
-                    currentUserId, partnerUserId);
-            TempChatSession winner = sessionRepository.findActiveByUserPair(
-                    currentUserId, partnerUserId, INACTIVE_PHASES)
-                    .orElseThrow(() -> dupEx);
-            return toSessionView(winner, currentUserId);
-        }
+        // 否则 contactExchange.setSession 与下方 toSessionView 中 session.getId() 为 null。
+        // 唯一键冲突（DataIntegrityViolationException）不在此处 catch——同一事务内无法恢复，
+        // 由 createSession 在本事务回滚之后另开事务回读处理。
+        session = sessionRepository.save(session);
 
         // 创建默认的联系交换记录
         TempChatContactExchange contactExchange = new TempChatContactExchange();

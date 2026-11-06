@@ -1141,15 +1141,24 @@ export const clientApi = {
     await request({ url: "/matches/pass/batch", method: "POST", data: { passedUserIds: ids } });
   },
 
-  /** 搜索用户（v3 搜索分组 · 用户）：GET /api/v1/search/users?keyword= */
+  /**
+   * 搜索用户（v3 搜索分组 · 用户）：GET /api/v1/search/users?keyword=
+   * R18（复审 low）：real 档后端返回 ApiResponse 信封内层为 Spring Page JSON
+   * （content 数组，users.yaml:353 R17 已对齐）；历史类型标注为裸数组，本处做
+   * 双形态归一（数组直返 / Page 取 content），mock 档不变。
+   */
   async searchUsers(keyword: string): Promise<UserSearchView[]> {
     if (useMock()) {
       return mockFixtures.searchUsers(keyword);
     }
-    return request<UserSearchView[]>({
+    const payload = await request<UserSearchView[] | { content?: UserSearchView[] }>({
       url: `/search/users?keyword=${encodeURIComponent(keyword)}&page=0&size=20`,
       method: "GET",
     });
+    if (Array.isArray(payload)) {
+      return payload;
+    }
+    return payload.content ?? [];
   },
 
   /**

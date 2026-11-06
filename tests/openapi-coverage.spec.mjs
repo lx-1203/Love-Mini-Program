@@ -185,10 +185,9 @@ assert.ok(backendNotificationTypes.length >= 9,
 const notificationsYaml = readFileSync(join(OPENAPI_DIR, "notifications.yaml"), "utf8");
 const notifViewAt = notificationsYaml.indexOf("    NotificationView:");
 assert.ok(notifViewAt >= 0, "notifications.yaml 里找不到 NotificationView schema，判点需同步更新");
-const notifViewBody = notificationsYaml.slice(
-  notifViewAt,
-  notificationsYaml.indexOf("    UnreadCountView:", notifViewAt),
-);
+const notifViewEnd = notificationsYaml.indexOf("    UnreadCountView:", notifViewAt);
+assert.ok(notifViewEnd >= 0, "notifications.yaml 里找不到 UnreadCountView 边界 schema，判点需同步更新");
+const notifViewBody = notificationsYaml.slice(notifViewAt, notifViewEnd);
 const notifTypeAt = notifViewBody.indexOf("\n        type:");
 assert.ok(notifTypeAt >= 0, "NotificationView.type 结构变了，判点需同步更新");
 const yamlEnumMatch = notifViewBody.slice(notifTypeAt, notifTypeAt + 400).match(/enum:\s*\[([^\]]+)\]/u);

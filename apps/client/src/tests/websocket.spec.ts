@@ -226,4 +226,29 @@ describe("websocket client - token 传递方式（Phase 3 任务 15）", () => {
       vi.useRealTimers();
     }
   });
+
+  it("重连排期窗口内 disconnect 后重登，下一次断线仍应自动重连（R17 回归：防重入标志须随取消复位）", async () => {
+    vi.useFakeTimers();
+    try {
+      wsClient.connect("token-before-kick");
+      // 首次断线：handleReconnect 置防重入标志并排期重连（定时器挂起中）
+      mockTask!.onCloseCallback?.({ code: 1006, reason: "network lost" });
+      // 排期窗口内主动断开（401 强踢 / 改密 / 注销路径的 wsClient.disconnect()）
+      wsClient.disconnect();
+      // 让 disconnect 的 300ms 延迟关闭先走完，再模拟用户重新登录建连
+      await vi.advanceTimersByTimeAsync(500);
+      wsClient.connect("token-after-relogin");
+      expect(capturedArgs!.protocols).toContain("bearer.token-after-relogin");
+
+      capturedArgs = null;
+      mockTask!.onCloseCallback?.({ code: 1006, reason: "network lost again" });
+      // 退避上限 30s：无论此前累计几次尝试，31s 内都应发起重连
+      await vi.advanceTimersByTimeAsync(31_000);
+
+      expect(capturedArgs).not.toBeNull();
+      expect(capturedArgs!.protocols).toContain("bearer.fallback-token");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

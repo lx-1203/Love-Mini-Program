@@ -518,7 +518,7 @@ public class MediaAccessController {
      */
     @GetMapping("/app-assets/**")
     // 公开静态资产但仍是公开读端点：放宽到突发 120/每秒 5，压平刷量面
-    @RateLimit(capacity = 120, refillTokens = 5, key = "#clientIp")
+    @RateLimit(capacity = 300, refillTokens = 20, key = "#clientIp")
     @Operation(
             summary = "公开访问应用资产（无需登录）",
             description = "小程序主包瘦身：装饰性图片（campus 场景/活动海报/插画等）后端托管后的公开访问端点，免登录可看图。real profile 下校验 media_asset 注册记录（type=app_asset 且 audit_status=approved），驳回即下线。",

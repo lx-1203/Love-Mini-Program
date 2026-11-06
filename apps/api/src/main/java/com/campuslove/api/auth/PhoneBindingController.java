@@ -116,11 +116,21 @@ public class PhoneBindingController {
         User user = userRepository.findById(userId).orElseThrow(() ->
                 new IllegalArgumentException(ErrorMessages.USER_NOT_FOUND));
 
-        // 2. 获取微信 access_token
-        String accessToken = getAccessToken();
-
-        // 3. 调用微信 getuserphonenumber 接口换取手机号
-        String phoneNumber = getPhoneNumber(accessToken, request.code());
+        // 2-3. 获取微信 access_token 并换取手机号
+        // R18（复审 low）：token 失效自愈通道——微信侧换 secret/强制刷新后，90 分钟内存
+        // 缓存会命中过期 token，getuserphonenumber 回 40001/42001；旧实现（R17 前）每请求
+        // 实时取 token 天然自愈，缓存引入后补同等的失效通道：清缓存重试一次，故障窗口
+        // 从「最长 90 分钟」收回「单次重试」。
+        String phoneNumberResolved;
+        try {
+            phoneNumberResolved = getPhoneNumber(getAccessToken(), request.code());
+        } catch (WechatTokenInvalidException ex) {
+            TOKEN_CACHE.set(null);
+            log.info("access_token 失效（errcode=40001/42001），清缓存重试一次");
+            phoneNumberResolved = getPhoneNumber(getAccessToken(), request.code());
+        }
+        // 事实最终变量：下方 lambda（findByPhone 查重）捕获要求
+        final String phoneNumber = phoneNumberResolved;
 
         // 4. 查重：与注册侧/后台建号侧/换号侧同一套判据——不可逆派生键优先，明文历史行兜底。
         //    注意不能拿密文查重：随机 IV 让「同一号码的密文」永不相等，密文侧查重恒不命中。
@@ -163,8 +173,7 @@ public class PhoneBindingController {
      * 过期避免边界失效），命中时零出站调用。</p>
      *
      * @return access_token 字符串
-     * @throws IllegalStateException 当 access_token 多实例下并发首取由 synchronized
-     *         串行化，单实例语义安全
+     * @throws IllegalStateException 当 access_token 获取失败时
      */
     // R17 修订：缓存挂实例而非 static——本类生产态是单例 bean，实例级缓存语义不变
     // （fetchAccessTokenFromWechat 的 javadoc 也写明「各实例独立缓存」）；static 会让缓存
@@ -257,6 +266,10 @@ public class PhoneBindingController {
                 if (resp.errcode == 40029) {
                     throw new IllegalArgumentException("手机号获取凭证已失效，请重试");
                 }
+                // 40001/42001: access_token 无效/过期——抛专用信号，bindPhone 清缓存重试一次
+                if (resp.errcode == 40001 || resp.errcode == 42001) {
+                    throw new WechatTokenInvalidException("微信 access_token 无效或已过期: " + resp.errmsg);
+                }
                 throw new IllegalStateException("微信手机号获取失败: " + resp.errmsg);
             }
 
@@ -271,6 +284,17 @@ public class PhoneBindingController {
         } catch (Exception ex) {
             log.error("调用微信 getuserphonenumber 接口异常", ex);
             throw new IllegalStateException("微信手机号获取失败: " + ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * R18：微信侧 access_token 失效信号（getuserphonenumber 回 40001/42001）。
+     * 仅供 bindPhone 识别后清 token 缓存重试，不改变对外错误语义（仍以
+     * IllegalStateException 家族向上传递）。
+     */
+    private static final class WechatTokenInvalidException extends IllegalStateException {
+        private WechatTokenInvalidException(String message) {
+            super(message);
         }
     }
 

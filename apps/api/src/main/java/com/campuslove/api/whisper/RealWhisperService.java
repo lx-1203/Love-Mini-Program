@@ -152,7 +152,7 @@ public class RealWhisperService implements WhisperService {
         // 发送者每日 ≤5 条
         LocalDateTime dayStart = LocalDateTime.of(LocalDate.now(TimeZones.BUSINESS), LocalTime.MIN);
         if (repository.countBySenderIdAndCreatedAtBetween(senderId, dayStart, dayStart.plusDays(1)) >= dailyLimit) {
-            throw new IllegalArgumentException("今日悄悄话已达上限（5 条）");
+            throw new IllegalArgumentException("今日悄悄话已达上限（" + dailyLimit + " 条）");
         }
 
         // v3 冻结：发送悄悄话需先完成实名认证（未认证不扣费）

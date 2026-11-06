@@ -666,9 +666,30 @@ function redirectToLogin(): void {
   // 原地补齐三件套。三者全部动态 import：logout-registry 汇聚全部 store、
   // websocket 与 usePageAccess 都反向依赖本文件（getToken），静态引入会重建
   // http ↔ stores ↔ websocket 循环（循环 chunk 前科见 utils/media-token-cache.ts 头注释）。
-  void import("../stores/logout-registry").then(({ resetAccountScopedStores }) => {
+  void (async () => {
+    // R18（复审 low）：对齐 logout() 的登记表顺序——先把会话本体落到「已登出」
+    // （个别 store 的复位逻辑会读会话状态，stores/session.ts:608 注释明示此约束），
+    // 再复位账号域 store；缺这一步会让 userSession 残留 A 账号且 loggedIn 仍真。
+    try {
+      const { useSessionStore } = await import("../stores/session");
+      const sessionStore = useSessionStore();
+      sessionStore.userSession = null;
+      sessionStore.loginHero = null;
+      sessionStore.isOffline = false;
+      sessionStore.errorMessage = null;
+      sessionStore.profileBackgroundUrl = "";
+    } catch (_e) {
+      // pinia 尚未激活（冷启动极早的 401）时跳过——此时也无账号内存态可清
+    }
+    const { resetAccountScopedStores } = await import("../stores/logout-registry");
     resetAccountScopedStores();
-  });
+    try {
+      const { clearUser } = await import("../services/sentry");
+      clearUser();
+    } catch (_e) {
+      // Sentry 初始化失败不影响登出主流程（stores/session.ts 同口径）
+    }
+  })();
   void import("./websocket").then(({ wsClient }) => {
     wsClient.disconnect();
   });

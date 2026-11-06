@@ -3,13 +3,15 @@
    ── 这条测试要钉住的病 ──────────────────────────────────────────────────────────────
    r-exec-cli.mjs 的 nativeHookSource() 包的是 wx.* 那一层，注释(:588)断言
    「uni.showToast 最终落到 wx.showToast ⇒ 覆盖得到」。产物 common/vendor.js 里 uni 是一枚 Proxy，
-   get-trap 默认分支走 `Tn(i, r(i, n[i]))`，其中 n=`ji`=`Hi()` 在**启动期**从 wx 复制出来的私有表
-   (`function Hi(){const e={};for(const t in wx)Gf(t)&&(e[t]=wx[t]);...}`，`const ji=Hi();var Fr=Vf(Zf,tp,ji)`)。
-   ⇒ 装钩子之后再 `wx.showToast=wrapper` 改的是 global 那枚 wx，不是 `ji`，uni 派生的仍是启动期那份原函数。
+   get-trap 默认分支走 `<promisify>(i, r(i, n[i]))`，其中 n=<快照表>=<快照函数>() 在**启动期**从 wx 复制出来的私有表
+   （以 1b317b00 钉判据时那次构建的压缩名为例：`function Hi(){const e={};for(const t in wx)Gf(t)&&(e[t]=wx[t]);...}`，
+   `const ji=Hi();var Fr=Vf(Zf,tp,ji)`；R17 vue 3.5 升级重建后同一拓扑叫 Ni/Di/Nr/Uf——压缩名每次构建都会轮换，
+   下方判据一律从产物结构现场解析名字，不钉任何一次构建的拼写）。
+   ⇒ 装钩子之后再 `wx.showToast=wrapper` 改的是 global 那枚 wx，不是快照表，uni 派生的仍是启动期那份原函数。
    于是本通道产出的每一条 toast 读数都是「0」，而那个 0 的含义是「我的钩子被绕开了」，却被报成「app 没弹 toast」——
    这是仪器坏了去指控产品。**这条测试离线跑真产物就能把它判红**（同 exec-network-observe.mjs 对 request 的独立结论）。
    ── 空转防护 ────────────────────────────────────────────────────────────────────
-   A3「绕开」这一断言不是空转的：A7 用另一枚拓扑（requireMiniProgram 未定义 ⇒ globalThis.wx 被 Hi() 覆写成 ji 本身）
+   A3「绕开」这一断言不是空转的：A7 用另一枚拓扑（requireMiniProgram 未定义 ⇒ globalThis.wx 被快照函数覆写成快照表本身）
    跑同一段代码，那一份必须**反过来**（钩子被看到）。两份拓扑给出相反结果，才证明 A3 测的是运行时真读的那枚对象。
    ── 输出 ──────────────────────────────────────────────────────────────────────
    SUMMARY: assertion failures = N（照 run-qa-selftests.mjs:49）
@@ -44,9 +46,10 @@ if (!fs.existsSync(VENDOR)) {
   process.exit(1);
 }
 
-// 在 vm 里加载**真产物**，两种拓扑各跑一次；requireMiniProgram 决定 Hi() 要不要覆写 globalThis.wx。
+// 在 vm 里加载**真产物**，两种拓扑各跑一次；requireMiniProgram 决定快照函数要不要覆写 globalThis.wx。
 // source 省略时读盘上产物；负例自证传入内存里的变异副本（盘上产物不动）。
-function boot(requireMiniProgramDefined, source) {
+// names：从产物结构现场解析出的模块级名字（uni / 快照表 / 可拦截谓词），不钉压缩名。
+function boot(requireMiniProgramDefined, names, source) {
   const trace = [];
   const mk = (n) => function (o) { trace.push("ORIG:" + n); return { errMsg: n + ":ok" }; };
   const wx = {};
@@ -55,7 +58,8 @@ function boot(requireMiniProgramDefined, source) {
     "getLaunchOptionsSync", "canIUse", "createSelectorQuery"].forEach((n) => { wx[n] = mk(n); });
   wx.env = {};
   let code = source === undefined ? fs.readFileSync(VENDOR, "utf8") : String(source);
-  code += "\n;globalThis.__p={Fr:(typeof Fr!==\"undefined\"?Fr:null),ji:(typeof ji!==\"undefined\"?ji:null),Pf:(typeof Pf!==\"undefined\"?Pf:null)};";
+  const probe = (n) => (n ? "(typeof " + n + "!==\"undefined\"?" + n + ":null)" : "null");
+  code += "\n;globalThis.__p={uni:" + probe(names.uni) + ",table:" + probe(names.table) + ",pred:" + probe(names.pred) + "};";
   const noop = () => {};
   const sb = {
     console, exports: {}, Date, JSON, Math, Promise, Object, Array, Function, String, Number,
@@ -67,42 +71,74 @@ function boot(requireMiniProgramDefined, source) {
   if (requireMiniProgramDefined) sb.requireMiniProgram = () => ({});
   vm.createContext(sb);
   vm.runInContext(code, sb, { filename: "vendor.js" });
-  return { sb, trace, uni: sb.__p.Fr, ji: sb.__p.ji, Pf: sb.__p.Pf };
+  return { sb, trace, uni: sb.__p.uni, ji: sb.__p.table, Pf: sb.__p.pred };
 }
 
 /* ── 1. 静态机制：从产物源码现场解析结构，不钉压缩后的局部名 ──
-   minify 每次构建都会轮换局部名（v37 是 Tn(i,r(i,n[i]))，本版是 Ln(i,r(i,n[i]))），
+   minify 每次构建都会轮换局部名（v37 是 Tn(i,r(i,n[i]))，1b317b00 那版是 Ln(i,r(i,n[i]))），
    把判据写成「某个压缩名相等」就等于把结论绑在某一次构建结果上，下一次构建必假红。
+   R17 实锤：vue 3.4→3.5 重建后工厂/快照/表/uni 由 Vf/Hi/ji/Fr 轮换成 Uf/Ni/Di/Nr，旧名还被重用
+   成别的东西（Hi/Vf 成了 console 协议对象，Pf 从可拦截谓词变成了 getter 工厂），钉名判据即假红。
    这里只认结构：
-     function Vf(<e>,<t>,<n>=wx){ const <r>=xf(<t>), <o>={ get(<s>,<i>){ return … :
+     function <F>(<e>,<t>,<n>=wx){ const <r>=<W>(<t>), <o>={ get(<s>,<i>){ return … :
        <f>(<i>, <r>(<i>, <n>[<i>])) } }; return new Proxy({}, <o>) }
    <n> 是第三参（缺省=global wx），默认分支经 <r> 读 <n>[<i>] —— 即启动期快照；
-   <f>/<r>/<n>/<i> 全部按同一次解析出来的名字比对，不看具体拼写。 */
+   <F>/<W>/<f>/<r>/<n>/<i> 全部按同一次解析出来的名字比对，不看具体拼写。 */
 const escRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const ID = "[A-Za-z_$][\\w$]*";
+/* 函数体用回火记号 (?:(?!function )[\s\S])*? 约束：不许跨过另一个 function 声明，
+   否则惰性匹配会从文件里第一个 function 一路吞到工厂的 return new Proxy。 */
+const FACTORY_RE = new RegExp("function (" + ID + ")\\(([^)]*)\\)\\{((?:(?!function )[\\s\\S])*?)return new Proxy\\(\\{\\},\\s*(" + ID + ")\\)\\}", "g");
 function snapshotRoute(src) {
-  const vf = /function Vf\(([^)]*)\)\{([\s\S]*?)return new Proxy\(\{\},\s*([A-Za-z_$][\w$]*)\)\}/.exec(src);
-  if (!vf) return { ok: false, why: "产物里找不到 Vf 的 Proxy 工厂" };
-  const params = vf[1].split(",").map((x) => x.trim());
-  if (params.length !== 3) return { ok: false, why: "Vf 参数个数不是 3（拿到 " + params.length + "）" };
-  const p3 = /^([A-Za-z_$][\w$]*)=wx$/.exec(params[2]);
-  if (!p3) return { ok: false, why: "Vf 第三参不是「缺省=global wx」：" + params[2] };
+  const cands = [...src.matchAll(FACTORY_RE)];
+  const vf = cands.find((m) => /=wx$/.test(m[2].split(",").pop().trim())) || cands[0];
+  if (!vf) return { ok: false, why: "产物里找不到 uni 的 Proxy 工厂（function <F>(…){…return new Proxy({},<o>)}）" };
+  const factory = vf[1];
+  const params = vf[2].split(",").map((x) => x.trim());
+  if (params.length !== 3) return { ok: false, why: factory + " 参数个数不是 3（拿到 " + params.length + "）" };
+  const p3 = new RegExp("^(" + ID + ")=wx$").exec(params[2]);
+  if (!p3) return { ok: false, why: factory + " 第三参不是「缺省=global wx」：" + params[2] };
   const table = p3[1];
-  const body = vf[2];
-  const alias = /const\s+([A-Za-z_$][\w$]*)\s*=\s*xf\(/.exec(body);
-  if (!alias) return { ok: false, why: "Vf 里找不到 xf(t) 派生的 getter" };
+  const body = vf[3];
+  const alias = new RegExp("const\\s+(" + ID + ")\\s*=\\s*(" + ID + ")\\(\\s*" + escRe(params[1]) + "\\s*\\)").exec(body);
+  if (!alias) return { ok: false, why: factory + " 里找不到由第二参派生的 getter（const <r>=<W>(" + params[1] + ")）" };
   const trap = /\bget\(([A-Za-z_$][\w$]*)\s*,\s*([A-Za-z_$][\w$]*)\)\s*\{([^}]*)\}/.exec(body);
-  if (!trap) return { ok: false, why: "Vf 里找不到 Proxy get-trap" };
+  if (!trap) return { ok: false, why: factory + " 里找不到 Proxy get-trap", factory };
   const key = trap[2], expr = trap[3];
-  if (new RegExp("\\bwx\\s*\\[").test(expr)) return { ok: false, why: "get-trap 直读 global wx[...]（启动期快照被绕开）" };
-  const tail = new RegExp(":\\s*([A-Za-z_$][\\w$]*)\\(\\s*" + escRe(key) + "\\s*,\\s*" + escRe(alias[1]) +
+  /* 判红时也带回已解析的工厂名/默认分支调用名：模块级绑定与可拦截谓词的解析不依赖快照判定本身，
+     VENDOR_UNDER_TEST 变异副本（直读 wx）下动态判点照常执行、A5 照常翻红，而不是在名字解析处连锁短路。 */
+  const loose = new RegExp(":\\s*(" + ID + ")\\(\\s*" + escRe(key) + "\\s*,[^:]*$").exec(expr);
+  const partial = { factory, callee: loose ? loose[1] : undefined };
+  if (new RegExp("\\bwx\\s*\\[").test(expr)) return { ok: false, why: "get-trap 直读 global wx[...]（启动期快照被绕开）", ...partial };
+  const tail = new RegExp(":\\s*(" + ID + ")\\(\\s*" + escRe(key) + "\\s*,\\s*" + escRe(alias[1]) +
     "\\(\\s*" + escRe(key) + "\\s*,\\s*" + escRe(table) + "\\[\\s*" + escRe(key) + "\\s*\\]\\s*\\)\\s*\\)\\s*$").exec(expr);
-  if (!tail) return { ok: false, why: "默认分支没有走 <getter>(<i>, <第三参>[<i>]) 私有表（快照被绕开）" };
-  return { ok: true, callee: tail[1], getter: alias[1], table, key };
+  if (!tail) return { ok: false, why: "默认分支没有走 <getter>(<i>, <第三参>[<i>]) 私有表（快照被绕开）", ...partial };
+  return { ok: true, factory, callee: tail[1], getter: alias[1], table, key };
+}
+/* 模块级绑定：const <表>=<快照函数>();var <uni>=<F>(<api>,<protocols>,<表>) —— uni 的第三参是启动期快照。 */
+function uniBinding(src, factory) {
+  if (!factory) return null;
+  const m = new RegExp("(?:const|let|var)\\s+(" + ID + ")=(" + ID + ")\\(\\);(?:const|let|var)\\s+(" + ID + ")=" +
+    escRe(factory) + "\\([^,()]+,[^,()]+,\\1\\)").exec(src);
+  return m ? { table: m[1], snapshotFn: m[2], uni: m[3] } : null;
+}
+/* 可拦截谓词：promisify（get-trap 默认分支的 <f>）入口处的 !<P>(<name>) 判定——只有 <P> 为 true 的 API
+   才会被包成经 invokeApi（拦截器所在）的 promiseApi。 */
+function interceptPredicate(src, callee) {
+  if (!callee) return null;
+  const m = new RegExp("function " + escRe(callee) + "\\((" + ID + "),(" + ID + ")\\)\\{(?:return|if\\()\\s*!\\s*(" + ID + ")\\(\\1\\)").exec(src);
+  return m ? m[3] : null;
 }
 const raw = fs.readFileSync(VENDOR, "utf8");
 const route = snapshotRoute(raw);
-t("产物里 uni 是一枚 Proxy：Vf 的 get-trap 默认分支读第三参私有表（缺省=global wx），不是直读 global wx",
-  route.ok === true, route.ok ? "callee=" + route.callee + " getter=" + route.getter + " table=" + route.table : route.why);
+const binding = uniBinding(raw, route.factory);
+const NAMES = {
+  uni: binding ? binding.uni : null,
+  table: binding ? binding.table : null,
+  pred: interceptPredicate(raw, route.callee),
+};
+t("产物里 uni 是一枚 Proxy：工厂的 get-trap 默认分支读第三参私有表（缺省=global wx），不是直读 global wx",
+  route.ok === true, route.ok ? "factory=" + route.factory + " callee=" + route.callee + " getter=" + route.getter + " table=" + route.table : route.why);
 /* 负例自证 A（结构）：把默认分支的私有表 n[i] 改成直读 global wx[i] —— 这正是「钩子真的
    没被绕开」的拓扑。改的是内存里的同一份产物串，盘上产物一字不动。 */
 const tailRe = route.ok ? new RegExp(escRe(route.callee) + "\\(\\s*" + escRe(route.key) + "\\s*,\\s*" +
@@ -116,22 +152,35 @@ t("负例：把 get-trap 默认分支改成直读 global wx[i]（=钩子没被�
    A5 的 hookSeen=0 与这里的 hookSeen=1 是同一段代码的两种拓扑，0 不是恒假。 */
 let negHookSeen = 0;
 if (bypassed) {
-  const N = boot(true, bypassed);
+  const N = boot(true, NAMES, bypassed);
   const oNeg = N.sb.wx.showToast;
   N.sb.wx.showToast = function (o) { negHookSeen++; return oNeg.apply(N.sb.wx, arguments); };
-  N.uni.showToast({ title: "neg" });
+  if (N.uni && typeof N.uni.showToast === "function") N.uni.showToast({ title: "neg" });
 }
 t("负例同拓扑实跑：wx 层 wrapper 被看到（hookSeen=1）⇒ A5 的 hookSeen=0 不是恒假",
   negHookSeen === 1, "hookSeen=" + negHookSeen);
-t("产物里存在启动期快照 Hi()：for(const t in wx)Gf(t)&&(e[t]=wx[t])（按值复制函数引用）",
-  /function Hi\(\)\{const e=\{\};for\(const t in wx\)Gf\(t\)&&\(e\[t\]=wx\[t\]\)/.test(raw));
-t("产物里 Fr=Vf(Zf,tp,ji) 且 ji=Hi()（uni 的第三参=启动期私有快照）",
-  /const ji=Hi\(\);var Fr=Vf\([^,]+,[^,]+,ji\)/.test(raw));
+const snapFnRe = binding ? new RegExp("function " + escRe(binding.snapshotFn) + "\\(\\)\\{const (" + ID + ")=\\{\\};for\\(const (" + ID +
+  ") in wx\\)(" + ID + ")\\(\\2\\)&&\\(\\1\\[\\2\\]=wx\\[\\2\\]\\)") : null;
+const snapFn = snapFnRe ? snapFnRe.exec(raw) : null;
+t("产物里存在启动期快照函数：for(const <k> in wx)<pred>(<k>)&&(<e>[<k>]=wx[<k>])（按值复制函数引用）",
+  !!snapFn, binding ? "snapshotFn=" + binding.snapshotFn + (snapFn ? " pred=" + snapFn[3] : " 结构不符") : "快照函数名无从解析（见下一条）");
+t("产物里 <uni>=<工厂>(<api>,<protocols>,<表>) 且 <表>=<快照函数>()（uni 的第三参=启动期私有快照）",
+  !!binding, binding ? "uni=" + binding.uni + " table=" + binding.table + " snapshotFn=" + binding.snapshotFn
+    : "找不到 const <表>=<快照函数>();var <uni>=" + String(route.factory) + "(…,…,<表>) 绑定");
 
-// ── 2~6. 动态实测：忠实拓扑（requireMiniProgram 已定义 ⇒ globalThis.wx 独立于 ji）──
-const F = boot(true);
-t("真产物里拿得到 uni（Fr）且 uni.showToast 是函数", F.uni && typeof F.uni.showToast === "function");
-t("忠实拓扑下 globalThis.wx 与 Proxy 私有表 ji 是**不同对象**（钩子改前者碰不到后者）",
+// ── 2~6. 动态实测：忠实拓扑（requireMiniProgram 已定义 ⇒ globalThis.wx 独立于快照表）──
+const F = boot(true, NAMES);
+const uniReady = !!(F.uni && typeof F.uni.showToast === "function" && F.ji);
+t("真产物里拿得到 uni（uni=" + String(NAMES.uni) + "）且 uni.showToast 是函数", uniReady);
+if (!uniReady) {
+  /* 名字解析或产物加载不成立时，下游动态判点无从执行——直接判红收口（原先在这里 TypeError 崩溃，
+     聚合器只能看到「无自报断言计数」，看不到是哪一步断的）。 */
+  console.log("SUMMARY: assertion failures = " + fails);
+  console.log("NATIVE_HOOK_ROUTE=FAIL");
+  console.log("HOOK_ROUTE=INCONCLUSIVE uni=unresolved proof=executed");
+  process.exit(1);
+}
+t("忠实拓扑下 globalThis.wx 与 Proxy 私有表（" + NAMES.table + "）是**不同对象**（钩子改前者碰不到后者）",
   F.sb.wx !== F.ji);
 
 // 装钩子那一步（照 r-exec-cli.mjs nativeHookSource 的语义：改 global wx.showToast）
@@ -154,8 +203,9 @@ F.uni.addInterceptor("showToast", { invoke(o) { icHit++; if (o) icTitle = o.titl
 F.uni.showToast({ title: "apiErrors.loginRequired", icon: "none" });
 t("推荐缝生效：uni.addInterceptor('showToast',{invoke}) 的 invoke 被回调，且拿到 payload.title",
   icHit === 1 && /loginRequired/.test(icTitle), "icHit=" + icHit + " title=" + icTitle);
-t("四个 toast API 在产物谓词里 Pf 全为 true（都在可拦截集内，与 request 同族）",
-  TOAST_APIS.every((a) => F.Pf(a) === true), TOAST_APIS.map((a) => a + "=" + F.Pf(a)).join(","));
+t("四个 toast API 在产物可拦截谓词（pred=" + String(NAMES.pred) + "）里全为 true（都在可拦截集内，与 request 同族）",
+  typeof F.Pf === "function" && TOAST_APIS.every((a) => F.Pf(a) === true),
+  typeof F.Pf === "function" ? TOAST_APIS.map((a) => a + "=" + F.Pf(a)).join(",") : "谓词未解析");
 
 // uni-assign 备用缝：Proxy 无 set trap ⇒ 落在 target，get 直接返回它；且不脏化 ji
 let setHit = 0;
@@ -173,14 +223,14 @@ const killed = F.uni.showLoading({ title: "x" });
 t("透传纪律：invoke 返回 false 会掐死本次调用 ⇒ 捕获型钩子必须 return 非 false（否则改产品行为）",
   !(killed && killed.errMsg), "ret=" + JSON.stringify(killed));
 
-// ── 7. 空转防护：另一枚拓扑（requireMiniProgram 未定义 ⇒ Hi() 把 globalThis.wx 覆写成 ji 本身）必须翻红 ──
-const G = boot(false);
-const aliased = G.sb.wx === G.ji;   // 覆写后 globalThis.wx 就是 ji（最后一次 Hi 写回的是自己的 e）
+// ── 7. 空转防护：另一枚拓扑（requireMiniProgram 未定义 ⇒ 快照函数把 globalThis.wx 覆写成快照表本身）必须翻红 ──
+const G = boot(false, NAMES);
+const aliased = G.sb.wx === G.ji;   // 覆写后 globalThis.wx 就是快照表（最后一次快照函数写回的是自己的 e）
 let hookSeen2 = 0;
 const o2 = G.sb.wx.showToast;
 G.sb.wx.showToast = function (o) { hookSeen2++; return o2.apply(G.sb.wx, arguments); };
 G.uni.showToast({ title: "y" });
-t("空转防护：同一份代码在「wx 被覆写成 ji」的拓扑里钩子**被看到**（⇒ A5 的绕开是真测出来的，不是恒假）",
+t("空转防护：同一份代码在「wx 被覆写成快照表」的拓扑里钩子**被看到**（⇒ A5 的绕开是真测出来的，不是恒假）",
   aliased === true && hookSeen2 === 1, "aliased=" + aliased + " hookSeen2=" + hookSeen2);
 
 const verdict = (hookSeen === 0 && icHit === 1) ? "CONFIRMED_BYPASS" : (hookSeen === 1 ? "HOOK_OK" : "INCONCLUSIVE");

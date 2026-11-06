@@ -32,11 +32,16 @@ export interface ReviewCertificationRequest {
 }
 
 /**
- * 获取认证列表（支持按状态筛选）。
- * GET /api/v1/admin/certifications?status=PENDING|ALL|APPROVED|REJECTED
+ * 获取认证列表（支持按状态筛选 + 分页）。
+ * GET /api/v1/admin/certifications?status=PENDING|ALL|APPROVED|REJECTED&page=0&size=20
+ * （后端 0-based page，默认 size=200、上限 @Max(1000)；响应为纯列表无 total，满页即可能还有下一页）
  */
-export function listCertifications(status: string): Promise<CertificationView[]> {
-  return get<CertificationView[]>("/v1/admin/certifications", { status });
+export function listCertifications(
+  status: string,
+  page = 0,
+  size = 20
+): Promise<CertificationView[]> {
+  return get<CertificationView[]>("/v1/admin/certifications", { status, page, size });
 }
 
 /**

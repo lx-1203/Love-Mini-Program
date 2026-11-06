@@ -4,7 +4,7 @@
 
 ## 关键文件
 
-- `package.json`：monorepo 入口，声明 `workspaces: ["apps/client", "apps/admin"]`、全局 scripts、顶层 devDependencies（eslint、lighthouse、spectral-cli、openapi-typescript 等），以及精确的 `packageManager` 字段。
+- `package.json`：monorepo 入口（`workspaces` 字段已于 R17-9 删除，成员只由 `pnpm-workspace.yaml` 声明），声明全局 scripts、顶层 devDependencies（eslint、lighthouse、spectral-cli、openapi-typescript 等），以及精确的 `packageManager` 字段。
 - `pnpm-workspace.yaml`：workspace 扩展匹配 `apps/*`，通过 `allowBuilds` 白名单放行原生 addon 构建，通过 `overrides` 强制统一 `@vitejs/plugin-vue` 版本。
 - `.npmrc`：启用 `save-exact=true` 与 `engine-strict=true`。
 - `pnpm-lock.yaml`：由 pnpm 生成的完整依赖树锁定文件。
@@ -14,7 +14,7 @@
 
 1. **包管理器锁定**：根 `package.json` 中通过 `packageManager: "pnpm@11.17.0+sha512.<hash>"` 指定 pnpm 精确版本，配合 `pnpm-lock.yaml` 确保所有开发者与 CI 安装一致的依赖树。这是可验证的约束——任何非 pnpm 或错误版本的 pnpm 在 lockfile 校验阶段会失败。
 
-2. **Workspace 结构**：根 `workspaces` 显式列出 `apps/client`、`apps/admin`；`pnpm-workspace.yaml` 用 `packages: ["apps/*"]` 做通配扩展。两个来源共同定义 workspace 成员。
+2. **Workspace 结构**：`pnpm-workspace.yaml` 用 `packages: ["apps/*"]` 通配声明，是 workspace 成员的单一真相源（根 `workspaces` 显式列表已于 R17-9 删除，`tests/project-structure.spec.mjs` 断言它不得回潮）；当前带 `package.json` 的成员为 `apps/client`、`apps/admin`。
 
 3. **依赖版本策略**：
    - `.npmrc` 设置 `save-exact=true`，使 `npm install <pkg>`（经 pnpm 桥接）默认保存不带 `^`/`~` 的精确版本。

@@ -24,6 +24,8 @@ interface SignedEntry {
   url: string;
   /** 过期时刻（epoch 秒） */
   expiresAt: number;
+  /** 最近一次命中读取或写入的时刻（epoch 毫秒）——超限淘汰的「在用」判据 */
+  usedAt: number;
 }
 
 /** 距过期不足这个秒数即视为该重新签发（避免边界上刚拿到就 401） */
@@ -38,8 +40,21 @@ const pending = new Set<string>();
 const failedAt = new Map<string, number>();
 let flushScheduled = false;
 
-/** R17：signed 缓存条目上限——超限按插入序淘汰最旧条目（Map 保序），防长期会话内存无界增长 */
+/**
+ * R17：signed 缓存条目软上限——超限时按最近使用序（LRU）淘汰闲置条目，防长期会话内存无界增长。
+ * Map 保序且命中/写入时都移到末尾，因此头部即最久未用。
+ */
 const SIGNED_CACHE_MAX_ENTRIES = 500;
+
+/**
+ * 「在用」保护窗口（毫秒）：这段时间内被读取过的条目视为仍挂载在页面上，超限也不淘汰。
+ *
+ * R17 回归修复：原实现按首次插入序硬淘汰，续签也不挪位——在用路径一旦超过上限，
+ * 淘汰的正是仍在渲染的条目，版本号重算时它们未命中 → 重签 → 下一次 flush 再淘汰另一批，
+ * 形成不收敛的签发风暴（图片 401 闪烁、签发请求自持、叠加按 IP 限流后整批降级）。
+ * 现只淘汰窗口外的闲置条目：内存上界为 max(上限, 窗口内在用条目数)。
+ */
+const SIGNED_CACHE_IN_USE_WINDOW_MS = 60_000;
 
 /**
  * R17 审计（内存面）：signed/failedAt 两个 Map 此前只增不清——同一会话浏览大量
@@ -47,7 +62,8 @@ const SIGNED_CACHE_MAX_ENTRIES = 500;
  * 现在每次 flushPending 顺带清理：
  * - signed 中已过期（15 分钟 TTL 过后本就该重签）的条目整条删除；
  * - failedAt 中退避窗口（15s）已过的条目删除（窗口过后本就允许重签，留着只为白占内存）；
- * - signed 超过 {@link SIGNED_CACHE_MAX_ENTRIES} 时按插入序淘汰最旧条目。
+ * - signed 超过 {@link SIGNED_CACHE_MAX_ENTRIES} 时从最久未用端淘汰闲置条目，
+ *   遇到 {@link SIGNED_CACHE_IN_USE_WINDOW_MS} 内用过的条目即停（其后条目更近，均视为在用）。
  * 登出/换账号的整体清空仍走 assertSameSession / clearMediaSignCache，不受影响。
  */
 function pruneStaleEntries(): void {
@@ -63,10 +79,11 @@ function pruneStaleEntries(): void {
       failedAt.delete(path);
     }
   }
+  const idleCutoff = Date.now() - SIGNED_CACHE_IN_USE_WINDOW_MS;
   while (signed.size > SIGNED_CACHE_MAX_ENTRIES) {
-    const oldest = signed.keys().next();
-    if (oldest.done) break;
-    signed.delete(oldest.value);
+    const oldest = signed.entries().next();
+    if (oldest.done || oldest.value[1].usedAt > idleCutoff) break;
+    signed.delete(oldest.value[0]);
   }
 }
 
@@ -129,6 +146,10 @@ export function signedMediaUrl(path: string): string | null {
   assertSameSession();
   const entry = signed.get(path);
   if (isFresh(entry)) {
+    // LRU：命中即刷新使用时刻并移到末尾（见 SIGNED_CACHE_IN_USE_WINDOW_MS）
+    entry.usedAt = Date.now();
+    signed.delete(path);
+    signed.set(path, entry);
     return entry.url;
   }
   scheduleSign(path);
@@ -175,7 +196,9 @@ async function flushPending(): Promise<void> {
     let touched = false;
     for (const item of response?.items ?? []) {
       if (!item || typeof item.path !== "string" || typeof item.url !== "string") continue;
-      signed.set(item.path, { url: item.url, expiresAt: Number(item.expiresAt) || 0 });
+      // 续签同键先删再写：移到 LRU 末尾（原地 set 不改变 Map 次序，刚续签的在用条目会最先被淘汰）
+      signed.delete(item.path);
+      signed.set(item.path, { url: item.url, expiresAt: Number(item.expiresAt) || 0, usedAt: Date.now() });
       failedAt.delete(item.path);
       touched = true;
     }

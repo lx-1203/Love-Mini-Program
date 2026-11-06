@@ -543,13 +543,20 @@ public class GlobalExceptionHandler {
      * 内部实现细节（如存储根路径、下游服务形态），统一回固定脱敏文案，全量信息（状态码 +
      * reason）留日志；4xx 的 reason 是用户面文案（如"应用资产不存在或未启用"）保持透传，
      * 开发 profile 维持原样透传便于联调。</p>
+     *
+     * <p>503（SERVICE_UNAVAILABLE）例外透传（R17 回归修复）：仓内全部 503 抛点
+     * （SmsCodeService / RealAccountSecurityService / MediaUploadController /
+     * AdminContentComposeController / MediaAccessService / IdempotentInterceptor）的 reason
+     * 都是刻意设计的降级指引文案（「请联系管理员/客服」、管理端 PostCompose 503 分支直接展示的
+     * 配置排障指引），不含内部实现细节，脱敏会让指引在生产失效。新增 503 抛点须守同一约定：
+     * reason 只写面向用户/运营的指引，内部细节只进日志。</p>
      */
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleResponseStatus(
             ResponseStatusException ex) {
         log.warn("请求错误: {} - {}", ex.getStatusCode(), ex.getReason());
         HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
-        if (isProductionProfile() && status.value() >= 500) {
+        if (isProductionProfile() && status.value() >= 500 && status != HttpStatus.SERVICE_UNAVAILABLE) {
             // 生产 5xx：固定脱敏文案（与 handleGenericException 的 INTERNAL_ERROR 口径一致），
             // 全量 reason 留日志（上方 log.warn 已含状态码与 reason 全量）
             return buildErrorResponse(status, "Error", "服务器内部错误，请稍后重试");

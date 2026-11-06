@@ -10,7 +10,7 @@ const { styleVars: menuStyleVars } = useMenuButtonRect();
  * 资料未完善时展示 LockScreen 锁定页面
  */
 import { computed, ref, watch } from "vue";
-import { onShow, onUnload, onShareAppMessage, onTabItemTap } from "@dcloudio/uni-app";
+import { onShow, onHide, onUnload, onShareAppMessage, onTabItemTap } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useSessionStore } from "../../stores/session";
@@ -1320,13 +1320,15 @@ onShow(() => {
 /**
  * 页面卸载时清理定时器与 store 请求资源，避免卸载后触发状态更新。
  */
-onUnload(() => {
+/** R18（复审 low）：定时器清理收拢——profile 是 tabBar 页，切 tab 只触发 onHide
+ * 不触发 onUnload，此前 R17 的「离页清理」实际只在 reLaunch 时生效。两钩子共用本函数。 */
+function cleanupProfilePageTimers(): void {
   // 2026-08-09：清理头像引导气泡定时器
   if (avatarHintTimer) {
     clearTimeout(avatarHintTimer);
     avatarHintTimer = null;
   }
-  // R17：清理「我的日常 / 我的帖子」重试链挂起定时器（离页后不再续跑——
+  // R17：清理「我的日常 / 我的帖子」重试链挂起定时器（离页/切走后不再续跑——
   // 链满档 retries=3 时每链最多再跑 2 次 × 2s 的离页请求，卸载后还写 store 状态）
   if (myDailiesRetryTimer) {
     clearTimeout(myDailiesRetryTimer);
@@ -1336,6 +1338,16 @@ onUnload(() => {
     clearTimeout(myPostsRetryTimer);
     myPostsRetryTimer = null;
   }
+}
+
+onHide(() => {
+  // R18（复审 low）：tabBar 页切走只触发 onHide——挂起重试链同步停摆，
+  // 回页 onShow 自有刷新口径（store 层「无数据才重试」自愈语义不受影响）
+  cleanupProfilePageTimers();
+});
+
+onUnload(() => {
+  cleanupProfilePageTimers();
   // R4-00158/00159：页面卸载时清理 discover / village store 的定时器与请求资源
   discoverStore.dispose();
   villageStore.dispose();

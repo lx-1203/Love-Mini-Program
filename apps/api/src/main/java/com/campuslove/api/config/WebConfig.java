@@ -157,6 +157,13 @@ public class WebConfig implements WebMvcConfigurer {
             return;
         }
         String[] originArray = origins.toArray(new String[0]);
+        // R18（复审 low）：与 SecurityConfig 的 real 档守卫同口径——mock 档 CORS 走本方法，
+        // 通配 "*" 与 allowCredentials 并存同样拒启动（两注册路径同守卫，不堵半个暴露面）
+        if (java.util.Arrays.asList(originArray).contains("*")) {
+            throw new IllegalStateException(
+                    "CORS_ALLOWED_ORIGINS 含通配 '*' 且 allowCredentials=true，拒绝启动"
+                            + "（对齐 SecurityConfig real 档 fail-fast 守卫语义）");
+        }
         registry.addMapping("/api/**")
                 .allowedOriginPatterns(originArray)
                 // R4-00278/01816：方法与请求头/缓存时长收敛为共享常量（与 SecurityConfig 单一来源）

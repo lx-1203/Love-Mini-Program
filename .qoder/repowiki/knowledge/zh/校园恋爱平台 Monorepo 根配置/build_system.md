@@ -4,7 +4,7 @@
 
 ## 2. 关键文件与职责
 
-- `package.json`：monorepo 根入口，声明 `workspaces: ["apps/client", "apps/admin"]`，集中定义 `api:dev/test`、`client:dev:h5`、`lint`、`test`、`verify:phase01`、`lighthouse:*` 等跨应用脚本。
+- `package.json`：monorepo 根入口（`workspaces` 字段已于 R17-9 删除，成员由 `pnpm-workspace.yaml` 声明），集中定义 `api:dev/test`、`client:dev:h5`、`lint`、`test`、`verify:phase01`、`lighthouse:*` 等跨应用脚本。
 - `pnpm-workspace.yaml`：workspace 清单 + `allowBuilds`（允许 core-js/esbuild/puppeteer/sharp 等含原生模块的包构建）+ `overrides.@vitejs/plugin-vue=5.0.5`（统一依赖版本）。
 - `.npmrc` / `pnpm-lock.yaml`：锁定包管理器与依赖树；CI 强制 `--frozen-lockfile`。
 - `docker-compose.yml`：定义 networks (`data-net`/`app-net`)、volumes、10 个 service，按 `mysql/redis → api → admin/client → prometheus → grafana/alertmanager` 顺序启动；所有敏感字段通过 `${VAR:?error}` 强制注入，端口仅绑定 `127.0.0.1`。
@@ -20,7 +20,7 @@
 ### 3.1 包管理与工作区
 - 根 `packageManager` 固定为 `pnpm@11.17.0+sha512...`，CI 通过 `pnpm/action-setup@v3` 安装相同版本，避免漂移。
 - Node 引擎要求 `>=18.0.0 <23.0.0`，CI 实际使用 Node 20。
-- workspace 子包以 `apps/*` 匹配，但根 `workspaces` 白名单只包含 `apps/client` 和 `apps/admin`（legacy 管理端不纳入 workspace）。
+- workspace 子包以 `apps/*` 匹配（`pnpm-workspace.yaml`；根 `workspaces` 白名单已于 R17-9 删除），当前带 `package.json` 的成员只有 `apps/client` 与 `apps/admin`。
 
 ### 3.2 构建管线（CI jobs 顺序）
 1. `gitleaks-scan`：git 全量历史密钥扫描（`gitleaks/gitleaks:v8.18.4`）。

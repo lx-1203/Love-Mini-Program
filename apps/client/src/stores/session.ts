@@ -432,9 +432,11 @@ export const useSessionStore = defineStore("session", {
     /**
      * 是否已绑定学校（任务 C：学校一次性绑定）。
      *
-     * R17 注释更正：后端登录响应不返回 schoolBound（yaml 已删该字段，R17 后端车道）；
-     * 当前实现为 mock 档客户端本地伪造（mockUserSession / bindSchool 本地改写），
-     * real 档恒 false；getter 当前零消费方，保留仅为防误读（勿据此做 real 档判定）。
+     * R17 注释更正、R18 再更正（复审 low）：后端登录响应不返回 schoolBound
+     * （yaml 已删该字段）；mock 档由 mockUserSession 本地伪造，real 档在
+     * bindSchool 成功后于本地写入 schoolBound:true（session.ts bindSchool real 分支）
+     * ——即 real 档并非恒 false，而是「登录响应不携带、本地绑定后改写」。
+     * getter 当前零消费方，保留仅为防误读（勿据此做登录响应判定）。
      * UserSession schema 暂未暴露 schoolBound 字段（同 profileBackgroundUrl 处理方式），
      * 使用类型断言安全访问，避免 TS 编译错误。
      */

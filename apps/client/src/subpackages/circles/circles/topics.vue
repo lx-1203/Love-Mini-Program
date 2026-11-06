@@ -1649,7 +1649,7 @@ onUnload(() => {
      卡的建议值 brand-600(2.81)/brand-700(4.14) 都不达标，不采纳。 */
   /* R17（暗色模式）：实心白底换卡片底 token（实心面板背景归口，暗色下随主题切换；
      仓内「卡片底」语义 token 是 --c-bg-container——styles/tokens.scss:65 的
-     --color-bg-card 别名正指向它，dark 块 :271 已适配深色） */
+     --color-bg-card 别名正指向它，dark 块 :270 已适配深色） */
   background: var(--c-bg-container);
   border: 2rpx solid var(--c-brand-800, #156B51);
 }

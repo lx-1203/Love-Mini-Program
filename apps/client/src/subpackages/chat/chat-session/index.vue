@@ -1280,6 +1280,9 @@ async function handleEndSession() {
     return;
   }
   // review #50：原实现直接结束无确认，误触会销毁整个临时会话；先弹确认框。
+  // R18（复审 low）：闸门前移到确认弹窗之前——弹窗确认后才发现 in-flight 会被静默
+  // 丢弃（无任何提示），先挡在弹窗前不浪费一次确认交互
+  if (exchanging.value) return;
   const confirmed = await new Promise<boolean>((resolve) => {
     uni.showModal({
       title: t("chat.endSessionConfirmTitle"),
@@ -1335,6 +1338,9 @@ async function onSend() {
 function handleBreakQuestionSend(text: string) {
   const value = (text || "").trim();
   if (!value || isSessionClosed.value) return;
+  // R18（复审 low）：在途发送窗口内静默丢弃点击并保留草稿原样——先改草稿再撞 sending
+  // 闸会把用户原文覆盖成破冰文案（成功则原文被清空且未发出，失败则原文丢失）
+  if (sending.value) return;
   draft.value = value;
   void sendText();
 }
@@ -1378,6 +1384,8 @@ async function handleEmojiSelect(emoji: string) {
 /** 点击破冰快捷按钮：直接发送该文案（sendText 发送成功后自动清空草稿） */
 async function handleGreetingSend(text: string) {
   if (!text.trim() || !sessionId.value) return;
+  // R18（复审 low）：同 handleBreakQuestionSend——sending 在途先丢弃点击不改草稿
+  if (sending.value) return;
   draft.value = text;
   await sendText();
 }

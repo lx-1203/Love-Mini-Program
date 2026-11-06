@@ -1213,7 +1213,8 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   flex-shrink: 0;
   font-size: 20rpx;
   color: var(--c-brand-600, #2AAE83);
-  background: #ffffff;
+  /* R17-8 暗色收口补漏：置顶徽章白底随主题（同文件其余 6 处已于 cfc37226 token 化，本处为第 7 处漏改） */
+  background: var(--c-bg-elevated);
   border-radius: 8rpx;
   padding: 4rpx 12rpx;
 }

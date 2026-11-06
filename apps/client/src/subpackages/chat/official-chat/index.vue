@@ -715,7 +715,9 @@ onLoad((query) => {
   margin-left: 8rpx;
   padding: 2rpx 12rpx;
   border-radius: 8rpx;
-  background: #FFFFFF;
+  /* R17-8 暗色收口补漏：字面量 #FFFFFF 不随主题（大写变体躲过小写 grep 扫描面），
+     浅色档 --c-bg-elevated 仍为白色零像素，dark 下随 elevated 深色翻转 */
+  background: var(--c-bg-elevated);
   /* R11-L11-D21（可达性 P2）：描边值不变，仅把硬写 #36C99A 归位到它本来的令牌 --c-brand
      （design-variables.scss:15 $brand-500 = #36C99A，逐字节同值 ⇒ 零像素，消私有色字面量） */
   border: 1rpx solid var(--c-brand, #36C99A);
@@ -1024,12 +1026,13 @@ onLoad((query) => {
   background: var(--c-brand, #36C99A);
 }
 .action-btn--default {
-  background: #fff;
-  border: 1rpx solid #ddd;
+  /* R17-8 暗色收口补漏：默认态按钮白底/描边/文字随主题（同文件另 3 处已于 cfc37226 token 化） */
+  background: var(--c-bg-elevated);
+  border: 1rpx solid var(--c-border-default, #ddd);
 }
 .action-btn__text {
   font-size: 26rpx;
-  color: #666;
+  color: var(--c-text-secondary, #666);
 }
 .action-btn__text--primary {
   color: #fff;

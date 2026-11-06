@@ -644,7 +644,7 @@ graph TB
 - [ci.yml:499-503](file://.github/workflows/ci.yml#L499-L503)
 
 ### 包管理器与运行环境
-`webServer.command` 使用 `pnpm --filter @campus-love/client run dev:h5`，而根 `package.json` 的等价脚本 `client:dev:h5` 使用 `npm --workspace apps/client run dev:h5`；根 `package.json` 的 `packageManager` 字段锁定为 `pnpm@11.17.0` 并带 sha512 完整性校验，`workspaces` 声明 `apps/client` 与 `apps/admin`。`engines` 在根与 client 两侧一致：`node >=18.0.0 <23.0.0`、`npm >=9.0.0`。混用 pnpm 与 npm 两条入口是本层的一个可执行性风险：环境若只有 npm 而无 pnpm，`webServer` 无法启动，全部用例会因 5173 端口无服务而超时。
+`webServer.command` 使用 `pnpm --filter @campus-love/client run dev:h5`，与根 `package.json` 的等价脚本 `client:dev:h5` 同一写法（R17-9 起根脚本由 `npm --workspace` 统一改为 `pnpm --filter`）；根 `package.json` 的 `packageManager` 字段锁定为 `pnpm@11.17.0` 并带 sha512 完整性校验，工作区成员 `apps/client` 与 `apps/admin` 由 `pnpm-workspace.yaml` 声明（根 `workspaces` 字段已于 R17-9 删除）。`engines` 在根与 client 两侧一致：`node >=18.0.0 <23.0.0`、`npm >=9.0.0`。pnpm 是本层的硬依赖：环境若只有 npm 而无 pnpm，`webServer` 无法启动，全部用例会因 5173 端口无服务而超时。
 
 **章节来源**
 - [playwright.config.ts:73-82](file://tests/e2e/playwright.config.ts#L73-L82)

@@ -467,7 +467,7 @@ ESLint 的注释（`ci.yml:107-108`）明确了门禁判定口径：**0 errors �
 npm run test
   → npm run lint:openapi
   → npm run lint:openapi:spectral
-  → npm --workspace apps/client run typecheck
+  → pnpm --filter @campus-love/client run typecheck
   → npm run verify:client-builds
   → npm run api:test
 ```
@@ -760,7 +760,7 @@ CODEOWNERS 把评审权按目录分配，与流水线共同构成合并前置条
 
 `.github/pull_request_template.md`（89 行）是 CI 的书面补充，包含三块结构化内容：
 
-- **本地检查项**（`:21-30`）：`npm test`、`npm run lint:openapi`、`npm run lint:openapi:spectral`、`npm --workspace apps/client run typecheck`、`npm run verify:client-builds`、`npm run api:test`、`npm run verify:phase01`，以及最后一条 **`Flyway migrate + validate executed against a disposable database when database/flyway changed`**（`:30`）。这一条是数据库校验的唯一落点：`ci.yml` 全文没有任何 Flyway 步骤，schema 校验靠作者在改动迁移后手动跑一次并把复选框勾上。
+- **本地检查项**（`:21-30`）：`npm test`、`npm run lint:openapi`、`npm run lint:openapi:spectral`、`pnpm --filter @campus-love/client run typecheck`、`npm run verify:client-builds`、`npm run api:test`、`npm run verify:phase01`，以及最后一条 **`Flyway migrate + validate executed against a disposable database when database/flyway changed`**（`:30`）。这一条是数据库校验的唯一落点：`ci.yml` 全文没有任何 Flyway 步骤，schema 校验靠作者在改动迁移后手动跑一次并把复选框勾上。
 - **CI 检查清单**（`:32-45`）：逐条列出七个作业名并要求勾选，抬头写明"以下所有 status check 必须全部绿才能合并，任一 check 失败即阻断合并，禁止使用 `Admin force merge` 跳过"，指向 `.github/workflows/ci.yml`（`:36`）。清单覆盖 `lint-and-structure`、`client-typecheck-and-build`、`client-test`、`admin-typecheck-and-build`、`api-compile`、`api-test`、`security-scan`、`e2e`；**未列 `gitleaks-scan` 与 `phase01-verify`**，尽管二者同为作业。
 - **超时表**（`:47-60`）：把 `lint-and-structure` / client / admin / api-compile / security-scan 记为 30、`api-test` 记为 60、`e2e` 记为 45，与 `ci.yml` 各作业的 `timeout-minutes` 一致；表下说明"任一 job 超过 timeout-minutes 将自动取消并标记为失败，禁止重试跳过门禁"（`:60`）。该表同样缺 `gitleaks-scan` 的 15 分钟。
 

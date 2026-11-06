@@ -129,4 +129,59 @@ describe("media-sign-cache", () => {
     await flushTick();
     expect(request).toHaveBeenCalledTimes(2);
   });
+
+  it("在用路径超过缓存上限时不淘汰仍在渲染的条目，不形成淘汰→重签循环（R17 回归）", async () => {
+    const future = Math.floor(Date.now() / 1000) + 900;
+    request.mockImplementation((options: { data: { paths: string[] } }) =>
+      Promise.resolve(signResponse(options.data.paths, future)),
+    );
+    // 累积挂载（无虚拟列表的 feed）：每页 20 张新图，签名到达（版本号前进）后整屏重读一遍
+    const mounted: string[] = [];
+    for (let page = 0; page < 30; page++) {
+      for (let i = 0; i < 20; i++) mounted.push(`/api/v1/media/7/p${page}-${i}.jpg`);
+      for (const p of mounted) signedMediaUrl(p);
+      await flushTick();
+      for (const p of mounted) signedMediaUrl(p);
+      await flushTick();
+    }
+
+    // 600 张在用（> 上限 500）：静置重渲染若干轮，不应再有未命中，也不应自发签发
+    const callsBefore = request.mock.calls.length;
+    for (let round = 0; round < 5; round++) {
+      expect(mounted.filter((p) => signedMediaUrl(p) === null)).toEqual([]);
+      await flushTick();
+    }
+    expect(request).toHaveBeenCalledTimes(callsBefore);
+  });
+
+  it("超限时仍淘汰在用窗口外的闲置条目（上限对闲置条目生效），在用条目保留", async () => {
+    const realNow = Date.now();
+    let offsetMs = 0;
+    const nowSpy = vi.spyOn(Date, "now").mockImplementation(() => realNow + offsetMs);
+    try {
+      const future = Math.floor(realNow / 1000) + 900;
+      request.mockImplementation((options: { data: { paths: string[] } }) =>
+        Promise.resolve(signResponse(options.data.paths, future)),
+      );
+      const paths = Array.from({ length: 520 }, (_, i) => `/api/v1/media/7/q${i}.jpg`);
+      for (let start = 0; start < paths.length; start += 100) {
+        for (const p of paths.slice(start, start + 100)) signedMediaUrl(p);
+        await flushTick();
+      }
+      expect(paths.filter((p) => signedMediaUrl(p) === null)).toEqual([]);
+
+      // 全部闲置超过在用窗口后，只有仍在屏的 10 张被再次读取
+      offsetMs = 61_000;
+      const onScreen = paths.slice(-10);
+      for (const p of onScreen) expect(signedMediaUrl(p)).not.toBeNull();
+      // 新路径触发一次 flush（其间做超限淘汰）
+      signedMediaUrl("/api/v1/media/7/next.jpg");
+      await flushTick();
+
+      expect(signedMediaUrl(paths[0])).toBeNull();
+      for (const p of onScreen) expect(signedMediaUrl(p)).not.toBeNull();
+    } finally {
+      nowSpy.mockRestore();
+    }
+  });
 });

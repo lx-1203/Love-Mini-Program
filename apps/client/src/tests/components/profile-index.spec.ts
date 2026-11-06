@@ -17,6 +17,8 @@ vi.mock("@dcloudio/uni-app", () => ({
   // pages/profile/index.vue 还引入了 onTabItemTap（tab 重复点击回顶），
   // mock 缺该具名导出会在 import 阶段直接抛错，导致整份 spec 无法收集
   onTabItemTap: vi.fn(),
+  // R18（复审 low 修复同步）：R18-21 为 tabBar 页补挂 onHide 清理，mock 同步该导出
+  onHide: vi.fn(),
 }));
 
 vi.mock("../../services/api", () => ({

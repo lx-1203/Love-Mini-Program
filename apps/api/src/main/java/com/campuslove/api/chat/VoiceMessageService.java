@@ -301,8 +301,13 @@ public class VoiceMessageService {
             return true;
         }
         // WAV：RIFF....WAVE
-        return head[0] == 'R' && head[1] == 'I' && head[2] == 'F' && head[3] == 'F'
-                && len >= 12 && head[8] == 'W' && head[9] == 'A' && head[10] == 'V' && head[11] == 'E';
+        if (head[0] == 'R' && head[1] == 'I' && head[2] == 'F' && head[3] == 'F'
+                && len >= 12 && head[8] == 'W' && head[9] == 'A' && head[10] == 'V' && head[11] == 'E') {
+            return true;
+        }
+        // R18（复审 low）：AMR 单声道头 "#!AMR"——扩展名/MIME 白名单仍宣告支持 amr，
+        // 魔数闸须同口径收口，否则该格式在闸上自相矛盾（白名单放行、内容闸必拒）
+        return head[0] == '#' && head[1] == '!' && head[2] == 'A' && head[3] == 'M';
     }
 
     /**

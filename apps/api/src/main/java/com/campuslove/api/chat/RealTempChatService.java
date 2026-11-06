@@ -73,7 +73,9 @@ public class RealTempChatService implements TempChatService {
     }
 
     @Override
-    @Transactional
+    // 不挂 @Transactional：事务边界由 TempChatSessionService.createSession 内的 REQUIRES_NEW
+    // 模板显式划分（并发同插唯一键冲突须在写事务回滚后另开事务回读），此处套外层事务
+    // 只会让内层 REQUIRES_NEW 挂起它而多占一条连接。
     public TempChatSessionView createSession(String recommendedPersonId, String matchId, String signalId) {
         return sessionService.createSession(recommendedPersonId, matchId, signalId);
     }
