@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import com.campuslove.api.ratelimit.RateLimit;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -67,6 +68,9 @@ public class VoiceMessageController {
      */
     @PostMapping
     @PreAuthorize("hasRole('USER')")
+    // R17（安全审计 P2）：对齐主上传链路 MediaUploadController 的频控口径——语音上传此前无 @RateLimit，
+    // 登录用户可脚本化高频上传占盘/带宽，绕过主通道更严的校验
+    @RateLimit(capacity = 10, refillTokens = 0.5, key = "#clientIp")
     public VoiceUploadResponse uploadVoice(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "duration", required = false, defaultValue = "0")

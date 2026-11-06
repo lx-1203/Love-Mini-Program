@@ -3,6 +3,7 @@ package com.campuslove.api.invite;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -74,6 +75,7 @@ public class InviteController {
      */
     @PostMapping("/accept")
     @Idempotent
+    @RateLimit(capacity = 5, refillTokens = 0.05, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<InviteService.AcceptResultView> acceptInvite(
             @Valid @RequestBody AcceptInviteRequest request) {

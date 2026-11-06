@@ -60,10 +60,37 @@ const rootPackageJson = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8")
 );
 assert.equal(rootPackageJson.private, true, "workspace package.json should be private");
-assert.deepEqual(
-  rootPackageJson.workspaces,
-  ["apps/client", "apps/admin"],
-  "root workspaces should include client and admin"
+// 双包管理器语义统一（R17 工程收口车道，2026-11-06）：根 package.json 的 npm workspaces 字段已划除，
+// pnpm（packageManager 钉版 + pnpm-workspace.yaml）是唯一生效的包管理器——工作区成员以
+// pnpm-workspace.yaml 的 packages 为单一真相源，且必须覆盖 apps/client 与 apps/admin。
+// packages 写的是 glob（apps/*），故按最小 glob 语义判覆盖，不要求逐字面条目。
+assert.ok(
+  !("workspaces" in rootPackageJson),
+  "npm workspaces field must not come back: pnpm is the single effective package manager"
+);
+const pnpmWorkspaceYaml = readFileSync(
+  new URL("../pnpm-workspace.yaml", import.meta.url),
+  "utf8"
+);
+const pnpmPackageGlobs = [];
+let collectingPackages = false;
+for (const line of pnpmWorkspaceYaml.split(/\r?\n/)) {
+  if (/^packages:\s*(?:#.*)?$/.test(line)) { collectingPackages = true; continue; }
+  if (!collectingPackages) continue;
+  if (/^\s*-\s*/.test(line)) {
+    const entry = line.match(/^\s*-\s*"?([^"\s#]+)"?/)?.[1];
+    if (entry) pnpmPackageGlobs.push(entry);
+    continue;
+  }
+  if (line.trim() && !/^\s*#/.test(line)) collectingPackages = false; // 下一个顶层键，packages 块结束
+}
+const pnpmCovers = (dir) =>
+  pnpmPackageGlobs.some((glob) =>
+    new RegExp("^" + glob.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^/]+") + "$").test(dir)
+  );
+assert.ok(
+  pnpmCovers("apps/client") && pnpmCovers("apps/admin"),
+  `pnpm-workspace.yaml packages should cover apps/client and apps/admin (globs: ${JSON.stringify(pnpmPackageGlobs)})`
 );
 assert.equal(typeof rootPackageJson.scripts["api:dev"], "string");
 assert.equal(typeof rootPackageJson.scripts["api:test"], "string");
@@ -122,7 +149,10 @@ const clientPackageJson = JSON.parse(
   readFileSync(new URL("../apps/client/package.json", import.meta.url), "utf8")
 );
 assert.equal(clientPackageJson.type, "module");
-assert.equal(clientPackageJson.dependencies.vue, "3.4.21");
+// 2026-11-06（R17 工程收口车道）：vue 随安全收口升到 ~3.5.42（audit-prod-ratchet 的
+// @vue/server-renderer advisory 修复要求 vue ≥3.5.42，见 tools/audit-prod-ratchet.mjs 头注），
+// 钉版断言随声明值同步，保持「钉住当前声明」的原语义。
+assert.equal(clientPackageJson.dependencies.vue, "~3.5.42");
 // uni-app / uni-ui 是**构建期**依赖：产物由 vite 打包成自包含文件，运行时不从 node_modules 取。
 // 本断言的意图是"这两颗包必须仍在项目依赖里声明"（防止被误删），不是钉死它们必须在 prod 面。
 // 2026-10-29：把它们移到 devDependencies，让 `pnpm audit --prod` 只覆盖真实运行时依赖

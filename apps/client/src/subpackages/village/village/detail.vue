@@ -3191,7 +3191,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
   gap: 16rpx;
   padding: 16rpx 24rpx;
   /* 2026-10-26（P10#1）：胶囊底收进 __capsule，本层保持白底 */
-  background: #ffffff;
+  background: var(--c-bg-elevated);
 }
 
 /* 2026-10-26（P10#1）：placeholder + 三枚图标同住一个浅灰圆角胶囊（理想图口径） */
@@ -3514,7 +3514,7 @@ $card-soft-shadow: 0 2rpx 16rpx var(--c-black-shadow-xs);
 
 /* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
 page {
-  background: #ffffff;
+  background: var(--c-bg-container);
 }
 
 /* ========== 2026-09-05 R19：帖子图片全屏查看层 ==========

@@ -54,9 +54,9 @@ const mockUserSession: UserSession = {
   campusVerified: true,
   scheduleCompleted: true,
   campusName: "北京大学",
-  // infra R2-00047: schoolId 使用学校 ID（非名称），避免 ID/名称语义混淆（与 config/schools.ts 的 id 体系一致）
-  schoolId: "pku",
-  schoolBound: true,
+  // R17 契约对齐：UserSession 不再含 schoolId / schoolBound（yaml 已删——后端
+  // UserSessionView.java:8-20 无此二字段，属文档臆造的死契约）；mock 档的本地伪造
+  // 只保留在 bindSchool 的断言写入里（见 bindSchool 注释），mock 基线字面量不再携带。
   featureFlags: {
     chat_ai_enabled: false,
   },
@@ -432,8 +432,11 @@ export const useSessionStore = defineStore("session", {
     /**
      * 是否已绑定学校（任务 C：学校一次性绑定）。
      *
+     * R17 注释更正：后端登录响应不返回 schoolBound（yaml 已删该字段，R17 后端车道）；
+     * 当前实现为 mock 档客户端本地伪造（mockUserSession / bindSchool 本地改写），
+     * real 档恒 false；getter 当前零消费方，保留仅为防误读（勿据此做 real 档判定）。
      * UserSession schema 暂未暴露 schoolBound 字段（同 profileBackgroundUrl 处理方式），
-     * 使用类型断言安全访问，避免 TS 编译错误；真实环境由后端返回该字段。
+     * 使用类型断言安全访问，避免 TS 编译错误。
      */
     isSchoolBound: (state): boolean => {
       return Boolean(

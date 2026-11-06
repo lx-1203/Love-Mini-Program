@@ -308,6 +308,8 @@ public class SecurityConfig {
         // R4-00278：allowedMethods/Headers/maxAge 收敛为 WebConfig 共享常量单一来源
         // （原两处手工维护导致 SecurityConfig 漏含 X-Trace-Id 的配置漂移）
         List<String> origins = WebConfig.parseOrigins(allowedOrigins);
+        // 启动期 fail-fast：通配 origin + credentials 组合拒绝启动（校验方法见下）
+        assertNoWildcardOriginWithCredentials(origins);
         configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(WebConfig.CORS_ALLOWED_METHODS);
         configuration.setAllowedHeaders(WebConfig.CORS_ALLOWED_HEADERS);
@@ -317,5 +319,26 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", configuration);
         return source;
+    }
+
+    /**
+     * CORS 启动期校验（fail-fast，语义对齐 {@link WebSocketConfig} 的 Origin 守卫）：
+     * 解析出的 allowed origins 含 "*" 通配时，不允许同时 {@code setAllowCredentials(true)}。
+     *
+     * <p>为什么必须拒绝启动：allowedOriginPatterns 为 "*" 时 Spring 会把响应头的
+     * Access-Control-Allow-Origin 回显为请求方的任意 Origin，叠加 credentials 放行即等于
+     * 「任意站点可携带用户凭据跨域读写本站 API」（跨站凭据泄露面）。这类错误配置在
+     * 部署期通过环境变量误配生效，运行期无任何报错，只有启动期 fail-fast 才能拦住。</p>
+     *
+     * @param origins 解析后的 CORS 允许来源列表
+     * @throws IllegalStateException origins 含 "*" 通配时抛出，拒绝启动
+     */
+    private static void assertNoWildcardOriginWithCredentials(List<String> origins) {
+        if (origins != null && origins.contains("*")) {
+            throw new IllegalStateException(
+                    "CORS 配置非法（安全收口）：app.cors.allowed-origins 含 \"*\" 通配时"
+                            + "不得同时开启 allowCredentials=true——任意来源可携带凭据跨域访问。"
+                            + "请在 CORS_ALLOWED_ORIGINS / app.cors.allowed-origins 中列出具体域名。");
+        }
     }
 }

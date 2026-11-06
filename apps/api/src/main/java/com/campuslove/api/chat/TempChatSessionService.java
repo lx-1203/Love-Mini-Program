@@ -177,7 +177,20 @@ public class TempChatSessionService {
         session.setUpdatedAt(now);
         // 实体带 @Version 时 save 走 merge 返回新托管实例，必须接收返回值回填 id，
         // 否则 contactExchange.setSession 与下方 toSessionView 中 session.getId() 为 null
-        session = sessionRepository.save(session);
+        // R17（数据库审计 P2）：服务层 check-then-insert 的并发兜底——并发同插被
+        // uk_temp_chat_active_pair（R17 迁移 V2026.11.05.0002 生成列唯一键）拦截时，
+        // 捕获 DataIntegrityViolationException 回读已有活跃会话幂等返回，与既有
+        // 「已有会话直接返回」分支同语义；不再让并发同插把该对用户打成交互循环 500。
+        try {
+            session = sessionRepository.save(session);
+        } catch (org.springframework.dao.DataIntegrityViolationException dupEx) {
+            log.warn("并发创建命中 active-pair 唯一键，回读已有活跃会话: userA={}, userB={}",
+                    currentUserId, partnerUserId);
+            TempChatSession winner = sessionRepository.findActiveByUserPair(
+                    currentUserId, partnerUserId, INACTIVE_PHASES)
+                    .orElseThrow(() -> dupEx);
+            return toSessionView(winner, currentUserId);
+        }
 
         // 创建默认的联系交换记录
         TempChatContactExchange contactExchange = new TempChatContactExchange();

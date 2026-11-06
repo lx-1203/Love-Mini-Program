@@ -1114,7 +1114,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 .tabs {
   display: flex;
   align-items: center;
-  background: #ffffff;
+  background: var(--c-bg-elevated);
   /* R8-L04-D07：原「上方那块圆角面板」= 已删除的 .info-card 白卡，页签行现在就是白 sheet 本身
      ⇒ 大圆角与投影从 info-card 迁移到这里（理想图：白 sheet 顶缘两头上角为大圆角，压在封面叠层下方）。 */
   border-radius: var(--r-xxl, 32rpx) var(--r-xxl, 32rpx) 0 0;
@@ -1251,7 +1251,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 .announcement-sheet {
   width: 100%;
   max-height: 70vh;
-  background: #ffffff;
+  background: var(--c-bg-elevated);
   border-radius: 28rpx 28rpx 0 0;
   padding: 32rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
   display: flex;
@@ -1305,7 +1305,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
    帖间以细分隔线区分（撤独立白圆角卡与浅绿间隙的卡片化形态） */
 .feed-card {
   margin: 0;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border-radius: 0;
   padding: 28rpx 24rpx;
   border-bottom: 1rpx solid #f7f8f9;
@@ -1462,7 +1462,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   gap: 8rpx;
   margin: 24rpx 24rpx 0;
   padding: 24rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border-radius: 16rpx;
 }
 
@@ -1489,7 +1489,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
 .tab-empty {
   margin: 24rpx;
   padding: 96rpx 0;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border-radius: 24rpx;
   display: flex;
   align-items: center;
@@ -1516,7 +1516,7 @@ function tabLabel(key: (typeof TAB_KEYS)[number]): string {
   align-items: center;
   gap: 24rpx;
   padding: 20rpx 32rpx calc(20rpx + env(safe-area-inset-bottom));
-  background: #ffffff;
+  background: var(--c-bg-elevated);
   box-shadow: 0 -4rpx 16rpx rgba(31, 42, 37, 0.06);
 }
 

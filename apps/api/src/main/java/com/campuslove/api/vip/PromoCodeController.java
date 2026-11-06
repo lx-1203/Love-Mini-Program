@@ -3,6 +3,7 @@ package com.campuslove.api.vip;
 import com.campuslove.api.config.FeatureSwitch;
 import com.campuslove.api.config.FeatureSwitchKeys;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.ratelimit.RateLimit;
 import com.campuslove.api.vip.PromoCodeService.RedeemResultView;
 import com.campuslove.api.vip.PromoCodeService.ValidateResultView;
 import jakarta.validation.Valid;
@@ -54,6 +55,9 @@ public class PromoCodeController {
      * @return 验证结果视图
      */
     @PostMapping("/validate")
+    // R17（安全审计 P2）：validate 是「存在/生效/剩余次数/单用户上限」布尔预言机，
+    // 此前无限流，已登录用户可高速枚举优惠码字典；补按 IP 频控（5 突发/每分钟 1 次）
+    @RateLimit(capacity = 5, refillTokens = 0.017, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public ValidateResultView validate(@Valid @RequestBody ValidatePromoCodeRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -74,6 +78,8 @@ public class PromoCodeController {
      */
     @PostMapping("/redeem")
     @FeatureSwitch(FeatureSwitchKeys.COMMERCE_VIP)
+    // R17（安全审计 P2）：同 validate——零消耗预览端点同样可被枚举，同口径频控
+    @RateLimit(capacity = 5, refillTokens = 0.017, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public RedeemResultView redeem(@Valid @RequestBody ValidatePromoCodeRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();

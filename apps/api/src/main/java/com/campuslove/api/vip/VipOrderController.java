@@ -4,6 +4,7 @@ import com.campuslove.api.common.ResourceNotFoundException;
 import com.campuslove.api.config.FeatureSwitch;
 import com.campuslove.api.config.FeatureSwitchKeys;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.ratelimit.RateLimit;
 import com.campuslove.api.wxpay.WxPayProperties;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -57,6 +58,8 @@ public class VipOrderController {
      */
     @PostMapping
     @FeatureSwitch(FeatureSwitchKeys.COMMERCE_VIP)
+    // 约 60 秒 1 次（0.017 ≈ 1/60），防脚本刷单面
+    @RateLimit(capacity = 5, refillTokens = 0.017, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public VipOrderService.OrderCreatedView createOrder(@Valid @RequestBody VipOrderCreateRequest request) {
         // 微信支付配置闸：管道未开（enabled=false）时 404，与回调端点口径一致

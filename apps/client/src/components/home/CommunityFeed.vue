@@ -297,7 +297,7 @@ function feedImageSrc(img: string): string {
 .community-feed__empty {
   padding: 32rpx;
   border-radius: 20rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border: 1rpx solid #EEF2F0;
   color: #999999;
   font-size: 22rpx;
@@ -316,7 +316,7 @@ function feedImageSrc(img: string): string {
   gap: 16rpx;
   padding: 20rpx;
   border-radius: 40rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
 }
 
@@ -357,7 +357,7 @@ function feedImageSrc(img: string): string {
   justify-content: space-between;
   padding: 32rpx;
   border-radius: 20rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border: 1rpx solid #FFE3E3;
   color: #999999;
   font-size: 22rpx;
@@ -406,7 +406,7 @@ function feedImageSrc(img: string): string {
   flex-shrink: 0;
   padding: 16rpx;
   border-radius: 32rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
 }

@@ -133,10 +133,30 @@ public class VoiceMessageService {
             throw new IllegalArgumentException(
                     "不支持的语音格式：" + ext + "，仅支持 " + ALLOWED_VOICE_EXT);
         }
-        // MIME 类型校验（客户端未提供时跳过）
+        // MIME 类型校验（客户端未提供时跳过——权威闸是下方内容魔数校验）
         String contentType = file.getContentType();
         if (contentType != null && !contentType.isBlank()
                 && !ALLOWED_VOICE_MIME.contains(contentType.toLowerCase(Locale.ROOT))) {
+            throw new IllegalArgumentException(ErrorMessages.VOICE_MIME_UNSUPPORTED + contentType);
+        }
+        // R17（安全审计 P2）：内容魔数校验 fail-closed——对齐主上传链路
+        // LocalMediaStorageService 的音频魔数口径（ADTS 帧同步/ID3/ftyp/RIFF-WAVE）。
+        // 语音上传此前仅扩展名 + MIME 白名单（MIME 空值跳过），伪装成语音的任意
+        // 2MB 内文件可落盘占盘；扩展名与 MIME 都是客户端可控声明，内容才是真相。
+        byte[] head = new byte[16];
+        int headLen = 0;
+        try (var headIn = file.getInputStream()) {
+            int n;
+            while (headLen < head.length && (n = headIn.read(head, headLen, head.length - headLen)) != -1) {
+                headLen += n;
+            }
+        } catch (IOException ioEx) {
+            throw new IllegalArgumentException("语音内容不可读", ioEx);
+        }
+        if (!looksLikeAudio(head, headLen)) {
+            log.warn("语音内容魔数校验失败：userId={}, ext={}, head={}",
+                    userId, ext, java.util.HexFormat.of().formatHex(
+                            java.util.Arrays.copyOf(head, Math.min(headLen, 8))));
             throw new IllegalArgumentException(ErrorMessages.VOICE_MIME_UNSUPPORTED + contentType);
         }
 
@@ -246,6 +266,43 @@ public class VoiceMessageService {
             log.error("删除语音文件失败: url={}", url, e);
             throw new RuntimeException(ErrorMessages.VOICE_DELETE_FAILED_RETRY, e);
         }
+    }
+
+    /**
+     * R17（安全审计 P2）：语音内容魔数嗅探（fail-closed）。
+     *
+     * <p>与主上传链路 LocalMediaStorageService 的音频魔数口径一致：</p>
+     * <ul>
+     *   <li>AAC（ADTS）与裸 MP3 帧：{@code FF Ex/FF Fx} 帧同步字（微信 RecorderManager 输出）</li>
+     *   <li>MP3（ID3v2 标签）：{@code 49 44 33}（"ID3"）</li>
+     *   <li>M4A：MP4 容器 ftyp box（偏移 4-7）</li>
+     *   <li>WAV：{@code RIFF}（偏移 0）+ {@code WAVE}（偏移 8）</li>
+     * </ul>
+     *
+     * @param head 文件头部字节（最多 16 字节）
+     * @param len  实际读到的字节数
+     * @return 是否呈现已知音频容器/帧结构
+     */
+    private static boolean looksLikeAudio(byte[] head, int len) {
+        if (len < 4) {
+            return false;
+        }
+        // AAC ADTS / 裸 MP3 帧：FF + 同步位（111）
+        if ((head[0] & 0xFF) == 0xFF && (head[1] & 0xE0) == 0xE0) {
+            return true;
+        }
+        // MP3 ID3v2 标签
+        if (head[0] == 'I' && head[1] == 'D' && head[2] == '3') {
+            return true;
+        }
+        // M4A：ftyp box（偏移 4-7）
+        if (len >= 8
+                && head[4] == 'f' && head[5] == 't' && head[6] == 'y' && head[7] == 'p') {
+            return true;
+        }
+        // WAV：RIFF....WAVE
+        return head[0] == 'R' && head[1] == 'I' && head[2] == 'F' && head[3] == 'F'
+                && len >= 12 && head[8] == 'W' && head[9] == 'A' && head[10] == 'V' && head[11] == 'E';
     }
 
     /**

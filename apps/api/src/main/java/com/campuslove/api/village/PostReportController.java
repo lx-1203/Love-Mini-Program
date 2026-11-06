@@ -5,6 +5,7 @@ import com.campuslove.api.common.TimeZones;
 import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.ratelimit.RateLimit;
 import com.campuslove.api.entity.Report;
 import com.campuslove.api.repository.PostRepository;
 import com.campuslove.api.repository.ReportRepository;
@@ -78,6 +79,8 @@ public class PostReportController {
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
     @Idempotent
+    // infra R2-00259 同口径：举报按 IP 限流，防止刷举报骚扰审核队列
+    @RateLimit(capacity = 5, refillTokens = 0.5, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<PostReportView> reportPost(
             @PathVariable("id") @Positive Long postId,

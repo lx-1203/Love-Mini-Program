@@ -68,7 +68,7 @@ public class AdminCertificationController {
      * 获取认证列表（支持按状态/校区筛选）。
      * 默认返回所有待审核的认证申请。
      *
-     * <p>R4-00386：新增分页参数 page/size（默认 size 1000，上限 5000）——
+     * <p>R4-00386：新增分页参数 page/size（默认 size 200，上限 1000）——
      * 认证申请量大时避免一次性全量返回拖慢后台；响应仍为列表结构
      * （兼容现有管理端契约），后续管理端可扩展完整分页交互。</p>
      *
@@ -76,7 +76,7 @@ public class AdminCertificationController {
      * @param campusName 校区筛选（按申请人所属校区过滤），可选；
      *                   校区管理员强制按其管辖校区过滤，忽略本参数
      * @param page       页码（从 0 开始，默认 0）
-     * @param size       每页大小（默认 1000，最大 5000）
+     * @param size       每页大小（默认 200，最大 1000）
      * @return 认证记录列表（分页截断）
      */
     @GetMapping
@@ -84,7 +84,7 @@ public class AdminCertificationController {
             @RequestParam(name = "status", defaultValue = "PENDING") String status,
             @RequestParam(name = "campusName", required = false) String campusName,
             @RequestParam(name = "page", required = false, defaultValue = "0") @PositiveOrZero int page,
-            @RequestParam(name = "size", required = false, defaultValue = "1000") @Min(1) @Max(5000) int size) {
+            @RequestParam(name = "size", required = false, defaultValue = "200") @Min(1) @Max(1000) int size) {
         // 验证当前用户已登录
         SecurityUtils.getCurrentUserId();
 

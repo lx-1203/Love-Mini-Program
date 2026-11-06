@@ -144,7 +144,7 @@ function onMaskTap() {
 .bottom-sheet-panel {
   position: relative;
   width: 100%;
-  background: #ffffff;
+  background: var(--c-bg-elevated);
   border-top-left-radius: 32rpx;
   border-top-right-radius: 32rpx;
   box-shadow: 0 -16rpx 48rpx rgba(0, 0, 0, 0.12);

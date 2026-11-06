@@ -96,8 +96,12 @@ class AuthControllerGuestLoginRateLimitTest {
         RateLimitExceededException rejected = assertThrows(RateLimitExceededException.class,
                 () -> aspect.aroundMethod(proceedingJoinPointFor(method), rateLimit),
                 "guest-login 同 IP 超过桶容量应 fail-closed 拒绝（HTTP 429），而非无界写库");
-        assertTrue(rejected.getMessage().contains("limit=" + rateLimit.capacity()),
-                "拒绝信息应携带限流参数，口径与兄弟端点一致");
+        // R17 修订：拒绝消息已改统一固定文案——不回显 capacity/refill 阈值（防逐端点
+        // 探测限流参数），阈值只进服务端日志；判点从「携带参数」翻转为「不泄漏参数」。
+        assertTrue(rejected.getMessage().contains("请求过于频繁"),
+                "拒绝信息应为统一固定文案（与兄弟端点同口径）");
+        assertFalse(rejected.getMessage().contains("limit="),
+                "拒绝信息不得回显限流参数（防逐端点探测），阈值只进服务端日志");
 
         // 负向对照：不同 IP 拥有独立桶，不被上一个 IP 连坐
         MockHttpServletRequest ipB = new MockHttpServletRequest();

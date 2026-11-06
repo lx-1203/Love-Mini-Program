@@ -1207,10 +1207,18 @@ let profileRequestedOnce = false;
  * R16：拉取「我的日常」；冷启动时 onShow 可能早于会话恢复（token/userSession
  * 未就绪 → action 静默早退），用带退避的重试兜底。只在仍无数据时重试。
  */
+// R17：重试链定时器句柄化（对齐 login 页 loginNavTimer 惯例）——链式 setTimeout
+// 每级只有一枚挂起定时器，存句柄 + onUnload 清理，消除「离页后最多再跑 6s」的
+// 无效请求与卸载后状态写入。
+let myDailiesRetryTimer: ReturnType<typeof setTimeout> | null = null;
+let myPostsRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
 function refreshMyDailiesWithRetry(retries: number): void {
   void profileStore.loadMyDailies();
   if (retries > 0 && !profileStore.myDailies.length) {
-    setTimeout(() => {
+    if (myDailiesRetryTimer !== null) clearTimeout(myDailiesRetryTimer);
+    myDailiesRetryTimer = setTimeout(() => {
+      myDailiesRetryTimer = null;
       if (profileStore.myDailies.length === 0) refreshMyDailiesWithRetry(retries - 1);
     }, 2000);
   }
@@ -1224,7 +1232,9 @@ function refreshMyDailiesWithRetry(retries: number): void {
 function refreshMyPostsWithRetry(retries: number): void {
   void profileStore.loadMyPosts();
   if (retries > 0 && !profileStore.myPosts.length) {
-    setTimeout(() => {
+    if (myPostsRetryTimer !== null) clearTimeout(myPostsRetryTimer);
+    myPostsRetryTimer = setTimeout(() => {
+      myPostsRetryTimer = null;
       if (profileStore.myPosts.length === 0) refreshMyPostsWithRetry(retries - 1);
     }, 2000);
   }
@@ -1315,6 +1325,16 @@ onUnload(() => {
   if (avatarHintTimer) {
     clearTimeout(avatarHintTimer);
     avatarHintTimer = null;
+  }
+  // R17：清理「我的日常 / 我的帖子」重试链挂起定时器（离页后不再续跑——
+  // 链满档 retries=3 时每链最多再跑 2 次 × 2s 的离页请求，卸载后还写 store 状态）
+  if (myDailiesRetryTimer) {
+    clearTimeout(myDailiesRetryTimer);
+    myDailiesRetryTimer = null;
+  }
+  if (myPostsRetryTimer) {
+    clearTimeout(myPostsRetryTimer);
+    myPostsRetryTimer = null;
   }
   // R4-00158/00159：页面卸载时清理 discover / village store 的定时器与请求资源
   discoverStore.dispose();

@@ -326,7 +326,9 @@ paths:
           $ref: '#/components/responses/InternalServerError'
   /activities/{id}/enroll:
     post:
-      summary: Enroll or cancel enrollment for an activity
+      # ---- R17 契约对齐：后端不收 body（ActivityController.java:85-91，无
+      # @RequestBody 参数），原「必填 body {enrolled:bool}」是文档臆造，删除。 ----
+      summary: Enroll in an activity
       operationId: enrollActivity
       parameters:
         - in: path
@@ -335,19 +337,38 @@ paths:
           schema:
             type: string
           description: Activity ID
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EnrollRequest'
       responses:
         '200':
           description: Enrollment result
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ActivityEnrollmentView'
+                $ref: '#/components/schemas/ActivityEnrollmentApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    # ---- R17 契约对齐：取消报名端点补记（ActivityController.java:100-106 已存在，
+    # POST / DELETE 成对出现；此前 yaml 只记了带 body 的 POST——三重漂移） ----
+    delete:
+      summary: Cancel enrollment for an activity
+      operationId: cancelActivityEnrollment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Activity ID
+      responses:
+        '200':
+          description: Cancel-enrollment result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityEnrollmentApiResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -390,7 +411,7 @@ paths:
         Returns the whisper opening line for the target user only when the
         current user has unlocked messaging/whisper for them (a MESSAGE_UNLOCK
         or WHISPER_UNLOCK wallet transaction exists). Otherwise returns
-        `unlocked=false` with `whisper=null` — paid content is never leaked.
+        `unlocked=false` with `whispers=[]` — paid content is never leaked.
       operationId: getWhisper
       security:
         - bearerAuth: []
@@ -460,13 +481,21 @@ components:
     WhisperUnlockView:
       type: object
       description: |
-        Whisper view (R4-00314). `whisper` is only populated when `unlocked=true`.
+        Whisper view (R4-00314, 2026-08-14 改为多条文案). `whispers` is only
+        populated when `unlocked=true` — the list mirrors
+        RecommendationController.java `record WhisperUnlockView(unlocked,
+        whispers, balanceCents)`.
       properties:
         unlocked:
           type: boolean
-        whisper:
-          type: string
-          nullable: true
+        # ---- R17 契约对齐：字段名漂移修复——后端 record 与客户端
+        # services/api.ts:1215 均为 whispers（复数 List<String>），原 yaml
+        # 写成 whisper（单数 string）。 ----
+        whispers:
+          type: array
+          description: Whisper copy lines (empty list when not unlocked — paid content never leaks)
+          items:
+            type: string
         balanceCents:
           type: integer
           format: int64
@@ -731,19 +760,17 @@ components:
       required:
         - error
         - message
-    EnrollRequest:
+    # EnrollRequest 已删除（R17）：后端报名接口不收请求体
+    # （ActivityController.java:85-91 无 @RequestBody 参数），该 schema 是文档臆造的死契约。
+    ActivityEnrollmentResultView:
       type: object
-      properties:
-        enrolled:
-          type: boolean
-          description: true to enroll, false to cancel enrollment
-      required:
-        - enrolled
-    ActivityEnrollmentView:
-      type: object
+      description: |
+        报名/取消报名操作结果（镜像 ActivityEnrollmentResultView.java：
+        activityId 为 int64，非原 yaml 臆造的 string）。
       properties:
         activityId:
-          type: string
+          type: integer
+          format: int64
         enrolled:
           type: boolean
         enrollmentCount:
@@ -753,6 +780,29 @@ components:
         - activityId
         - enrolled
         - enrollmentCount
+    ActivityEnrollmentApiResponse:
+      type: object
+      description: |
+        `ApiResponse<ActivityEnrollmentResultView>` 统一信封（ActivityController
+        返回 `ApiResponse.ok(...)`）：`code` 为 0 表示成功，`traceId` 与
+        `X-Trace-Id` 响应头一致。
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。
+        message:
+          type: string
+          description: 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。
+        data:
+          $ref: '#/components/schemas/ActivityEnrollmentResultView'
+        traceId:
+          type: string
+          description: 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。
+      required:
+        - code
+        - message
+        - data
+        - traceId
     ActivityDetailView:
       type: object
       properties:

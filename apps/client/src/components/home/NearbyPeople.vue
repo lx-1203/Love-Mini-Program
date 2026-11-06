@@ -150,7 +150,7 @@ function onNearbyAvatarError(event: Event) {
   margin: 0 32rpx;
   padding: 32rpx;
   border-radius: 20rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border: 1rpx solid #EEF2F0;
   color: #999999;
   font-size: 22rpx;
@@ -165,7 +165,7 @@ function onNearbyAvatarError(event: Event) {
   justify-content: space-between;
   padding: 24rpx 20rpx;
   border-radius: 20rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border: 1rpx solid #FFE3E3;
 }
 

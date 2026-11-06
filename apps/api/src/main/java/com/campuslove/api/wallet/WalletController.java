@@ -7,6 +7,7 @@ import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.FeatureSwitch;
 import com.campuslove.api.config.FeatureSwitchKeys;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -249,6 +250,7 @@ public class WalletController {
     @PostMapping("/recharge")
     @FeatureSwitch(FeatureSwitchKeys.COMMERCE_COIN)
     @Idempotent
+    @RateLimit(capacity = 30, refillTokens = 0.5, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public WalletRechargeView recharge(@Valid @RequestBody RechargeRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -425,6 +427,7 @@ public class WalletController {
     @PostMapping("/unlock")
     @FeatureSwitch(FeatureSwitchKeys.COMMERCE_COIN)
     @Idempotent
+    @RateLimit(capacity = 30, refillTokens = 0.5, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public WalletUnlockView unlock(@Valid @RequestBody UnlockRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
@@ -458,6 +461,7 @@ public class WalletController {
     @PostMapping("/deduct")
     @FeatureSwitch(FeatureSwitchKeys.COMMERCE_COIN)
     @Idempotent
+    @RateLimit(capacity = 30, refillTokens = 0.5, key = "#clientIp")
     @PreAuthorize("hasRole('USER')")
     public WalletDeductView deduct(@Valid @RequestBody DeductRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();

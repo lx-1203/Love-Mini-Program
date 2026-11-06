@@ -103,6 +103,10 @@ export async function fetchWithStaleWhileRevalidate<T>(
 
   // 有过期旧值 → 先返回旧值，后台刷新（stale-while-revalidate）
   if (entry) {
+    // R17：后台刷新是浮动 Promise（无人 await）——失败必须就地吞掉，否则
+    // unhandled rejection（控制台红 + 部分环境全局错误上报误触发）。
+    // stale 值语义不变：本次调用仍返回旧值，下次调用重试刷新。
+    promise.catch(() => {});
     return entry.value;
   }
 

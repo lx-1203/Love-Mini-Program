@@ -57,7 +57,7 @@ const cells = computed(() =>
   margin: 24rpx 24rpx 0;
   padding: 28rpx 28rpx;
   border-radius: 32rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
 }
 

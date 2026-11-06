@@ -130,7 +130,7 @@ const helloLabel = computed(() => (props.matched ? "发消息" : "打招呼"));
 
 .relationship-cta__btn--follow {
   flex: 1;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border: 2rpx solid var(--c-line, #EEF2F0);
 }
 

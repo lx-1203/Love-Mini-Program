@@ -39,6 +39,8 @@
  */
 package com.campuslove.api.auth;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -254,7 +256,12 @@ public class SmsCodeService {
         } catch (RuntimeException e) {
             stored = memoryStore.get(storeKey);
         }
-        boolean ok = code.trim().equals(stored);
+        // 常量时间比较（防时序侧信道逐位猜码）：String.equals 短路返回会在首字节
+        // 不匹配时提前退出，耗时差异可被统计利用；MessageDigest.isEqual 全量比对。
+        // stored 为 null（码不存在/已过期）时与空数组比，结果为 false 且耗时形态一致。
+        boolean ok = MessageDigest.isEqual(
+                code.trim().getBytes(StandardCharsets.UTF_8),
+                stored == null ? new byte[0] : stored.getBytes(StandardCharsets.UTF_8));
         if (ok) {
             if (redisTemplate != null) {
                 // 一次性验证码：校验通过后删除，防重放

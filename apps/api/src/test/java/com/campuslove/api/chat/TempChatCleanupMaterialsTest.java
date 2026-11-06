@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -103,12 +102,14 @@ class TempChatCleanupMaterialsTest {
         when(mediaAssetService.findExpiredTempAssets(any())).thenReturn(List.of());
         when(sessionRepository.findByPhaseInAndClosesAtBefore(any(), any())).thenReturn(List.of(session));
         MediaAsset asset = asset(3L, "/api/v1/media/temp/session-old/202610/c.png", null);
-        when(mediaAssetService.findTempAssetsBySession(9L)).thenReturn(List.of(asset));
-        when(messageRepository.deleteBySessionId(9L)).thenReturn(4L);
+        // R17 同步：清理已改按块批删/批查（deleteBySessionIdIn + findTempAssetsBySessions，
+        // 块级容错），判点随新签名对齐——单会话场景即单元素块 [9]。
+        when(mediaAssetService.findTempAssetsBySessions(List.of(9L))).thenReturn(List.of(asset));
+        when(messageRepository.deleteBySessionIdIn(List.of(9L))).thenReturn(4);
 
         service.cleanupRetainedMaterials();
 
-        verify(messageRepository).deleteBySessionId(eq(9L));
+        verify(messageRepository).deleteBySessionIdIn(List.of(9L));
         verify(mediaStorageService).delete(asset.getUrl());
         verify(mediaAssetService).markTempDeleted(asset);
     }

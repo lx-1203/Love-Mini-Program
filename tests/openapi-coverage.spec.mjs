@@ -42,7 +42,21 @@ const UNCONSUMED_BASELINE = new Set([
 /** 已知的类型判点（schema.属性 → 期望的 YAML type），写死便于逐条追溯实现。 */
 const TYPED_SPOT_CHECKS = [
   { file: "village.yaml", schema: "PostSummary", property: "id", expectType: "integer" },
+  // R17：WhisperUnlockView.whispers 必须是数组——后端 record 是 whispers
+  // （复数 List<String>，RecommendationController.java:638-643），客户端
+  // services/api.ts:1215 同期望；原 yaml 写成 whisper（单数 string）漂移。
+  { file: "recommendations.yaml", schema: "WhisperUnlockView", property: "whispers", expectType: "array" },
 ];
+
+/**
+ * R17 追加判点：notifications.yaml 的 NotificationView.type 枚举交集——
+ * 后端 NotificationType（entity/Notification.java）产出的每个值都必须被契约收录
+ * （缺一个 ⇒ 按契约开发的客户端收到未知 type 落不到渲染分支）。
+ * 返回 yaml 缺掉的后端值列表，空数组=通过。
+ */
+function missingNotificationTypes(backendTypes, yamlTypes) {
+  return backendTypes.filter((t) => !yamlTypes.includes(t));
+}
 
 /** 收集 main java 里所有以 / 开头的字符串字面量（控制器映射路径）。 */
 function javaPathLiterals() {
@@ -95,6 +109,11 @@ assert.deepEqual(parsedBad.serverUrls, ["/api"], "servers 解析失效");
 assert.ok(!segmentResolves("/totally-made-up-endpoint", literals),
   "路径判点失去证伪能力：编造的路径也能通过");
 assert.ok(segmentResolves("/posts", literals), "正控失效：/posts 必须在 Java 侧存在");
+assert.deepEqual(
+  missingNotificationTypes(["follow", "ghost_type"], ["follow"]),
+  ["ghost_type"],
+  "枚举交集判点失去证伪能力：合成缺值也测不出来",
+);
 
 // —— 全量校验 ——
 const yamlFiles = readdirSync(OPENAPI_DIR).filter((f) => f.endsWith(".yaml")).sort();
@@ -150,8 +169,40 @@ for (const check of TYPED_SPOT_CHECKS) {
     `${file} 的 ${check.schema}.${check.property} 必须是 ${check.expectType}（实际 ${declaredType}）`);
 }
 
+// —— R17 追加判点：notifications.yaml 的 type 枚举必须覆盖后端 NotificationType 全量 ——
+const NOTIFICATION_ENTITY = join(MAIN_JAVA, "com", "campuslove", "api", "entity", "Notification.java");
+const notificationEntityText = readFileSync(NOTIFICATION_ENTITY, "utf8");
+const backendEnumMatch = notificationEntityText.match(/enum\s+NotificationType\s*\{([^}]*)\}/u);
+assert.ok(backendEnumMatch, "Notification.java 里找不到 NotificationType 枚举，枚举交集判点失效");
+const backendNotificationTypes = backendEnumMatch[1]
+  .replace(/\/\*[\s\S]*?\*\//gu, "") // 块注释剔除
+  .replace(/\/\/[^\n]*/gu, "") // 行注释剔除
+  .split(",")
+  .map((s) => s.trim())
+  .filter((s) => /^[a-z][a-z0-9_]*$/u.test(s));
+assert.ok(backendNotificationTypes.length >= 9,
+  `NotificationType 只解析出 ${backendNotificationTypes.length} 个值（<9），枚举解析失效`);
+const notificationsYaml = readFileSync(join(OPENAPI_DIR, "notifications.yaml"), "utf8");
+const notifViewAt = notificationsYaml.indexOf("    NotificationView:");
+assert.ok(notifViewAt >= 0, "notifications.yaml 里找不到 NotificationView schema，判点需同步更新");
+const notifViewBody = notificationsYaml.slice(
+  notifViewAt,
+  notificationsYaml.indexOf("    UnreadCountView:", notifViewAt),
+);
+const notifTypeAt = notifViewBody.indexOf("\n        type:");
+assert.ok(notifTypeAt >= 0, "NotificationView.type 结构变了，判点需同步更新");
+const yamlEnumMatch = notifViewBody.slice(notifTypeAt, notifTypeAt + 400).match(/enum:\s*\[([^\]]+)\]/u);
+assert.ok(yamlEnumMatch, "NotificationView.type 的 enum 行变了，判点需同步更新");
+const yamlNotificationTypes = yamlEnumMatch[1].split(",").map((s) => s.trim()).filter(Boolean);
+assert.ok(yamlNotificationTypes.includes("follow"),
+  "yaml 枚举解析失效（连 follow 都没取到），枚举交集判点空转");
+const missingTypes = missingNotificationTypes(backendNotificationTypes, yamlNotificationTypes);
+assert.deepEqual(missingTypes, [],
+  `notifications.yaml 的 NotificationView.type 枚举缺后端 NotificationType 值：${missingTypes.join(", ")}`);
+
 console.log(
   `openapi coverage ok（${yamlFiles.length} 份契约：servers 全部 /api/v1、`
-  + `${checkedPaths} 条路径首段均可在 Java 控制器找到、类型抽查 ${TYPED_SPOT_CHECKS.length} 项通过；`
+  + `${checkedPaths} 条路径首段均可在 Java 控制器找到、类型抽查 ${TYPED_SPOT_CHECKS.length} 项通过、`
+  + `notifications type 枚举交集 ${backendNotificationTypes.length} 项全覆盖；`
   + `接入生成链 ${consumed.size} 份，未接入基线 ${unconsumed.length} 份只减不增）`,
 );

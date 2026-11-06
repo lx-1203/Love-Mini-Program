@@ -21,6 +21,12 @@
  *   · 档位不是 real、或没走 release-chain ⇒ 这组数字**不能**被引用为"发布形态达标"；
  *   · real 档里 CDN 桶出包必须有清单解释（见 PACKAGE_SIZE_CDN 行）——
  *     体积下来但不说清"哪些文件为什么不进了"，本门按不成立处理，不接受"反正数字小了"。
+ *
+ * R11 路线图位（2026-11-06 工程收口车道确认+补注）：本门即 R11「主包余量监控」的执行落点——
+ * real 档主包 ≤2048KB 是硬闸（mainBytes > MAIN_PACKAGE_LIMIT 直接进 failures → exit 1，
+ * 无豁免通道；mock/dev 档经 --allow-mock 豁免主包断言属开发形态登记豁免，总包与 en-US/mock
+ * 检查在 mock 档也不豁免）。R16 实测口径 1715KB/2048KB（余量 333KB ≈ 16%）：主包新增内容
+ * 一律先过体积评估，新增页面默认进分包；余量收窄至 1~2 页时按路线图升级为每辑必报监控项。
  */
 import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
 import { join, resolve, dirname } from "node:path";

@@ -657,6 +657,24 @@ function redirectToLogin(): void {
   const hadSession = Boolean(getToken());
   // 清除失效的本地 token，避免后续请求继续携带
   clearTokens();
+  // R17（客户端核心车道）：401 强踢路径补齐会话收口——原实现到这里就结束，
+  // Pinia 内存态（签到/余额/回答列表…）、WS 连接、会话刷新节流时间戳都没清；
+  // reLaunch 不重置 JS 运行时，同一次会话内换账号会继承上一账号内存态。
+  // 登记表设计见 stores/session.ts logout() 与 stores/logout-registry.ts。
+  // 不直接调 sessionStore.logout()：其内部 clientApi.logout 会立即 reLaunch，
+  // 与本函数既有的 500ms 延时跳转重复触发（登录页双重挂载），故按审计备选口径
+  // 原地补齐三件套。三者全部动态 import：logout-registry 汇聚全部 store、
+  // websocket 与 usePageAccess 都反向依赖本文件（getToken），静态引入会重建
+  // http ↔ stores ↔ websocket 循环（循环 chunk 前科见 utils/media-token-cache.ts 头注释）。
+  void import("../stores/logout-registry").then(({ resetAccountScopedStores }) => {
+    resetAccountScopedStores();
+  });
+  void import("./websocket").then(({ wsClient }) => {
+    wsClient.disconnect();
+  });
+  void import("../composables/usePageAccess").then(({ resetPageAccessThrottle }) => {
+    resetPageAccessThrottle();
+  });
   // 友好提示
   uni.showToast({
     title: t(hadSession ? "apiErrors.unauthorized" : "apiErrors.loginRequired"),

@@ -4,6 +4,7 @@ import com.campuslove.api.common.ApiResponse;
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
+import com.campuslove.api.ratelimit.RateLimit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -56,6 +57,7 @@ public class AccountSecurityController {
      */
     @PostMapping("/change-password")
     @Operation(summary = "修改密码", description = "校验旧密码后更新密码，并吊销该用户全部 token 强制重新登录")
+    @RateLimit(capacity = 5, refillTokens = 0.05, key = "#clientIp")
     @Idempotent
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<Void> changePassword(
@@ -79,6 +81,7 @@ public class AccountSecurityController {
      */
     @PostMapping("/change-phone")
     @Operation(summary = "更换手机号", description = "验旧密码后更换手机号；新手机号被占用返回业务冲突错误。verificationCode 字段预留（后续短信验证）")
+    @RateLimit(capacity = 5, refillTokens = 0.05, key = "#clientIp")
     @Idempotent
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<Void> changePhone(@Valid @RequestBody ChangePhoneRequest request) {
@@ -132,6 +135,7 @@ public class AccountSecurityController {
      */
     @PostMapping("/deactivate")
     @Operation(summary = "注销账号", description = "校验凭据后注销账号并匿名化个人数据；幂等，已注销账号重复调用直接成功")
+    @RateLimit(capacity = 5, refillTokens = 0.05, key = "#clientIp")
     @Idempotent
     @PreAuthorize("hasRole('USER')")
     public ApiResponse<Void> deactivate(

@@ -611,11 +611,11 @@ export interface KickOnlineUserResponse {
 }
 
 /**
- * 在线用户列表。
+ * 在线用户列表（后端 0-based page，默认 page=0/size=50，size 上限 200）。
  * GET /api/v1/admin/online-users
  */
-export async function listOnlineUsers(): Promise<OnlineUserView[]> {
-  const body = await get<unknown>("/v1/admin/online-users");
+export async function listOnlineUsers(page = 0, size = 50): Promise<OnlineUserView[]> {
+  const body = await get<unknown>("/v1/admin/online-users", { page, size });
   return unwrapApiData<OnlineUserView[]>(body) ?? [];
 }
 

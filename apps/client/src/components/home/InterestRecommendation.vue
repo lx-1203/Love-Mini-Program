@@ -159,7 +159,7 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
 .interest-recommend__empty {
   padding: 32rpx;
   border-radius: 20rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border: 1rpx solid var(--c-line, #EEF2F0);
   color: var(--c-text-secondary, #999999);
   font-size: 22rpx;
@@ -173,7 +173,7 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
   justify-content: space-between;
   padding: 24rpx 20rpx;
   border-radius: 20rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border: 1rpx solid #FFE3E3;
 }
 
@@ -221,7 +221,7 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
   flex-shrink: 0;
   /* V-09：卡片圆角 16→20rpx，与全局卡片体系一致 */
   border-radius: 20rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border: 1rpx solid var(--c-line, #EEF2F0);
   overflow: hidden;
   box-sizing: border-box;
@@ -288,7 +288,7 @@ defineEmits<{ (e: "more"): void; (e: "join", id: number): void; (e: "select", id
   padding: 10rpx 0;
   border-radius: 999rpx;
   border: 2rpx solid var(--c-brand-dark, #36C99A);
-  background: #ffffff;
+  background: var(--c-bg-container);
   color: var(--c-brand-dark, #36C99A);
   font-size: 24rpx;
   font-weight: 700;

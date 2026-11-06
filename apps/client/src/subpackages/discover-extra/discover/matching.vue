@@ -83,6 +83,13 @@ function goBack() {
   }
 }
 
+// R17：导航型 setTimeout 句柄化（对齐 login 页 loginNavTimer 惯例：句柄存模块变量，
+// onUnload 清理）——三处 goBack 兜底回流定时器（发送成功 400ms / 失败 600ms / 刷新直达
+// 兜底 200ms）离页后不再触发导航与状态机复位竞态。语句形态 `setTimeout(() => goBack(), N)`
+// 保持逐字不变：guest-landing-pairs.spec 把 onLoad 内那条 200ms 兜底路径当静态锚点
+// （守卫顺序判据），换包装函数会失锚。
+let goBackTimer: ReturnType<typeof setTimeout> | null = null;
+
 watch(
   () => [matchStore.status, matchStore.animationDone] as const,
   ([status, animated]) => {
@@ -91,16 +98,16 @@ watch(
       consumeCardFromDeck();
       redirectToSuccess();
     } else if (status === "idle") {
-      // 发送成功：先消费卡组（返回后自动切到下一张），再提示并返回
+      // 发送成功：先消费卡组（返回后自动切到下一张），见上方 goBackTimer 句柄说明
       consumeCardFromDeck();
       uni.showToast({ title: t("discover.likeSent"), icon: "success" });
-      setTimeout(() => goBack(), 400);
+      goBackTimer = setTimeout(() => goBack(), 400);
     } else if (status === "failed") {
       uni.showToast({
         title: matchStore.lastError || t("matching.likeFailed"),
         icon: "none",
       });
-      setTimeout(() => goBack(), 600);
+      goBackTimer = setTimeout(() => goBack(), 600);
     }
   }
 );
@@ -170,8 +177,8 @@ onLoad((query) => {
         }
       });
     } else {
-      // 页面刷新兜底：直接回退，避免死页。
-      setTimeout(() => goBack(), 200);
+      // 页面刷新兜底：直接回退，避免死页。（语句形态逐字保留：guest-landing-pairs.spec 静态锚点）
+      goBackTimer = setTimeout(() => goBack(), 200);
       return;
     }
   }
@@ -253,6 +260,11 @@ function handleSkip() {
 // previewMode 两入口与「check 完成前退出」时 status 停在 checking/matched，
 // 残留 pendingCardId 会使下次进入绕过 200ms 兜底 → 对已消费卡 swipeRight → 误报错误
 onUnload(() => {
+  // R17：清掉挂起的 goBack 兜底定时器，离页后不再触发导航
+  if (goBackTimer !== null) {
+    clearTimeout(goBackTimer);
+    goBackTimer = null;
+  }
   const keepMatchedUser = redirectingToSuccess ? matchStore.matchedUser : null;
   matchStore.reset();
   if (keepMatchedUser) matchStore.setMatchedUser(keepMatchedUser);

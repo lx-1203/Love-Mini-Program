@@ -21,7 +21,7 @@ import { openAppPath } from "../../../utils/navigation";
 // R4-00226：隐私权限设置路径走 ROUTES 常量
 import { ROUTES, SUBPACKAGE_ROUTES } from "../../../constants/routes";
 import { STORAGE_KEYS } from "../../../constants/storage-keys";
-import { usePageAccess } from "../../../composables/usePageAccess";
+import { usePageAccess, resetPageAccessThrottle } from "../../../composables/usePageAccess";
 // P1 修复（2026-10-31）：本页原先复用 profilePageRequirements（requiresAuth:**false**，
 // 那枚描述的是「我的」Tab 可进入查看），于是账号安全中心在配置层成了免登录页 ——
 // 游客进来就发 GET /auth/devices（必 401），并且在被弹走之前看得见「更换手机号 / 注销账号」。
@@ -428,8 +428,22 @@ async function submitPassword(): Promise<void> {
     successHaptic();
     // 后端已吊销全部 token，需重新登录
     uni.showToast({ title: t("security.passwordUpdatedRelogin"), icon: "none" });
+    // R17：会话收口收敛（原只 clearTokens()+userSession=null，Pinia 内存态/WS 连接/
+    // 会话刷新节流都没清）。不直接调 sessionStore.logout()：其内部 clientApi.logout
+    // 会对已吊销 token 后台补发 /auth/logout（401 → handle401 → redirectToLogin 弹
+    // 「请先登录」toast 顶掉上方成功提示，并与其 500ms 延时跳转重复 reLaunch）。
+    // 按审计备选口径原地补齐三件套（登记表设计见 stores/session.ts logout()），
+    // 跳转仍走下方 1.2s 延时 reLaunch；logout-registry/websocket 动态 import
+    // 防循环依赖（同 services/http.ts redirectToLogin 的处理）。
     clearTokens();
     sessionStore.userSession = null;
+    resetPageAccessThrottle();
+    void import("../../../stores/logout-registry").then(({ resetAccountScopedStores }) => {
+      resetAccountScopedStores();
+    });
+    void import("../../../services/websocket").then(({ wsClient }) => {
+      wsClient.disconnect();
+    });
     setTimeout(() => {
       uni.reLaunch({ url: ROUTES.LOGIN });
     }, 1200);
@@ -572,8 +586,16 @@ async function submitDeleteAccount(): Promise<void> {
     });
     uni.showToast({ title: t("security.deleteDone"), icon: "none" });
     // 后端已吊销全部 token，清本地状态跳登录页
+    // R17：会话收口收敛（与改密分支同一处理，理由见该处注释）
     clearTokens();
     sessionStore.userSession = null;
+    resetPageAccessThrottle();
+    void import("../../../stores/logout-registry").then(({ resetAccountScopedStores }) => {
+      resetAccountScopedStores();
+    });
+    void import("../../../services/websocket").then(({ wsClient }) => {
+      wsClient.disconnect();
+    });
     setTimeout(() => {
       uni.reLaunch({ url: ROUTES.LOGIN });
     }, 1200);

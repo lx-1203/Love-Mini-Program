@@ -1043,17 +1043,13 @@ export interface components {
             userId: string;
             loggedIn: boolean;
             /** @enum {string} */
-            loginMethod: "wechat" | "phone" | "admin";
+            loginMethod: "wechat" | "phone" | "admin" | "guest" | "unknown";
             displayName: string;
             phoneBound: boolean;
             profileCompleted: boolean;
             campusVerified: boolean;
             scheduleCompleted: boolean;
             campusName?: string | null;
-            /** @description 校园认证绑定（收尾轮：认证+一次性绑定后为 true，绑定锁定；前端 home 选择器消费） */
-            schoolBound?: boolean;
-            /** @description 绑定学校 ID（= campusName，供首页选择器回显） */
-            schoolId?: string | null;
             featureFlags: {
                 [key: string]: boolean;
             };

@@ -25,6 +25,28 @@ import { spawnSync } from "node:child_process";
    解释器路径写死在 reason 里：下一个踩坑的人不该还需要回来翻日志找正确 node 在哪。 */
 const NODE_MAJOR = Number(String(process.versions.node).split(".")[0]);
 if (!(NODE_MAJOR >= 20)) {
+  /* R17 补丁（2026-11-06）：解释器不达标时先自举到声明的 node22 重跑自身，找不到才拒证。
+     契约链腿（package.json test:qa-selftests）用裸 node 起聚合器：本机 machine PATH 的
+     微信开发工具 node v16 排在 user PATH 的 codex-tools node v22 之前（machine 段恒先于
+     user 段，用户级无法反超），且 WSL 内改 PATH 不传导给 Windows 子进程 ⇒ 链内这腿
+     必然踩闸。消息里指的「改用 node22 重跑」原本只留给人工——现在门自己完成它：
+     候选解释器须实测 `--version` 主版本 ≥20 才用（QA_SELFTEST_NODE22 可覆盖，与
+     r-exec.cjs 的 EXEC_NODE22_DIR 同惯用法；QA_SELFTEST_REEXEC_GUARD 防递归）。
+     这不是闸开头反对的「带病跑绿盘」：重跑用的是被验证过的干净解释器，正是
+     「先判仪器、再判产品」；找不到干净解释器时仍维持原 NOT-EVIDENCED 拒证。 */
+  const CANDIDATE = process.env.QA_SELFTEST_NODE22 || "D:/codex-tools/node-v22.17.0-win-x64/node.exe";
+  let upgraded = null;
+  if (process.env.QA_SELFTEST_REEXEC_GUARD !== "1" && existsSync(CANDIDATE)) {
+    const v = spawnSync(CANDIDATE, ["--version"], { encoding: "utf8" });
+    const vm = /^v(\d+)\./.exec(String(v.stdout || "").trim());
+    if (v.status === 0 && vm && Number(vm[1]) >= 20) upgraded = CANDIDATE;
+  }
+  if (upgraded) {
+    const rr = spawnSync(upgraded, [fileURLToPath(import.meta.url), ...process.argv.slice(2)],
+      { cwd: process.cwd(), stdio: "inherit",
+        env: { ...process.env, QA_SELFTEST_REEXEC_GUARD: "1" } });
+    if (!rr.error) process.exit(rr.status ?? 1);
+  }
   console.log(`SELFTEST_RESULT=NOT-EVIDENCED reason=聚合器要求 Node >= 20（当前 ${process.version}，解释器=${process.execPath}）；请改用 D:/codex-tools/node-v22.17.0-win-x64/node.exe scripts/qa/run-qa-selftests.mjs 重跑`);
   process.exit(2);
 }

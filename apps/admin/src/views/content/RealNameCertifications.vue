@@ -19,7 +19,9 @@ import {
 import { ApiError } from "@/api/http";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import ErrorState from "@/components/ErrorState.vue";
+import Pagination from "@/components/Pagination.vue";
 import { formatDateTime } from "@/utils/format";
+import { DEFAULT_PAGE_SIZE } from "@/utils/constants";
 import { useSessionStore } from "../../stores/session";
 
 const { t } = useI18n();
@@ -55,6 +57,17 @@ const error = ref("");
 /** 状态筛选（默认待审核，与后端默认值一致） */
 const statusFilter = ref<StatusFilter>("PENDING");
 
+/**
+ * 分页状态：后端 AdminRealNameController 列表为 0-based page（默认 size=20，上限 200）。
+ * 端点直出列表（无 total 包络）：totalPages 按 has-more 语义估算——满页返回时假定还有下一页，
+ * 「共 N 条」总数无从得知，故不向 Pagination 传 total（组件自动隐藏该段）。
+ */
+const page = ref(0);
+const pageSize = ref(DEFAULT_PAGE_SIZE);
+const totalPages = ref(1);
+/** 每页大小可选项（上限对齐后端 @Max(200)） */
+const pageSizeOptions = [20, 50, 100, 200];
+
 /** 详情弹窗状态 */
 const detailVisible = ref(false);
 const detailCert = ref<RealNameCertificationView | null>(null);
@@ -72,8 +85,11 @@ async function fetchCertifications() {
   loading.value = true;
   error.value = "";
   try {
-    certifications.value =
-      (await listRealNameCertifications(statusFilter.value)) || [];
+    const list =
+      (await listRealNameCertifications(statusFilter.value, page.value, pageSize.value)) || [];
+    certifications.value = list;
+    // has-more 语义：满页返回 ⇒ 假定还有下一页；不满页 ⇒ 当前即最后一页
+    totalPages.value = list.length === pageSize.value ? page.value + 2 : page.value + 1;
   } catch (err: unknown) {
     error.value =
       err instanceof ApiError
@@ -87,8 +103,20 @@ async function fetchCertifications() {
   }
 }
 
-/** 状态筛选变更：重置筛选条件并重新加载 */
+/** 状态筛选变更：回到第一页并按新筛选重新加载 */
 function handleFilterChange() {
+  page.value = 0;
+  fetchCertifications();
+}
+
+/** 页码切换（Pagination 已通过 v-model:page 同步 page，这里只负责拉数据） */
+function handlePageChange() {
+  fetchCertifications();
+}
+
+/** 每页大小切换：回到第一页再拉取 */
+function handlePageSizeChange() {
+  page.value = 0;
   fetchCertifications();
 }
 
@@ -194,6 +222,14 @@ onMounted(() => {
         <option value="APPROVED">{{ t("realNameCertifications.filterApproved") }}</option>
         <option value="REJECTED">{{ t("realNameCertifications.filterRejected") }}</option>
       </select>
+      <select
+        v-model="pageSize"
+        class="filter-select"
+        :aria-label="t('common.pageSize', { n: pageSize })"
+        @change="handlePageSizeChange"
+      >
+        <option v-for="n in pageSizeOptions" :key="n" :value="n">{{ n }}</option>
+      </select>
     </view>
 
     <ErrorState v-if="error" :message="error" @retry="fetchCertifications" />
@@ -246,6 +282,15 @@ onMounted(() => {
         </tbody>
       </table>
     </view>
+
+    <Pagination
+      v-model:page="page"
+      :total-pages="totalPages"
+      :page-size="pageSize"
+      :page-base="0"
+      :disabled="loading"
+      @change="handlePageChange"
+    />
 
     <!-- 审核确认弹窗 -->
     <ConfirmDialog

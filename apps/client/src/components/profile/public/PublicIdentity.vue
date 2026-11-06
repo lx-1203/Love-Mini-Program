@@ -143,7 +143,7 @@ const genderIconSrc = computed(() => {
      头像骑压量（bottom:-40rpx，绝对下探 112rpx）不动，见 PublicHero.vue:84。 */
   padding: 40rpx 32rpx 28rpx;
   border-radius: 40rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.06);
   position: relative;
   z-index: 4;

@@ -29,7 +29,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WhisperMessageView'
+                $ref: '#/components/schemas/WhisperMessageViewApiResponse'
         '400':
           description: Validation / business rule violation (balance, daily limit, pair limit)
   /whispers/inbox:
@@ -60,9 +60,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/WhisperMessageView'
+                $ref: '#/components/schemas/WhisperMessageListApiResponse'
   /whispers/sent:
     get:
       summary: List sent whispers
@@ -90,9 +88,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/WhisperMessageView'
+                $ref: '#/components/schemas/WhisperMessageListApiResponse'
   /whispers/unread-count:
     get:
       summary: Count unread received whispers
@@ -109,8 +105,7 @@ paths:
           content:
             application/json:
               schema:
-                type: integer
-                format: int64
+                $ref: '#/components/schemas/WhisperUnreadCountApiResponse'
   /whispers/{id}/read:
     post:
       summary: Mark a received whisper as read
@@ -130,7 +125,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WhisperMessageView'
+                $ref: '#/components/schemas/WhisperMessageViewApiResponse'
 components:
   securitySchemes:
     bearerAuth:
@@ -186,3 +181,73 @@ components:
         senderAvatar:
           type: string
           nullable: true
+    # ---- R17 契约对齐：WhisperController 各端点均返回 ApiResponse.ok(...) 统一信封
+    # （WhisperController.java:34/45/55/68/75），原 yaml 把响应体建模为裸载荷；
+    # 信封写法对齐 feedback-growth-and-auth.yaml 的 EmptyApiResponse /
+    # UserDeviceSessionListApiResponse（ApiResponse.java:34：code/message/data/traceId）。
+    # 客户端 services/http.ts 的信封解包拦截器以 code===0 判成功并解包 data。
+    WhisperMessageViewApiResponse:
+      type: object
+      description: '`ApiResponse<WhisperMessageView>` 统一信封（send / {id}/read 端点）。'
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。
+        message:
+          type: string
+          description: 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。
+        data:
+          $ref: '#/components/schemas/WhisperMessageView'
+        traceId:
+          type: string
+          description: 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。
+      required:
+        - code
+        - message
+        - data
+        - traceId
+    WhisperMessageListApiResponse:
+      type: object
+      description: '`ApiResponse<List<WhisperMessageView>>` 统一信封（inbox / sent 端点）。'
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。
+        message:
+          type: string
+          description: 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WhisperMessageView'
+          description: 当前页列表；无数据时为空数组。
+        traceId:
+          type: string
+          description: 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。
+      required:
+        - code
+        - message
+        - data
+        - traceId
+    WhisperUnreadCountApiResponse:
+      type: object
+      description: '`ApiResponse<Long>` 统一信封（unread-count 端点）。'
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。
+        message:
+          type: string
+          description: 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。
+        data:
+          type: integer
+          format: int64
+          description: 收件人未读悄悄话数。
+        traceId:
+          type: string
+          description: 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。
+      required:
+        - code
+        - message
+        - data
+        - traceId

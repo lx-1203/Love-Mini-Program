@@ -973,7 +973,7 @@ function goToActivity(activityId: number) {
   gap: 20rpx;
   padding: 20rpx 24rpx;
   margin-bottom: 16rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border-radius: 18rpx;
   border: 1rpx solid var(--c-line, #EEF2F0);
 }

@@ -994,7 +994,7 @@ onShareAppMessage(() => ({
      最近滚动容器变为永不滚动的 .village-page 而失效、feed 内容顶入状态栏与胶囊
      投影区（双身份滚动截图实证）。定高后恢复 scroll-view 内部滚动。 */
   height: 100%;
-  background: #ffffff; /* R16：纯白背景 */
+  background: var(--c-bg-container); /* R16：纯白背景 */
   overflow: hidden;
 }
 
@@ -1519,7 +1519,7 @@ onShareAppMessage(() => ({
 
 /* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
 page {
-  background: #ffffff;
+  background: var(--c-bg-container);
 }
 
 </style>

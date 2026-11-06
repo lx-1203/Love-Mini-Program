@@ -653,7 +653,7 @@ onLoad((query) => {
   /* R20：去掉固定 height:88rpx（与内联 paddingTop 叠加计算不稳），改最小高度自适应 */
   min-height: 88rpx;
   padding-top: var(--statusbar, env(safe-area-inset-top));
-  background: #fff;
+  background: var(--c-bg-elevated);
   border-bottom: 1rpx solid #f0f0f0;
   flex-shrink: 0;
   z-index: 10;
@@ -921,7 +921,7 @@ onLoad((query) => {
   padding: 20rpx 28rpx;
 }
 .bubble--assistant {
-  background: #fff;
+  background: var(--c-bg-container);
   border: 1rpx solid #f0f0f0;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
   /* R11-L11-D24：助手行头像在左 ⇒ 尾角取左上（同 ChatBubble.vue:327/334 的 peer/assistant 档） */
@@ -1050,7 +1050,7 @@ onLoad((query) => {
   align-items: center;
   padding: 16rpx 20rpx;
   padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
-  background: #fff;
+  background: var(--c-bg-elevated);
   border-top: 1rpx solid #f0f0f0;
   gap: 12rpx;
   flex-shrink: 0;

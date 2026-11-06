@@ -1164,7 +1164,13 @@ function updateTempCountdown() {
 /** 发送文字消息
  * 私信会话走 messagesStore.sendMessage，临时会话走 chatStore.sendText
  */
+// R17：文本发送 in-flight 锁——发送按钮、破冰快捷与 break-question 都汇入 sendText
+// 单入口，置位期间重复触发（双击/连点）直接忽略，形态对齐下方图片发送的 isSendingImage。
+const sending = ref(false);
+
 async function sendText() {
+  // in-flight 期间忽略重复触发（防双击重发）
+  if (sending.value) return;
   if (!draft.value.trim() || !sessionId.value) {
     return;
   }
@@ -1184,6 +1190,7 @@ async function sendText() {
   const quoteRef = quoteReply.value;
   const currentSessionId = sessionId.value;
 
+  sending.value = true;
   try {
     if (isTempSession.value) {
       // 临时匿名会话使用 chatStore 的临时聊天链路
@@ -1226,8 +1233,14 @@ async function sendText() {
     });
     const message = error instanceof Error ? error.message : t("chat.sendFailed");
     uni.showToast({ title: message, icon: "none" });
+  } finally {
+    sending.value = false;
   }
 }
+
+// R17：同意交换/结束会话共享 in-flight 锁——两枚按钮同为对临时会话的写操作，
+// 置位期间互相钳制与重复触发（防双击重复提交），形态对齐上方 sending。
+const exchanging = ref(false);
 
 /** 同意交换联系方式（仅临时匿名会话） */
 async function handleAcceptExchange() {
@@ -1241,11 +1254,16 @@ async function handleAcceptExchange() {
     });
     return;
   }
+  // in-flight 期间忽略重复触发（防双击重复提交）
+  if (exchanging.value) return;
+  exchanging.value = true;
   try {
     await chatStore.acceptExchange("self");
     uni.showToast({ title: t("chat.exchangeAccepted"), icon: "success" });
   } catch (_e) {
     uni.showToast({ title: chatStore.errorMessage || t("chat.operationFailed"), icon: "none" });
+  } finally {
+    exchanging.value = false;
   }
 }
 
@@ -1273,11 +1291,16 @@ async function handleEndSession() {
     });
   });
   if (!confirmed) return;
+  // in-flight 期间忽略重复触发（与 handleAcceptExchange 共享 exchanging 锁）
+  if (exchanging.value) return;
+  exchanging.value = true;
   try {
     await chatStore.endSession();
     uni.showToast({ title: t("chat.sessionEnded"), icon: "success" });
   } catch (_e) {
     uni.showToast({ title: chatStore.errorMessage || t("chat.operationFailed"), icon: "none" });
+  } finally {
+    exchanging.value = false;
   }
 }
 

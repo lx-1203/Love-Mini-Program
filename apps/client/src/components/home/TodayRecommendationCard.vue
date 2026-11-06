@@ -169,7 +169,7 @@ const galleryPhotos = computed(() => (props.item?.photos ?? []).filter(Boolean).
   margin: 0 32rpx 16rpx;
   padding: 24rpx;
   border-radius: 40rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
 }
@@ -461,7 +461,7 @@ const galleryPhotos = computed(() => (props.item?.photos ?? []).filter(Boolean).
 }
 
 .today-card__btn--outline {
-  background: #FFFFFF;
+  background: var(--c-bg-container);
   border: 2rpx solid #36C99A;
   color: #36C99A;
 }

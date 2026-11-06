@@ -4,6 +4,7 @@ import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.common.Idempotent;
 import com.campuslove.api.config.SecurityUtils;
 import com.campuslove.api.ratelimit.RateLimit;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.util.ArrayList;
@@ -106,7 +107,7 @@ public class OfficialAccountController {
             @PathVariable("code")
             @NotBlank(message = ErrorMessages.CODE_REQUIRED)
             @Size(max = 32, message = ErrorMessages.CODE_MAX_LENGTH) String code,
-            @RequestBody OfficialChatSendRequest request) {
+            @Valid @RequestBody OfficialChatSendRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         List<OfficialMessageView> result =
                 officialChatService.sendUserMessage(code, userId, request.content());

@@ -17,7 +17,6 @@ import {
 import {
   saveMessageStatus,
   useMock,
-  withSendRetry,
 } from "../utils";
 import { mockSession1, mockSessionMap } from "../mock-data";
 import type {
@@ -84,7 +83,11 @@ export async function sendText(
     };
 
     // 使用 withMockMode 统一处理 Mock/Real 切换、activeSession 更新、概览刷新
-    // 修复（P1 BUG）：Real 模式新增 withSendRetry 重试机制
+    // R17：移除 withSendRetry 双重重试包装——pushMessage 走 http 层 request()，
+    // 网络层重试已在 http 层覆盖且幂等键在单次 request 调用内稳定复用；再叠一层
+    // store 级重试会在「已送达但本地超时」场景重新调用 pushMessage 生成**新**随机
+    // 幂等键（tmp-${Date.now()}-${random}），后端按新键重复投递（重复气泡）。
+    // 失败语义不变：异常照常上抛，由 catch 标记 failed + errorMessage。
     await withMockMode(
       this,
       // Mock 模式：在本地会话中追加消息
@@ -111,12 +114,9 @@ export async function sendText(
         mockSessionMap[sessionId] = updatedSession;
         return updatedSession;
       },
-      // Real 模式：调用后端 API 发送消息（带重试）
+      // Real 模式：调用后端 API 发送消息（网络层重试由 http 层覆盖，见上方 R17 注释）
       // Task 1.1.5：payload 已是强类型 SendMessageRequest，与 ChatMessageRequest 结构对齐
-      () =>
-        withSendRetry(() =>
-          chatTransport.pushMessage(this.activeSession!.id, payload)
-        )
+      () => chatTransport.pushMessage(this.activeSession!.id, payload)
     );
     // 发送成功，更新状态为 sent
     this._setMessageStatus(sendId, "sent");

@@ -27,16 +27,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CheckInView'
+                $ref: '#/components/schemas/CheckInViewApiResponse'
               example:
-                success: true
-                consecutiveDays: 5
-                extraQuota: 1
-                extraRecommendQuota: 3
-                hotTopicsUnlocked: true
-                newUsersUnlocked: true
-                hotTopicCount: 5
-                newUserCount: 10
+                code: 0
+                message: ok
+                data:
+                  success: true
+                  consecutiveDays: 5
+                  extraQuota: 1
+                  extraRecommendQuota: 3
+                  hotTopicsUnlocked: true
+                  newUsersUnlocked: true
+                  hotTopicCount: 5
+                  newUserCount: 10
+                traceId: 'e2f4a1b0-0000-4000-8000-000000000006'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -57,11 +61,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CheckInStatusView'
+                $ref: '#/components/schemas/CheckInStatusViewApiResponse'
               example:
-                checkedInToday: true
-                consecutiveDays: 5
-                extraQuota: 1
+                code: 0
+                message: ok
+                data:
+                  checkedInToday: true
+                  consecutiveDays: 5
+                  extraQuota: 1
+                traceId: 'e2f4a1b0-0000-4000-8000-000000000007'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -91,14 +99,18 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MakeUpCheckInResultView'
+                $ref: '#/components/schemas/MakeUpCheckInResultViewApiResponse'
               example:
-                success: true
-                checkInDate: '2026-07-28'
-                consecutiveDays: 5
-                usedMakeUpCount: 2
-                makeUpLimit: 3
-                costPoints: 50
+                code: 0
+                message: ok
+                data:
+                  success: true
+                  checkInDate: '2026-07-28'
+                  consecutiveDays: 5
+                  usedMakeUpCount: 2
+                  makeUpLimit: 3
+                  costPoints: 50
+                traceId: 'e2f4a1b0-0000-4000-8000-000000000008'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -215,6 +227,70 @@ components:
         - usedMakeUpCount
         - makeUpLimit
         - costPoints
+    # ---- R17 契约对齐：CheckInController 三端点均返回 ApiResponse.ok(...) 统一信封
+    # （CheckInController.java:38/48/82，common/ApiResponse.java:34），原 yaml 把响应
+    # 体建模为裸载荷；信封写法对齐 feedback-growth-and-auth.yaml 的
+    # EmptyApiResponse / UserDeviceSessionListApiResponse。
+    CheckInViewApiResponse:
+      type: object
+      description: '`ApiResponse<CheckInView>` 统一信封（POST /check-in）。'
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。
+        message:
+          type: string
+          description: 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。
+        data:
+          $ref: '#/components/schemas/CheckInView'
+        traceId:
+          type: string
+          description: 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。
+      required:
+        - code
+        - message
+        - data
+        - traceId
+    CheckInStatusViewApiResponse:
+      type: object
+      description: '`ApiResponse<CheckInStatusView>` 统一信封（GET /check-in/status）。'
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。
+        message:
+          type: string
+          description: 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。
+        data:
+          $ref: '#/components/schemas/CheckInStatusView'
+        traceId:
+          type: string
+          description: 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。
+      required:
+        - code
+        - message
+        - data
+        - traceId
+    MakeUpCheckInResultViewApiResponse:
+      type: object
+      description: '`ApiResponse<MakeUpCheckInResultView>` 统一信封（POST /check-in/make-up）。'
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。
+        message:
+          type: string
+          description: 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。
+        data:
+          $ref: '#/components/schemas/MakeUpCheckInResultView'
+        traceId:
+          type: string
+          description: 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。
+      required:
+        - code
+        - message
+        - data
+        - traceId
     ApiError:
       type: object
       properties:

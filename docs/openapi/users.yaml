@@ -37,13 +37,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FollowView'
+                $ref: '#/components/schemas/FollowViewApiResponse'
               example:
-                success: true
-                userId: 1024
-                following: true
-                followerCount: 18
-                followingCount: 5
+                code: 0
+                message: ok
+                data:
+                  success: true
+                  userId: 1024
+                  following: true
+                  followerCount: 18
+                  followingCount: 5
+                traceId: 'e2f4a1b0-0000-4000-8000-000000000001'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -74,13 +78,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FollowView'
+                $ref: '#/components/schemas/FollowViewApiResponse'
               example:
-                success: true
-                userId: 1024
-                following: false
-                followerCount: 17
-                followingCount: 4
+                code: 0
+                message: ok
+                data:
+                  success: true
+                  userId: 1024
+                  following: false
+                  followerCount: 17
+                  followingCount: 4
+                traceId: 'e2f4a1b0-0000-4000-8000-000000000002'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -106,15 +114,32 @@ paths:
             format: int64
             minimum: 1
           description: User ID (must be positive).
+        # ---- R17 契约对齐：后端加分页（UserController.java:87-93，R4-00302），
+        # page 默认 0 / size 默认 20（@Max(200)）。
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Page number starting from 0.
+        - in: query
+          name: size
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 20
+          description: Items per page (max 200).
       responses:
         '200':
-          description: Follower list
+          description: Follower list (current page)
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FollowUserView'
+                $ref: '#/components/schemas/FollowUserViewListApiResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -138,15 +163,31 @@ paths:
             format: int64
             minimum: 1
           description: User ID (must be positive).
+        # ---- R17 契约对齐：后端加分页（UserController.java:104-110），口径同 followers。
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Page number starting from 0.
+        - in: query
+          name: size
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 20
+          description: Items per page (max 200).
       responses:
         '200':
-          description: Following list
+          description: Following list (current page)
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FollowUserView'
+                $ref: '#/components/schemas/FollowUserViewListApiResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -176,9 +217,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IsFollowingView'
+                $ref: '#/components/schemas/IsFollowingViewApiResponse'
               example:
-                isFollowing: true
+                code: 0
+                message: ok
+                data:
+                  isFollowing: true
+                traceId: 'e2f4a1b0-0000-4000-8000-000000000003'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -208,12 +253,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OnlineStatusView'
+                $ref: '#/components/schemas/OnlineStatusViewApiResponse'
               example:
-                userId: 1024
-                status: online
-                lastHeartbeat: '2026-07-29T08:00:00Z'
-                deviceType: mini-program
+                code: 0
+                message: ok
+                data:
+                  userId: 1024
+                  status: online
+                  lastHeartbeat: '2026-07-29T08:00:00Z'
+                  deviceType: mini-program
+                traceId: 'e2f4a1b0-0000-4000-8000-000000000004'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -244,20 +293,22 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties:
-                  $ref: '#/components/schemas/OnlineStatusView'
+                $ref: '#/components/schemas/OnlineStatusMapApiResponse'
               example:
-                '1024':
-                  userId: 1024
-                  status: online
-                  lastHeartbeat: '2026-07-29T08:00:00Z'
-                  deviceType: mini-program
-                '1025':
-                  userId: 1025
-                  status: offline
-                  lastHeartbeat: '2026-07-28T22:30:00Z'
-                  deviceType: web
+                code: 0
+                message: ok
+                data:
+                  '1024':
+                    userId: 1024
+                    status: online
+                    lastHeartbeat: '2026-07-29T08:00:00Z'
+                    deviceType: mini-program
+                  '1025':
+                    userId: 1025
+                    status: offline
+                    lastHeartbeat: '2026-07-28T22:30:00Z'
+                    deviceType: web
+                traceId: 'e2f4a1b0-0000-4000-8000-000000000005'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -276,25 +327,36 @@ paths:
           required: true
           schema:
             type: string
+            minLength: 1
+            maxLength: 20
         - in: query
           name: page
           required: false
           schema:
             type: integer
+            minimum: 0
+            default: 0
         - in: query
           name: size
           required: false
           schema:
             type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
       responses:
         '200':
-          description: Search result page
+          description: Search result page (Spring `Page<UserSearchView>` JSON inside ApiResponse envelope)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserSearchView'
+                $ref: '#/components/schemas/UserSearchPageApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   securitySchemes:
     bearerAuth:
@@ -317,6 +379,169 @@ components:
           type: string
         bio:
           type: string
+    # ---- R17 契约对齐：本文件各端点均为 UserController / UserSearchController 的
+    # `ApiResponse.ok(...)` 统一信封（common/ApiResponse.java:34），原 yaml 把响应
+    # 体建模为裸载荷。信封写法对齐 feedback-growth-and-auth.yaml 的
+    # EmptyApiResponse / UserDeviceSessionListApiResponse。
+    FollowViewApiResponse:
+      type: object
+      description: '`ApiResponse<FollowView>` 统一信封：`code` 为 0 表示成功。'
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。
+        message:
+          type: string
+          description: 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。
+        data:
+          $ref: '#/components/schemas/FollowView'
+        traceId:
+          type: string
+          description: 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。
+      required:
+        - code
+        - message
+        - data
+        - traceId
+    FollowUserViewListApiResponse:
+      type: object
+      description: '`ApiResponse<List<FollowUserView>>` 统一信封：`data` 为当前页的粉丝/关注列表。'
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。
+        message:
+          type: string
+          description: 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FollowUserView'
+          description: 当前页列表；无数据时为空数组。
+        traceId:
+          type: string
+          description: 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。
+      required:
+        - code
+        - message
+        - data
+        - traceId
+    IsFollowingViewApiResponse:
+      type: object
+      description: '`ApiResponse<IsFollowingView>` 统一信封。'
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。
+        message:
+          type: string
+          description: 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。
+        data:
+          $ref: '#/components/schemas/IsFollowingView'
+        traceId:
+          type: string
+          description: 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。
+      required:
+        - code
+        - message
+        - data
+        - traceId
+    OnlineStatusViewApiResponse:
+      type: object
+      description: '`ApiResponse<OnlineStatusView>` 统一信封。'
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。
+        message:
+          type: string
+          description: 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。
+        data:
+          $ref: '#/components/schemas/OnlineStatusView'
+        traceId:
+          type: string
+          description: 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。
+      required:
+        - code
+        - message
+        - data
+        - traceId
+    OnlineStatusMapApiResponse:
+      type: object
+      description: |
+        `ApiResponse<Map<String, OnlineStatusView>>` 统一信封：`data` 以用户 ID
+        字符串为键的在线状态映射。
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。
+        message:
+          type: string
+          description: 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。
+        data:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/OnlineStatusView'
+          description: 用户 ID → 在线状态映射。
+        traceId:
+          type: string
+          description: 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。
+      required:
+        - code
+        - message
+        - data
+        - traceId
+    UserSearchPage:
+      type: object
+      description: |
+        Spring `Page<UserSearchView>` 的 JSON 形态（UserSearchController.java:51
+        经 `ApiResponse.ok` 包信封后 `data` 的内层结构：content 数组 +
+        totalElements/totalPages/number/size）。
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSearchView'
+          description: 当前页搜索结果。
+        totalElements:
+          type: integer
+          format: int64
+          description: 结果总数。
+        totalPages:
+          type: integer
+          description: 总页数。
+        number:
+          type: integer
+          description: 当前页码（从 0 开始）。
+        size:
+          type: integer
+          description: 每页条数。
+      required:
+        - content
+        - totalElements
+        - totalPages
+        - number
+        - size
+    UserSearchPageApiResponse:
+      type: object
+      description: '`ApiResponse<Page<UserSearchView>>` 统一信封（UserSearchController.java:48-58）。'
+      properties:
+        code:
+          type: integer
+          description: 业务状态码，0 表示成功（`ApiResponse.SUCCESS_CODE`）。
+        message:
+          type: string
+          description: 人类可读消息，成功时为 `ok`（`ApiResponse.SUCCESS_MESSAGE`）。
+        data:
+          $ref: '#/components/schemas/UserSearchPage'
+        traceId:
+          type: string
+          description: 请求追踪 ID，与 `X-Trace-Id` 响应头一致；MDC 无值时为空字符串。
+      required:
+        - code
+        - message
+        - data
+        - traceId
     FollowView:
       type: object
       properties:

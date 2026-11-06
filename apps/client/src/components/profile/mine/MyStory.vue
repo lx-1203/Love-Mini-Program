@@ -346,7 +346,7 @@ function openPost(postId: string): void {
   height: 264rpx;
   border-radius: var(--r-lg);
   border: 2rpx dashed #B9C4C0;
-  background: #ffffff;
+  background: var(--c-bg-container);
   display: flex;
   flex-direction: column;
   align-items: center;

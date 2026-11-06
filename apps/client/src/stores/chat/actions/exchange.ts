@@ -16,6 +16,15 @@ import type { TempChatSession } from "../types";
 import type { ChatStoreThis } from "../store-type";
 
 /**
+ * R17：acceptExchange 的 in-flight 宪兵（按会话 ID 钳制）。
+ *
+ * 页面层已有 exchanging ref 挡双击（chat-session/index.vue），这里是 store 层第二道：
+ * 同一会话的接受交换请求在途时，再次调用直接早退，避免并发双写
+ * （mock 分支重复改 mockSessionMap、real 分支重复 POST contact-exchange/respond）。
+ */
+const exchangeInFlightSessions = new Set<string>();
+
+/**
  * 接受联系方式交换
  *
  * 状态机：
@@ -31,6 +40,13 @@ export async function acceptExchange(
   if (!this.activeSession) {
     return;
   }
+
+  // in-flight 期间忽略同会话的重复提交（页面 exchanging ref 之外的 store 层第二道）
+  const sessionId = this.activeSession.id;
+  if (exchangeInFlightSessions.has(sessionId)) {
+    return;
+  }
+  exchangeInFlightSessions.add(sessionId);
 
   // 使用 withMockMode 统一处理 Mock/Real 切换、activeSession 更新、概览刷新
   await withMockMode(
@@ -67,7 +83,9 @@ export async function acceptExchange(
         actor,
         decision: "accept",
       })
-  );
+  ).finally(() => {
+    exchangeInFlightSessions.delete(sessionId);
+  });
 }
 
 /**

@@ -188,7 +188,7 @@ function goMyProfile() {
   width: 56rpx;
   height: 56rpx;
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--c-bg-container);
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;

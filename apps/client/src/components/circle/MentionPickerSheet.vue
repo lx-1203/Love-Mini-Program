@@ -126,7 +126,7 @@ function initialOf(name: string): string {
 .mention-sheet {
   width: 100%;
   max-height: 72vh;
-  background: #ffffff;
+  background: var(--c-bg-elevated);
   border-radius: 28rpx 28rpx 0 0;
   padding: 32rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
   display: flex;

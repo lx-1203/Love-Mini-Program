@@ -54,7 +54,7 @@ function statValue(key: string, socialProof: UserProfileSocialProof): number {
   /* V-04（第五轮 QA）：4 列统计上下内边距 28→32rpx，数字与图标呼吸感 */
   padding: 32rpx 8rpx;
   border-radius: 32rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
   display: flex;
 }

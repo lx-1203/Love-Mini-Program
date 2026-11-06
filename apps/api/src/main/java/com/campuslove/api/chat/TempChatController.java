@@ -1,6 +1,7 @@
 package com.campuslove.api.chat;
 
 import com.campuslove.api.common.ErrorMessages;
+import com.campuslove.api.ratelimit.RateLimit;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
@@ -46,6 +47,7 @@ public class TempChatController {
   }
 
   @PostMapping("/{id}/messages")
+  @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
   @PreAuthorize("hasRole('USER')")
   public TempChatSessionView sendMessage(
       @PathVariable("id") String id,
@@ -55,6 +57,7 @@ public class TempChatController {
   }
 
   @PostMapping("/{id}/contact-exchange/respond")
+  @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
   @PreAuthorize("hasRole('USER')")
   public TempChatSessionView respondToContactExchange(
       @PathVariable("id") String id,

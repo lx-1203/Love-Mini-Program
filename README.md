@@ -167,21 +167,21 @@ npm run verify:phase01         # 完整验证（test + lint + typecheck + build 
 
 ```bash
 # 开发
-npm --workspace apps/client run dev:h5              # H5 mock 模式
-npm --workspace apps/client run dev:h5:real         # H5 real 模式
-npm --workspace apps/client run dev:mp-weixin       # 微信小程序开发
+pnpm --filter @campus-love/client run dev:h5              # H5 mock 模式
+pnpm --filter @campus-love/client run dev:h5:real         # H5 real 模式
+pnpm --filter @campus-love/client run dev:mp-weixin       # 微信小程序开发
 
 # 构建
-npm --workspace apps/client run build:h5              # H5 mock 构建（非发布）
-npm --workspace apps/client run build:h5:real         # H5 release 构建（需真实 HTTPS 域名，走发布守卫）
-npm --workspace apps/client run build:mp-weixin       # mp-weixin real API dev 构建（strip-mock 后可直接进 DevTools；mock 档用 build:mp-weixin:mock）
-npm --workspace apps/client run build:mp-weixin:real  # mp-weixin release 构建（含 appid 注入）
+pnpm --filter @campus-love/client run build:h5              # H5 mock 构建（非发布）
+pnpm --filter @campus-love/client run build:h5:real         # H5 release 构建（需真实 HTTPS 域名，走发布守卫）
+pnpm --filter @campus-love/client run build:mp-weixin       # mp-weixin real API dev 构建（strip-mock 后可直接进 DevTools；mock 档用 build:mp-weixin:mock）
+pnpm --filter @campus-love/client run build:mp-weixin:real  # mp-weixin release 构建（含 appid 注入）
 
 # 检查与测试
-npm --workspace apps/client run typecheck           # vue-tsc 类型检查
-npm --workspace apps/client run test:unit           # vitest 单元测试
-npm --workspace apps/client run test:coverage       # 单元测试 + 覆盖率
-npm --workspace apps/client run test:e2e            # Playwright 端到端测试
+pnpm --filter @campus-love/client run typecheck           # vue-tsc 类型检查
+pnpm --filter @campus-love/client run test:unit           # vitest 单元测试
+pnpm --filter @campus-love/client run test:coverage       # 单元测试 + 覆盖率
+pnpm --filter @campus-love/client run test:e2e            # Playwright 端到端测试
 ```
 
 ### Admin 后台（apps/admin）

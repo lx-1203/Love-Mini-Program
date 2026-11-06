@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import com.campuslove.api.ratelimit.RateLimit;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClient;
 
@@ -101,6 +102,9 @@ public class PhoneBindingController {
      * @return ApiResponse 包含脱敏手机号
      */
     @PostMapping("/phone/bind")
+    // R17（安全审计 P2）：此前无限流——已登录用户循环发垃圾 code 会放大为对微信
+    // getuserphonenumber/token 接口的高频出站调用，触发微信侧封禁后绑定功能瘫痪
+    @RateLimit(capacity = 5, refillTokens = 0.05, key = "#clientIp")
     @Operation(
             summary = "微信手机号绑定",
             description = "通过微信 getPhoneNumber 回调 code 换取手机号并绑定到当前登录用户。手机号经 AES 加密存储。",
@@ -151,15 +155,54 @@ public class PhoneBindingController {
     }
 
     /**
-     * 获取微信 access_token。
+     * 获取微信 access_token（R17：带内存缓存）。
      *
-     * <p>使用 AppID + AppSecret 调用微信 cgi-bin/token 接口获取。
-     * 当前实现不缓存 token（每次请求实时获取），因绑定操作频率极低。</p>
+     * <p>使用 AppID + AppSecret 调用微信 cgi-bin/token 接口获取。原实现每次实时获取
+     * （注释自认「调用频率低」），但限流放开前的滥用面与微信侧 2000 次/天 的
+     * token 获取配额都不支持这一点——缓存 90 分钟（微信 token 有效期 2h，提前 30 分钟
+     * 过期避免边界失效），命中时零出站调用。</p>
      *
      * @return access_token 字符串
-     * @throws IllegalStateException 当 access_token 获取失败时
+     * @throws IllegalStateException 当 access_token 多实例下并发首取由 synchronized
+     *         串行化，单实例语义安全
      */
+    // R17 修订：缓存挂实例而非 static——本类生产态是单例 bean，实例级缓存语义不变
+    // （fetchAccessTokenFromWechat 的 javadoc 也写明「各实例独立缓存」）；static 会让缓存
+    // 泄漏进同 JVM 的其他控制器实例，测试互染（首个用例把 token 灌进静态缓存，后续用例
+    // 命中缓存跳过 cgi-bin/token 外呼，MockRestServiceServer 定序桩失配假红）。
+    private final java.util.concurrent.atomic.AtomicReference<CachedToken> TOKEN_CACHE
+            = new java.util.concurrent.atomic.AtomicReference<>();
+    private static final long TOKEN_TTL_MS = 90L * 60 * 1000;
+    private final Object tokenCacheLock = new Object();
+
+    /** record CachedToken(String token, long expiresAtMs) */
+    private record CachedToken(String token, long expiresAtMs) {
+    }
+
     private String getAccessToken() {
+        CachedToken cached = TOKEN_CACHE.get();
+        if (cached != null && cached.expiresAtMs() > System.currentTimeMillis()) {
+            return cached.token();
+        }
+        synchronized (tokenCacheLock) {
+            // double-check：拿到锁后再查一次缓存，防止排队期间其他线程已完成刷新
+            cached = TOKEN_CACHE.get();
+            if (cached != null && cached.expiresAtMs() > System.currentTimeMillis()) {
+                return cached.token();
+            }
+            String token = fetchAccessTokenFromWechat();
+            TOKEN_CACHE.set(new CachedToken(token, System.currentTimeMillis() + TOKEN_TTL_MS));
+            return token;
+        }
+    }
+
+    /**
+     * 实际出站调用微信 cgi-bin/token。
+     *
+     * <p>多实例部署注意：各实例独立缓存（90 分钟 TTL），并发首取由微信侧容忍
+     * （旧 token 在新 token 签发后仍有效至其自然过期），无需分布式协调。</p>
+     */
+    private String fetchAccessTokenFromWechat() {
         Map<String, String> uriVars = Map.of(
                 "appId", weChatConfig.getAppId(),
                 "appSecret", weChatConfig.getAppSecret());

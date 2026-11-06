@@ -62,7 +62,13 @@ public class RealWhisperService implements WhisperService {
     public static final String STATUS_PAY_FAILED = "PAY_FAILED";
     public static final String STATUS_REFUNDED = "REFUNDED";
 
-    private static final int DAILY_LIMIT = 5;
+    /**
+     * 发送者每日上限（配置 app.whisper.daily-limit，默认 5；原硬编码常量收敛为可配置项）。
+     * 字段声明即赋默认值 5：单测直连构造（不走 Spring 注入）时保持与原常量同语义，
+     * Spring 装配时由配置覆盖。
+     */
+    @Value("${app.whisper.daily-limit:5}")
+    private int dailyLimit = 5;
 
     /**
      * R5-1（2026-11-05）：收件人可见状态——PAY_FAILED/REFUNDED 是发送侧审计行
@@ -145,7 +151,7 @@ public class RealWhisperService implements WhisperService {
 
         // 发送者每日 ≤5 条
         LocalDateTime dayStart = LocalDateTime.of(LocalDate.now(TimeZones.BUSINESS), LocalTime.MIN);
-        if (repository.countBySenderIdAndCreatedAtBetween(senderId, dayStart, dayStart.plusDays(1)) >= DAILY_LIMIT) {
+        if (repository.countBySenderIdAndCreatedAtBetween(senderId, dayStart, dayStart.plusDays(1)) >= dailyLimit) {
             throw new IllegalArgumentException("今日悄悄话已达上限（5 条）");
         }
 

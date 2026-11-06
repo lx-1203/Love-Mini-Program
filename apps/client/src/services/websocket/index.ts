@@ -257,6 +257,9 @@ class WebSocketClient {
    */
   disconnect(): void {
     this.manualClose = true;
+    // R17：断开即清缓存 token——storage 是唯一真相源（配合 401 强踢路径：
+    // clearTokens 后重连兜底不得再拿到首次连接固化的旧值）
+    this.currentToken = "";
 
     // 如果 STOMP 会话已建立，先发送 DISCONNECT 帧
     if (this.stompSessionReady && this.socketTask) {
@@ -882,7 +885,7 @@ class WebSocketClient {
    * 处理自动重连
    *
    * 固定 3 秒间隔重连，最多 5 次。
-   * 重连时使用当前保存的 token，如果 token 无效则跳过。
+   * 重连时只认 storage 真相源（getToken()）；无 token 则跳过并置 disconnected。
    */
   private handleReconnect(): void {
     if (this.manualClose) return;
@@ -903,8 +906,10 @@ class WebSocketClient {
     const scheduled = this.reconnectManager.schedule(() => {
       // 复位防重入标志：允许下一次断线触发新的重连流程
       this.reconnectScheduled = false;
-      // 重新获取最新 token：HTTP 层刷新后本地 token 已更新，必须优先于首次连接时固化的旧值
-      const token = getToken() || this.currentToken;
+      // R17：只认 storage 真相源（getToken()）——原 `getToken() || this.currentToken`
+      // 兜底会在 401 强踢（clearTokens + disconnect 清 currentToken）后仍拿首次连接
+      // 固化的旧 token 重连，被服务端再拒一次；storage 无 token 就不该再连。
+      const token = getToken();
       if (token) {
         this.connect(token);
       } else {

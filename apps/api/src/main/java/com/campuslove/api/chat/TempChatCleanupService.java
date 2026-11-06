@@ -240,12 +240,21 @@ public class TempChatCleanupService {
                 List<TempChatSession> sessions = sessionRepository.findByPhaseInAndClosesAtBefore(
                         List.of(SessionPhase.closed, SessionPhase.expired),
                         now.minusHours(graceHours));
-                for (TempChatSession session : sessions) {
+                // R17（路线图 R10 收口）：原实现逐会话 deleteBySessionId（N 条 DELETE）+
+                // 逐会话 findTempAssetsBySession（N 条 SELECT），随过期会话积压线性放大；
+                // 改为按块批删 + 按块批查资产。per-session try/catch 容错语义以【块级】粒度保留：
+                // 单块失败记日志后继续下一块，不阻断整体任务（与原容错语义等价的粗粒度形态，
+                // 且 DELETE/SELECT 同块失败互斥放大面由块内原子性覆盖）。
+                final int CHUNK_SIZE = 200;
+                for (int from = 0; from < sessions.size(); from += CHUNK_SIZE) {
+                    List<TempChatSession> chunk =
+                            sessions.subList(from, Math.min(from + CHUNK_SIZE, sessions.size()));
+                    List<Long> chunkIds = chunk.stream().map(TempChatSession::getId).toList();
                     try {
-                        messagesDeleted += (int) tempChatMessageRepository.deleteBySessionId(session.getId());
+                        messagesDeleted += (int) tempChatMessageRepository.deleteBySessionIdIn(chunkIds);
                         if (mediaAssetService != null) {
                             for (com.campuslove.api.entity.MediaAsset asset
-                                    : mediaAssetService.findTempAssetsBySession(session.getId())) {
+                                    : mediaAssetService.findTempAssetsBySessions(chunkIds)) {
                                 if (asset.getHoldUntil() != null && asset.getHoldUntil().isAfter(now)) {
                                     continue;
                                 }
@@ -255,8 +264,8 @@ public class TempChatCleanupService {
                             }
                         }
                     } catch (RuntimeException e) {
-                        log.warn("清理临时会话材料失败: sessionUid={}, error={}",
-                                session.getSessionUid(), e.getMessage());
+                        log.warn("清理临时会话材料失败（块大小={}）: error={}",
+                                CHUNK_SIZE, e.getMessage());
                     }
                 }
             }

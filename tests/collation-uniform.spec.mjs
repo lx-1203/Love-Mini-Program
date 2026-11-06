@@ -135,7 +135,47 @@ assert.ok(baselineTotal > 0, "历史基线为空 ⇒ 规则 B 失去意义");
 assert.deepEqual(violations, [], `排序规则漂移：\n  ${violations.join("\n  ")}`);
 assert.deepEqual(stale, [], `以下项已清理，请把 HISTORICAL_BASELINE 收缩：\n  ${stale.join("\n  ")}`);
 
+// —— R17 扫描面扩展：database/ 根目录非 Flyway 脚本（init-mysql.sql、seed-*.sql、
+// sanitize/、complete-guest-account.sql 等）——
+// 这些脚本同样会在 MySQL 里建表/改列，非目标排序规则一旦写进去同样按「库默认值
+// 被绕过」的路径再生漂移。纳入门面时实测全部为 0/0，按基线=0 的棘轮语义纳入：
+// 出现任何一处即红（要写只允许写目标排序规则），只减不增。
+const DB_ROOT = join(root, "database");
+const dbRootEntries = readdirSync(DB_ROOT, { withFileTypes: true });
+const HELPER_SQL_FILES = dbRootEntries
+  .filter((e) => e.isFile() && e.name.endsWith(".sql"))
+  .map((e) => e.name)
+  .concat(
+    readdirSync(join(DB_ROOT, "sanitize"))
+      .filter((f) => f.endsWith(".sql"))
+      .map((f) => `sanitize/${f}`),
+  )
+  .sort();
+assert.ok(HELPER_SQL_FILES.length >= 10,
+  `非 Flyway 脚本只扫到 ${HELPER_SQL_FILES.length} 个（<10），database/ 扫描面可能失效`);
+// 具名文件必须都在扫描面里（否则扩展就是空转）
+for (const required of [
+  "complete-guest-account.sql",
+  "init-mysql.sql",
+  "sanitize/prod-sanitize.sql",
+]) {
+  assert.ok(HELPER_SQL_FILES.includes(required),
+    `扫描面缺 ${required}，database/ 扫描面判据失效`);
+}
+const helperViolations = [];
+for (const file of HELPER_SQL_FILES) {
+  const { collations, casts } = countOffTarget(readFileSync(join(DB_ROOT, file), "utf8"));
+  if (collations > 0 || casts > 0) {
+    helperViolations.push(
+      `${file}: 非目标排序规则 ${collations} 处 / COLLATE 硬转 ${casts} 处（基线 0，出现即红）`,
+    );
+  }
+}
+assert.deepEqual(helperViolations, [],
+  `database/ 非Flyway脚本排序规则漂移：\n  ${helperViolations.join("\n  ")}`);
+
 console.log(
   `collation uniform ok（扫描 ${files.length} 个迁移；目标 ${TARGET}；晚于统一迁移的非目标声明 0 处；`
-  + `历史基线 ${Object.keys(HISTORICAL_BASELINE).length} 个文件共 ${baselineTotal} 处，只减不增）`,
+  + `历史基线 ${Object.keys(HISTORICAL_BASELINE).length} 个文件共 ${baselineTotal} 处，只减不增；`
+  + `database/ 非Flyway脚本 ${HELPER_SQL_FILES.length} 个基线 0 实测 0）`,
 );

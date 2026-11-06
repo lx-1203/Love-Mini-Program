@@ -11,9 +11,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
@@ -62,11 +60,11 @@ import org.springframework.web.bind.annotation.RestController;
  *       校验越权，越权抛 403</li>
  * </ul>
  *
- * <p>实现取舍：由于 {@link FeedbackRepository} 无「按作者校区」的数据库级分页查询
- * （Feedback 与 User 之间没有 JPA 关联，只有裸 {@code user_id} 列），本控制器先取按
- * 创建时间降序的全量工单、在内存中按作者校区/状态/类型过滤，再做切片分页。这在后台
- * 反馈量级下可接受，但每个工单会触发一次作者校区解析查询（N+1）；如未来反馈量增大，
- * 应在仓储层补一条 JOIN {@code user_campus_profile} 的分页查询替换之。</p>
+ * <p>实现取舍（R17 更新）：列表查询已在仓储层落 WHERE+Pageable 分页
+ * （{@link FeedbackRepository#searchForAdmin}，EXISTS 关联 {@code user_campus_profile}
+ * 完成校区隔离下沉，LOWER 双侧保留原 {@code equalsIgnoreCase} 语义），不再全表加载
+ * 内存分页。早期实现（全量加载 + 逐行校区解析 + 内存切片）随反馈量线性放大内存与
+ * 查询开销的问题随之消除。</p>
  */
 @Profile("real")
 @RestController
@@ -115,45 +113,20 @@ public class AdminFeedbackController {
             return new AdminPageView<>(List.of(), 0L, Math.max(1, page), safeSize(pageSize), 1);
         }
 
-        // 第一步：按状态/类型收窄候选集（与校区无关，先把行数降下来）
-        List<Feedback> candidates = new ArrayList<>();
-        for (Feedback f : feedbackRepository.findAllByOrderByCreatedAtDesc()) {
-            if (statusFilter != null && f.getStatus() != statusFilter) {
-                continue;
-            }
-            if (typeFilter != null && f.getType() != typeFilter) {
-                continue;
-            }
-            candidates.add(f);
-        }
-
-        // 第二步：校区隔离。原实现在这里对每一行调一次 resolveUserCampusName，
-        // 一页就是几十上百次 findByUserId（N+1）；改为一次性批量解析作者校区名。
-        // 语义保持不变：无校区资料的作者仍被排除（authorCampus == null → 不属于任何校区）。
-        List<Feedback> filtered;
-        if (effectiveCampus == null) {
-            filtered = candidates;
-        } else {
-            Map<Long, String> campusByAuthor = adminDataScope.resolveUserCampusNames(
-                    candidates.stream().map(Feedback::getUserId).toList());
-            filtered = new ArrayList<>();
-            for (Feedback f : candidates) {
-                String authorCampus = campusByAuthor.get(f.getUserId());
-                if (authorCampus == null || !authorCampus.equalsIgnoreCase(effectiveCampus)) {
-                    continue;
-                }
-                filtered.add(f);
-            }
-        }
-
+        // R17（路线图 R10 收口）：全表加载 + 内存过滤/切片 → 仓储层 WHERE+Pageable 分页查询。
+        // 校区隔离下沉到 SQL（EXISTS 关联 user_campus_profile，LOWER 双侧保留
+        // equalsIgnoreCase 语义；无校区资料的作者被 EXISTS 自然排除——与原内存过滤口径一致）。
+        // 排序 created_at DESC 与原实现一致；total/countQuery 由 Spring Data 从同一 @Query 派生。
         int safePage = Math.max(1, page);
         int safeSize = safeSize(pageSize);
-        int total = filtered.size();
-        int from = Math.min((safePage - 1) * safeSize, total);
-        int to = Math.min(from + safeSize, total);
-        List<AdminFeedbackView> items = filtered.subList(from, to).stream()
+        var pageResult = feedbackRepository.searchForAdmin(
+                statusFilter, typeFilter, effectiveCampus,
+                org.springframework.data.domain.PageRequest.of(safePage - 1, safeSize));
+
+        List<AdminFeedbackView> items = pageResult.getContent().stream()
                 .map(AdminFeedbackView::of)
                 .toList();
+        long total = pageResult.getTotalElements();
 
         return new AdminPageView<>(
                 items,

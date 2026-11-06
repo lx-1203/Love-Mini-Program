@@ -228,6 +228,23 @@ public class MediaAssetService {
         return mediaAssetRepository.findByTempSessionIdAndDeletedAtIsNull(tempSessionId);
     }
 
+    /**
+     * R17（路线图 R10 收口）：按会话集合批查未删除临时媒体。
+     *
+     * <p>配套 TempChatCleanupService 保留期清理的「逐会话查询 → 按块批查」改造，
+     * 口径与 {@link #findTempAssetsBySession(Long)} 一致（过滤软删除墓碑）。</p>
+     *
+     * @param tempSessionIds 会话 ID 集合
+     * @return 资产列表（空集合入参返回空列表）
+     */
+    @Transactional(readOnly = true)
+    public List<MediaAsset> findTempAssetsBySessions(Collection<Long> tempSessionIds) {
+        if (tempSessionIds == null || tempSessionIds.isEmpty()) {
+            return List.of();
+        }
+        return mediaAssetRepository.findByTempSessionIdInAndDeletedAtIsNull(tempSessionIds);
+    }
+
     /** 登记物理删除（保留行做墓碑，便于审计）。 */
     @Transactional
     public void markTempDeleted(MediaAsset asset) {

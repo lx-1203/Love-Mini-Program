@@ -537,13 +537,25 @@ public class GlobalExceptionHandler {
     /**
      * 处理 Spring ResponseStatusException。
      * 将其转换为标准错误响应格式。
+     *
+     * <p>与 {@link #handleIllegalArgument}（IllegalArgumentException）同一条生产脱敏尺子：
+     * 生产 profile（{@code prod}/{@code real}）下 5xx（status &gt;= 500）的 reason 可能携带
+     * 内部实现细节（如存储根路径、下游服务形态），统一回固定脱敏文案，全量信息（状态码 +
+     * reason）留日志；4xx 的 reason 是用户面文案（如"应用资产不存在或未启用"）保持透传，
+     * 开发 profile 维持原样透传便于联调。</p>
      */
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleResponseStatus(
             ResponseStatusException ex) {
         log.warn("请求错误: {} - {}", ex.getStatusCode(), ex.getReason());
+        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+        if (isProductionProfile() && status.value() >= 500) {
+            // 生产 5xx：固定脱敏文案（与 handleGenericException 的 INTERNAL_ERROR 口径一致），
+            // 全量 reason 留日志（上方 log.warn 已含状态码与 reason 全量）
+            return buildErrorResponse(status, "Error", "服务器内部错误，请稍后重试");
+        }
         return buildErrorResponse(
-                HttpStatus.valueOf(ex.getStatusCode().value()),
+                status,
                 "Error",
                 ex.getReason() != null ? ex.getReason() : "请求错误");
     }

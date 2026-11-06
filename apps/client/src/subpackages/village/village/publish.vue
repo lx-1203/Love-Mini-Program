@@ -1437,7 +1437,7 @@ onUnmounted(() => {
      （R4 记录的 200→210rpx 静态值仅适配标准 7px 间隙机型） */
   padding: 16rpx 32rpx;
   padding-right: calc(var(--capsule-right, 7px) + 104px);
-  background: #fff;
+  background: var(--c-bg-elevated);
   /* R1-B33/D24：#EEF2F0 与 --c-border-light（$border-light: #EEF2F0）逐位等值，令牌化零视觉变化 */
   border-bottom: 1rpx solid var(--c-border-light, #EEF2F0);
   flex-shrink: 0;
@@ -1480,7 +1480,7 @@ onUnmounted(() => {
 
 .publish-to { padding: 32rpx 32rpx 8rpx; }
 .publish-to__label { font-size: 26rpx; color: var(--c-text-secondary, #6B7571); margin-bottom: 16rpx; }
-.publish-to__card { display: flex; align-items: center; gap: 20rpx; padding: 24rpx; background: #fff; border-radius: var(--r-xl, 24rpx); border: 1rpx solid var(--c-border-light, #EEF2F0); } /* R1-B33/D24 */
+.publish-to__card { display: flex; align-items: center; gap: 20rpx; padding: 24rpx; background: var(--c-bg-container); border-radius: var(--r-xl, 24rpx); border: 1rpx solid var(--c-border-light, #EEF2F0); } /* R1-B33/D24 */
 /* R1-B33/D19：头像位 88rpx → 112rpx 档。理想图头像约占卡高 70%：本卡高 = 24×2 padding + 112 = 160rpx，
    头像/卡高 = 70%，与右侧两行文字（30 + 8 gap + 24 = 62rpx）等高有余量 */
 .publish-to__avatar { width: 112rpx; height: 112rpx; border-radius: 50%; background: var(--c-neutral-50, #F7FAF9); display:flex; align-items:center; justify-content:center; overflow:hidden; } /* R2b-L03-D14：占位底由硬编码 #E8FBF2 改中性 --c-neutral-50（无头像时是中性占位，非品牌绿） */
@@ -1501,7 +1501,7 @@ onUnmounted(() => {
 
 .publish-target-sheet { position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,0.45); display:flex; align-items:flex-end; }
 /* R21：弹层加高到 78vh（兴趣圈子分组此前在 70vh 下不可见）+ 底部安全区，末行不再贴屏裁切 */
-.publish-target-sheet__panel { width: 100%; background: #fff; border-radius: var(--r-xxl, 32rpx) var(--r-xxl, 32rpx) 0 0; padding: 24rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); max-height: 78vh; overflow-y: auto; box-sizing: border-box; }
+.publish-target-sheet__panel { width: 100%; background: var(--c-bg-elevated); border-radius: var(--r-xxl, 32rpx) var(--r-xxl, 32rpx) 0 0; padding: 24rpx 32rpx calc(32rpx + env(safe-area-inset-bottom)); max-height: 78vh; overflow-y: auto; box-sizing: border-box; }
 .publish-target-sheet__head { padding: 16rpx 0 24rpx; }
 .publish-target-sheet__title { font-size: 30rpx; font-weight: 700; color: var(--c-text-primary, #1A1E1C); }
 /* R20：渠道分组标题（公域 / 校园私域 / 兴趣圈子） */
@@ -1535,7 +1535,7 @@ onUnmounted(() => {
 .publish-image__remove { position: absolute; top: 6rpx; right: 6rpx; width: 40rpx; height: 40rpx; border-radius: 50%; background: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; }
 .publish-image__remove-icon { width: 22rpx; height: 22rpx; color: #fff; }
 /* R21：添加图片块对齐 post 版虚线白底样式（原继承浅绿实心底，与理想图不符） */
-.publish-image--add { display: flex; align-items: center; justify-content: center; background: #ffffff; border: 2rpx dashed var(--c-border-strong, #C2CAC6); box-sizing: border-box; } /* R2b-L03-D20：虚线格边框色 #C7D8D2 令牌化到 --c-border-strong（同族中性描边，视觉近等值） */
+.publish-image--add { display: flex; align-items: center; justify-content: center; background: var(--c-bg-container); border: 2rpx dashed var(--c-border-strong, #C2CAC6); box-sizing: border-box; } /* R2b-L03-D20：虚线格边框色 #C7D8D2 令牌化到 --c-border-strong（同族中性描边，视觉近等值） */
 .publish-image__plus { font-size: 56rpx; color: var(--c-text-tertiary, #9AA39F); }
 
 /* R1-B33/D15：理想图这四行是「通栏列表 + 贯穿全宽的细分割线」，原容器却带
@@ -1629,7 +1629,7 @@ onUnmounted(() => {
    提及→openMentionPicker、位置→原生地图选点（R10-L02-D14 起）、谁可以看→tap-to-explain），没有为「视频」「更多」这类本页
    无后端、无实现的项凭空造按钮：理想图第 5 枚「更多」由本页唯一剩下的真实设置「谁可以看」顶上。
    以下样式即原存档样式，本轮起有真实消费者。 */
-.publish-toolbar { display: flex; justify-content: space-around; padding: 16rpx 24rpx calc(env(safe-area-inset-bottom) + 12rpx); background: #fff; border-top: 1rpx solid #EEF2F0; flex-shrink: 0; }
+.publish-toolbar { display: flex; justify-content: space-around; padding: 16rpx 24rpx calc(env(safe-area-inset-bottom) + 12rpx); background: var(--c-bg-elevated); border-top: 1rpx solid #EEF2F0; flex-shrink: 0; }
 /* R10-L02-D18（P2 可达性）：底栏五枚是本页图片/话题/位置/提及/谁可以看的唯一常驻入口排，
    原无最小高度——40rpx 图标 + 6rpx gap + 20rpx 标签 ≈70rpx（35px）低于 88rpx（44px）拇指下限。
    补 min-height:88rpx 并 justify-content:center 让内容在扩出的热区内垂直居中
@@ -1646,7 +1646,7 @@ onUnmounted(() => {
 
 /* R16（2026-09-07）：页面背景统一纯白（对齐「他人显示主页」理想图色调） */
 page {
-  background: #ffffff;
+  background: var(--c-bg-container);
 }
 
 .mention-list {

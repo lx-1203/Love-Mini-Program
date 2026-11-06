@@ -19,10 +19,15 @@ paths:
           required: false
           schema:
             type: string
-            # 取值来自 Post.PostCategory（entity/Post.java）；VillageController 用
-            # PostCategory.valueOf(category) 解析，传这里的假值会得到 400，
-            # 而按本文件生成的客户端会默认发 dating/study/life/help —— 全是无效分类。
-            enum: [all, interest, sincere, hometown, anonymous, latest, campus, activity]
+            # 取值来自 Post.PostCategory（entity/Post.java:63-65）+ 三个特殊分类；
+            # 普通 PostCategory 值由 VillageQueryService.parseCategory 用
+            # PostCategory.valueOf(category) 解析，传假值会得到 400。
+            # following / samecity / discover 不属于帖子分类枚举：parseCategory
+            # 之前的分支单独处理（VillageController.java:96-104 需要 userId 的
+            # 三个 Tab 分支 + VillageQueryService.java:214/278 的关注/同城分流），
+            # 走的是关注作者 / 同城 city / 发现 discoverSub 的独立查询路径。
+            enum: [all, interest, sincere, hometown, anonymous, latest, campus, activity,
+                   following, samecity, discover]
             default: all
           description: Post category filter
         - in: query

@@ -1603,7 +1603,10 @@ components:
           type: boolean
         loginMethod:
           type: string
-          enum: [wechat, phone, admin]
+          # ---- R17 契约对齐：后端实际产出 guest（RealAuthService.java:811 体验号
+          # 一键登录）与 unknown（RealAuthService.java:314 在线会话缺失时兜底），
+          # 原 enum 漏记。
+          enum: [wechat, phone, admin, guest, unknown]
         displayName:
           type: string
         phoneBound:
@@ -1617,13 +1620,8 @@ components:
         campusName:
           type: string
           nullable: true
-        schoolBound:
-          type: boolean
-          description: 校园认证绑定（收尾轮：认证+一次性绑定后为 true，绑定锁定；前端 home 选择器消费）
-        schoolId:
-          type: string
-          nullable: true
-          description: 绑定学校 ID（= campusName，供首页选择器回显）
+        # ---- R17 契约对齐：schoolBound / schoolId 已删除——后端 UserSessionView
+        # （UserSessionView.java:8-20）无这两个字段，是文档臆造的死契约。
         featureFlags:
           type: object
           additionalProperties:

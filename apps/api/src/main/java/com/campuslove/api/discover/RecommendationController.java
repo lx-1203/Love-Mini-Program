@@ -672,14 +672,6 @@ record RecommendationPreferencesView(
 }
 
 /**
- * 报名请求体
- */
-record EnrollRequest(
-    boolean enrolled
-) {
-}
-
-/**
  * 报名操作响应
  */
 record ActivityEnrollmentView(

@@ -481,13 +481,15 @@ export const useCampusStore = defineStore("campus", {
             return;
           }
           const filtered = mockTopics.filter((t) => t.category === targetCategory);
-          if (page === 1) {
-            this.topics = [...filtered];
-          } else {
-            this.topics.push(...filtered);
-          }
+          // R17：mock 分支 loadMore 按页切片（对齐 village store fetchHotBoard 口径：
+          // 按 (page-1)*TOPIC_PAGE_SIZE 取本页切片后再追加）——原实现 page>1 时把
+          // filtered 整表重复 push，第 2 页起全是第 1 页内容的整体翻倍（重复条目
+          // 无限增长）。real 分支本就按后端分页返回，无需处理。
+          const start = (page - 1) * TOPIC_PAGE_SIZE;
+          const pageItems = filtered.slice(start, start + TOPIC_PAGE_SIZE);
+          this.topics = page === 1 ? pageItems : [...this.topics, ...pageItems];
           this.topicPage = page;
-          this.topicHasMore = filtered.length >= TOPIC_PAGE_SIZE;
+          this.topicHasMore = pageItems.length >= TOPIC_PAGE_SIZE;
           return;
         }
 

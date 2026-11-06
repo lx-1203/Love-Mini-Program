@@ -2,6 +2,7 @@ package com.campuslove.api.media;
 
 import com.campuslove.api.common.ErrorMessages;
 import com.campuslove.api.entity.MediaAsset;
+import com.campuslove.api.ratelimit.RateLimit;
 import com.campuslove.api.repository.MediaAssetRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.context.annotation.Profile;
@@ -188,6 +189,7 @@ public class MediaAccessController {
      * @return 已签发的路径与对应 URL（无权限的路径不在其中）
      */
     @PostMapping("/sign")
+    @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
     @io.swagger.v3.oas.annotations.responses.ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200",
                     description = "返回调用者可读路径的签名（不可读路径静默省略）"),
@@ -291,6 +293,7 @@ public class MediaAccessController {
      * @return 媒体令牌（token + 有效期秒数）
      */
     @GetMapping("/token")
+    @RateLimit(capacity = 30, refillTokens = 1, key = "#clientIp")
     @Operation(
             summary = "签发短期媒体访问令牌",
             description = "R4-00273：签发 TTL 5 分钟的 scope=media 短期令牌，用于 <image src> 等无法携带 Authorization 头的媒体请求（拼入 ?token= 查询参数）。相比完整用户 JWT，泄露窗口与冒用范围大幅缩小。",
@@ -514,6 +517,8 @@ public class MediaAccessController {
      * @throws ResponseStatusException 资产未注册/被驳回或文件不存在（404）
      */
     @GetMapping("/app-assets/**")
+    // 公开静态资产但仍是公开读端点：放宽到突发 120/每秒 5，压平刷量面
+    @RateLimit(capacity = 120, refillTokens = 5, key = "#clientIp")
     @Operation(
             summary = "公开访问应用资产（无需登录）",
             description = "小程序主包瘦身：装饰性图片（campus 场景/活动海报/插画等）后端托管后的公开访问端点，免登录可看图。real profile 下校验 media_asset 注册记录（type=app_asset 且 audit_status=approved），驳回即下线。",

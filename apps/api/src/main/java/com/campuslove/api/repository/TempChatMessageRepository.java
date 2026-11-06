@@ -57,4 +57,20 @@ public interface TempChatMessageRepository extends JpaRepository<TempChatMessage
 
     /** 删除指定会话的全部消息（保留期到期清理，2026-10-28）。 */
     long deleteBySessionId(Long sessionId);
+
+    /**
+     * R17（路线图 R10 收口）：按会话集合批删全部消息。
+     *
+     * <p>配套 TempChatCleanupService 保留期清理「逐会话 DELETE → 按块批删」改造（块级容错）。
+     * 注意：这里用 {@code @Modifying} 批量 JPQL DELETE（单条 DELETE ... WHERE session_id IN）
+     * 而非派生删除——派生删除是「先 SELECT 再逐行 remove」，N 行仍是 N 条 DELETE，达不到批删目的。</p>
+     *
+     * @param sessionIds 会话 ID 集合
+     * @return 删除行数
+     */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(
+            "DELETE FROM TempChatMessage m WHERE m.session.id IN :sessionIds")
+    int deleteBySessionIdIn(@org.springframework.data.repository.query.Param("sessionIds")
+                            java.util.Collection<Long> sessionIds);
 }

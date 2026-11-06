@@ -6,7 +6,7 @@
  * 展示指定兴趣圈下的话题列表，支持下拉刷新和加载更多
  */
 import { ref, computed, watch, nextTick, getCurrentInstance } from "vue";
-import { onLoad, onReady } from "@dcloudio/uni-app";
+import { onLoad, onReady, onUnload } from "@dcloudio/uni-app";
 import { storeToRefs } from "pinia";
 import { useI18n } from "vue-i18n";
 import { useCircleStore, formatCircleTime, type TopicAuthor, type CircleItem } from "../../../stores/circle";
@@ -49,6 +49,9 @@ const circleName = ref("");
  * 死页向外扩散）。现改为：不渲染话题壳，只留可返回的头部 + 一条明确占位，并把用户送回兴趣圈列表。
  */
 const missingCircleContext = ref(false);
+// R17：circleId 缺失回流的 1.2s 定时器句柄（模块变量存引用，onUnload 清理——
+// 用户回流前手动退出本页时，离页后不再触发 redirectTo/reLaunch 导航）
+let missingCircleRedirectTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
  * R4-00101：昵称首字符兜底（author.name 为空/null 时返回占位符，
@@ -433,8 +436,14 @@ onLoad((query) => {
     uni.showToast({ title: t("storeErrors.circle.circleIdInvalid"), icon: "none" });
     // R6-L04-D19：提示之外还要把页面从「死壳」切到「占位 + 回流」态。
     // 延时 1.2s 是让上面那条 toast 有被读完的时间；redirectTo 失败（栈异常）再退 reLaunch。
+    // R17：定时器句柄化存模块变量，onUnload 清理（用户回流前手动退出本页时，
+    // 离页后不再触发 redirectTo/reLaunch 导航）。
     missingCircleContext.value = true;
-    setTimeout(() => {
+    if (missingCircleRedirectTimer !== null) {
+      clearTimeout(missingCircleRedirectTimer);
+    }
+    missingCircleRedirectTimer = setTimeout(() => {
+      missingCircleRedirectTimer = null;
       const url = "/subpackages/circles/circles/index";
       uni.redirectTo({
         url,
@@ -449,6 +458,13 @@ onLoad((query) => {
 // 修复（严格模式 noUnusedLocals）：goToAuthorProfile 通过 catchtap 绑定到模板，
 // vue-tsc 无法识别 catchtap 语法，故通过 defineExpose 标记为已使用。
 defineExpose({ goToAuthorProfile });
+
+onUnload(() => {
+  if (missingCircleRedirectTimer !== null) {
+    clearTimeout(missingCircleRedirectTimer);
+    missingCircleRedirectTimer = null;
+  }
+});
 </script>
 
 <template>
@@ -1631,7 +1647,10 @@ defineExpose({ goToAuthorProfile });
      判点本身成立且更直接：声明色 #2DB98A 压白卡 = 2.49:1、描边 --c-brand-500 真值 #36C99A = 2.10:1，
      两项都远低于 4.5 / 3 ⇒ 按已知机制 §2 的实算档收成 brand-800 #156B51（6.45:1），
      卡的建议值 brand-600(2.81)/brand-700(4.14) 都不达标，不采纳。 */
-  background: #ffffff;
+  /* R17（暗色模式）：实心白底换卡片底 token（实心面板背景归口，暗色下随主题切换；
+     仓内「卡片底」语义 token 是 --c-bg-container——styles/tokens.scss:65 的
+     --color-bg-card 别名正指向它，dark 块 :271 已适配深色） */
+  background: var(--c-bg-container);
   border: 2rpx solid var(--c-brand-800, #156B51);
 }
 

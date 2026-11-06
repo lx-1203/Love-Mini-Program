@@ -86,7 +86,7 @@ function stepTitle(step: { id: string; title?: string }): string {
   margin: 0 var(--page-padding) 20rpx;
   padding: 32rpx;
   border-radius: 40rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
 }

@@ -1345,7 +1345,7 @@ async function save() {
 }
 
 .field--focus {
-  background: #ffffff;
+  background: var(--c-bg-container);
   border-color: var(--c-brand, #36c99a);
   border-width: 3rpx;
   /* 边框加粗 1rpx 视觉补偿，避免内容抖动 */
@@ -1794,7 +1794,7 @@ async function save() {
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 
   &--selected {
-    background: #ffffff;
+    background: var(--c-bg-container);
     border-color: var(--c-brand, #36c99a);
     border-width: 3rpx;
     padding-left: 27rpx;
@@ -1807,7 +1807,7 @@ async function save() {
   height: 40rpx;
   border-radius: var(--r-circle, 50%);
   border: 3rpx solid var(--c-border-default, #dde3e0);
-  background: #ffffff;
+  background: var(--c-bg-container);
   display: flex;
   align-items: center;
   justify-content: center;

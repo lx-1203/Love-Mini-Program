@@ -92,7 +92,7 @@ function hasIcon(key: string): boolean {
   display: flex;
   flex-wrap: wrap;
   border-radius: 32rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
   padding: 12rpx 0;
 }

@@ -146,4 +146,12 @@ public interface MediaAssetRepository extends JpaRepository<MediaAsset, Long> {
 
     /** 指定临时会话的未删除媒体（会话结束时批量清理）。 */
     List<MediaAsset> findByTempSessionIdAndDeletedAtIsNull(Long tempSessionId);
+
+    /**
+     * R17（路线图 R10 收口）：按会话集合批查未删除临时媒体。
+     *
+     * <p>配套 TempChatCleanupService 保留期清理的「N 次单会话查询 → 按块批查」改造，
+     * 口径与 {@link #findByTempSessionIdAndDeletedAtIsNull(Long)} 一致（过滤软删除墓碑）。</p>
+     */
+    List<MediaAsset> findByTempSessionIdInAndDeletedAtIsNull(Collection<Long> tempSessionIds);
 }

@@ -248,7 +248,10 @@ components:
           format: int64
         type:
           type: string
-          enum: [follow, like, comment, visitor, match]
+          # ---- R17 契约对齐：后端 NotificationType（entity/Notification.java:52-62）
+          # 共 9 值，原 enum 只记了 5 个。whisper 为悄悄话到达通知的关联语义
+          # （RealWhisperService 走 createSystemNotification 注入，referenceType=whisper）。
+          enum: [follow, like, comment, visitor, match, mention, system, unmatch, topic_like, whisper]
           description: Notification type
         sourceUser:
           $ref: '#/components/schemas/NotificationSourceUser'

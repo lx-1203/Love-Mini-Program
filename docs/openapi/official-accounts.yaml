@@ -101,6 +101,75 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    # ---- R17 契约补记：用户→官方号发消息（OfficialAccountController.java:101-114
+    # 已存在，R16 起带 @Idempotent——同 Idempotency-Key 重试被 IdempotentInterceptor
+    # 拦为 409，见 IdempotentInterceptor.java:32；一次写入成对的两行：用户消息+规则化
+    # 助手回复，direction 字段区分）。请求体只有 content（code 在路径上，
+    # OfficialChatSendRequest 仅一个字段，见 OfficialAccountController.java:117-120）。
+    post:
+      tags: [official-accounts]
+      summary: Send a message to an official account
+      description: |
+        Persists the user message and the rule-based assistant reply as a pair
+        and returns both (broadcast + conversation merged view is fetched via
+        the GET endpoint). Retrying with the same `Idempotency-Key` header is
+        rejected with 409 so the pair is never written twice.
+      operationId: sendOfficialAccountMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema:
+            type: string
+            maxLength: 32
+          description: Official account code (official-assistant / official-promoter)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfficialChatSendRequest'
+            example:
+              content: 怎么解锁悄悄话？
+      responses:
+        '200':
+          description: '[user message, assistant reply] in stream order'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OfficialMessageView'
+              example:
+                - id: 901
+                  messageType: text
+                  content: 怎么解锁悄悄话？
+                  cardTitle: ''
+                  cardDesc: ''
+                  cardTag: ''
+                  cardTargetUrl: ''
+                  publishedAt: '2026-11-06T10:00:00'
+                - id: 902
+                  messageType: text
+                  content: 进入对方资料页点击「解锁悄悄话」即可，解锁后会从钱包扣除对应金币。
+                  cardTitle: ''
+                  cardDesc: ''
+                  cardTag: ''
+                  cardTargetUrl: ''
+                  publishedAt: '2026-11-06T10:00:01'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: |
+            Idempotency conflict: the same Idempotency-Key was already used
+            (@Idempotent on OfficialAccountController.java:102; the retry is
+            rejected so the message pair is not duplicated).
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   securitySchemes:
     bearerAuth:
@@ -156,43 +225,85 @@ components:
         publishedAt:
           type: string
           format: date-time
+        # R17 契约补记：双向会话消息的方向字段（OfficialMessageView.java record
+        # 已携带，R16 起；广播流为 null）。POST /{code}/messages 返回的
+        # [用户消息, 助手回复] 数组即靠它区分方向。
+        direction:
+          type: string
+          nullable: true
+          enum: [user, assistant]
+          description: Conversation direction (user / assistant); null for broadcast stream messages.
+    OfficialChatSendRequest:
+      type: object
+      description: |
+        发送请求体（镜像 OfficialAccountController.java:117-120 的
+        `OfficialChatSendRequest` record：仅 content 一个字段，code 在路径上）。
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Message body (`@NotBlank` + `@Size(max = 500)`).
+      required:
+        - content
+    ErrorResponse:
+      type: object
+      description: |
+        GlobalExceptionHandler 错误体（buildErrorResponse / WithCode /
+        WithCodeAndTraceId 三形态并集，GlobalExceptionHandler.java:827-886）：
+        `error`/`message`/`status` 恒有；标准化错误码与追踪 ID 按路径可选。
+      properties:
+        error:
+          type: string
+          description: Error type description (e.g. "Bad Request", "Conflict").
+        message:
+          type: string
+          description: Human-readable error message.
+        status:
+          type: integer
+          description: HTTP status code（与响应状态码一致）。
+        code:
+          type: string
+          description: 标准化错误码（如 ADMIN_DISABLED / INVALID_CREDENTIALS / INSUFFICIENT_BALANCE），仅带码路径返回。
+        traceId:
+          type: string
+          description: 请求追踪 ID（UUID，同时写入 X-Trace-Id 响应头），仅带追踪路径返回。
+      required:
+        - error
+        - message
+        - status
   responses:
+    # ---- R17 契约对齐：错误体对齐 GlobalExceptionHandler.buildErrorResponse
+    # 系列的真实输出（GlobalExceptionHandler.java:827-886）——
+    # {error, message, status} 恒有；带标准化错误码/追踪的路径再加
+    # code? / traceId?（原 yaml 写成 {code, message, traceId}，与实现不符）。
     BadRequest:
       description: Invalid request (validation failed)
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              code:
-                type: integer
-              message:
-                type: string
-              traceId:
-                type: string
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Bad Request
+            message: content is required
+            status: 400
     Unauthorized:
       description: Missing or invalid JWT
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              code:
-                type: integer
-              message:
-                type: string
-              traceId:
-                type: string
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Unauthorized
+            message: Missing or invalid bearer token
+            status: 401
     InternalServerError:
       description: Unexpected server error
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              code:
-                type: integer
-              message:
-                type: string
-              traceId:
-                type: string
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Internal Server Error
+            message: Unexpected server error
+            status: 500

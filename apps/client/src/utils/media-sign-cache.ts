@@ -38,6 +38,38 @@ const pending = new Set<string>();
 const failedAt = new Map<string, number>();
 let flushScheduled = false;
 
+/** R17：signed 缓存条目上限——超限按插入序淘汰最旧条目（Map 保序），防长期会话内存无界增长 */
+const SIGNED_CACHE_MAX_ENTRIES = 500;
+
+/**
+ * R17 审计（内存面）：signed/failedAt 两个 Map 此前只增不清——同一会话浏览大量
+ * 媒体时无限累积（signed 存 15 分钟签名的 URL，failedAt 存失败退避时间戳）。
+ * 现在每次 flushPending 顺带清理：
+ * - signed 中已过期（15 分钟 TTL 过后本就该重签）的条目整条删除；
+ * - failedAt 中退避窗口（15s）已过的条目删除（窗口过后本就允许重签，留着只为白占内存）；
+ * - signed 超过 {@link SIGNED_CACHE_MAX_ENTRIES} 时按插入序淘汰最旧条目。
+ * 登出/换账号的整体清空仍走 assertSameSession / clearMediaSignCache，不受影响。
+ */
+function pruneStaleEntries(): void {
+  const now = nowSeconds();
+  for (const [path, entry] of signed) {
+    if (entry.expiresAt <= now) {
+      signed.delete(path);
+    }
+  }
+  const backoffCutoff = Date.now() - FAILURE_BACKOFF_MS;
+  for (const [path, at] of failedAt) {
+    if (at <= backoffCutoff) {
+      failedAt.delete(path);
+    }
+  }
+  while (signed.size > SIGNED_CACHE_MAX_ENTRIES) {
+    const oldest = signed.keys().next();
+    if (oldest.done) break;
+    signed.delete(oldest.value);
+  }
+}
+
 /**
  * 签名版本号：任何签名的到达/失效都会 +1。
  *
@@ -128,6 +160,8 @@ function scheduleSign(path: string): void {
 
 async function flushPending(): Promise<void> {
   flushScheduled = false;
+  // R17：签发间隙顺带清理过期/退避已过/超限条目（见 pruneStaleEntries 注释）
+  pruneStaleEntries();
   const batch = [...pending].slice(0, BATCH_MAX);
   for (const path of batch) pending.delete(path);
   if (batch.length === 0) return;

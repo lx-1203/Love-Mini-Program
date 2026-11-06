@@ -187,10 +187,10 @@ public class RateLimitAspect {
         if (!allowed) {
             log.warn("API 限流拒绝：method={}, key={}, capacity={}, refillTokens={}/s",
                     method.getName(), bucketKey, rateLimit.capacity(), rateLimit.refillTokens());
-            // 抛出自定义异常，由 GlobalExceptionHandler 转换为 HTTP 429
-            throw new RateLimitExceededException(
-                    "请求过于频繁，请稍后再试（limit=" + rateLimit.capacity()
-                            + ", refill=" + rateLimit.refillTokens() + "/s）");
+            // 抛出自定义异常，由 GlobalExceptionHandler 转换为 HTTP 429。
+            // 异常消息用统一固定文案：不回显各端点 capacity/refill 阈值（防止响应体
+            // 泄露限流参数被逐端点探测），具体参数只进上方日志。
+            throw new RateLimitExceededException("请求过于频繁，请稍后再试");
         }
 
         return pjp.proceed();

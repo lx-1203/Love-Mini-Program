@@ -23,7 +23,7 @@
 - [ ] `npm test`
 - [ ] `npm run lint:openapi`
 - [ ] `npm run lint:openapi:spectral`
-- [ ] `npm --workspace apps/client run typecheck`
+- [ ] `pnpm --filter @campus-love/client run typecheck`
 - [ ] `npm run verify:client-builds`
 - [ ] `npm run api:test`
 - [ ] `npm run verify:phase01`

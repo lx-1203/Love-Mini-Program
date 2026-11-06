@@ -17,7 +17,7 @@
 | 管理后台 | `apps/admin/src/utils/logger.ts` | 统一 logger（复制自 admin-legacy） |
 | 管理后台 | `apps/admin-legacy/src/utils/logger.ts` | 旧版统一 logger（与新版一致） |
 | 客户端 | `apps/client/src/services/sentry.ts` | Sentry 初始化、异常捕获、降级上报、消息/性能采集 |
-| 客户端 | `apps/client/scripts/patch-login-all.cjs` 等 | 通过代码补丁向业务代码注入 `captureException` 调用 |
+| 客户端 | `apps/client/scripts/archive/patch-login-all.cjs` 等 | 通过代码补丁向业务代码注入 `captureException` 调用 |
 
 ## 3. 架构与设计决策
 

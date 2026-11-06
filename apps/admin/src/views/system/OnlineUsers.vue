@@ -12,6 +12,7 @@ import { listOnlineUsers, kickOnlineUser, type OnlineUserView } from "../../api/
 import { ApiError } from "../../api/http";
 import ConfirmDialog from "../../components/ConfirmDialog.vue";
 import ErrorState from "../../components/ErrorState.vue";
+import Pagination from "../../components/Pagination.vue";
 import { useI18n } from "vue-i18n";
 import { formatDateTime } from "../../utils/format";
 import { useRequestRace } from "../../composables/useRequestRace";
@@ -23,6 +24,18 @@ const sessionStore = useSessionStore();
 const onlineUsers = ref<OnlineUserView[]>([]);
 const loading = ref(false);
 const errorMsg = ref("");
+
+/**
+ * 分页状态：后端 OnlineUserAdminController 默认 page=0/size=50（上限 200），0-based，
+ * 内存分页直出列表（无 total 包络）。原先不带 page 拉取 ⇒ 第 51 个以后的在线用户永远不可见。
+ * totalPages 按 has-more 语义估算：满页返回时假定还有下一页；
+ * 总数无从得知，不向 Pagination 传 total（组件自动隐藏「共 N 条」段）。
+ */
+const page = ref(0);
+const pageSize = ref(50);
+const totalPages = ref(1);
+/** 每页大小可选项（默认 50 对齐后端默认值，上限对齐后端 @Max(200)） */
+const pageSizeOptions = [20, 50, 100, 200];
 
 // 踢下线确认弹窗状态
 const kickVisible = ref(false);
@@ -38,18 +51,33 @@ async function fetchOnlineUsers() {
   errorMsg.value = "";
   const seq = nextSeq();
   try {
-    const result = await listOnlineUsers();
+    const result = await listOnlineUsers(page.value, pageSize.value);
     if (isStale(seq)) return;
     onlineUsers.value = result || [];
+    // has-more 语义：满页返回 ⇒ 假定还有下一页；不满页 ⇒ 当前即最后一页
+    totalPages.value =
+      onlineUsers.value.length === pageSize.value ? page.value + 2 : page.value + 1;
   } catch (err) {
     if (isStale(seq)) return;
     errorMsg.value = err instanceof ApiError ? err.message : t("onlineUsers.loadFailed");
     onlineUsers.value = [];
+    totalPages.value = 1;
   } finally {
     if (!isStale(seq)) {
       loading.value = false;
     }
   }
+}
+
+/** 页码切换（Pagination 已通过 v-model:page 同步 page，这里只负责拉数据） */
+function handlePageChange() {
+  fetchOnlineUsers();
+}
+
+/** 每页大小切换：回到第一页再拉取 */
+function handlePageSizeChange() {
+  page.value = 0;
+  fetchOnlineUsers();
 }
 
 /** 手动刷新（含防重复点击） */
@@ -131,6 +159,14 @@ onMounted(() => {
       <button class="primary-button" :disabled="loading" @click="handleRefresh">
         {{ t("common.refresh") }}
       </button>
+      <select
+        v-model="pageSize"
+        class="filter-select"
+        :aria-label="t('common.pageSize', { n: pageSize })"
+        @change="handlePageSizeChange"
+      >
+        <option v-for="n in pageSizeOptions" :key="n" :value="n">{{ n }}</option>
+      </select>
     </view>
 
     <ErrorState v-if="errorMsg" :message="errorMsg" @retry="fetchOnlineUsers" />
@@ -169,6 +205,15 @@ onMounted(() => {
         </tbody>
       </table>
     </view>
+
+    <Pagination
+      v-model:page="page"
+      :total-pages="totalPages"
+      :page-size="pageSize"
+      :page-base="0"
+      :disabled="loading"
+      @change="handlePageChange"
+    />
 
     <ConfirmDialog
       v-model:visible="kickVisible"

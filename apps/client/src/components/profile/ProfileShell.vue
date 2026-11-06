@@ -128,7 +128,7 @@ const emit = defineEmits<{
 <style scoped lang="scss">
 .profile-shell {
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--c-bg-container);
 }
 
 .profile-shell__state {

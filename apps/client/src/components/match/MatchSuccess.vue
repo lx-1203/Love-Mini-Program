@@ -413,7 +413,7 @@ function getScoreIcon(index: number): string {
   width: 100%;
   padding: 32rpx;
   box-sizing: border-box;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border-radius: 24rpx;
   box-shadow: 0 8rpx 32rpx rgba(54, 201, 154, 0.10);
 }
@@ -496,7 +496,7 @@ function getScoreIcon(index: number): string {
   width: 100%;
   padding: 32rpx;
   box-sizing: border-box;
-  background: #ffffff;
+  background: var(--c-bg-container);
   border-radius: 24rpx;
   box-shadow: 0 8rpx 32rpx rgba(54, 201, 154, 0.10);
   display: flex;

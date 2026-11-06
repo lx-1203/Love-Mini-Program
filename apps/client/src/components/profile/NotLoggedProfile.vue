@@ -407,7 +407,7 @@ const MORE_ITEMS: MoreItem[] = [
 
 .nlp-card {
   border-radius: 32rpx;
-  background: #ffffff;
+  background: var(--c-bg-container);
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
 }
 
@@ -580,7 +580,7 @@ const MORE_ITEMS: MoreItem[] = [
 /* 理想图第 4 枚是中性灰虚线框（整页只有头部渐变与主按钮是品牌绿） */
 .nlp-story--add .nlp-story__img {
   border: 3rpx dashed var(--c-neutral-300, #C2CAC6);
-  background: #ffffff;
+  background: var(--c-bg-container);
 }
 
 /* R2b-L03-D05：＋ 同步降到 --c-text-quaternary
